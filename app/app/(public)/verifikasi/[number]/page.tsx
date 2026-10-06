@@ -1,0 +1,43 @@
+import { PublicHeader, PublicFooter } from "@/components/PublicShell";
+import { connectDB } from "@/lib/db";
+import { maskName } from "@/lib/crypto";
+import { Certificate } from "@/models/Itp";
+import { User } from "@/models/User";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Verifikasi dokumen — Edulyfe EPTA", robots: { index: false } };
+
+export default async function Verifikasi({ params }: { params: { number: string } }) {
+  let c: { number: string; type: string; userId: unknown; issuedAt: Date; data?: unknown } | null = null;
+  if (/^EPTA-(ITP|RPT)-\d{4}-\d{4,6}$/.test(params.number)) { await connectDB(); c = await Certificate.findOne({ number: params.number }).lean(); }
+  const d = (c?.data ?? {}) as { name?: string; scores?: { total?: number } };
+  const name = c ? d.name ?? (await User.findById(c.userId as string).select("name").lean())?.name : null;
+  return (
+    <>
+      <PublicHeader />
+      <main className="mx-auto max-w-xl px-4 py-12 sm:px-6">
+        {c ? (
+          <div className="card border-success text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success text-3xl text-white">✓</span>
+            <h1 className="mt-4 font-display text-2xl font-extrabold text-navy">Dokumen terverifikasi</h1>
+            <p className="mt-1 text-sm text-ink-soft">{c.type === "itp" ? "Sertifikat TOEFL ITP resmi" : "Laporan hasil tes simulasi"}</p>
+            <dl className="mt-6 grid gap-3 text-left text-sm">
+              <div className="flex justify-between gap-3 border-b border-line pb-2"><dt className="text-ink-soft">Nomor</dt><dd className="font-semibold">{c.number}</dd></div>
+              <div className="flex justify-between gap-3 border-b border-line pb-2"><dt className="text-ink-soft">Atas nama</dt><dd className="font-semibold">{name ? maskName(name) : "-"}</dd></div>
+              <div className="flex justify-between gap-3 border-b border-line pb-2"><dt className="text-ink-soft">Skor total</dt><dd className="font-semibold">{d.scores?.total ?? "-"}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-ink-soft">Diterbitkan</dt><dd className="font-semibold">{c.issuedAt.toLocaleDateString("id-ID", { dateStyle: "long" })}</dd></div>
+            </dl>
+            <p className="mt-5 rounded-lg bg-canvas p-3 text-xs text-ink-soft">{c.type === "itp" ? "Skor resmi dari penyelenggara tes." : "Laporan latihan, bukan sertifikat TOEFL resmi. Skor adalah estimasi."} Nama disamarkan demi privasi; cocokkan dengan dokumen yang kamu terima.</p>
+          </div>
+        ) : (
+          <div className="card border-red-300 text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-3xl text-white">!</span>
+            <h1 className="mt-4 font-display text-2xl font-extrabold text-navy">Dokumen tidak ditemukan</h1>
+            <p className="mt-2 text-sm text-ink-soft">Nomor <b>{params.number}</b> tidak terdaftar. Periksa kembali nomor atau pindai ulang QR pada dokumen.</p>
+          </div>
+        )}
+      </main>
+      <PublicFooter />
+    </>
+  );
+}

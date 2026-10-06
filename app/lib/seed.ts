@@ -47,12 +47,13 @@ const reading: { title: string; html: string; items: Item[] }[] = [
       ["inference", "What likely happened to book prices?", ["They fell", "They rose", "Stayed same", "Unknown"], 0, "Produksi massal menurunkan harga."],
       ["detail", "What spread faster due to printing?", ["Diseases", "Ideas", "Metals", "Armies"], 1, "'ideas spread faster'."],
       ["detail", "Printing contributed to changes in:", ["Cooking only", "Science and religion", "Sports", "Fashion"], 1, "Perubahan ilmiah dan agama."],
+      ["vocab", "The word 'introduced' is closest in meaning to:", ["hid", "brought in", "sold", "forgot"], 1, "introduced = memperkenalkan."],
     ].map(([type, stem, options, key, why]) => ({ type, stem, options, key, why }) as Item),
   },
 ];
 
 // Listening contoh: tanpa audio (unggah MP3 lewat admin). Transkrip ada di stem agar alur tes tetap bisa diuji.
-const listening: Item[] = Array.from({ length: 14 }, (_, i) => ({
+const listening: Item[] = Array.from({ length: 15 }, (_, i) => ({
   type: ["detail", "main-idea", "inference"][i % 3],
   stem: `[Contoh Listening ${i + 1}] Dalam percakapan, apa yang akan dilakukan siswa berikutnya?`,
   options: ["Pergi ke perpustakaan", "Menemui dosen", "Pulang ke rumah", "Membeli buku"],
@@ -74,7 +75,7 @@ export async function seedTrial() {
   if (await Test.exists({ kind: "trial" })) return { skipped: true };
 
   const listeningQs = await insert("listening", listening);
-  const structureQs = await insert("structure", structure);
+  const structureQs = await insert("structure", structure.slice(0, 12));
   const readingIds: unknown[] = [];
   for (const p of reading) {
     const g = await QuestionGroup.create({ section: "reading", passageTitle: p.title, passageHtml: p.html, instruction: "Read the passage and answer the questions." });
@@ -84,9 +85,9 @@ export async function seedTrial() {
     name: "Free Trial — Mini TOEFL ITP",
     kind: "trial",
     sections: [
-      { name: "listening", durationSec: 10 * 60, questionIds: listeningQs.map((q) => q._id) },
-      { name: "structure", durationSec: 12 * 60, questionIds: structureQs.map((q) => q._id) },
-      { name: "reading", durationSec: 15 * 60, questionIds: readingIds },
+      { name: "listening", durationSec: 12 * 60, questionIds: listeningQs.map((q) => q._id) },
+      { name: "structure", durationSec: 8 * 60, questionIds: structureQs.map((q) => q._id) },
+      { name: "reading", durationSec: 17 * 60, questionIds: readingIds },
     ],
   });
   return { testId: String(test._id), questions: listeningQs.length + structureQs.length + readingIds.length };

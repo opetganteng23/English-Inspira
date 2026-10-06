@@ -37,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         id: String(q._id), groupId: q.groupId ? String(q.groupId) : null, stem: q.stem, options: q.options,
         assetIds: q.assetIds.map(String),
       })),
-      answers: attempt.answers.map((a) => ({ qid: String(a.qid), choice: a.choice, flagged: !!a.flagged })),
+      answers: attempt.answers.map((a) => ({ qid: String(a.qid), choice: a.choice, flagged: !!a.flagged, timeSpentSec: a.timeSpentSec ?? 0 })),
     });
   } catch (e) {
     return handleError(e);

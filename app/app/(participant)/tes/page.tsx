@@ -1,51 +1,71 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useApi } from "@/lib/useApi";
+import { api, tgl } from "@/lib/client";
+import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
-type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; inProgressAttemptId: string | null; lastScore: number | null };
+type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; remaining: number | null; inProgressAttemptId: string | null; lastScore: number | null };
+type A = { id: string; name: string; kind: string; status: string; finishedAt: string | null; scoreEst: number | null; sections: Record<string, number>; reportId: string | null };
+const KIND: Record<string, string> = { trial: "Free Trial", diagnostic: "Diagnostic", prediction: "Prediction", sim: "Tes Simulasi" };
 
 export default function TesSaya() {
   const router = useRouter();
-  const [tests, setTests] = useState<T[] | null>(null);
+  const tests = useApi<{ tests: T[] }>("/api/tests");
+  const hist = useApi<{ attempts: A[] }>("/api/attempts");
   const [err, setErr] = useState("");
-
-  useEffect(() => {
-    fetch("/api/tests").then((r) => r.json()).then((d) => setTests(d.tests)).catch(() => setErr("Gagal memuat tes"));
-  }, []);
 
   async function start(t: T) {
     setErr("");
-    const r = await fetch(`/api/tests/${t.id}/start`, { method: "POST" });
-    const d = await r.json();
-    if (!r.ok) return setErr(d.error ?? "Gagal memulai");
-    router.push(`/ruang-tes/${d.attemptId}`);
+    if (t.inProgressAttemptId) return router.push(`/ruang-tes/${t.inProgressAttemptId}`);
+    // Tes penuh: halaman persiapan dulu (timer baru berjalan setelah "Mulai"). Free trial langsung mulai.
+    if (t.kind !== "trial") return router.push(`/tes/persiapan/${t.id}`);
+    try { const d = await api(`/api/tests/${t.id}/start`, { json: {} }); router.push(`/ruang-tes/${d.attemptId}`); }
+    catch (e) { setErr((e as Error).message); }
   }
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="font-display text-3xl font-extrabold text-navy">Tes Saya</h1>
-      <p className="mt-1 text-ink-soft">Semua tes yang bisa kamu kerjakan.</p>
-      {err && <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</p>}
-      {!tests && !err && <p className="mt-6 text-ink-soft">Memuat…</p>}
-      <div className="mt-6 flex flex-col gap-4">
-        {tests?.map((t) => (
-          <div key={t.id} className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-white p-5">
+    <div className="flex flex-col gap-8">
+      <div><h1 className="page-title">Tes Saya</h1><p className="mt-1 text-ink-soft">Semua tes yang bisa kamu kerjakan, sudah dikerjakan, dan yang masih terkunci.</p></div>
+      <ErrorNote text={err || tests.error} />
+      {tests.loading && <Loading />}
+      <div className="grid gap-4 md:grid-cols-2">
+        {tests.data?.tests.map((t) => (
+          <div key={t.id} className={`card flex flex-col justify-between gap-4 ${t.unlocked ? "" : "bg-canvas"}`}>
             <div>
-              <h2 className="font-display text-lg font-extrabold text-navy">{t.name}</h2>
+              <div className="flex flex-wrap items-center gap-2"><span className="badge-muted">{KIND[t.kind]}</span>{!t.unlocked && <span className="badge-muted">🔒 Terkunci</span>}{t.remaining != null && t.unlocked && <span className="badge-ok">{t.remaining} jatah</span>}</div>
+              <h2 className="mt-2 font-display text-lg font-extrabold text-navy">{t.name}</h2>
               <p className="text-sm text-ink-soft">{t.totalQuestions} soal · ±{Math.round(t.totalSec / 60)} menit{t.lastScore ? ` · skor terakhir ${t.lastScore}` : ""}</p>
             </div>
-            {t.unlocked ? (
-              <button onClick={() => start(t)} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
-                {t.inProgressAttemptId ? "Lanjutkan" : "Mulai"}
-              </button>
-            ) : (
-              <span className="rounded-xl bg-canvas px-4 py-2 text-sm font-semibold text-ink-soft">Terkunci</span>
-            )}
+            {t.unlocked
+              ? <button onClick={() => start(t)} className="btn-solid">{t.inProgressAttemptId ? "Lanjutkan" : "Mulai"}</button>
+              : <Link href="/paket" className="btn-outline">Buka lewat paket</Link>}
           </div>
         ))}
-        {tests?.length === 0 && <p className="text-ink-soft">Belum ada tes tersedia.</p>}
       </div>
+      {tests.data?.tests.length === 0 && <Empty>Belum ada tes tersedia.</Empty>}
+
+      <section>
+        <h2 className="font-display text-xl font-extrabold text-navy">Riwayat pengerjaan</h2>
+        {hist.loading ? <Loading /> : hist.data?.attempts.length ? (
+          <div className="table-wrap mt-3">
+            <table>
+              <thead><tr><th>Tes</th><th>Tanggal</th><th>List.</th><th>Struct.</th><th>Read.</th><th>Skor</th><th /></tr></thead>
+              <tbody>
+                {hist.data.attempts.map((a) => (
+                  <tr key={a.id}>
+                    <td className="font-semibold text-navy">{a.name}</td><td>{a.finishedAt ? tgl(a.finishedAt) : <span className="badge-warn">Berjalan</span>}</td>
+                    <td>{a.sections.listening ?? "–"}</td><td>{a.sections.structure ?? "–"}</td><td>{a.sections.reading ?? "–"}</td><td className="font-semibold">{a.scoreEst ?? "–"}</td>
+                    <td className="whitespace-nowrap text-right">{a.status === "submitted" ? <Link href={`/hasil/${a.id}`} className="font-semibold text-brand">Laporan</Link> : <Link href={`/ruang-tes/${a.id}`} className="font-semibold text-brand">Lanjutkan</Link>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <p className="mt-2 text-sm text-ink-soft">Belum ada riwayat.</p>}
+      </section>
     </div>
   );
 }
