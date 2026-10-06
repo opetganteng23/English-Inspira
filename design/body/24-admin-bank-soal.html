@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<title>Admin — Bank Soal</title>
+<script src="4d92db0f-b184-4849-b8ef-b8e1e3ab3490"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#F5F7FA}
+a{color:#1B5FB8}a:hover{color:#123F7C}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1060px; display: flex; font-family: 'Poppins', sans-serif; color: #1C2B44; background: #F5F7FA">
+<aside style="width: 264px; flex-shrink: 0; box-sizing: border-box; padding: 24px 16px; background: #111C2E; color: #D3DEEE; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: #FFFFFF; color: #0F2F5E; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 14px">EI</span>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 15px; color: #FFFFFF">ENGLISH INSPIRA</span><span style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #FFC78A">ADMIN</span></div>
+</div>
+<nav style="display: flex; flex-direction: column; gap: 3px">
+<a href="AdminDashboard.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Ringkasan</span></a>
+<a href="AdminParticipants.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Peserta</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Institusi</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Lead Free Trial</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">PENJUALAN</span>
+<a href="AdminOrders.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Transaksi</span></a>
+<a href="AdminProducts.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Paket &amp; Harga</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Voucher</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">TES &amp; AI</span>
+<a href="AdminQuestionBank.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: #1B5FB8; color: #FFFFFF"><span>Bank Soal</span></a>
+<a href="AdminAiCounselor.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Konselor AI</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Review Proctoring</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">OPERASIONAL</span>
+<a href="AdminItpSchedule.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Jadwal ITP</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Pengguna &amp; Hak Akses</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Pengaturan</span></a>
+</nav>
+<div style="margin-top: auto; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px">
+<span style="width: 38px; height: 38px; border-radius: 999px; background: #1B5FB8; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600">RP</span>
+<div style="display: flex; flex-direction: column; flex: 1 1 0"><span style="font-size: 14px; font-weight: 600; color: #FFFFFF">Rina Pratiwi</span><span style="font-size: 12px; color: #B9CBE6">Super admin</span></div>
+</div>
+<a href="Main.dc.html" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; font-size: 14px; font-weight: 500; color: #B9CBE6; text-decoration: none">Keluar</a>
+</aside>
+<main style="flex: 1 1 0; box-sizing: border-box; padding: 32px 40px; display: flex; flex-direction: column; gap: 20px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 28px; color: #0F2F5E">Bank Soal</h1>
+<span style="font-size: 14px; color: #4B5A70">Dipakai untuk Free Trial, Diagnostic 1–4, dan Prediction 1–2</span>
+</div>
+<div style="display: flex; gap: 10px">
+<button type="button" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #C5D2E4; background: #FFFFFF; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #0F2F5E; cursor: pointer">Impor Excel</button>
+<button type="button" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 0; background: #1B5FB8; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #FFFFFF; cursor: pointer">Soal baru</button>
+</div>
+</div>
+<div style="display: flex; gap: 8px">
+<span style="height: 38px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; background: #FFFFFF; border: 1px solid #DCE3ED; font-size: 13px; color: #0F2F5E">Section: Structure &amp; WE ▾</span>
+<span style="height: 38px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; background: #FFFFFF; border: 1px solid #DCE3ED; font-size: 13px; color: #0F2F5E">Sub-skill: Semua ▾</span>
+<span style="height: 38px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; background: #FFFFFF; border: 1px solid #DCE3ED; font-size: 13px; color: #0F2F5E">Kesulitan ▾</span>
+<span style="height: 38px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 999px; background: #FFFFFF; border: 1px solid #DCE3ED; font-size: 13px; color: #0F2F5E">Status ▾</span>
+</div>
+<div style="display: flex; gap: 20px; align-items: flex-start">
+<div style="width: 420px; flex-shrink: 0; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; overflow: hidden">
+<sc-for list="{{items}}" as="q" hint-placeholder-count="8">
+<button type="button" sc-camel-on-click="{{q.pick}}" style="width: 100%; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; border: 0; border-bottom: 1px solid #EEF2F7; cursor: pointer; text-align: left; font-family: 'Poppins', sans-serif; background: {{q.bg}}">
+<span style="display: flex; justify-content: space-between; font-size: 12px; color: #4B5A70"><span>{{q.id}} · {{q.type}}</span><span style="font-weight: 600; color: {{q.statusColor}}">{{q.status}}</span></span>
+<span style="font-size: 14px; line-height: 1.5; color: #0F2F5E">{{q.text}}</span>
+<span style="font-size: 12px; color: #4B5A70">{{q.skill}} · {{q.level}} · benar {{q.correct}}</span>
+</button>
+</sc-for>
+</div>
+
+<div style="flex: 1 1 0; padding: 26px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 17px; font-weight: 600; color: #0F2F5E">Edit soal {{cur.id}}</span><span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #E9F0FA; color: #123F7C">{{cur.type}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="qt" style="font-size: 13px; font-weight: 600; color: #0F2F5E">Kalimat · tandai bagian A–D dengan [ ]</label><textarea id="qt" style="height: 76px; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #C5D2E4; font-family: 'Poppins', sans-serif; font-size: 14px; line-height: 1.6; resize: none" placeholder="{{cur.raw}}"></textarea></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{cur.parts}}" as="o" hint-placeholder-count="4">
+<div style="padding: 10px 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 2px; background: {{o.bg}}; border: 1.5px solid {{o.border}}"><span style="font-size: 12px; font-weight: 600; color: {{o.fg}}">{{o.label}}</span><span style="font-size: 14px; color: #0F2F5E">{{o.text}}</span></div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="s1" style="font-size: 13px; font-weight: 600; color: #0F2F5E">Sub-skill</label><sc-raw-select id="s1" style="height: 42px; border-radius: 10px; border: 1.5px solid #C5D2E4; padding: 0 10px; font-family: 'Poppins', sans-serif; font-size: 14px; background: #FFFFFF"><option>{{cur.skill}}</option></sc-raw-select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="s2" style="font-size: 13px; font-weight: 600; color: #0F2F5E">Kesulitan</label><sc-raw-select id="s2" style="height: 42px; border-radius: 10px; border: 1.5px solid #C5D2E4; padding: 0 10px; font-family: 'Poppins', sans-serif; font-size: 14px; background: #FFFFFF"><option>{{cur.level}}</option></sc-raw-select></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="s3" style="font-size: 13px; font-weight: 600; color: #0F2F5E">Dipakai di</label><sc-raw-select id="s3" style="height: 42px; border-radius: 10px; border: 1.5px solid #C5D2E4; padding: 0 10px; font-family: 'Poppins', sans-serif; font-size: 14px; background: #FFFFFF"><option>Diagnostic, Prediction</option></sc-raw-select></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="ex" style="font-size: 13px; font-weight: 600; color: #0F2F5E">Pembahasan</label><textarea id="ex" style="height: 76px; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #C5D2E4; font-family: 'Poppins', sans-serif; font-size: 14px; line-height: 1.6; resize: none" placeholder="{{cur.explain}}"></textarea></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="padding: 12px; border-radius: 12px; background: #F5F7FA; display: flex; flex-direction: column"><span style="font-size: 12px; color: #4B5A70">Dipakai</span><span style="font-size: 18px; font-weight: 600; color: #0F2F5E">{{cur.used}}×</span></div>
+<div style="padding: 12px; border-radius: 12px; background: #F5F7FA; display: flex; flex-direction: column"><span style="font-size: 12px; color: #4B5A70">Tingkat benar</span><span style="font-size: 18px; font-weight: 600; color: #0F2F5E">{{cur.correct}}</span></div>
+<div style="padding: 12px; border-radius: 12px; background: #F5F7FA; display: flex; flex-direction: column"><span style="font-size: 12px; color: #4B5A70">Daya beda</span><span style="font-size: 18px; font-weight: 600; color: #0F2F5E">{{cur.disc}}</span></div>
+</div>
+<div style="display: flex; gap: 10px; justify-content: flex-end">
+<button type="button" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #C5D2E4; background: #FFFFFF; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #0F2F5E; cursor: pointer">Simpan draft</button>
+<button type="button" style="height: 44px; padding: 0 16px; border-radius: 10px; border: 0; background: #1B5FB8; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #FFFFFF; cursor: pointer">Kirim untuk review</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1060}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 0 };
+  }
+  renderVals() {
+    const S = { Aktif: '#1D6B3F', Review: '#B85A00', Draft: '#4B5A70' };
+    const raw = [
+      { id: 'WE-0231', type: 'Written Expression', text: 'Coral reefs grows more slowly in warmer water…', raw: 'Coral reefs [grows] more slowly in [warmer] water because [rising] temperatures [weaken] the algae they depend on.', parts: ['grows', 'warmer', 'rising', 'weaken'], key: 0, skill: 'Subject–verb agreement', level: 'Sedang', correct: '41%', used: 312, disc: '0,42', status: 'Aktif', explain: 'Subjek "coral reefs" jamak, jadi kata kerjanya "grow".' },
+      { id: 'WE-0232', type: 'Written Expression', text: 'The number of students who applies for the program…', raw: 'The number of students who [applies] for the program [has] [increased] [steadily].', parts: ['applies', 'has', 'increased', 'steadily'], key: 0, skill: 'Subject–verb agreement', level: 'Sulit', correct: '28%', used: 198, disc: '0,38', status: 'Aktif', explain: '"who" merujuk ke "students" (jamak), jadi "apply".' },
+      { id: 'WE-0240', type: 'Written Expression', text: 'She enjoys hiking, to swim, and cycling…', raw: 'She [enjoys] hiking, [to swim], and cycling [during] her [summer] holidays.', parts: ['enjoys', 'to swim', 'during', 'summer'], key: 1, skill: 'Parallel structure', level: 'Mudah', correct: '72%', used: 405, disc: '0,31', status: 'Aktif', explain: 'Unsur sejajar harus berbentuk sama: hiking, swimming, cycling.' },
+      { id: 'ST-0118', type: 'Structure', text: '_____ the storm, the flight was delayed…', raw: '_____ the storm, the flight was delayed for three hours.', parts: ['Because of', 'Because', 'Due', 'Since it'], key: 0, skill: 'Sentence completion', level: 'Mudah', correct: '69%', used: 350, disc: '0,35', status: 'Aktif', explain: '"Because of" diikuti frasa kata benda.' },
+      { id: 'WE-0251', type: 'Written Expression', text: 'Although it is small, the museum it houses…', raw: 'Although [it is] small, the museum [it] houses [an] [impressive] collection.', parts: ['it is', 'it', 'an', 'impressive'], key: 1, skill: 'Redundant subject', level: 'Sedang', correct: '12%', used: 44, disc: '0,05', status: 'Review', explain: 'Subjek ganda: "the museum" dan "it".' },
+      { id: 'ST-0124', type: 'Structure', text: 'Not until the 1950s _____ widely available…', raw: 'Not until the 1950s _____ widely available in homes.', parts: ['did televisions become', 'televisions became', 'televisions become', 'becoming televisions'], key: 0, skill: 'Inversion', level: 'Sulit', correct: '—', used: 0, disc: '—', status: 'Draft', explain: 'Setelah "not until" di awal kalimat, terjadi inversi.' }
+    ];
+    const items = raw.map((q, i) => ({ ...q, bg: this.state.sel === i ? '#E9F0FA' : '#FFFFFF', statusColor: S[q.status], pick: () => this.setState({ sel: i }) }));
+    const c = raw[this.state.sel];
+    const cur = {
+      ...c,
+      used: String(c.used),
+      parts: c.parts.map((t, i) => {
+        const k = i === c.key;
+        return { label: 'ABCD'[i] + (k ? ' · kunci' : ''), text: t, bg: k ? '#E6F4EC' : '#FFFFFF', border: k ? '#1D6B3F' : '#DCE3ED', fg: k ? '#1D6B3F' : '#4B5A70' };
+      })
+    };
+    return { items, cur };
+  }
+}
+</script>
+
+
+</body></html>

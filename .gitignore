@@ -1,0 +1,17 @@
+# Rahasia dan lokal
+.env
+.env*.local
+*.log
+
+# Dependensi dan build
+node_modules/
+.next/
+next-env.d.ts
+
+# Hasil ekstraksi desain yang besar dan bisa dibuat ulang dari file HTML bundle
+design/pages/
+design/src/
+
+# OS / editor
+.DS_Store
+Thumbs.db

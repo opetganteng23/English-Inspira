@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-canvas font-sans text-ink antialiased;
+}
+
+@layer components {
+  .field {
+    @apply h-12 w-full rounded-[10px] border-[1.5px] border-line-strong bg-white px-3.5 text-[15px] outline-none focus:border-brand;
+  }
+  .btn-primary {
+    @apply flex h-[52px] w-full items-center justify-center rounded-xl bg-brand text-base font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60;
+  }
+}

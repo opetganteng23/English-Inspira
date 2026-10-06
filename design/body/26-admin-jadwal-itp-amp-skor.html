@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<title>Admin — Jadwal ITP</title>
+<script src="7a9c4092-c1a0-432f-9803-4b7a33e3daed"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#F5F7FA}
+a{color:#1B5FB8}a:hover{color:#123F7C}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1060px; display: flex; font-family: 'Poppins', sans-serif; color: #1C2B44; background: #F5F7FA">
+<aside style="width: 264px; flex-shrink: 0; box-sizing: border-box; padding: 24px 16px; background: #111C2E; color: #D3DEEE; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: #FFFFFF; color: #0F2F5E; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 14px">EI</span>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 15px; color: #FFFFFF">ENGLISH INSPIRA</span><span style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #FFC78A">ADMIN</span></div>
+</div>
+<nav style="display: flex; flex-direction: column; gap: 3px">
+<a href="AdminDashboard.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Ringkasan</span></a>
+<a href="AdminParticipants.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Peserta</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Institusi</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Lead Free Trial</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">PENJUALAN</span>
+<a href="AdminOrders.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Transaksi</span></a>
+<a href="AdminProducts.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Paket &amp; Harga</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Voucher</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">TES &amp; AI</span>
+<a href="AdminQuestionBank.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Bank Soal</span></a>
+<a href="AdminAiCounselor.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Konselor AI</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Review Proctoring</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">OPERASIONAL</span>
+<a href="AdminItpSchedule.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: #1B5FB8; color: #FFFFFF"><span>Jadwal ITP</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Pengguna &amp; Hak Akses</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Pengaturan</span></a>
+</nav>
+<div style="margin-top: auto; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px">
+<span style="width: 38px; height: 38px; border-radius: 999px; background: #1B5FB8; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600">RP</span>
+<div style="display: flex; flex-direction: column; flex: 1 1 0"><span style="font-size: 14px; font-weight: 600; color: #FFFFFF">Rina Pratiwi</span><span style="font-size: 12px; color: #B9CBE6">Super admin</span></div>
+</div>
+<a href="Main.dc.html" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; font-size: 14px; font-weight: 500; color: #B9CBE6; text-decoration: none">Keluar</a>
+</aside>
+<main style="flex: 1 1 0; box-sizing: border-box; padding: 32px 40px; display: flex; flex-direction: column; gap: 20px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 28px; color: #0F2F5E">Jadwal TOEFL ITP resmi</h1>
+<span style="font-size: 14px; color: #4B5A70">Penyelenggara: [NAMA MITRA RESMI ETS]</span>
+</div>
+<button type="button" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 0; background: #1B5FB8; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #FFFFFF; cursor: pointer">Tambah sesi</button>
+</div>
+<div style="display: flex; gap: 20px; align-items: flex-start">
+<div style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{sessions}}" as="s" hint-placeholder-count="5">
+<button type="button" sc-camel-on-click="{{s.pick}}" style="padding: 16px; border-radius: 14px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; text-align: left; font-family: 'Poppins', sans-serif; background: {{s.bg}}; border: 2px solid {{s.border}}">
+<span style="display: flex; justify-content: space-between; width: 100%"><span style="font-size: 15px; font-weight: 600; color: #0F2F5E">{{s.date}}</span><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: {{s.tagBg}}; color: {{s.tagFg}}">{{s.status}}</span></span>
+<span style="font-size: 13px; color: #4B5A70">{{s.place}}</span>
+<span style="height: 6px; width: 100%; border-radius: 99px; background: #EEF2F7; display: block"><span style="display: block; height: 6px; border-radius: 99px; background: #1B5FB8; width: {{s.pct}}"></span></span>
+<span style="font-size: 12px; color: #4B5A70">{{s.fill}}</span>
+</button>
+</sc-for>
+</div>
+
+<div style="flex: 1 1 0; padding: 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 17px; font-weight: 600; color: #0F2F5E">Roster · {{cur.date}}</span><span style="font-size: 13px; color: #4B5A70">{{cur.place}}</span></div>
+<div style="display: flex; gap: 8px">
+<button type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1.5px solid #C5D2E4; background: #FFFFFF; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; color: #0F2F5E; cursor: pointer">Ekspor ke mitra</button>
+<button type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1.5px solid #C5D2E4; background: #FFFFFF; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; color: #0F2F5E; cursor: pointer">Kirim pengingat</button>
+<button type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #0F2F5E; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; color: #FFFFFF; cursor: pointer">Impor skor</button>
+</div>
+</div>
+<div style="display: flex; gap: 8px; font-size: 13px">
+<span style="padding: 6px 12px; border-radius: 999px; background: #E6F4EC; color: #164F2F; font-weight: 600">Dokumen valid 24</span>
+<span style="padding: 6px 12px; border-radius: 999px; background: #FDEBD6; color: #6B3400; font-weight: 600">Perlu verifikasi 4</span>
+<span style="padding: 6px 12px; border-radius: 999px; background: #EEF2F7; color: #3B4A60; font-weight: 600">Skor belum diinput 28</span>
+</div>
+<div style="border: 1px solid #EEF2F7; border-radius: 12px; overflow: hidden">
+<div style="display: grid; grid-template-columns: 1.8fr 1.1fr 0.7fr 0.7fr 0.7fr 0.8fr 1fr; gap: 10px; padding: 12px 16px; background: #F5F7FA; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: #4B5A70">
+<span>NAMA (SESUAI KTP)</span><span>DOKUMEN</span><span>LIST.</span><span>STRUCT.</span><span>READ.</span><span>TOTAL</span><span>SERTIFIKAT</span>
+</div>
+<sc-for list="{{roster}}" as="r" hint-placeholder-count="8">
+<div style="display: grid; grid-template-columns: 1.8fr 1.1fr 0.7fr 0.7fr 0.7fr 0.8fr 1fr; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid #EEF2F7; font-size: 14px; min-height: 52px; box-sizing: border-box">
+<span style="font-weight: 600; color: #0F2F5E">{{r.name}}</span>
+<span style="font-size: 13px; font-weight: 600; color: {{r.docColor}}">{{r.doc}}</span>
+<span style="height: 34px; border-radius: 8px; border: 1.5px solid #DCE3ED; display: flex; align-items: center; justify-content: center; color: #4B5A70">{{r.l}}</span>
+<span style="height: 34px; border-radius: 8px; border: 1.5px solid #DCE3ED; display: flex; align-items: center; justify-content: center; color: #4B5A70">{{r.s}}</span>
+<span style="height: 34px; border-radius: 8px; border: 1.5px solid #DCE3ED; display: flex; align-items: center; justify-content: center; color: #4B5A70">{{r.r}}</span>
+<span style="font-weight: 600; color: #0F2F5E">{{r.total}}</span>
+<span style="font-size: 13px; font-weight: 600; color: #1B5FB8">{{r.cert}}</span>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 12px; color: #4B5A70">Skor total dihitung otomatis dari 3 section. Setelah disimpan, skor tampil di dashboard peserta dan admin institusinya.</span>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1060}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 1 };
+  }
+  renderVals() {
+    const ST = { Selesai: ['#E6F4EC', '#164F2F'], Penuh: ['#FDEBD6', '#6B3400'], Buka: ['#E9F0FA', '#123F7C'] };
+    const raw = [
+      ['Sab, 24 Okt · 08.00', '[LOKASI TES], Tangerang', 38, 40, 'Selesai'],
+      ['Sab, 14 Nov · 08.00', '[LOKASI TES], Tangerang', 40, 40, 'Penuh'],
+      ['Sab, 21 Nov · 08.00', '[LOKASI TES], Tangerang', 28, 40, 'Buka'],
+      ['Sab, 28 Nov · 13.00', '[LOKASI TES], Bandung', 36, 40, 'Buka'],
+      ['Sab, 05 Des · 08.00', 'Rombongan [Kampus A]', 60, 60, 'Penuh']
+    ];
+    const sessions = raw.map(([date, place, a, b, status], i) => {
+      const on = this.state.sel === i;
+      return {
+        date, place, status, fill: a + '/' + b + ' kursi', pct: Math.round((a / b) * 100) + '%',
+        tagBg: ST[status][0], tagFg: ST[status][1],
+        bg: on ? '#E9F0FA' : '#FFFFFF', border: on ? '#1B5FB8' : '#DCE3ED',
+        pick: () => this.setState({ sel: i })
+      };
+    });
+    const c = raw[this.state.sel];
+    const done = c[4] === 'Selesai';
+    const names = ['NABILA PUTRI', 'SITI RAHMAWATI', 'DEWI ANGGRAINI', 'ANDI KURNIAWAN', 'MARIA LESTARI', 'BAYU SANTOSO', 'LINA MARLINA', 'HENDRA WIJAYA'];
+    const scores = [[56, 57, 55], [54, 56, 53], [53, 55, 54], [51, 53, 52], [55, 54, 52], [49, 51, 50], [57, 58, 56], [50, 52, 49]];
+    const roster = names.map((name, i) => {
+      const docOk = i !== 3 && i !== 6;
+      const [l, s, r] = scores[i];
+      return {
+        name,
+        doc: docOk ? 'Valid' : 'Perlu cek',
+        docColor: docOk ? '#1D6B3F' : '#B85A00',
+        l: done ? String(l) : '—', s: done ? String(s) : '—', r: done ? String(r) : '—',
+        total: done ? String(Math.round(((l + s + r) * 10) / 3)) : '—',
+        cert: done ? 'Unggah' : 'Menunggu tes'
+      };
+    });
+    return { sessions, roster, cur: { date: c[0], place: c[1] } };
+  }
+}
+</script>
+
+
+</body></html>

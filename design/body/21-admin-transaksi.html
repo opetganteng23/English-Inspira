@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<title>Admin — Transaksi</title>
+<script src="e81993c8-2e17-4673-a843-8bd2472fe02f"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#F5F7FA}
+a{color:#1B5FB8}a:hover{color:#123F7C}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1100px; display: flex; font-family: 'Poppins', sans-serif; color: #1C2B44; background: #F5F7FA">
+<aside style="width: 264px; flex-shrink: 0; box-sizing: border-box; padding: 24px 16px; background: #111C2E; color: #D3DEEE; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: #FFFFFF; color: #0F2F5E; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 14px">EI</span>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 15px; color: #FFFFFF">ENGLISH INSPIRA</span><span style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #FFC78A">ADMIN</span></div>
+</div>
+<nav style="display: flex; flex-direction: column; gap: 3px">
+<a href="AdminDashboard.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Ringkasan</span></a>
+<a href="AdminParticipants.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Peserta</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Institusi</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Lead Free Trial</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">PENJUALAN</span>
+<a href="AdminOrders.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: #1B5FB8; color: #FFFFFF"><span>Transaksi</span></a>
+<a href="AdminProducts.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Paket &amp; Harga</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Voucher</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">TES &amp; AI</span>
+<a href="AdminQuestionBank.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Bank Soal</span></a>
+<a href="AdminAiCounselor.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Konselor AI</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Review Proctoring</span></a>
+<span style="margin: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #8FA6C8">OPERASIONAL</span>
+<a href="AdminItpSchedule.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Jadwal ITP</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Pengguna &amp; Hak Akses</span></a>
+<a href="#" style="height: 40px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: transparent; color: #D3DEEE"><span>Pengaturan</span></a>
+</nav>
+<div style="margin-top: auto; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px">
+<span style="width: 38px; height: 38px; border-radius: 999px; background: #1B5FB8; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600">RP</span>
+<div style="display: flex; flex-direction: column; flex: 1 1 0"><span style="font-size: 14px; font-weight: 600; color: #FFFFFF">Rina Pratiwi</span><span style="font-size: 12px; color: #B9CBE6">Super admin</span></div>
+</div>
+<a href="Main.dc.html" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; font-size: 14px; font-weight: 500; color: #B9CBE6; text-decoration: none">Keluar</a>
+</aside>
+<main style="flex: 1 1 0; box-sizing: border-box; padding: 32px 32px 32px 40px; display: flex; flex-direction: column; gap: 20px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 28px; color: #0F2F5E">Transaksi</h1>
+<span style="font-size: 14px; color: #4B5A70">Status disinkronkan dari notifikasi Midtrans · data contoh</span>
+</div>
+<button type="button" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #C5D2E4; background: #FFFFFF; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #0F2F5E; cursor: pointer">Ekspor Excel</button>
+</div>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<button type="button" sc-camel-on-click="{{t.pick}}" style="height: 38px; padding: 0 14px; border-radius: 999px; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; background: {{t.bg}}; color: {{t.fg}}; border: 1px solid {{t.border}}">{{t.label}}</button>
+</sc-for>
+</div>
+<div style="border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; overflow: hidden">
+<div style="display: grid; grid-template-columns: 1.2fr 1.3fr 1.6fr 0.9fr 1fr; gap: 10px; padding: 12px 18px; background: #F5F7FA; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: #4B5A70"><span>INVOICE</span><span>PESERTA</span><span>PRODUK</span><span>TOTAL</span><span>STATUS</span></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<button type="button" sc-camel-on-click="{{r.pick}}" style="width: 100%; display: grid; grid-template-columns: 1.2fr 1.3fr 1.6fr 0.9fr 1fr; gap: 10px; align-items: center; padding: 12px 18px; min-height: 58px; border: 0; border-top: 1px solid #EEF2F7; cursor: pointer; text-align: left; font-family: 'Poppins', sans-serif; font-size: 13px; color: #1C2B44; background: {{r.bg}}">
+<span style="display: flex; flex-direction: column"><span style="font-weight: 600; color: #0F2F5E">{{r.id}}</span><span style="font-size: 12px; color: #4B5A70">{{r.date}}</span></span>
+<span>{{r.name}}</span>
+<span>{{r.product}}</span>
+<span style="font-weight: 600">{{r.total}}</span>
+<span style="justify-self: start; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: {{r.stBg}}; color: {{r.stFg}}">{{r.status}}</span>
+</button>
+</sc-for>
+</div>
+</main>
+<aside style="width: 360px; flex-shrink: 0; box-sizing: border-box; padding: 28px 24px; background: #FFFFFF; border-left: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 17px; font-weight: 600; color: #0F2F5E">{{cur.id}}</span><span style="font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: {{cur.stBg}}; color: {{cur.stFg}}">{{cur.status}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+<div style="display: flex; justify-content: space-between"><span style="color: #4B5A70">Peserta</span><span style="font-weight: 600">{{cur.name}}</span></div>
+<div style="display: flex; justify-content: space-between; gap: 12px"><span style="color: #4B5A70">Produk</span><span style="text-align: right">{{cur.product}}</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #4B5A70">Voucher</span><span>{{cur.voucher}}</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #4B5A70">Total</span><span style="font-weight: 600">{{cur.total}}</span></div>
+</div>
+<div style="padding: 14px; border-radius: 12px; background: #F5F7FA; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: #4B5A70">DATA MIDTRANS</span>
+<div style="display: flex; justify-content: space-between"><span style="color: #4B5A70">order_id</span><span>{{cur.id}}</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #4B5A70">payment_type</span><span>{{cur.ptype}}</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #4B5A70">transaction_status</span><span style="font-weight: 600">{{cur.tstatus}}</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #4B5A70">Notifikasi terakhir</span><span>{{cur.last}}</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: #4B5A70">AKSES YANG DIBUKA</span>
+<span style="font-size: 14px; font-weight: 600; color: {{cur.accessColor}}">{{cur.access}}</span>
+</div>
+<div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{cur.actions}}" as="a" hint-placeholder-count="2">
+<button type="button" style="height: 44px; border-radius: 10px; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; background: {{a.bg}}; color: {{a.fg}}; border: 1.5px solid {{a.border}}">{{a.label}}</button>
+</sc-for>
+</div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tab: 'all', sel: 'INV-2026-0931' }; }
+  renderVals() {
+    const S = { Lunas: ['#E6F4EC', '#164F2F', 'settlement'], Menunggu: ['#FDEBD6', '#6B3400', 'pending'], Kedaluwarsa: ['#EEF2F7', '#3B4A60', 'expire'], 'Perlu dicek': ['#FDECEA', '#7A1A12', 'settlement'], Refund: ['#E9F0FA', '#123F7C', 'refund'] };
+    const raw = [
+      ['INV-2026-0931', '30 Sep, 15:20', 'David Chandra', 'Pendaftaran TOEFL ITP Resmi', 'Rp585.000', 'Lunas', 'bank_transfer (BCA)', 'INSPIRA10', '30 Sep, 15:42', 'Pendaftaran ITP resmi 1×'],
+      ['INV-2026-0930', '30 Sep, 14:02', 'Maria Lestari', 'Paket Journey 6 Bulan', 'Rp1.490.000', 'Menunggu', 'bank_transfer (BNI)', '—', '30 Sep, 14:03', 'Belum ada (menunggu pembayaran)'],
+      ['INV-2026-0929', '30 Sep, 11:47', 'Andi Kurniawan', 'ITP Resmi + Tes Simulasi', 'Rp850.000', 'Perlu dicek', 'qris', '—', '30 Sep, 11:49', 'Gagal dibuka otomatis'],
+      ['INV-2026-0927', '29 Sep, 20:15', 'Siti Rahmawati', 'Tes Simulasi ITP', 'Rp149.000', 'Lunas', 'gopay', '—', '29 Sep, 20:16', '1× Tes Simulasi + konselor AI 30 hari'],
+      ['INV-2026-0924', '29 Sep, 09:30', 'Fajar Nugroho', 'Tes Diagnostic AI', 'Rp79.000', 'Kedaluwarsa', 'bank_transfer (BRI)', '—', '30 Sep, 09:30', 'Tidak ada'],
+      ['INV-2026-0920', '28 Sep, 16:40', 'Dewi Anggraini', 'Tes Simulasi ITP', 'Rp149.000', 'Refund', 'credit_card', '—', '29 Sep, 10:05', 'Dicabut setelah refund'],
+      ['INV-2026-0918', '22 Sep, 19:03', 'David Chandra', 'Tes Simulasi ITP', 'Rp149.000', 'Lunas', 'qris', '—', '22 Sep, 19:05', '1× Tes Simulasi + konselor AI 30 hari']
+    ];
+    const tabsDef = [['all', 'Semua'], ['Lunas', 'Lunas'], ['Menunggu', 'Menunggu'], ['Perlu dicek', 'Perlu dicek'], ['Kedaluwarsa', 'Kedaluwarsa'], ['Refund', 'Refund']];
+    const tabs = tabsDef.map(([id, label]) => ({ label, bg: this.state.tab === id ? '#0F2F5E' : '#FFFFFF', fg: this.state.tab === id ? '#FFFFFF' : '#0F2F5E', border: this.state.tab === id ? '#0F2F5E' : '#DCE3ED', pick: () => this.setState({ tab: id }) }));
+    const rows = raw.filter((r) => this.state.tab === 'all' || r[5] === this.state.tab).map((r) => ({ id: r[0], date: r[1], name: r[2], product: r[3], total: r[4], status: r[5], stBg: S[r[5]][0], stFg: S[r[5]][1], bg: this.state.sel === r[0] ? '#E9F0FA' : '#FFFFFF', pick: () => this.setState({ sel: r[0] }) }));
+    const c = raw.find((r) => r[0] === this.state.sel);
+    const A = (label, primary) => ({ label, bg: primary ? '#1B5FB8' : '#FFFFFF', fg: primary ? '#FFFFFF' : '#0F2F5E', border: primary ? '#1B5FB8' : '#C5D2E4' });
+    const actions = { Lunas: [A('Unduh invoice', false), A('Proses refund', false)], Menunggu: [A('Kirim pengingat WhatsApp', true), A('Batalkan pesanan', false)], 'Perlu dicek': [A('Cek ulang status ke Midtrans', true), A('Buka akses manual', false)], Kedaluwarsa: [A('Kirim link beli ulang', true)], Refund: [A('Unduh bukti refund', false)] }[c[5]];
+    const cur = { id: c[0], name: c[2], product: c[3], total: c[4], status: c[5], stBg: S[c[5]][0], stFg: S[c[5]][1], ptype: c[6], voucher: c[7], last: c[8], tstatus: S[c[5]][2], access: c[9], accessColor: c[5] === 'Perlu dicek' ? '#B42318' : '#0F2F5E', actions };
+    return { tabs, rows, cur };
+  }
+}
+</script>
+
+
+</body></html>

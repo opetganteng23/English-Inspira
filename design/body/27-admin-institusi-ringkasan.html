@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<title>Dashboard Institusi</title>
+<script src="e9cb68b4-96ad-49cc-b833-13c04341ee5c"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#F5F7FA}
+a{color:#1B5FB8}a:hover{color:#123F7C}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; display: flex; font-family: 'Poppins', sans-serif; color: #1C2B44; background: #F5F7FA">
+<aside style="width: 264px; flex-shrink: 0; box-sizing: border-box; padding: 24px 16px; background: #FFFFFF; border-right: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: #0F2F5E; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 14px">EI</span>
+<div style="display: flex; flex-direction: column"><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 15px; color: #0F2F5E">ENGLISH INSPIRA</span><span style="font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #B85A00">PORTAL INSTITUSI</span></div>
+</div>
+<div style="padding: 12px 14px; border-radius: 12px; background: #FDEBD6; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600; color: #6B3400">[NAMA INSTITUSI]</span><span style="font-size: 12px; color: #8A4300">Batch 2026 · 120 kursi</span></div>
+<nav style="display: flex; flex-direction: column; gap: 3px">
+<a href="InstitutionDashboard.dc.html" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 600; background: #0F2F5E; color: #FFFFFF">Ringkasan</a>
+<a href="#" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; color: #1C2B44">Peserta</a>
+<a href="#" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; color: #1C2B44">Kode &amp; undangan</a>
+<a href="#" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; color: #1C2B44">Jadwal tes rombongan</a>
+<a href="#" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; color: #1C2B44">Laporan</a>
+<a href="#" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; color: #1C2B44">Tagihan &amp; invoice</a>
+<a href="#" style="height: 42px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; color: #1C2B44">Pengaturan</a>
+</nav>
+<div style="margin-top: auto; padding: 14px; border-radius: 12px; background: #F5F7FA; display: flex; align-items: center; gap: 12px">
+<span style="width: 38px; height: 38px; border-radius: 999px; background: #E07B12; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 600">HS</span>
+<div style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600; color: #0F2F5E">Hadi Setiawan</span><span style="font-size: 12px; color: #4B5A70">Koordinator institusi</span></div>
+</div>
+</aside>
+
+<main style="flex: 1 1 0; box-sizing: border-box; padding: 32px 40px; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 28px; color: #0F2F5E">Ringkasan kelompok</h1>
+<span style="font-size: 14px; color: #4B5A70">Data contoh · diperbarui setiap hasil tes masuk</span>
+</div>
+<div style="display: flex; gap: 10px">
+<button type="button" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #C5D2E4; background: #FFFFFF; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #0F2F5E; cursor: pointer">Unduh laporan PDF</button>
+<button type="button" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 0; background: #1B5FB8; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #FFFFFF; cursor: pointer">Undang peserta</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+<div style="padding: 20px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #4B5A70">Peserta terdaftar</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 30px; color: #0F2F5E">112<span style="font-size: 16px; color: #4B5A70"> / 120</span></span><span style="font-size: 13px; color: #4B5A70">8 kursi belum dipakai</span></div>
+<div style="padding: 20px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #4B5A70">Aktif konseling 7 hari</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 30px; color: #0F2F5E">87</span><span style="font-size: 13px; color: #B85A00; font-weight: 600">25 tidak aktif</span></div>
+<div style="padding: 20px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #4B5A70">Rata-rata estimasi</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 30px; color: #0F2F5E">486</span><span style="font-size: 13px; color: #1D6B3F; font-weight: 600">+29 dari tes pertama</span></div>
+<div style="padding: 20px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #4B5A70">Mencapai target 500</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 30px; color: #0F2F5E">41%</span><span style="font-size: 13px; color: #4B5A70">46 dari 112 peserta</span></div>
+</div>
+
+<div style="display: flex; gap: 20px">
+<div style="flex: 1.2 1 0; padding: 26px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 17px; font-weight: 600; color: #0F2F5E">Sebaran estimasi skor</span><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #4B5A70"><span style="width: 12px; height: 12px; border-radius: 3px; background: #1B5FB8"></span>≥ target 500</span></div>
+<div style="display: flex; align-items: flex-end; gap: 14px; height: 190px; border-bottom: 1px solid #DCE3ED">
+<sc-for list="{{dist}}" as="d" hint-placeholder-count="6">
+<div style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%"><span style="font-size: 13px; font-weight: 600; color: #0F2F5E">{{d.n}}</span><div style="width: 100%; border-radius: 6px 6px 0 0; height: {{d.h}}; background: {{d.bg}}"></div></div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 14px"><sc-for list="{{dist}}" as="d" hint-placeholder-count="6"><span style="flex: 1 1 0; text-align: center; font-size: 12px; color: #4B5A70">{{d.label}}</span></sc-for></div>
+</div>
+<div style="flex: 1 1 0; padding: 26px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 17px; font-weight: 600; color: #0F2F5E">Kelemahan umum kelompok</span>
+<span style="font-size: 13px; line-height: 1.6; color: #4B5A70">Bahan untuk kelas tatap muka atau pelatihan internal.</span>
+<sc-for list="{{weak}}" as="w" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span>{{w.name}}</span><span style="font-weight: 600; color: #0F2F5E">{{w.pct}} peserta</span></div>
+<div style="height: 8px; border-radius: 99px; background: #EEF2F7"><div style="height: 8px; border-radius: 99px; background: #E07B12; width: {{w.pct}}"></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="padding: 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 17px; font-weight: 600; color: #0F2F5E">Peserta yang perlu perhatian</span><a href="#" style="font-size: 14px; font-weight: 600; text-decoration: none">Lihat semua peserta →</a></div>
+<div style="display: grid; grid-template-columns: 1.6fr 1.2fr 1fr 1fr 1.4fr; gap: 12px; padding: 10px 14px; background: #F5F7FA; border-radius: 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: #4B5A70"><span>PESERTA</span><span>TAHAP</span><span>SKOR</span><span>TES SELESAI</span><span>ALASAN</span></div>
+<sc-for list="{{attention}}" as="a" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 1.6fr 1.2fr 1fr 1fr 1.4fr; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #EEF2F7; font-size: 14px; align-items: center"><span style="font-weight: 600; color: #0F2F5E">{{a.name}}</span><span>{{a.stage}}</span><span>{{a.est}}</span><span>{{a.lms}}</span><span style="color: #B85A00; font-weight: 600">{{a.why}}</span></div>
+</sc-for>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1180}}">
+class Component extends DCLogic {
+  renderVals() {
+    const d = [['< 420', 9, false], ['420–459', 21, false], ['460–499', 36, false], ['500–539', 29, true], ['540–579', 13, true], ['580+', 4, true]];
+    const dist = d.map(([label, n, ok]) => ({ label, n: String(n), h: Math.round((n / 36) * 150) + 'px', bg: ok ? '#1B5FB8' : '#B9CBE6' }));
+    const weak = [['Inference (Reading)', '64%'], ['Subject–verb agreement', '58%'], ['Talks (Listening Part C)', '51%'], ['Manajemen waktu Reading', '47%']].map(([name, pct]) => ({ name, pct }));
+    const attention = [
+      { name: 'Rizky Pratama', stage: 'Diagnostic 2', est: '455', lms: '2 dari 6', why: 'Tidak aktif 16 hari' },
+      { name: 'Yusuf Hakim', stage: 'Diagnostic 3', est: '489', lms: '3 dari 6', why: 'Skor turun 12 poin' },
+      { name: 'Intan Permata', stage: 'Diagnostic 1', est: '401', lms: '1 dari 6', why: 'Belum buka konselor AI' },
+      { name: 'Galih Saputra', stage: 'Prediction 1', est: '—', lms: '4 dari 6', why: 'Sesi ditandai proctoring' }
+    ];
+    return { dist, weak, attention };
+  }
+}
+</script>
+
+
+</body></html>

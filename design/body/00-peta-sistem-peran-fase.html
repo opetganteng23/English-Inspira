@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<title>Peta Sistem English Inspira</title>
+<script src="9faa35af-de82-4313-90ce-a582cdd74ed5"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style></style>
+<style>
+body{margin:0;background:#F5F7FA}
+a{color:#1B5FB8}a:hover{color:#123F7C}
+</style>
+</helmet>
+<div style="width: 2960px; height: 2080px; box-sizing: border-box; padding: 64px; display: flex; flex-direction: column; gap: 40px; font-family: 'Poppins', sans-serif; color: #1C2B44; background: #F5F7FA">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 60px">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 16px; font-weight: 600; letter-spacing: 2px; color: #B85A00">PETA SISTEM · ENGLISH INTELLIGENCE JOURNEY™</span>
+<h1 style="margin: 0; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 56px; line-height: 1.1; color: #0F2F5E">Siapa melakukan apa, di setiap fase</h1>
+</div>
+<div style="display: flex; gap: 16px">
+<div style="padding: 16px 20px; border-radius: 14px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 2px; min-width: 200px"><span style="font-size: 13px; color: #4B5A70">Gratis</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 26px; color: #0F2F5E">Free Trial</span></div>
+<div style="padding: 16px 20px; border-radius: 14px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 2px; min-width: 200px"><span style="font-size: 13px; color: #4B5A70">Satuan</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 26px; color: #0F2F5E">Tes Simulasi · Diagnostic</span></div>
+<div style="padding: 16px 20px; border-radius: 14px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 2px; min-width: 200px"><span style="font-size: 13px; color: #4B5A70">Tes resmi</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 26px; color: #0F2F5E">ITP saja · ITP + Tes</span></div>
+<div style="padding: 16px 20px; border-radius: 14px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 2px; min-width: 200px"><span style="font-size: 13px; color: #4B5A70">Paket</span><span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 26px; color: #0F2F5E">Journey 6 bulan</span></div>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 220px repeat(8, minmax(0, 1fr)); gap: 10px">
+<div></div>
+<sc-for list="{{phases}}" as="p" hint-placeholder-count="8">
+<div style="padding: 18px 16px; border-radius: 14px; background: {{p.bg}}; color: #FFFFFF; display: flex; flex-direction: column; gap: 4px; min-height: 108px; box-sizing: border-box">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 1px; color: {{p.sub}}">{{p.no}}</span>
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 22px">{{p.name}}</span>
+<span style="font-size: 13px; line-height: 1.4; color: {{p.sub}}">{{p.what}}</span>
+</div>
+</sc-for>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+<div style="padding: 18px 16px; border-radius: 14px; background: {{r.bg}}; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box">
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 20px; color: {{r.fg}}">{{r.role}}</span>
+<span style="font-size: 13px; line-height: 1.5; color: {{r.sub}}">{{r.desc}}</span>
+</div>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="8">
+<div style="padding: 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #DCE3ED; border-top: 4px solid {{r.accent}}; font-size: 14px; line-height: 1.6; color: #1C2B44; white-space: pre-line; min-height: 250px; box-sizing: border-box">{{c}}</div>
+</sc-for>
+</sc-for>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+<div style="padding: 28px; border-radius: 18px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 14px">
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 22px; color: #0F2F5E">Menu peserta</span>
+<span style="font-size: 15px; line-height: 1.9; color: #3B4A60; white-space: pre-line">Beranda · Journey Saya · Tes Saya · Hasil Tes
+Konselor AI (tanpa konselor manusia)
+Tes ITP Resmi (pilih jadwal, data sesuai KTP, status)
+Sertifikat (ITP resmi + laporan simulasi)
+Belanja: Paket Tes · Keranjang · Riwayat Pembelian
+Profil · Bantuan</span>
+</div>
+<div style="padding: 28px; border-radius: 18px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 14px">
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 22px; color: #0F2F5E">Menu admin internal</span>
+<span style="font-size: 15px; line-height: 1.9; color: #3B4A60; white-space: pre-line">Ringkasan (pendapatan per produk, perlu tindakan)
+Peserta · Institusi · Lead Free Trial
+Transaksi (status Midtrans, refund, buka akses manual)
+Paket &amp; Harga (hak akses per paket) · Voucher
+Bank Soal · Konselor AI (tinjau kualitas) · Review Proctoring
+Jadwal ITP (kuota, roster, input skor, sertifikat)
+Pengguna &amp; Hak Akses · Pengaturan</span>
+</div>
+<div style="padding: 28px; border-radius: 18px; background: #FFFFFF; border: 1px solid #DCE3ED; display: flex; flex-direction: column; gap: 14px">
+<span style="font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 22px; color: #0F2F5E">Menu admin institusi</span>
+<span style="font-size: 15px; line-height: 1.9; color: #3B4A60; white-space: pre-line">Ringkasan kelompok (sebaran skor, kelemahan umum)
+Peserta (hasil per orang, ekspor)
+Kode institusi &amp; undangan massal
+Jadwal tes rombongan
+Laporan (PDF/Excel) · Tagihan &amp; invoice
+Hanya melihat peserta miliknya sendiri</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:2960,&quot;height&quot;:2080}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phases = [
+      { no: 'SEBELUM', name: 'Akuisisi & beli', what: 'Landing, free trial, katalog, keranjang, Midtrans', bg: '#4B5A70', sub: '#DCE3ED' },
+      { no: 'PHASE 01', name: 'Discover', what: 'Free trial / Diagnostic 1', bg: '#0F2F5E', sub: '#B9CBE6' },
+      { no: 'PHASE 02', name: 'Learn', what: 'Rencana belajar dari konselor AI', bg: '#0F2F5E', sub: '#B9CBE6' },
+      { no: 'PHASE 03', name: 'Analyze', what: 'Diagnostic 2 & 3 + analisis AI', bg: '#0F2F5E', sub: '#B9CBE6' },
+      { no: 'PHASE 04', name: 'Improve', what: 'Konseling & rencana aksi', bg: '#0F2F5E', sub: '#B9CBE6' },
+      { no: 'PHASE 05', name: 'Experience', what: 'Tes Simulasi / Prediction 1', bg: '#0F2F5E', sub: '#B9CBE6' },
+      { no: 'PHASE 06', name: 'Measure', what: 'Diagnostic 4 + Prediction 2', bg: '#0F2F5E', sub: '#B9CBE6' },
+      { no: 'PHASE 07', name: 'Certify', what: 'TOEFL ITP resmi', bg: '#B85A00', sub: '#FDEBD6' }
+    ];
+    const rows = [
+      { role: 'Peserta', desc: 'Beli, dites, konseling, daftar ITP', bg: '#1B5FB8', fg: '#FFFFFF', sub: '#E3ECF9', accent: '#1B5FB8', cells: [
+        '• Free trial 42 soal format ITP\n• Katalog: terbuka vs terkunci\n• Keranjang + voucher\n• Checkout → Midtrans (VA, QRIS, e-wallet, kartu)\n• Akses terbuka otomatis',
+        '• Free trial atau Diagnostic 1\n• Estimasi skor + per section\n• Tetapkan target skor',
+        '• Chat konselor AI\n• Rencana belajar mandiri\n• Pengingat WhatsApp',
+        '• Diagnostic 2 & 3 (Journey / satuan)\n• Perbandingan antar tes\n• Analisis AI "kenapa skorku begini"',
+        '• Rencana aksi dari konseling\n• Checklist mingguan',
+        '• Cek perangkat\n• Tes Simulasi 140 soal\n• AI proctoring\n• Hasil + konseling',
+        '• Diagnostic 4\n• Tes Simulasi 2 (simulasi akhir)\n• Indikator kesiapan',
+        '• Beli ITP saja / ITP + Tes / Journey\n• Pilih jadwal, data sesuai KTP\n• Status & skor resmi\n• Sertifikat'
+      ] },
+      { role: 'Admin internal', desc: 'Tim Inspira: produk, penjualan, tes, operasional', bg: '#0F2F5E', fg: '#FFFFFF', sub: '#B9CBE6', accent: '#0F2F5E', cells: [
+        '• Paket & harga + hak akses\n• Voucher\n• Transaksi: status Midtrans, refund, buka akses manual\n• Lead free trial',
+        '• Bank soal per section & tipe soal\n• Susun paket tes',
+        '• Batasan & kuota konselor AI',
+        '• Laporan agregat semua peserta',
+        '• Tinjau jawaban AI yang ditandai\n• Tambah contoh jawaban benar',
+        '• Paket soal simulasi\n• Review flag proctoring',
+        '• Pantau peserta "belum siap"\n• Follow-up via WhatsApp',
+        '• Jadwal & kuota ITP\n• Verifikasi dokumen\n• Ekspor roster ke mitra resmi\n• Input skor & unggah sertifikat'
+      ] },
+      { role: 'Admin institusi', desc: 'Kampus, instansi, perusahaan', bg: '#FDEBD6', fg: '#6B3400', sub: '#8A4300', accent: '#E07B12', cells: [
+        '• Kode institusi (paket terbuka tanpa bayar)\n• Invoice & kuota kursi',
+        '• Sebaran skor awal kelompok',
+        '• Keaktifan konseling per peserta',
+        '• Tren skor kelompok',
+        '• Kelemahan umum kelompok',
+        '• Jadwal simulasi kelompok',
+        '• Daftar peserta siap tes',
+        '• Tes ITP rombongan\n• Rekap skor & sertifikat\n• Laporan PDF/Excel'
+      ] },
+      { role: 'Sistem: AI + Midtrans', desc: 'AI (CoE AILO) & pembayaran', bg: '#E6F4EC', fg: '#164F2F', sub: '#1D6B3F', accent: '#1D6B3F', cells: [
+        '• Midtrans: Snap / Core API, notifikasi (webhook) → buka hak akses\n• AI: estimasi skor free trial',
+        '• AI: konversi ke skala ITP 310–677\n• Pemetaan tipe soal',
+        '• AI: rencana belajar personal',
+        '• AI: pola kesalahan antar tes',
+        '• AI: konseling & rencana aksi\n• Deteksi stres → info bantuan',
+        '• AI: proctoring (wajah, pindah tab)',
+        '• AI: prediksi kesiapan tes resmi',
+        '• AI: bandingkan prediksi vs skor resmi (kalibrasi)'
+      ] }
+    ];
+    return { phases, rows };
+  }
+}
+</script>
+
+
+</body></html>
