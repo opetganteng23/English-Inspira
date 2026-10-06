@@ -2,15 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+html { -webkit-text-size-adjust: 100%; }
 body {
-  @apply bg-canvas font-sans text-ink antialiased;
+  @apply min-h-screen overflow-x-hidden bg-canvas font-sans text-ink antialiased;
 }
+img, video, canvas, svg { max-width: 100%; }
 
 @layer components {
   .field {
-    @apply h-12 w-full rounded-[10px] border-[1.5px] border-line-strong bg-white px-3.5 text-[15px] outline-none focus:border-brand;
+    @apply h-12 w-full rounded-[10px] border-[1.5px] border-line-strong bg-white px-3.5 text-[15px] outline-none focus:border-brand disabled:bg-canvas disabled:text-ink-soft;
   }
+  textarea.field { @apply h-auto py-2.5; }
   .btn-primary {
     @apply flex h-[52px] w-full items-center justify-center rounded-xl bg-brand text-base font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60;
   }
+  .btn { @apply inline-flex min-h-[44px] items-center justify-center rounded-xl px-5 text-sm font-semibold transition disabled:opacity-60; }
+  .btn-solid { @apply btn bg-brand text-white hover:bg-brand-dark; }
+  .btn-accent { @apply btn bg-accent text-white hover:bg-accent-dark; }
+  .btn-outline { @apply btn border border-line-strong bg-white text-navy hover:bg-brand-tint; }
+  .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50; }
+  .card { @apply rounded-2xl border border-line bg-white p-4 sm:p-6; }
+  .badge { @apply inline-block rounded-full px-2.5 py-1 text-xs font-semibold; }
+  .badge-ok { @apply badge bg-success-tint text-success; }
+  .badge-warn { @apply badge bg-accent-tint text-accent-dark; }
+  .badge-muted { @apply badge bg-canvas text-ink-soft; }
+  .badge-bad { @apply badge bg-red-50 text-red-700; }
+  .table-wrap { @apply overflow-x-auto rounded-2xl border border-line bg-white; }
+  .table-wrap table { @apply w-full min-w-[640px] text-left text-sm; }
+  .table-wrap thead { @apply bg-canvas text-xs uppercase text-ink-soft; }
+  .table-wrap th, .table-wrap td { @apply px-3 py-3; }
+  .table-wrap tbody tr { @apply border-t border-line; }
+  .page-title { @apply font-display text-2xl font-extrabold text-navy sm:text-3xl; }
+  .prose-ei p { @apply mb-3 leading-relaxed; }
+  .prose-ei h2, .prose-ei h3 { @apply mb-2 mt-5 font-display font-extrabold text-navy; }
+  .prose-ei ul { @apply mb-3 list-disc pl-6; }
+  .prose-ei ol { @apply mb-3 list-decimal pl-6; }
+  .prose-ei table { @apply my-3 w-full border-collapse; }
+  .prose-ei th, .prose-ei td { @apply border border-line px-2 py-1; }
+  .prose-ei img { @apply my-3 rounded-lg; }
+  .prose-ei blockquote { @apply my-3 border-l-4 border-brand pl-4 text-ink-soft; }
 }

@@ -2,6 +2,8 @@ import { isValidObjectId, type HydratedDocument } from "mongoose";
 import { connectDB } from "./db";
 import { HttpError } from "./rbac";
 import { gradeAttempt } from "./scoring";
+import { runAnalysis } from "./analysis";
+import { ensureSimReport } from "./certificates";
 import { Attempt, Test, type AttemptDoc } from "@/models/Test";
 import { Question, type Section } from "@/models/Question";
 import type { UserDoc } from "@/models/User";
@@ -63,5 +65,6 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
   );
   attempt.set({ ...graded, status: "submitted", finishedAt: at });
   await attempt.save();
-  // TODO Fase 3: picu analisis AI async di sini.
+  void runAnalysis(attempt._id); // async: tidak memblokir submit
+  void ensureSimReport(attempt._id).catch(() => {});
 }

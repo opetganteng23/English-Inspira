@@ -43,3 +43,62 @@ export const testSchema = z.object({
     .max(3)
     .refine((s) => new Set(s.map((x) => x.name)).size === s.length, { message: "Section tidak boleh dobel" }),
 });
+
+export const sessionInput = z.object({
+  title: z.string().trim().min(1).max(120),
+  date: z.coerce.date(),
+  place: z.string().trim().min(1).max(200),
+  organizer: z.string().trim().max(120).optional(),
+  quota: z.number().int().min(1).max(5000),
+  status: z.enum(["open", "closed", "done"]).default("open"),
+});
+
+
+export const productInput = z.object({
+  slug: z.string().trim().regex(/^[a-z0-9][a-z0-9-]{1,40}$/, "Slug: huruf kecil, angka, strip"),
+  name: z.string().trim().min(1).max(120),
+  description: z.string().max(500).optional(),
+  kind: z.enum(["single_sim", "itp_only", "journey", "bundle"]),
+  price: z.number().int().min(0).max(100_000_000),
+  entitlements: z.array(z.object({ kind: z.enum(["test", "counselor", "itp", "materials"]), ref: z.string().max(30).optional(), qty: z.number().int().min(0).max(1000) })).max(12),
+  validDays: z.number().int().min(0).max(1095).default(0),
+  highlight: z.boolean().optional(),
+  badge: z.string().max(30).optional(),
+  sort: z.number().int().default(0),
+  active: z.boolean().default(true),
+});
+
+export const voucherInput = z
+  .object({
+    code: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{3,30}$/, "Kode 3–30 karakter: huruf, angka, _ atau -"),
+    type: z.enum(["percent", "fixed"]),
+    value: z.number().int().min(1),
+    maxUse: z.number().int().min(0).default(0),
+    validUntil: z.coerce.date().optional().nullable(),
+    active: z.boolean().default(true),
+  })
+  .refine((v) => v.type !== "percent" || v.value <= 100, { message: "Diskon persen maksimal 100", path: ["value"] });
+
+export const institutionInput = z.object({
+  name: z.string().trim().min(2).max(120),
+  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{3,20}$/, "Kode 3–20 karakter huruf/angka"),
+  seats: z.number().int().min(0).max(100_000),
+  contactEmail: z.email().optional().or(z.literal("")),
+  batch: z.string().max(40).optional(),
+  productId: z.string().regex(/^[0-9a-f]{24}$/).optional().nullable(),
+  validUntil: z.coerce.date().optional().nullable(),
+  active: z.boolean().default(true),
+});
+
+export const userCreateInput = z.object({
+  email: z.email().max(200),
+  name: z.string().trim().max(100).optional(),
+  role: z.enum(["participant", "admin", "inst_admin"]),
+  institutionId: z.string().regex(/^[0-9a-f]{24}$/).optional().nullable(),
+});
+export const userPatchInput = z.object({
+  name: z.string().trim().max(100).optional(),
+  role: z.enum(["participant", "admin", "inst_admin"]).optional(),
+  status: z.enum(["active", "suspended"]).optional(),
+  institutionId: z.string().regex(/^[0-9a-f]{24}$/).optional().nullable(),
+});

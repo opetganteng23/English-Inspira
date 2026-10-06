@@ -37,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       kind: attempt.kind, testName: test.name, finishedAt: attempt.finishedAt,
       durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,
       scoreRaw: attempt.scoreRaw, scoreEst: attempt.scoreEst, sectionScores: attempt.sectionScores,
-      flags: attempt.proctorFlags.length,
+      flags: attempt.proctorFlags.length, attemptId: String(attempt._id), analysis: attempt.aiAnalysis ?? { status: "pending" },
       // Trial memberi rentang +-, bukan angka tunggal, karena tes mini hanya estimasi kasar.
       scoreRange: attempt.kind === "trial" && attempt.scoreEst ? [Math.max(310, attempt.scoreEst - 15), Math.min(677, attempt.scoreEst + 15)] : null,
       review,

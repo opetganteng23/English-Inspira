@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { seedTrial } from "@/lib/seed";
+import { seedCommerce } from "@/lib/seed-commerce";
 import { connectDB } from "@/lib/db";
 import { Test } from "@/models/Test";
 import { Question, QuestionGroup } from "@/models/Question";
@@ -7,7 +8,7 @@ import { Question, QuestionGroup } from "@/models/Question";
 // Hanya untuk dev (DB in-memory tidak bisa diisi dari proses lain). Mati total di production.
 export async function POST(req: Request) {
   if (process.env.NODE_ENV === "production") return new NextResponse("Not found", { status: 404 });
-  const result = await seedTrial();
+  const result = { ...(await seedTrial()), ...(await seedCommerce()) };
 
   // ?audio=<audioId>: tempelkan audio ke 3 soal Listening pertama (untuk menguji sekali putar).
   const audioId = new URL(req.url).searchParams.get("audio");

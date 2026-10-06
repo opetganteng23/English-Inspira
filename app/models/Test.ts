@@ -36,6 +36,7 @@ const attemptSchema = new Schema(
     proctorFlags: [{ _id: false, kind: String, at: Date }],
     audioPlays: [{ _id: false, audioId: Schema.Types.ObjectId, playedAt: Date, lastPosSec: Number, done: Boolean }],
     aiAnalysis: Schema.Types.Mixed,
+    proctorReview: { status: { type: String, enum: ["clean", "suspicious", "invalid"] }, note: String, at: Date, by: Schema.Types.ObjectId },
   },
   { timestamps: true }
 );
