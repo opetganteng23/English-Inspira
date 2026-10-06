@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Q = { id: string; groupId: string | null; stem: string; options: string[] };
+type Q = { id: string; groupId: string | null; stem: string; options: string[]; assetIds?: string[] };
 type G = { id: string; instruction?: string; passageTitle?: string; passageHtml?: string; audio: { id: string; finished: boolean } | null };
 type State = {
   status: "in_progress" | "submitted"; testName: string;
@@ -132,6 +132,10 @@ export default function Ruang({ params }: { params: { id: string } }) {
           <section className="rounded-2xl border border-line bg-white p-6">
             <p className="text-sm text-ink-soft">Soal {cur + 1} dari {st.questions.length}</p>
             <h2 className="mt-2 text-lg font-medium leading-relaxed">{q.stem}</h2>
+            {q.assetIds?.map((a) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={a} src={`/api/assets/${a}`} alt="Gambar soal" className="mt-3 max-h-72 rounded-lg border border-line" />
+            ))}
             <div role="radiogroup" className="mt-5 flex flex-col gap-3">
               {q.options.map((o, i) => (
                 <button key={i} role="radio" aria-checked={ans[q.id] === i} onClick={() => choose(i)}

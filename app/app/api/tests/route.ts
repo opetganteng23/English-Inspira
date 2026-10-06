@@ -28,3 +28,5 @@ export async function GET() {
     return handleError(e);
   }
 }
+
+export const dynamic = "force-dynamic";
