@@ -6,6 +6,7 @@ const nav = [
   { href: "/admin/paket", label: "Paket & Harga" },
   { href: "/admin/peserta", label: "Peserta" },
   { href: "/admin/bank-soal", label: "Bank Soal" },
+  { href: "/admin/tes", label: "Tes" },
   { href: "/admin/konselor-ai", label: "Konselor AI" },
   { href: "/admin/jadwal-itp", label: "Jadwal ITP & Skor" },
 ];

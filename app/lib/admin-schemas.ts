@@ -25,3 +25,21 @@ export const groupSchema = z.object({
   passageHtml: z.string().max(100_000).optional(),
   assetIds: z.array(z.string().regex(/^[0-9a-f]{24}$/)).max(10).default([]),
 });
+
+const oid = z.string().regex(/^[0-9a-f]{24}$/);
+export const testSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  kind: z.enum(["trial", "diagnostic", "prediction", "sim"]),
+  active: z.boolean().default(true),
+  sections: z
+    .array(
+      z.object({
+        name: z.enum(SECTIONS),
+        durationSec: z.number().int().min(60, { message: "Durasi section minimal 1 menit" }).max(10_800, { message: "Durasi section maksimal 180 menit" }),
+        questionIds: z.array(oid).min(1).max(200),
+      })
+    )
+    .min(1)
+    .max(3)
+    .refine((s) => new Set(s.map((x) => x.name)).size === s.length, { message: "Section tidak boleh dobel" }),
+});

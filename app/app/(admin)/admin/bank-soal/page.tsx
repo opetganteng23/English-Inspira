@@ -134,7 +134,8 @@ function Editor({ form, onClose, onSaved, onNewGroup }: { form: Form; onClose: (
         section: v.section, type: v.type, groupId: v.groupId || null, stem: v.stem, options: v.options, answerKey: v.answerKey,
         explanation: v.explanation || undefined, tags: v.tags.split(",").map((t) => t.trim()).filter(Boolean), difficulty: v.difficulty, status: v.status, assetIds: v.assetIds,
       };
-      await api(v.id ? `/api/admin/questions/${v.id}` : "/api/admin/questions", { method: v.id ? "PATCH" : "POST", ...json(body) });
+      const d = await api(v.id ? `/api/admin/questions/${v.id}` : "/api/admin/questions", { method: v.id ? "PATCH" : "POST", ...json(body) });
+      if (d.usedInTest) alert("Soal ini dipakai oleh tes. Perubahan kunci/pilihan memengaruhi skor tes berikutnya; hasil yang sudah tersimpan tidak dihitung ulang.");
       onSaved();
     } catch (e) { setErr((e as Error).message); setBusy(false); }
   }

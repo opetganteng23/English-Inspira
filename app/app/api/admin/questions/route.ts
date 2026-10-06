@@ -14,6 +14,13 @@ export async function GET(req: Request) {
     const sp = new URL(req.url).searchParams;
     const filter: Record<string, unknown> = {};
     for (const k of ["section", "status", "type", "difficulty"]) if (sp.get(k)) filter[k] = sp.get(k);
+    // ?ids=a,b,c: ambil soal tertentu (untuk perakit tes), urutan mengikuti ids.
+    const ids = (sp.get("ids") ?? "").split(",").filter((x) => /^[0-9a-f]{24}$/.test(x)).slice(0, 200);
+    if (sp.has("ids")) {
+      const found = await Question.find({ _id: { $in: ids } }).select("section type stem status").lean();
+      const by = new Map(found.map((x) => [String(x._id), x]));
+      return NextResponse.json({ items: ids.map((i) => by.get(i)).filter(Boolean) });
+    }
     const q = sp.get("q")?.trim();
     if (q) filter.stem = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
     const page = Math.max(1, Number(sp.get("page")) || 1);

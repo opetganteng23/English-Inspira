@@ -63,10 +63,11 @@ Aturan: setiap perubahan (kode, spec, keputusan) dicatat di sini. Update tabel i
 | D16 | Persiapan tes: uji perangkat audio sebelum mulai | ⬜ | Layar 16 versi tanpa kamera (B2) |
 | D17 | Halaman hasil: target skor dari profil, analisis AI | ⬜ | Target sementara 550 (hard-code di UI); AI di Fase 3 |
 | D18 | Entitlement untuk tes selain trial | ⬜ | Sementara hanya trial yang terbuka untuk peserta; admin bisa semua. Fase 4 |
-| D19 | Admin: perakit Tes (susun section, durasi, pilih soal published) | ⬜ | PENTING: sekarang tes hanya terbentuk lewat seed; soal baru dari Bank Soal belum bisa dimasukkan ke tes |
+| D19 | Admin: perakit Tes (section, durasi, pilih/urutkan soal published) | 🔄 | API diuji end-to-end: draft/beda section/duplikat/durasi ditolak; tes valid muncul ke peserta; setelah dikerjakan susunan dikunci (409), nama/status tetap bisa diubah; hapus tes/soal terpakai ditolak. UI `/admin/tes` lolos build, BELUM diuji di browser |
+| D23 | Snapshot soal/kunci per attempt saat start (konsistensi skor jika soal diedit) | ⬜ | Lihat catatan F |
 | D20 | Bank Soal: pratinjau soal seperti tampilan peserta, duplikasi soal | ⬜ | |
 | D21 | Sanitasi passage pakai whitelist `sanitize-html` | ✅ | `lib/sanitize.ts`; gambar hanya `/api/assets/<id>`. Editor rich text (TipTap) di Fase 5 |
-| D22 | Peringatan edit soal yang sudah dipakai tes (skor lama berubah) | 🔄 | API mengembalikan `usedInTest` dan mencatat audit; UI belum menampilkan peringatan |
+| D22 | Peringatan edit soal yang sudah dipakai tes | ✅ | API mengembalikan `usedInTest` + audit; editor menampilkan peringatan (alert). Hasil lama tidak dihitung ulang (disengaja) |
 
 ## E. Fase berikutnya
 
@@ -90,3 +91,5 @@ Aturan: setiap perubahan (kode, spec, keputusan) dicatat di sini. Update tabel i
 | Peringatan ESLint `exhaustive-deps` di ruang tes | ✅ | Dinonaktifkan 1 baris dengan alasan (efek hanya bergantung `left`) |
 | `route.ts` Next hanya boleh mengekspor handler HTTP | ✅ | Skema Zod dipindah ke `lib/admin-schemas.ts` |
 | Route GET ber-cookie memicu log "Dynamic server usage" saat build | ✅ | `export const dynamic = "force-dynamic"` |
+| Pesan error Zod berbahasa Inggris di durasi tes | ✅ | Pesan Indonesia di `testSchema` |
+| Edit kunci soal saat ada attempt berjalan memengaruhi penilaian attempt itu | ⬜ | Risiko kecil; pertimbangkan snapshot kunci jawaban per attempt saat start (D23) |
