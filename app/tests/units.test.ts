@@ -11,6 +11,7 @@ import { analysisResultSchema, checkResult, templateResult, numbersIn, aliasFor,
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { parseItpScores, verifyScores, isPdf } from "@/lib/pdf-import";
 import { levelUpDecision } from "@/lib/level-up";
 import { overlaps, canRegister, canCancel, chargesQuota, bookableLeft, canMarkAttendance } from "@/lib/coaching-rules";
 import { unitComplete, percentCorrect } from "@/lib/units";
@@ -272,4 +273,24 @@ describe("mesin analisis (MTS §13.5)", () => {
     expect(inputHash(input, "v1")).toBe(inputHash({ ...input, alias: "p-lain" }, "v1"));
     expect(inputHash(input, "v1")).not.toBe(inputHash(input, "v2"));
   });
+});
+
+describe("impor PDF (MTS §14)", () => {
+  const sample = ["TOEFL ITP Score Report", "Listening Comprehension 52", "Structure and Written Expression 55", "Reading Comprehension 50", "Total Score 523", "Test date 12/05/2026"].join(" | ");
+  it("membaca skor per section dan total dari teks laporan", () => {
+    const r = parseItpScores(sample);
+    expect(r.scores).toEqual({ listening: 52, structure: 55, reading: 50, total: 523 });
+    expect(r.template).toBe("itp-report");
+  });
+  it("PDF tanpa teks bermakna menghasilkan kosong (isi manual)", () => expect(parseItpScores("   ").scores).toEqual({}));
+  it("angka di luar rentang diabaikan", () => expect(parseItpScores("Listening 99 Reading 12").scores).toEqual({}));
+  it("verifikasi: total dihitung dari tiga section; rentang divalidasi", () => {
+    expect(verifyScores({ listening: 50, structure: 52, reading: 51 })).toEqual({ ok: true, scores: { listening: 50, structure: 52, reading: 51, total: 510 } });
+    expect(verifyScores({ structure: 55 })).toEqual({ ok: true, scores: { structure: 55 } });
+    expect(verifyScores({ listening: 99 }).ok).toBe(false);
+    expect(verifyScores({}).ok).toBe(false);
+    expect(verifyScores({ total: 700 }).ok).toBe(false);
+    expect(verifyScores({ total: 480 }).ok).toBe(true);
+  });
+  it("magic bytes PDF", () => { expect(isPdf(Buffer.from("%PDF-1.7 ..."))).toBe(true); expect(isPdf(Buffer.from("<html>"))).toBe(false); });
 });

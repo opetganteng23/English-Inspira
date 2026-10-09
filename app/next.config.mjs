@@ -13,7 +13,7 @@ const nextConfig = {
   experimental: {
     // Font bawaan pdfkit dibaca lewat fs saat runtime; sertakan di build standalone.
     outputFileTracingIncludes: { "/api/**/*": ["./node_modules/pdfkit/js/data/**/*"] },
-    serverComponentsExternalPackages: ["mongodb-memory-server", "mongoose", "pdfkit", "exceljs", "qrcode", "midtrans-client", "music-metadata"],
+    serverComponentsExternalPackages: ["mongodb-memory-server", "mongoose", "pdfkit", "exceljs", "qrcode", "music-metadata", "pdf-parse"],
   },
   async headers() {
     return [{

@@ -4,6 +4,8 @@ import { aiEnabled, askClaude, extractJson, GUARDRAILS, AI_MODEL, AI_MODEL_LIGHT
 import { getLevels, getParam } from "./config";
 import { aliasFor, analysisResultSchema, checkResult, inputHash, templateResult, toLegacy, type AnalysisResult, type EngineInput } from "./analysis-engine";
 import { Attempt } from "@/models/Test";
+import { PdfImport } from "@/models/Pdf";
+import { topicStatus } from "./topic-stats";
 import { User } from "@/models/User";
 import { ItpRegistration, ItpSession } from "@/models/Itp";
 import { CounselorThread } from "@/models/Counselor";
@@ -16,6 +18,7 @@ const perInst = new RateLimiterMemory({ points: 300, duration: 3600 });
 
 /** Susun masukan Claude dari hasil hitung (`analyses.calculated`) dan statistik akumulatif. Tidak memuat PII. */
 export async function buildEngineInput(analysis: AnalysisDoc): Promise<EngineInput | null> {
+  if (analysis.sourceKind === "pdf") return buildPdfEngineInput(analysis);
   const attempt = await Attempt.findById(analysis.attemptId).lean();
   if (!attempt || attempt.status !== "submitted") return null;
   const [user, levels, th, stats] = await Promise.all([User.findById(analysis.userId).select("currentLevelId currentScoreEst").lean(), getLevels(), getParam("weakness"), TopicStat.find({ userId: analysis.userId }).lean()]);
@@ -37,6 +40,26 @@ export async function buildEngineInput(analysis: AnalysisDoc): Promise<EngineInp
       stuckTopics: (calc.stuck ?? []).map((k) => k.split("|")[1] ?? k),
     },
     thresholds: th, validTopics: Array.from(new Set(stats.map((t) => t.topic))),
+  };
+}
+
+/** pdfAdapter (MTS §14): hanya nilai TERVERIFIKASI dari PDF; kedalaman terbatas pada skor per section, tanpa waktu/topik butir. */
+async function buildPdfEngineInput(analysis: AnalysisDoc): Promise<EngineInput | null> {
+  const pdf = analysis.pdfId ? await PdfImport.findById(analysis.pdfId).lean() : null;
+  if (!pdf || !pdf.verified) return null;
+  const [user, levels, th] = await Promise.all([User.findById(analysis.userId).select("currentLevelId").lean(), getLevels(), getParam("weakness")]);
+  const v = pdf.verified;
+  const cur = levels.find((l) => String(l._id) === String(user?.currentLevelId));
+  const next = cur ? levels.find((l) => l.order === cur.order + 1) : undefined;
+  const secs = (["listening", "structure", "reading"] as const).filter((k) => typeof v[k] === "number");
+  const pct = (n: number) => Math.round(((n - 31) / (68 - 31)) * 1000) / 10;
+  return {
+    alias: aliasFor(String(analysis.userId)), kind: "pdf", level: cur?.name ?? null, scoreEst: v.total ?? null,
+    sections: secs.map((k) => ({ section: k, raw: 0, total: 0, scaled: v[k] as number })),
+    topics: secs.map((k) => ({ topic: k, skill: "itp", score: pct(v[k] as number), items: 0, status: topicStatus(pct(v[k] as number), th.minItems, th), thisAttempt: pct(v[k] as number) })),
+    gapToNextLevel: next && v.total != null && v.total < next.scoreMin ? { points: next.scoreMin - v.total, target: next.scoreMin, nextLevel: next.name } : null,
+    behaviour: { answered: 0, unanswered: 0, answerChanges: 0, avgSecPerAnswer: null, stuckTopics: [] },
+    thresholds: th, validTopics: secs as string[],
   };
 }
 
@@ -78,15 +101,22 @@ async function save(a: AnalysisDoc, n: Narrative, hash: string, promptVersion: s
     status: "ready", narrative: n.result, mock: n.engine === "template", engine: n.engine, model: n.model, promptVersion, tokensIn: n.tokensIn, tokensOut: n.tokensOut, inputHash: hash,
     ...(n.fallbackReason ? { fallbackReason: n.fallbackReason } : { $unset: { fallbackReason: 1 } }),
   });
-  await Attempt.updateOne({ _id: a.attemptId }, { aiAnalysis: { status: "ready", ...toLegacy(n.result, n.engine), generatedAt: new Date() } });
+  if (a.attemptId) await Attempt.updateOne({ _id: a.attemptId }, { aiAnalysis: { status: "ready", ...toLegacy(n.result, n.engine), generatedAt: new Date() } });
 }
 
 /** Jalankan analisis (async setelah selesai mengerjakan): `calculated` → `ready`. Klaim atomik: satu panggilan AI per hasil. */
 export async function runAnalysis(attemptId: Types.ObjectId | string) {
   await connectDB();
-  const a = await Analysis.findOneAndUpdate({ attemptId, status: "calculated", claimedAt: { $exists: false } }, { claimedAt: new Date() }, { new: true });
+  const a = await Analysis.findOne({ attemptId }).select("_id").lean();
+  if (a) await runAnalysisById(a._id);
+}
+
+export async function runAnalysisById(analysisId: Types.ObjectId | string) {
+  await connectDB();
+  const a = await Analysis.findOneAndUpdate({ _id: analysisId, status: "calculated", claimedAt: { $exists: false } }, { claimedAt: new Date() }, { new: true });
   if (!a) return;
-  await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "pending", startedAt: new Date() } });
+  const attemptId = a.attemptId;
+  if (attemptId) await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "pending", startedAt: new Date() } });
   try {
     const input = await buildEngineInput(a);
     if (!input) throw new Error("Data analisis tidak lengkap");
@@ -100,7 +130,7 @@ export async function runAnalysis(attemptId: Types.ObjectId | string) {
   } catch (e) {
     console.error("[analysis] gagal", e);
     await Analysis.updateOne({ _id: a._id }, { status: "failed" });
-    await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "failed", error: "Analisis belum tersedia. Coba lagi." } });
+    if (attemptId) await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "failed", error: "Analisis belum tersedia. Coba lagi." } });
   }
 }
 

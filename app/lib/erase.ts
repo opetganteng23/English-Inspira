@@ -11,6 +11,7 @@ import { MaterialProgress } from "@/models/Material";
 import { Otp } from "@/models/Otp";
 import { Notification } from "@/models/Access";
 import { TopicStat, PlanItem, Analysis } from "@/models/Learning";
+import { PdfImport, pdfBucket } from "@/models/Pdf";
 
 /**
  * Penghapusan data pribadi (UU PDP; MTS §8): prosedur admin yang tercatat di audit_logs.
@@ -24,6 +25,9 @@ export async function eraseUserData(userId: Types.ObjectId | string, actorId: Ty
   if (await ItpRegistration.exists({ userId: u._id, status: { $in: ["submitted", "confirmed"] } }))
     throw new HttpError(409, "Batalkan pendaftaran ITP yang aktif dulu.");
 
+  const bucket = await pdfBucket();
+  for (const p of await PdfImport.find({ userId: u._id, fileId: { $exists: true } })) await bucket.delete(p.fileId!).catch(() => {});
+  await PdfImport.deleteMany({ userId: u._id });
   await disableMember(u._id); // enrollment nonaktif + kursi kembali
   await Promise.all([
     Asset.deleteMany({ ownerId: u._id, sensitive: true }), // KTP & pas foto

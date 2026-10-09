@@ -44,8 +44,9 @@ const analysisSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },
-    sourceKind: { type: String, enum: ["placement", "sim", "practice", "quiz"], required: true },
+    sourceKind: { type: String, enum: ["placement", "sim", "practice", "quiz", "pdf"], required: true },
     attemptId: { type: Schema.Types.ObjectId, ref: "Attempt", index: true },
+    pdfId: { type: Schema.Types.ObjectId, ref: "PdfImport", index: true },
     status: { type: String, enum: ["calculated", "ready", "failed"], default: "calculated" },
     calculated: Schema.Types.Mixed, // topik + status, stuck; tanpa PII
     narrative: Schema.Types.Mixed, // keluaran AI/template yang sudah divalidasi

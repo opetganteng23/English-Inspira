@@ -7,6 +7,7 @@ const nav: NavGroup[] = [
     { href: "/coaching", label: "Coaching" },
     { href: "/tes", label: "Tes Saya" },
     { href: "/hasil", label: "Hasil Tes" },
+    { href: "/unggah-hasil", label: "Unggah Hasil Luar" },
     { href: "/materi", label: "Materi" },
     { href: "/konselor", label: "Konselor AI" },
     { href: "/itp", label: "Tes ITP Resmi" },

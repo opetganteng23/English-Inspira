@@ -326,6 +326,32 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(p1, "/api/study-plan"); ok(!r.data.items.some((i) => i.status === "active" && i.source === "auto" && i.dueAt && new Date(i.dueAt) < new Date()), "rencana belajar diperbarui setelah naik level");
   r = await req(p1, "/api/coaching"); ok(r.data.quota.total === (await req(p1, "/api/home")).data.quota.total, "kuota coaching mengikuti level baru");
 
+  console.log("\n== Impor PDF hasil luar ==");
+  const PDFDocument = (await import("pdfkit")).default;
+  const makePdf = (lines) => new Promise((resolve) => { const d = new PDFDocument(); const b = []; d.on("data", (c) => b.push(c)); d.on("end", () => resolve(Buffer.concat(b))); lines.forEach((l) => d.text(l)); d.end(); });
+  const upl = (buf, name = "laporan.pdf", type = "application/pdf") => { const f = new FormData(); f.append("file", new Blob([buf], { type }), name); return f; };
+  r = await req(p1, "/api/analytics/pdf", { method: "POST", form: upl(Buffer.from("<html>bukan pdf</html>"), "x.pdf") }); ok(r.status === 415, "berkas non-PDF ditolak (magic bytes)");
+  r = await req(p1, "/api/analytics/pdf", { method: "POST", form: upl(Buffer.alloc(11 * 1024 * 1024, 1), "besar.pdf") }); ok(r.status === 413, "PDF > 10 MB ditolak");
+  const pdfBuf = await makePdf(["TOEFL ITP Score Report", "Listening Comprehension 52", "Structure and Written Expression 55", "Reading Comprehension 50", "Total Score 523"]);
+  r = await req(p1, "/api/analytics/pdf", { method: "POST", form: upl(pdfBuf) }); ok(r.status === 201 && r.data.parsed.listening === 52 && r.data.parsed.structure === 55 && r.data.parsed.reading === 50, "PDF teks terbaca otomatis", J(r.data)); const pdfId = r.data.id;
+  r = await req(p1, `/api/analytics/pdf/${pdfId}/analyze`, { method: "POST", json: {} }); ok(r.status === 409, "analisis sebelum verifikasi ditolak");
+  r = await req(p1, `/api/analytics/pdf/${pdfId}`, { method: "PATCH", json: { listening: 99, structure: 55, reading: 50 } }); ok(r.status === 400, "nilai di luar 31–68 ditolak");
+  r = await req(p1, `/api/analytics/pdf/${pdfId}`, { method: "PATCH", json: { listening: 50, structure: 55, reading: 50 } }); ok(r.status === 200 && r.data.verified.total === 517, "koreksi nilai; total dihitung ulang", J(r.data));
+  r = await req(p1, `/api/analytics/pdf/${pdfId}/analyze`, { method: "POST", json: {} }); ok(r.status === 202, "analisis dimulai");
+  let pa; for (let i = 0; i < 12; i++) { await sleep(500); pa = (await req(p1, `/api/analytics/pdf/${pdfId}`)).data; if (pa.analysis?.status === "ready") break; }
+  ok(pa.analysis?.status === "ready" && pa.analysis.narrative?.summary && pa.status === "analyzed", "analisis PDF siap (angka terverifikasi saja)", J(pa.analysis).slice(0, 160));
+  r = await req(p1, `/api/analytics/pdf/${pdfId}`, { method: "PATCH", json: { listening: 40 } }); ok(r.status === 409, "PDF yang sudah dianalisis tidak diubah diam-diam");
+  r = await req(coach, `/api/analytics/pdf/${pdfId}`); ok(r.status === 200, "coach se-institusi boleh membuka");
+  r = await req(coach, `/api/analytics/pdf/${pdfId}/file`); ok(r.status === 200 && r.headers.get("content-type") === "application/pdf", "coach mengunduh PDF asli");
+  r = await req(coachB, `/api/analytics/pdf/${pdfId}`); ok(r.status === 404, "coach institusi lain: 404");
+  r = await req(ia, `/api/analytics/pdf/${pdfId}`); ok(r.status === 403 || r.status === 404, "inst_admin tidak bisa membuka PDF individual");
+  r = await req(admin, `/api/analytics/pdf/${pdfId}`); ok(r.status === 200, "admin boleh membuka");
+  r = await req(p1, "/api/analytics/pdf"); ok(r.data.imports.length === 1 && r.data.imports[0].hasFile, "daftar PDF milik sendiri");
+  r = await req(p1, `/api/analytics/pdf/${pdfId}`, { method: "DELETE" }); ok(r.status === 200, "pemilik menghapus PDF");
+  r = await req(coach, `/api/analytics/pdf/${pdfId}`); ok(r.status === 404, "setelah dihapus tidak ada lagi");
+  const scan = await makePdf([""]);
+  r = await req(p1, "/api/analytics/pdf", { method: "POST", form: upl(scan) }); ok(r.status === 201 && Object.keys(r.data.parsed).length === 0, "PDF tanpa teks: tidak ada nilai terbaca (isi manual)", J(r.data));
+
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });
   ok(r.status === 200, "kontrak diubah ke masa lalu");
