@@ -126,7 +126,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | Item | Status |
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
-| README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
+| README, PM2 (`ecosystem.config.cjs`), Nginx, `/api/health` | ✅ (deploy: Biznet Gio + PM2, **tanpa Docker**) |
 | Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (273 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
@@ -149,7 +149,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | Semua API alur v2.2 (undangan, consent, placement→level→kuota, isolasi, kedaluwarsa, hak data) | ✅ teruji otomatis |
 | Halaman UI baru/ditulis ulang (masuk, persetujuan, beranda, tes, hasil, profil, admin, institusi, coach) | 🔄 lolos build & lint, **belum dibuka di browser** |
 | Responsif 9:16 s.d. 16:9 | ⬜ belum diuji (Playwright ditunda atas permintaan pemilik) |
-| Timer server saat waktu habis, Docker build, email/AI/DB nyata | ⬜ menunggu kunci & URL DB |
+| Timer server saat waktu habis, `pm2 start` di VM, email/AI/DB nyata | ⬜ menunggu kunci & URL DB |
 
 ## 12. Sisa pekerjaan
 
@@ -159,7 +159,7 @@ Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 60 uj
 |---|---|---|
 | P1 | Buka seluruh UI baru di browser + uji responsif 9:16 s.d. 16:9 (Playwright) | ⬜ (belum dijalankan; ditunda atas permintaan pemilik) |
 | P2 | L10 uji keamanan iframe di browser (akses parent/storage/cookie, jaringan, navigasi, popup) | ⬜ |
-| P3 | Uji panggilan Claude nyata, SMTP nyata, MongoDB nyata, node-cron di PM2, build Docker (menunggu kunci & URL DB) | ⬜ |
+| P3 | Uji panggilan Claude nyata, SMTP nyata, MongoDB nyata, node-cron di PM2 (menunggu kunci & URL DB) | ⬜ |
 | P3 | OCR untuk PDF hasil scan | ⬜ |
 | P3 | Perketat uji smoke "OTP tidak dikirim ke peserta yang aksesnya berakhir" | ⬜ |
 | – | Keputusan pemilik: K4 pure-analytics, K5 angka resmi (level, konversi skor, retensi, kuota), K6 nama produk | ⬜ |

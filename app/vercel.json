@@ -1,7 +1,0 @@
-{
-  "crons": [
-    { "path": "/api/cron/mail", "schedule": "* * * * *" },
-    { "path": "/api/cron/hourly", "schedule": "0 * * * *" },
-    { "path": "/api/cron/daily", "schedule": "0 18 * * *" }
-  ]
-}

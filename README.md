@@ -19,7 +19,7 @@ Tanpa konfigurasi tambahan, mode dev memakai:
 
 | Komponen | Perilaku bila kunci kosong |
 |---|---|
-| MongoDB | `mongodb-memory-server` (data hilang saat server berhenti). Isi `MONGODB_URI` untuk Atlas/Docker |
+| MongoDB | `mongodb-memory-server` (data hilang saat server berhenti). Isi `MONGODB_URI` untuk Atlas atau MongoDB di VM |
 | Email | Kode OTP dan email dicetak ke konsol server |
 | Claude API | Analisis dan Konselor berjalan di "mode dasar" berbasis aturan, ditandai jelas di UI |
 
@@ -74,9 +74,7 @@ Hal khusus untuk PM2/Nginx:
 - **MongoDB:** pakai Atlas, atau pasang MongoDB di VM yang sama (hanya `127.0.0.1`, aktifkan autentikasi). Backup harian `mongodump` ke luar VM.
 - Firewall: buka hanya 22, 80, 443. Port 3000 dan 27017 jangan terbuka ke publik.
 
-### Alternatif
-
-**Docker:** `cp .env.example .env`, isi nilainya, lalu `docker compose up -d --build` (Dockerfile memakai mode standalone). **Vercel:** set semua env; `vercel.json` menjadwalkan `/api/cron/{mail,hourly,daily}`.
+Deploy memakai VPS + PM2 + Nginx (tanpa Docker).
 
 Daftar penting sebelum rilis:
 

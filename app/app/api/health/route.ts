@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-/** Health check untuk Docker/load balancer: aplikasi hidup dan database terjangkau. Tanpa data sensitif. */
+/** Health check untuk Nginx/PM2/pemantau uptime: aplikasi hidup dan database terjangkau. Tanpa data sensitif. */
 export async function GET() {
   try {
     await connectDB();

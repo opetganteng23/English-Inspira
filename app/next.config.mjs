@@ -6,12 +6,10 @@ const csp = ["frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'"].j
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Standalone hanya untuk Docker (BUILD_STANDALONE=true). Di VPS + PM2 dipakai `next start` biasa.
-  output: process.env.BUILD_STANDALONE === "true" ? "standalone" : undefined,
   poweredByHeader: false,
   // Paket server-only yang tidak boleh di-bundle webpack.
   experimental: {
-    // Font bawaan pdfkit dibaca lewat fs saat runtime; sertakan di build standalone.
+    // Font bawaan pdfkit dibaca lewat fs saat runtime.
     outputFileTracingIncludes: { "/api/**/*": ["./node_modules/pdfkit/js/data/**/*"] },
     serverComponentsExternalPackages: ["mongodb-memory-server", "mongoose", "pdfkit", "exceljs", "qrcode", "music-metadata", "pdf-parse"],
   },
