@@ -13,7 +13,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     const user = await requireRole(["participant", "admin"]);
     await connectDB();
     const m = await Material.findOne({ slug: params.slug, ...(user.role === "admin" ? {} : { status: "published", ...visibleTo(user) }) }).lean();
-    if (!m) throw new HttpError(404, "Materi tidak ditemukan");
+    if (!m) throw new HttpError(404, "Material not found");
 
     const id = String(m._id);
     const progress = await MaterialProgress.findOne({ userId: user._id, materialId: m._id }).lean();

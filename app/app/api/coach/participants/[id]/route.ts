@@ -16,10 +16,10 @@ export const dynamic = "force-dynamic";
 
 /** Peserta HARUS di institusi coach (filter di level query); selain itu 404, sama seperti tidak ada. */
 async function participantFor(coach: Parameters<typeof scopeByInstitution>[0], id: string) {
-  if (!isValidObjectId(id)) throw new HttpError(404, "Peserta tidak ditemukan");
+  if (!isValidObjectId(id)) throw new HttpError(404, "Participant not found");
   await connectDB();
   const u = await User.findOne(scopeByInstitution(coach, { _id: id, role: "participant" } as never));
-  if (!u) throw new HttpError(404, "Peserta tidak ditemukan");
+  if (!u) throw new HttpError(404, "Participant not found");
   return u;
 }
 
@@ -65,13 +65,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       await PlanItem.create({ userId: u._id, institutionId: u.institutionId, skill: b.skill, topic: b.topic, title: b.title, priority: "high", source: "coach", dueAt: new Date(Date.now() + b.dueInDays * 86_400_000) });
       await audit(coach._id, "plan.coach_add", params.id, { title: b.title });
     } else {
-      if (!u.placementAttemptId) throw new HttpError(409, "Peserta belum mengerjakan placement");
+      if (!u.placementAttemptId) throw new HttpError(409, "The participant has not taken the placement test");
       u.placementRetakeAllowed = true; await u.save();
       await audit(coach._id, "placement.retake_allowed", params.id, { reason: b.reason });
     }
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

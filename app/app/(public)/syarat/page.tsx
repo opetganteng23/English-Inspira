@@ -1,25 +1,25 @@
 import { Legal } from "@/components/Legal";
 
-export const metadata = { title: "Syarat & Ketentuan — Edulyfe EPTA" };
+export const metadata = { title: "Terms & Conditions | English Inspira" };
 export const dynamic = "force-dynamic";
 
 export default function Syarat() {
   return (
-    <Legal title="Syarat & Ketentuan">
+    <Legal title="Terms & Conditions">
       <h2>1. Layanan</h2>
-      <p>Edulyfe EPTA menyediakan placement test, tes simulasi dan latihan format TOEFL ITP, materi belajar, analisis hasil berbasis AI, Konselor AI, sesi coaching, dan fasilitas pendaftaran tes TOEFL ITP resmi bagi peserta institusi mitra. Tes simulasi menghasilkan <b>estimasi</b> skor, bukan skor resmi. Skor dan sertifikat resmi hanya diterbitkan oleh penyelenggara tes resmi.</p>
-      <h2>2. Akun</h2>
-      <p>Kamu bertanggung jawab atas keamanan email yang dipakai masuk dan atas kebenaran data yang diisi. Satu akun untuk satu orang. Akun dibuat lewat undangan institusimu dan tidak ada pendaftaran mandiri. Placement test dikerjakan satu kali.</p>
+      <p>English Inspira provides a placement test, TOEFL ITP format simulation tests and exercises, learning materials, AI-based result analysis, an AI Counselor, coaching sessions, and official TOEFL ITP test registration for participants of partner institutions. Simulation tests produce <b>estimated</b> scores, not official scores. Official scores and certificates are only issued by the official test organizer.</p>
+      <h2>2. Account</h2>
+      <p>You are responsible for the security of the email you use to sign in and for the accuracy of the data you enter. One account per person. Accounts are created through your institution’s invitation; there is no self-registration. The placement test is taken once.</p>
       <h2>3. Akses</h2>
-      <p>Akses diberikan lewat institusimu dan berlaku selama masa kontrak institusi. Setelah itu akunmu tidak bisa dipakai masuk, sedangkan datamu tetap tersimpan sesuai Kebijakan Privasi. Tidak ada pembayaran di platform ini.</p>
-      <h2>4. Penggunaan yang wajar</h2>
-      <p>Dilarang membagikan akun, menyalin atau menyebarkan soal dan audio, memakai alat otomatis, atau mencurangi tes. Aktivitas tes tertentu (misalnya pindah tab) dicatat dan dapat ditinjau admin.</p>
+      <p>Access is granted through your institution and is valid for the institution’s contract period. After that your account can no longer be used to sign in, while your data is kept according to the Privacy Policy. There are no payments on this platform.</p>
+      <h2>4. Fair use</h2>
+      <p>Sharing accounts, copying or distributing questions and audio, using automated tools, or cheating on tests is prohibited. Certain test activity (for example switching tabs) is recorded and may be reviewed by the admin.</p>
       <h2>5. Konselor AI</h2>
-      <p>Konselor AI memberi saran belajar dan dapat keliru. Saran tidak menjamin skor, kelulusan, atau beasiswa. Periksa kembali persyaratan resmi instansi atau beasiswa sebelum mengambil keputusan penting.</p>
-      <h2>6. Pendaftaran tes ITP resmi</h2>
-      <p>Nama dan nomor identitas harus sama dengan KTP/paspor yang dibawa saat tes, dan tidak dapat diubah setelah pendaftaran dikirim. Ketentuan perubahan jadwal diumumkan oleh admin.</p>
+      <p>The AI Counselor gives study advice and can make mistakes. Advice does not guarantee scores, passing, or scholarships. Double-check the official requirements of your institution or scholarship before making important decisions.</p>
+      <h2>6. Official ITP test registration</h2>
+      <p>Your name and identity number must match the ID card/passport you bring on test day and cannot be changed after the registration is submitted. Rescheduling rules are announced by the admin.</p>
       <h2>7. Perubahan</h2>
-      <p>Ketentuan dapat diperbarui; perubahan material diberitahukan lewat email atau di aplikasi.</p>
+      <p>These terms may be updated; material changes are announced by email or in the app.</p>
     </Legal>
   );
 }

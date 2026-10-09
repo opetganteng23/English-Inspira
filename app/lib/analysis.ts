@@ -75,22 +75,22 @@ export async function generateNarrative(input: EngineInput, userId: string, inst
   if (!model) return fallback("light_kind"); // kuis kecil tanpa model ringan memakai template
   try { await perUser.consume(userId); if (institutionId) await perInst.consume(institutionId); } catch { return fallback("rate_limited"); }
 
-  const system = `${GUARDRAILS}\n${prompt.text}\nBalas HANYA satu objek JSON valid tanpa teks lain: {"summary": string, "strengths": [{"topic","evidence"}], "weaknesses": [{"topic","severity":"weak"|"priority","evidence","likelyCause"}], "gapToNextLevel"?: {"points": number, "target": number}, "recommendations": [{"topic","priority":"high"|"medium"}], "narrative": string, "suggestions": [string]}. Topik HARUS persis dari validTopics. Jangan menulis angka yang tidak ada di data.`;
-  const base = `Data analisis (JSON, tanpa identitas):\n${JSON.stringify(input)}`;
+  const system = `${GUARDRAILS}\n${prompt.text}\nReply with ONLY one valid JSON object and no other text: {"summary": string, "strengths": [{"topic","evidence"}], "weaknesses": [{"topic","severity":"weak"|"priority","evidence","likelyCause"}], "gapToNextLevel"?: {"points": number, "target": number}, "recommendations": [{"topic","priority":"high"|"medium"}], "narrative": string, "suggestions": [string]}. Topics MUST be exactly from validTopics. Do not write numbers that are not in the data. Write in English.`;
+  const base = `Analysis data (JSON, no identity):\n${JSON.stringify(input)}`;
   let tokensIn = 0, tokensOut = 0, last = "api_error", feedback = "";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const out = await askClaude(system, [{ role: "user", content: feedback ? `${base}\n\nJawaban sebelumnya ditolak: ${feedback}. Perbaiki dan balas HANYA JSON.` : base }], 1800, model);
+      const out = await askClaude(system, [{ role: "user", content: feedback ? `${base}\n\nThe previous answer was rejected: ${feedback}. Fix it and reply with ONLY JSON.` : base }], 1800, model);
       tokensIn += out.tokensIn; tokensOut += out.tokensOut;
       const parsed = analysisResultSchema.safeParse(extractJson(out.text));
-      if (!parsed.success) { last = "invalid_output"; feedback = "bentuk JSON tidak sesuai skema"; continue; }
+      if (!parsed.success) { last = "invalid_output"; feedback = "JSON shape does not match the schema"; continue; }
       const bad = checkResult(parsed.data, input);
       if (bad) { last = "invalid_output"; feedback = bad; continue; }
       return { result: parsed.data, engine: "claude", model: out.model, tokensIn, tokensOut };
     } catch (e) {
       last = (e as Error).name === "SyntaxError" ? "invalid_output" : "api_error";
-      feedback = last === "invalid_output" ? "bukan JSON valid" : "";
-      console.error("[analysis] percobaan", attempt + 1, "gagal:", (e as Error).message);
+      feedback = last === "invalid_output" ? "not valid JSON" : "";
+      console.error("[analysis] percobaan", attempt + 1, "failed:", (e as Error).message);
       if (last === "api_error") break; // gangguan API: jangan menghabiskan percobaan; job per jam yang mengulang
     }
   }
@@ -104,7 +104,7 @@ async function save(a: AnalysisDoc, n: Narrative, hash: string, promptVersion: s
   });
   if (a.attemptId) {
     await Attempt.updateOne({ _id: a.attemptId }, { aiAnalysis: { status: "ready", ...toLegacy(n.result, n.engine), generatedAt: new Date() } });
-    await notify(a.userId, "analysis_ready", { title: "Analisis hasilmu sudah siap", href: `/hasil/${a.attemptId}` }, String(a.attemptId));
+    await notify(a.userId, "analysis_ready", { title: "Your result analysis is ready", href: `/hasil/${a.attemptId}` }, String(a.attemptId));
   }
 }
 
@@ -123,7 +123,7 @@ export async function runAnalysisById(analysisId: Types.ObjectId | string) {
   if (attemptId) await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "pending", startedAt: new Date() } });
   try {
     const input = await buildEngineInput(a);
-    if (!input) throw new Error("Data analisis tidak lengkap");
+    if (!input) throw new Error("Analysis data is incomplete");
     const prompt = await getParam("analysis_prompt");
     const hash = inputHash(input, prompt.version);
     // Cache: masukan identik (mis. dibuka ulang) memakai narasi Claude yang sudah ada, tanpa memanggil AI lagi.
@@ -132,9 +132,9 @@ export async function runAnalysisById(analysisId: Types.ObjectId | string) {
     const n: Narrative = parsed?.success ? { result: parsed.data, engine: "claude", model: hit?.model ?? undefined, tokensIn: 0, tokensOut: 0 } : await generateNarrative(input, String(a.userId), a.institutionId ? String(a.institutionId) : undefined);
     await save(a, n, hash, prompt.version);
   } catch (e) {
-    console.error("[analysis] gagal", e);
+    console.error("[analysis] failed", e);
     await Analysis.updateOne({ _id: a._id }, { status: "failed" });
-    if (attemptId) await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "failed", error: "Analisis belum tersedia. Coba lagi." } });
+    if (attemptId) await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "failed", error: "Analysis not available yet. Try again." } });
   }
 }
 

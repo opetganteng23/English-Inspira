@@ -15,8 +15,8 @@ export const questionSchema = z
     difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
     status: z.enum(["draft", "review", "published"]).default("draft"),
   })
-  .refine((q) => q.answerKey < q.options.length, { message: "Kunci jawaban di luar pilihan", path: ["answerKey"] })
-  .refine((q) => q.status !== "published" || q.tags.length >= 1, { message: "Soal published wajib punya tag skill + topic", path: ["tags"] });
+  .refine((q) => q.answerKey < q.options.length, { message: "The answer key is outside the options", path: ["answerKey"] })
+  .refine((q) => q.status !== "published" || q.tags.length >= 1, { message: "Published questions must have a skill + topic tag", path: ["tags"] });
 
 export const groupSchema = z.object({
   section: z.enum(SECTIONS),
@@ -37,13 +37,13 @@ export const testSchema = z.object({
     .array(
       z.object({
         name: z.enum(SECTIONS),
-        durationSec: z.number().int().min(60, { message: "Durasi section minimal 1 menit" }).max(10_800, { message: "Durasi section maksimal 180 menit" }),
+        durationSec: z.number().int().min(60, { message: "Minimum section duration is 1 minute" }).max(10_800, { message: "Maximum section duration is 180 minutes" }),
         questionIds: z.array(oid).min(1).max(200),
       })
     )
     .min(1)
     .max(3)
-    .refine((s) => new Set(s.map((x) => x.name)).size === s.length, { message: "Section tidak boleh dobel" }),
+    .refine((s) => new Set(s.map((x) => x.name)).size === s.length, { message: "Sections must not be duplicated" }),
 });
 
 export const sessionInput = z.object({
@@ -58,14 +58,14 @@ export const sessionInput = z.object({
 
 export const institutionInput = z.object({
   name: z.string().trim().min(2).max(120),
-  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{3,20}$/, "Kode 3–20 karakter huruf/angka"),
+  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{3,20}$/, "Code must be 3-20 letters/numbers"),
   seats: z.number().int().min(0).max(100_000),
   contactEmail: z.email().optional().or(z.literal("")),
   batch: z.string().max(40).optional(),
   contractStart: z.coerce.date().optional().nullable(),
   contractEnd: z.coerce.date().optional().nullable(),
   status: z.enum(["active", "inactive"]).default("active"),
-}).refine((i) => !i.contractStart || !i.contractEnd || i.contractEnd > i.contractStart, { message: "Akhir kontrak harus setelah awal kontrak", path: ["contractEnd"] });
+}).refine((i) => !i.contractStart || !i.contractEnd || i.contractEnd > i.contractStart, { message: "The contract end must be after the contract start", path: ["contractEnd"] });
 
 export const userCreateInput = z.object({
   email: z.email().max(200),

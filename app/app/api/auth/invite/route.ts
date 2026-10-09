@@ -13,10 +13,10 @@ export async function GET(req: Request) {
   try {
     await limit("verifyIp", clientIp(req));
     const token = new URL(req.url).searchParams.get("token") ?? "";
-    if (!/^[0-9a-f]{48}$/.test(token)) return NextResponse.json({ error: "Undangan tidak valid atau sudah kedaluwarsa" }, { status: 404 });
+    if (!/^[0-9a-f]{48}$/.test(token)) return NextResponse.json({ error: "The invitation is invalid or has expired" }, { status: 404 });
     await connectDB();
     const inv = await Invitation.findOne({ tokenHash: sha256(token), status: "pending", expiresAt: { $gt: new Date() } }).lean();
-    if (!inv) return NextResponse.json({ error: "Undangan tidak valid atau sudah kedaluwarsa" }, { status: 404 });
+    if (!inv) return NextResponse.json({ error: "The invitation is invalid or has expired" }, { status: 404 });
     const inst = await Institution.findById(inv.institutionId).select("name").lean();
     return NextResponse.json({ email: inv.email, institution: inst?.name ?? null });
   } catch (e) {

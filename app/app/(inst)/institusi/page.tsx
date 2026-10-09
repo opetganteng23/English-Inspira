@@ -18,33 +18,33 @@ export default function InstHome() {
   const { url, ready } = useInstQuery();
   const { data: s, loading, error } = useApi<S>(url("/api/inst/summary"));
   if (!ready || loading) return <Loading />;
-  if (!s) return <ErrorNote text={error || "Pilih institusi lewat menu admin."} />;
+  if (!s) return <ErrorNote text={error || "Choose an institution from the admin menu."} />;
   const withQ = (p: string) => url(p) ?? p;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="text-xs font-semibold tracking-wider text-brand">{s.institution.batch ?? "PORTAL INSTITUSI"}</p><h1 className="page-title">{s.institution.name}</h1><p className="text-sm text-ink-soft">Ringkasan kelompok (agregat). Isi analisis dan catatan coach per orang tidak ditampilkan di portal ini.</p></div>
-        <div className="flex flex-col gap-2 sm:flex-row"><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Unduh laporan (Excel)</a><Link className="btn-solid" href={withQ("/institusi/peserta")}>Tambah peserta</Link></div>
+        <div><p className="text-xs font-semibold tracking-wider text-brand">{s.institution.batch ?? "INSTITUTION PORTAL"}</p><h1 className="page-title">{s.institution.name}</h1><p className="text-sm text-ink-soft">Group summary (aggregate). Individual analyses and coach notes are not shown in this portal.</p></div>
+        <div className="flex flex-col gap-2 sm:flex-row"><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Download report (Excel)</a><Link className="btn-solid" href={withQ("/institusi/peserta")}>Add participants</Link></div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="PESERTA" value={<>{s.registered}<span className="text-lg text-ink-soft"> / {s.seats}</span></>} sub={`${s.active} aktif · ${s.invited} menunggu aktivasi`} />
-        <Stat label="PLACEMENT SELESAI" value={s.placementPct != null ? `${s.placementPct}%` : "–"} sub={`${s.placementDone} dari ${s.registered} peserta`} />
-        <Stat label="RATA-RATA ESTIMASI" value={s.avgEstimate ?? "–"} sub={s.avgDelta != null ? `${s.avgDelta >= 0 ? "+" : ""}${s.avgDelta} dari tes pertama` : "Belum ada pembanding"} tone={s.avgDelta != null && s.avgDelta >= 0 ? "ok" : undefined} />
-        <Stat label="MENCAPAI TARGET" value={s.reachedPct != null ? `${s.reachedPct}%` : "–"} sub={`${s.reached} dari ${s.withScore} peserta bernilai`} />
-        <Stat label="KEHADIRAN COACHING" value={s.coaching.presentPct != null ? `${s.coaching.presentPct}%` : "–"} sub={`${s.coaching.sessionsMarked} sesi tercatat · ${s.coaching.absent} tidak hadir`} />
-        <Stat label="KUOTA COACHING TERPAKAI" value={s.coaching.quotaUsedPct != null ? `${s.coaching.quotaUsedPct}%` : "–"} />
-        <Stat label="RENCANA TERLAMBAT" value={s.planLate} sub={s.planLatePct != null ? `${s.planLatePct}% peserta aktif` : undefined} tone={s.planLate ? "warn" : undefined} />
-        <Stat label="KONTRAK BERAKHIR" value={s.institution.contractEnd ? new Date(s.institution.contractEnd).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "–"} />
+        <Stat label="PARTICIPANTS" value={<>{s.registered}<span className="text-lg text-ink-soft"> / {s.seats}</span></>} sub={`${s.active} active · ${s.invited} awaiting activation`} />
+        <Stat label="PLACEMENT COMPLETED" value={s.placementPct != null ? `${s.placementPct}%` : "-"} sub={`${s.placementDone} of ${s.registered} participants`} />
+        <Stat label="AVERAGE ESTIMATE" value={s.avgEstimate ?? "-"} sub={s.avgDelta != null ? `${s.avgDelta >= 0 ? "+" : ""}${s.avgDelta} since the first test` : "No comparison yet"} tone={s.avgDelta != null && s.avgDelta >= 0 ? "ok" : undefined} />
+        <Stat label="MENCAPAI TARGET" value={s.reachedPct != null ? `${s.reachedPct}%` : "-"} sub={`${s.reached} of ${s.withScore} participants with scores`} />
+        <Stat label="COACHING ATTENDANCE" value={s.coaching.presentPct != null ? `${s.coaching.presentPct}%` : "-"} sub={`${s.coaching.sessionsMarked} sessions recorded · ${s.coaching.absent} absent`} />
+        <Stat label="COACHING QUOTA USED" value={s.coaching.quotaUsedPct != null ? `${s.coaching.quotaUsedPct}%` : "-"} />
+        <Stat label="OVERDUE PLANS" value={s.planLate} sub={s.planLatePct != null ? `${s.planLatePct}% of active participants` : undefined} tone={s.planLate ? "warn" : undefined} />
+        <Stat label="CONTRACT ENDS" value={s.institution.contractEnd ? new Date(s.institution.contractEnd).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "-"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Sebaran level</h2><div className="mt-4"><HBars rows={s.levels.map((d) => ({ label: d.label, value: d.n, sub: "peserta" }))} /></div></section>
-        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Topik yang paling banyak lemah</h2><p className="text-sm text-ink-soft">Bahan untuk kelas tatap muka atau pelatihan internal. Hanya agregat kelompok.</p><div className="mt-4"><HBars color="#F08A1C" rows={s.commonWeaknesses.map((w) => ({ label: w.title, value: w.n, sub: "peserta" }))} /></div></section>
+        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Level distribution</h2><div className="mt-4"><HBars rows={s.levels.map((d) => ({ label: d.label, value: d.n, sub: "participants" }))} /></div></section>
+        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Most common weak topics</h2><p className="text-sm text-ink-soft">Material for in-person classes or internal training. Group aggregates only.</p><div className="mt-4"><HBars color="#F08A1C" rows={s.commonWeaknesses.map((w) => ({ label: w.title, value: w.n, sub: "participants" }))} /></div></section>
       </div>
 
-      <section className="card"><div className="flex items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Peserta yang perlu perhatian</h2><Link href={withQ("/institusi/peserta")} className="text-sm font-semibold text-brand">Lihat semua peserta →</Link></div>
-        {s.attention.length ? <div className="table-wrap mt-3 !border-0"><table><thead><tr><th>Peserta</th><th>Alasan</th><th>Skor</th></tr></thead><tbody>{s.attention.map((a) => <tr key={a.id}><td className="font-semibold text-navy">{a.name}</td><td>{a.reason}</td><td>{a.score ?? "–"}</td></tr>)}</tbody></table></div> : <p className="mt-3 text-sm text-ink-soft">Tidak ada peserta yang perlu perhatian.</p>}</section>
+      <section className="card"><div className="flex items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Participants who need attention</h2><Link href={withQ("/institusi/peserta")} className="text-sm font-semibold text-brand">See all participants</Link></div>
+        {s.attention.length ? <div className="table-wrap mt-3 !border-0"><table><thead><tr><th>Participant</th><th>Reason</th><th>Score</th></tr></thead><tbody>{s.attention.map((a) => <tr key={a.id}><td className="font-semibold text-navy">{a.name}</td><td>{a.reason}</td><td>{a.score ?? "-"}</td></tr>)}</tbody></table></div> : <p className="mt-3 text-sm text-ink-soft">No participants need attention.</p>}</section>
     </div>
   );
 }

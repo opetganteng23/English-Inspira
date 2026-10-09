@@ -14,7 +14,7 @@ export async function compressImage(file: File, maxBytes = 300 * 1024) {
     if (blob && blob.size <= maxBytes) break;
     quality -= 0.12;
   }
-  if (!blob || blob.size > maxBytes) throw new Error("Gambar terlalu besar setelah dikompres");
+  if (!blob || blob.size > maxBytes) throw new Error("Image still too large after compression");
   return { blob, width: w, height: h };
 }
 
@@ -27,6 +27,6 @@ export async function uploadImage(file: File, opts: { sensitive?: boolean } = {}
   if (opts.sensitive) fd.append("sensitive", "true");
   const r = await fetch("/api/assets", { method: "POST", body: fd });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error ?? "Upload gagal");
+  if (!r.ok) throw new Error(data.error ?? "Upload failed");
   return data as { id: string; url: string };
 }

@@ -20,7 +20,7 @@ const dayWib = (d = new Date()) => new Date(d.getTime() + 7 * 3600_000).toISOStr
 export async function POST(req: Request) {
   try {
     const me = await requireRole(["participant"]);
-    try { await limiter.consume(String(me._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Terlalu sering"); throw e; }
+    try { await limiter.consume(String(me._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Too many requests"); throw e; }
     const b = eventInput.parse(await req.json());
     await connectDB();
     const sec = Math.min(MAX_PER_BEAT, Math.max(0, Math.round(b.activeSec)));
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       );
     return NextResponse.json({ ok: true, idleTimeoutSec: await getParam("idle_timeout_sec") });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

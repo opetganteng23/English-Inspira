@@ -9,7 +9,7 @@ const MAX_AGE = 60 * 60 * 24 * 7;
 
 const secret = () => {
   const s = process.env.JWT_SECRET;
-  if (!s || s.length < 32) throw new Error("JWT_SECRET wajib diisi (min 32 karakter)");
+  if (!s || s.length < 32) throw new Error("JWT_SECRET is required (min 32 characters)");
   return new TextEncoder().encode(s);
 };
 

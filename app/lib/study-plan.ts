@@ -42,7 +42,7 @@ export async function refreshStudyPlan(userId: Types.ObjectId | string, institut
     const unitId = await findRemedialUnit(lvl, t.skill, t.topic);
     await PlanItem.create({
       userId, ...(institutionId ? { institutionId } : {}), skill: t.skill, topic: t.topic, priority: high ? "high" : "medium", source: "auto",
-      title: `Perkuat topik ${t.topic} (${t.skill})`, dueAt: new Date(Date.now() + (high ? days.high : days.medium) * 86_400_000), analysisId, ...(unitId ? { unitId } : {}),
+      title: `Strengthen the topic ${t.topic} (${t.skill})`, dueAt: new Date(Date.now() + (high ? days.high : days.medium) * 86_400_000), analysisId, ...(unitId ? { unitId } : {}),
     });
   }
   return { created: created.length, resolved };

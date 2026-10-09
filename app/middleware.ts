@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
       let bad = false;
       if (origin) { try { bad = new URL(origin).host !== host; } catch { bad = true; } }
       else if (req.headers.get("sec-fetch-site") === "cross-site") bad = true;
-      if (bad) return NextResponse.json({ error: "Permintaan lintas situs ditolak" }, { status: 403 });
+      if (bad) return NextResponse.json({ error: "Cross-site request rejected" }, { status: 403 });
     }
     return NextResponse.next();
   }

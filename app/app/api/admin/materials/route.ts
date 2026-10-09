@@ -25,14 +25,14 @@ export async function POST(req: Request) {
   try {
     const admin = await requireAuthor();
     const b = normalizeMaterial(materialInput.parse(await req.json()));
-    if (admin.role !== "admin" && b.kind !== "rich") throw new HttpError(403, "Materi HTML hanya dikelola admin");
+    if (admin.role !== "admin" && b.kind !== "rich") throw new HttpError(403, "HTML materials are managed by admins only");
     const scope = authorScope(admin);
     await connectDB();
     const m = await Material.create({ ...b, ...scope, slug: await uniqueSlug(b.title), authorId: admin._id, editorId: admin._id });
     await audit(admin._id, "material.create", String(m._id));
     return NextResponse.json({ id: String(m._id), slug: m.slug }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: { number: string }
     const name = d.name ?? (await User.findById(c.userId).select("name").lean())?.name ?? "";
     return NextResponse.json({
       valid: true, type: c.type, number: c.number, issuedAt: c.issuedAt, holder: name ? maskName(name) : null, total: d.scores?.total ?? null,
-      official: c.type === "itp", note: c.type === "itp" ? "Skor resmi dari penyelenggara tes." : "Laporan latihan tes simulasi, bukan sertifikat TOEFL resmi.",
+      official: c.type === "itp", note: c.type === "itp" ? "Official score from the test organizer." : "A practice report from a simulation test, not an official TOEFL certificate.",
     });
   } catch (e) {
     return handleError(e);

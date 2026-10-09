@@ -7,7 +7,7 @@ const topicStatSchema = new Schema(
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },
     skill: { type: String, required: true },
     topic: { type: String, required: true },
-    score: { type: Number, required: true }, // 0–100, rata-rata tertimbang (alpha)
+    score: { type: Number, required: true }, // 0-100, rata-rata tertimbang (alpha)
     items: { type: Number, default: 0 }, // jumlah butir soal yang sudah dinilai
     status: { type: String, enum: ["strong", "ok", "weak", "priority", "insufficient"], required: true },
     lastAttemptId: { type: Schema.Types.ObjectId, ref: "Attempt" },

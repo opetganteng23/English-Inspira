@@ -13,7 +13,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   try {
     const me = await requireRole(["participant"]);
     const p = await loadPdf(params.id, me, { owner: true });
-    if (p.status !== "verified" && p.status !== "analyzed") throw new HttpError(409, "Verifikasi nilai dulu sebelum dianalisis");
+    if (p.status !== "verified" && p.status !== "analyzed") throw new HttpError(409, "Verify the scores before analyzing");
     let a = p.analysisId ? await Analysis.findById(p.analysisId) : null;
     if (a && a.status === "failed") { a.status = "calculated"; a.claimedAt = undefined; await a.save(); }
     if (!a) {

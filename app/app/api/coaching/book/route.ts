@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const b = await bookSlot(me, slotId);
     return NextResponse.json({ id: String(b._id) }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Slot tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid slot" }, { status: 400 });
     return handleError(e);
   }
 }

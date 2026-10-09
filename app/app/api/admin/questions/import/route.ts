@@ -13,7 +13,7 @@ export async function GET() {
   try {
     await requireRole(["admin"]);
     const csv = [QUESTION_TEMPLATE_HEADER, QUESTION_TEMPLATE_EXAMPLE].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\r\n");
-    return new Response("\uFEFF" + csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="templat-impor-soal.csv"' } });
+    return new Response("\uFEFF" + csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="question-import-template.csv"' } });
   } catch (e) {
     return handleError(e);
   }
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     const admin = await requireRole(["admin"]);
     const dry = new URL(req.url).searchParams.get("dry") === "1";
     const file = (await req.formData()).get("file");
-    if (!(file instanceof File)) throw new HttpError(400, "File wajib diisi");
+    if (!(file instanceof File)) throw new HttpError(400, "A file is required");
     const rows = mapQuestionRows(await readTable(file, 500));
     if (rows.length === 1 && !rows[0].ok && rows[0].row === 1) throw new HttpError(400, rows[0].error);
     await connectDB();

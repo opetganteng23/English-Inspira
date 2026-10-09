@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const u = await getCurrentUser();
-    if (!u) return NextResponse.json({ error: "Belum masuk" }, { status: 401 });
+    if (!u) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     const [inst, level] = await Promise.all([
       u.institutionId ? Institution.findById(u.institutionId).select("name contractEnd").lean() : null,
       u.currentLevelId ? Level.findById(u.currentLevelId).select("name").lean() : null,
@@ -35,7 +35,7 @@ export async function GET() {
 
 const patch = z.object({
   name: z.string().trim().min(2).max(100).optional(),
-  phone: z.string().trim().regex(/^[0-9+\-\s]{8,20}$/, "Nomor telepon tidak valid").optional(),
+  phone: z.string().trim().regex(/^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional(),
   education: z.enum(["sma", "d3", "s1", "s2"]).optional(),
   targetScore: z.union([z.literal(450), z.literal(500), z.literal(550), z.literal(600)]).optional(),
   goal: z.enum(["kelulusan", "beasiswa", "pekerjaan", "lainnya"]).optional(),
@@ -45,19 +45,19 @@ const patch = z.object({
 export async function PATCH(req: Request) {
   try {
     const me = await getCurrentUser();
-    if (!me) throw new HttpError(401, "Belum masuk");
-    if (me.status === "invited") throw new HttpError(403, "Lengkapi persetujuan data dulu", "consent_required");
+    if (!me) throw new HttpError(401, "Not signed in");
+    if (me.status === "invited") throw new HttpError(403, "Complete the data consent first", "consent_required");
     const b = patch.parse(await req.json());
     await connectDB();
     const u = await User.findById(me._id);
-    if (!u) throw new HttpError(401, "Belum masuk");
+    if (!u) throw new HttpError(401, "Not signed in");
     if (b.name && b.name !== u.name && (await ItpRegistration.exists({ userId: u._id, status: { $ne: "cancelled" } })))
-      throw new HttpError(409, "Nama terkunci setelah mendaftar tes ITP resmi");
+      throw new HttpError(409, "Your name is locked after registering for the official ITP test");
     u.set(b);
     await u.save();
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

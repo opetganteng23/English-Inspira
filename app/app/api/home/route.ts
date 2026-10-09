@@ -12,7 +12,7 @@ import { levelUpStatus } from "@/lib/level-up";
 
 export const dynamic = "force-dynamic";
 
-/** Beranda peserta: level, skor, kuota coaching, langkah berikutnya, dan riwayat skor. (Study plan & jadwal coaching: Fase 5–6.) */
+/** Beranda peserta: level, skor, kuota coaching, langkah berikutnya, dan riwayat skor. (Study plan & jadwal coaching: Fase 5-6.) */
 export async function GET() {
   try {
     const me = await requireRole(["participant"]);
@@ -35,9 +35,9 @@ export async function GET() {
 
     // Langkah berikutnya mengikuti kondisi nyata akun (urutan prioritas).
     let step: { title: string; body: string; cta: string; href: string } | null = null;
-    if (inProgress) step = { title: "Lanjutkan tesmu", body: "Ada tes yang sedang berjalan. Waktunya terus berjalan di server.", cta: "Lanjutkan", href: `/ruang-tes/${inProgress._id}` };
-    else if (!u?.placementAttemptId) step = { title: "Mulai dengan placement test", body: "Satu kali, format ITP. Hasilnya menentukan levelmu, kuota coaching, dan rencana belajar awal.", cta: "Mulai placement", href: "/tes" };
-    else step = { title: "Lanjutkan belajar", body: "Kerjakan latihan atau simulasi untuk memantau kemajuanmu.", cta: "Buka tes", href: "/tes" };
+    if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/ruang-tes/${inProgress._id}` };
+    else if (!u?.placementAttemptId) step = { title: "Start with the placement test", body: "Taken once, in ITP format. The result sets your level, coaching quota, and initial study plan.", cta: "Start placement", href: "/tes" };
+    else step = { title: "Keep learning", body: "Do exercises or simulations to track your progress.", cta: "Open tests", href: "/tes" };
 
     return NextResponse.json({
       name: u?.name ?? null, institution: inst ? { name: inst.name, contractEnd: inst.contractEnd ?? null } : null,

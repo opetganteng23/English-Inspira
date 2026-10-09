@@ -32,10 +32,10 @@ export function MaterialFrame({ doc, onProgress, minHeight = 240 }: { doc: HtmlD
     return () => window.removeEventListener("message", onMsg);
   }, [onProgress, minHeight, nonce]);
 
-  if (!srcDoc) return <div style={{ height: minHeight }} className="animate-pulse rounded-xl bg-canvas" aria-label="Memuat materi" />;
+  if (!srcDoc) return <div style={{ height: minHeight }} className="animate-pulse rounded-xl bg-canvas" aria-label="Loading material" />;
   return (
     <iframe
-      ref={ref} title="Materi interaktif" srcDoc={srcDoc} referrerPolicy="no-referrer" loading="lazy"
+      ref={ref} title="Interactive material" srcDoc={srcDoc} referrerPolicy="no-referrer" loading="lazy"
       sandbox={SANDBOX}
       style={{ width: "100%", height, border: 0, display: "block" }} className="rounded-xl bg-white"
     />

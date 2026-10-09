@@ -10,14 +10,14 @@ const ROLES = ["participant", "admin", "inst_admin"] as const;
 
 async function guard(id: string, audioId: string) {
   const user = await requireRole([...ROLES]);
-  if (!isValidObjectId(audioId)) throw new HttpError(404, "Audio tidak ditemukan");
+  if (!isValidObjectId(audioId)) throw new HttpError(404, "Audio not found");
   const { attempt, test } = await loadAttempt(id, user);
-  if (attempt.status !== "in_progress") throw new HttpError(409, "Tes sudah selesai");
+  if (attempt.status !== "in_progress") throw new HttpError(409, "The test is already finished");
   // Audio hanya boleh diminta bila dipakai soal pada section aktif.
   const groupIds = (await Question.find({ _id: { $in: test.sections[attempt.sectionIdx].questionIds } }).select("groupId").lean())
     .map((q) => q.groupId).filter((g): g is NonNullable<typeof g> => !!g);
   const ok = await QuestionGroup.exists({ _id: { $in: groupIds }, audioId });
-  if (!ok) throw new HttpError(403, "Audio bukan bagian dari section ini");
+  if (!ok) throw new HttpError(403, "This audio is not part of this section");
   return attempt;
 }
 
@@ -27,7 +27,7 @@ export async function POST(_req: Request, { params }: { params: { id: string; au
     const attempt = await guard(params.id, params.audioId);
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
     // Mode latihan (practice): pemutar penuh, boleh diulang. Tes lain: sekali putar (MTS §11).
-    if (rec?.done && attempt.kind !== "practice") throw new HttpError(403, "Audio ini sudah diputar dan tidak bisa diulang");
+    if (rec?.done && attempt.kind !== "practice") throw new HttpError(403, "This audio has already been played and cannot be replayed");
     if (!rec) attempt.audioPlays.push({ audioId: params.audioId, playedAt: new Date(), lastPosSec: 0, done: false } as never);
     await attempt.save();
     const token = await signAudioToken(params.audioId, params.id);
@@ -48,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; au
     const attempt = await guard(params.id, params.audioId);
     const b = progress.parse(await req.json());
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
-    if (!rec) throw new HttpError(409, "Audio belum dimulai");
+    if (!rec) throw new HttpError(409, "Audio has not been started");
     if (!rec.done && attempt.kind !== "practice") {
       rec.lastPosSec = Math.max(rec.lastPosSec ?? 0, b.posSec); // posisi tidak boleh mundur
       if (b.done) rec.done = true;
@@ -56,7 +56,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; au
     }
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

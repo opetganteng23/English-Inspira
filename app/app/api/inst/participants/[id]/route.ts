@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const { user, scoped } = await instContext(req);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Peserta tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Participant not found");
     const m = await User.findOne(scoped({ _id: params.id })).select("name email targetScore goal").lean();
-    if (!m) throw new HttpError(404, "Peserta tidak ditemukan");
+    if (!m) throw new HttpError(404, "Participant not found");
     await audit(user._id, "inst.participant_view", params.id); // akses inst_admin ke data individu dicatat (MTS §20)
     const l = (await memberResults([m._id])).get(String(m._id)) ?? [];
     return NextResponse.json({

@@ -10,10 +10,10 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireRole(["participant", "admin", "inst_admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Dokumen tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Document not found");
     await connectDB();
     const c = await Certificate.findById(params.id).lean();
-    if (!c || (String(c.userId) !== String(user._id) && user.role !== "admin")) throw new HttpError(404, "Dokumen tidak ditemukan");
+    if (!c || (String(c.userId) !== String(user._id) && user.role !== "admin")) throw new HttpError(404, "Document not found");
     const owner = await User.findById(c.userId).select("name email").lean();
     const d = (c.data ?? {}) as { name?: string; testName?: string; scores?: { listening?: number; structure?: number; reading?: number; total?: number } };
     const origin = process.env.APP_URL ?? new URL(req.url).origin;

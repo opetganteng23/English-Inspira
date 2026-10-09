@@ -12,15 +12,15 @@ import { User } from "@/models/User";
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const admin = await requireRole(["admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Pengguna tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "User not found");
     const b = userPatchInput.parse(await req.json());
     await connectDB();
     const u = await User.findById(params.id);
-    if (!u) throw new HttpError(404, "Pengguna tidak ditemukan");
+    if (!u) throw new HttpError(404, "User not found");
 
     if (b.status === "disabled" && u.role === "admin") {
-      if (String(u._id) === String(admin._id)) throw new HttpError(409, "Kamu tidak bisa menonaktifkan akunmu sendiri");
-      if ((await User.countDocuments({ role: "admin", status: { $ne: "disabled" }, _id: { $ne: u._id } })) === 0) throw new HttpError(409, "Harus ada minimal satu admin aktif");
+      if (String(u._id) === String(admin._id)) throw new HttpError(409, "You cannot deactivate your own account");
+      if ((await User.countDocuments({ role: "admin", status: { $ne: "disabled" }, _id: { $ne: u._id } })) === 0) throw new HttpError(409, "There must be at least one active admin");
     }
     if (b.name !== undefined) { u.name = b.name; await u.save(); }
     if (b.status === "disabled") await disableMember(u._id);
@@ -28,7 +28,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await audit(admin._id, "user.update", params.id, b);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

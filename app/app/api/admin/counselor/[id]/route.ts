@@ -8,10 +8,10 @@ import { CounselorThread } from "@/models/Counselor";
 import { User } from "@/models/User";
 
 async function find(id: string) {
-  if (!isValidObjectId(id)) throw new HttpError(404, "Percakapan tidak ditemukan");
+  if (!isValidObjectId(id)) throw new HttpError(404, "Conversation not found");
   await connectDB();
   const t = await CounselorThread.findById(id);
-  if (!t) throw new HttpError(404, "Percakapan tidak ditemukan");
+  if (!t) throw new HttpError(404, "Conversation not found");
   return t;
 }
 
@@ -40,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await audit(admin._id, "counselor.review", params.id);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

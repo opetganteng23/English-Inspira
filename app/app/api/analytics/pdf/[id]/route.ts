@@ -32,7 +32,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     const me = await requireRole(["participant"]);
     const p = await loadPdf(params.id, me, { owner: true });
-    if (p.status === "analyzed") throw new HttpError(409, "Sudah dianalisis. Unggah ulang bila ada koreksi.");
+    if (p.status === "analyzed") throw new HttpError(409, "Already analyzed. Upload again if you need to correct it.");
     const r = verifyScores(body.parse(await req.json()));
     if (!r.ok) throw new HttpError(400, r.error);
     p.verified = r.scores; p.status = "verified";
@@ -40,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await audit(me._id, "pdf.verify", params.id);
     return NextResponse.json({ ok: true, verified: r.scores });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Nilai harus berupa bilangan bulat" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Scores must be whole numbers" }, { status: 400 });
     return handleError(e);
   }
 }

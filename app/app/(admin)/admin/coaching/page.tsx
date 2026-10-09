@@ -11,18 +11,18 @@ export default function PantauanCoaching() {
   if (loading && !data) return <Loading />;
   return (
     <div className="flex flex-col gap-5">
-      <div><h1 className="page-title">Pantauan Coaching</h1><p className="text-sm text-ink-soft">Memastikan kuota peserta mungkin habis sebelum kontrak berakhir, dan memantau kehadiran per institusi.</p></div>
+      <div><h1 className="page-title">Coaching Monitor</h1><p className="text-sm text-ink-soft">Makes sure participants’ quotas can be used up before the contract ends, and monitors attendance per institution.</p></div>
       <ErrorNote text={error} />
-      {data?.institutions.length === 0 && <Empty>Belum ada institusi aktif.</Empty>}
+      {data?.institutions.length === 0 && <Empty>No active institutions yet.</Empty>}
       <div className="table-wrap"><table>
-        <thead><tr><th>Institusi</th><th>Coach</th><th>Peserta aktif</th><th>Sisa kuota</th><th>Kursi slot terbuka</th><th>Hadir</th><th>Peringatan</th></tr></thead>
+        <thead><tr><th>Institution</th><th>Coach</th><th>Active participants</th><th>Quota left</th><th>Open slot seats</th><th>Present</th><th>Warnings</th></tr></thead>
         <tbody>
           {data?.institutions.map((i) => (
             <tr key={i.id}>
-              <td className="font-semibold text-navy">{i.name}<br /><span className="text-xs font-normal text-ink-soft">{i.contractEnd ? `kontrak s/d ${tgl(i.contractEnd)}` : "tanpa batas"}</span></td>
+              <td className="font-semibold text-navy">{i.name}<br /><span className="text-xs font-normal text-ink-soft">{i.contractEnd ? `contract until ${tgl(i.contractEnd)}` : "no limit"}</span></td>
               <td>{i.coaches}</td><td>{i.participants}</td><td>{i.quotaRemaining}</td><td>{i.openSeats}</td>
-              <td>{i.presentPct != null ? `${i.presentPct}% (${i.sessionsMarked} sesi, ${i.absent} absen)` : "–"}</td>
-              <td>{i.warnings.length ? <ul className="list-disc pl-4 text-xs text-red-700">{i.warnings.map((w) => <li key={w}>{w}</li>)}</ul> : <span className="badge-ok">Aman</span>}</td>
+              <td>{i.presentPct != null ? `${i.presentPct}% (${i.sessionsMarked} sessions, ${i.absent} absent)` : "-"}</td>
+              <td>{i.warnings.length ? <ul className="list-disc pl-4 text-xs text-red-700">{i.warnings.map((w) => <li key={w}>{w}</li>)}</ul> : <span className="badge-ok">OK</span>}</td>
             </tr>
           ))}
         </tbody>

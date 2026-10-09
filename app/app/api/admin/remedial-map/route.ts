@@ -19,7 +19,7 @@ export async function GET() {
     ]);
     const cn = new Map(courses.map((c) => [String(c._id), c.title])), un = new Map(units.map((u) => [String(u._id), `${cn.get(String(u.courseId)) ?? "?"} › ${u.title}`]));
     return NextResponse.json({
-      entries: maps.map((m) => ({ id: String(m._id), skill: m.skill, topic: m.topic, unitId: String(m.unitId), unit: un.get(String(m.unitId)) ?? "(unit dihapus)" })),
+      entries: maps.map((m) => ({ id: String(m._id), skill: m.skill, topic: m.topic, unitId: String(m.unitId), unit: un.get(String(m.unitId)) ?? "(unit deleted)" })),
       units: units.map((u) => ({ id: String(u._id), label: un.get(String(u._id)) ?? u.title })),
       topics: tags.map((t) => ({ skill: t._id.skill, topic: t._id.topic, questions: t.n })),
     });
@@ -35,13 +35,13 @@ export async function POST(req: Request) {
     const admin = await requireRole(["admin"]);
     const b = body.parse(await req.json());
     await connectDB();
-    if (!(await Unit.exists({ _id: b.unitId }))) throw new HttpError(400, "Unit tidak ditemukan");
-    if (await RemedialMap.exists(b)) throw new HttpError(409, "Pemetaan ini sudah ada");
+    if (!(await Unit.exists({ _id: b.unitId }))) throw new HttpError(400, "Unit not found");
+    if (await RemedialMap.exists(b)) throw new HttpError(409, "This mapping already exists");
     const m = await RemedialMap.create(b);
     await audit(admin._id, "remedial.create", String(m._id), b);
     return NextResponse.json({ id: String(m._id) }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

@@ -11,16 +11,16 @@ export async function importMembers(institutionId: Types.ObjectId | string, rows
   const report: ImportReport = { created: 0, resent: 0, failed: [] };
   const seen = new Set<string>();
   for (const r of rows) {
-    if (!r.email) { report.failed.push({ row: r.row, email: "", reason: "Email kosong" }); continue; }
-    if (!emailSchema.safeParse(r.email).success) { report.failed.push({ row: r.row, email: r.email, reason: "Format email tidak valid" }); continue; }
-    if (seen.has(r.email)) { report.failed.push({ row: r.row, email: r.email, reason: "Duplikat di dalam file" }); continue; }
+    if (!r.email) { report.failed.push({ row: r.row, email: "", reason: "Empty email" }); continue; }
+    if (!emailSchema.safeParse(r.email).success) { report.failed.push({ row: r.row, email: r.email, reason: "Invalid email format" }); continue; }
+    if (seen.has(r.email)) { report.failed.push({ row: r.row, email: r.email, reason: "Duplicate within the file" }); continue; }
     seen.add(r.email);
     try {
       const out = await createMember(institutionId, { email: r.email, name: r.name, phone: r.phone }, actorId);
       if (out.resent) report.resent++; else report.created++;
     } catch (e) {
       if (e instanceof HttpError && e.status === 404) throw e; // institusi tidak ada: hentikan seluruh impor
-      report.failed.push({ row: r.row, email: r.email, reason: e instanceof HttpError ? e.message : "Gagal diproses" });
+      report.failed.push({ row: r.row, email: r.email, reason: e instanceof HttpError ? e.message : "Processing failed" });
     }
   }
   await audit(actorId, "participants.import", String(institutionId), { created: report.created, resent: report.resent, failed: report.failed.length });

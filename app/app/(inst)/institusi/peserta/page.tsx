@@ -20,16 +20,16 @@ export default function InstPeserta() {
   if (!ready) return <Loading />;
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Peserta & undangan</h1><p className="text-sm text-ink-soft">Tambah peserta dan lihat hasil per orang. Hanya peserta institusimu yang tampil.</p></div><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Ekspor Excel</a></div>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Participants & invitations</h1><p className="text-sm text-ink-soft">Add participants and view individual results. Only participants from your institution are shown.</p></div><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Export Excel</a></div>
       <ImportPanel base="/api/inst" query={q2} onDone={reload} />
-      <input className="field max-w-xs" placeholder="Cari nama atau email" value={q} onChange={(e) => setQ(e.target.value)} />
+      <input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} />
       <ErrorNote text={error} />
       {loading && !data ? <Loading /> : (
         <div className="table-wrap"><table>
-          <thead><tr><th>Peserta</th><th>Target</th><th>Tes</th><th>Skor pertama</th><th>Skor terakhir</th><th>Terakhir</th><th /></tr></thead>
+          <thead><tr><th>Participant</th><th>Target</th><th>Tests</th><th>First score</th><th>Last score</th><th>Last</th><th /></tr></thead>
           <tbody>
-            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(belum ada nama)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · menunggu aktivasi" : ""}</span></td><td>{p.target ?? "–"}</td><td>{p.tests}</td><td>{p.firstScore ?? "–"}</td><td className="font-semibold">{p.lastScore ?? "–"}</td><td>{p.lastAt ? tgl(p.lastAt) : "–"}</td><td className="text-right"><button className="font-semibold text-brand" onClick={() => setSel(p.id)}>Hasil</button></td></tr>)}
-            {data?.participants.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">Belum ada peserta.</td></tr>}
+            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td><td>{p.target ?? "-"}</td><td>{p.tests}</td><td>{p.firstScore ?? "-"}</td><td className="font-semibold">{p.lastScore ?? "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td><td className="text-right"><button className="font-semibold text-brand" onClick={() => setSel(p.id)}>Results</button></td></tr>)}
+            {data?.participants.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No participants yet.</td></tr>}
           </tbody>
         </table></div>
       )}
@@ -41,11 +41,11 @@ export default function InstPeserta() {
 function Detail({ url, onClose }: { url: string | null; onClose: () => void }) {
   const { data, error } = useApi<D>(url);
   return (
-    <Modal title="Hasil peserta" onClose={onClose}>
-      {!data ? <Loading text={error || "Memuat…"} /> : (
+    <Modal title="Participant results" onClose={onClose}>
+      {!data ? <Loading text={error || "Loading…"} /> : (
         <div className="flex flex-col gap-3 text-sm">
-          <p><b className="text-navy">{data.participant.name ?? data.participant.email}</b> · target {data.participant.target ?? "–"}</p>
-          {data.attempts.length ? <ul className="divide-y divide-line">{data.attempts.map((a) => <li key={a.id} className="flex items-center justify-between gap-3 py-2"><span>{a.kind} · {tgl(a.finishedAt)}<br /><span className="text-xs text-ink-soft">{a.sections.map((s) => `${SEC[s.section]} ${s.scaled}`).join(" · ")}</span></span><b className="font-display text-xl text-navy">{a.scoreEst}</b></li>)}</ul> : <p className="text-ink-soft">Belum ada hasil tes.</p>}
+          <p><b className="text-navy">{data.participant.name ?? data.participant.email}</b> · target {data.participant.target ?? "-"}</p>
+          {data.attempts.length ? <ul className="divide-y divide-line">{data.attempts.map((a) => <li key={a.id} className="flex items-center justify-between gap-3 py-2"><span>{a.kind} · {tgl(a.finishedAt)}<br /><span className="text-xs text-ink-soft">{a.sections.map((s) => `${SEC[s.section]} ${s.scaled}`).join(" · ")}</span></span><b className="font-display text-xl text-navy">{a.scoreEst}</b></li>)}</ul> : <p className="text-ink-soft">No test results yet.</p>}
         </div>
       )}
     </Modal>

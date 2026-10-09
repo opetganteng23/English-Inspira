@@ -8,18 +8,18 @@ import { Test, Attempt } from "@/models/Test";
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireRole(["participant", "admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Tes tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Test not found");
     await connectDB();
     const test = await Test.findOne({ _id: params.id, active: true }).lean();
-    if (!test) throw new HttpError(404, "Tes tidak ditemukan");
-    if (test.kind === "quiz") throw new HttpError(409, "Kuis dikerjakan dari unit belajar");
+    if (!test) throw new HttpError(404, "Test not found");
+    if (test.kind === "quiz") throw new HttpError(409, "Quizzes are taken from learning units");
 
     // Lanjutkan attempt yang berjalan (tahan refresh); tidak perlu cek ulang aturan.
     const running = await Attempt.findOne({ userId: user._id, testId: test._id, status: "in_progress" });
     if (running) return NextResponse.json({ attemptId: String(running._id), resumed: true });
 
     const gate = canStartTest(user, test);
-    if (!gate.ok) throw new HttpError(403, gate.reason ?? "Tes belum bisa dikerjakan");
+    if (!gate.ok) throw new HttpError(403, gate.reason ?? "This test cannot be taken yet");
 
     const now = new Date();
     const attempt = await Attempt.create({ userId: user._id, institutionId: user.institutionId, testId: test._id, kind: test.kind, startedAt: now, sectionStartedAt: now });

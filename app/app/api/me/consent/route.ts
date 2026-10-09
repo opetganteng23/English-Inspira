@@ -6,9 +6,9 @@ import { audit } from "@/lib/audit";
 import { User } from "@/models/User";
 
 const schema = z.object({
-  consent: z.literal(true, { message: "Setujui penggunaan data untuk melanjutkan" }),
+  consent: z.literal(true, { message: "Agree to the use of your data to continue" }),
   name: z.string().trim().min(2).max(100),
-  phone: z.string().trim().regex(/^[0-9+\-\s]{8,20}$/, "Nomor telepon tidak valid").optional().or(z.literal("")),
+  phone: z.string().trim().regex(/^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional().or(z.literal("")),
 });
 
 /** Login pertama: lengkapi profil + persetujuan data (UU PDP). Status invited → active. */
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     await audit(me._id, "consent.accept", String(me._id));
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

@@ -14,11 +14,11 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
     const me = await requireRole(["participant"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Unit tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Unit not found");
     await connectDB();
     const unit = await Unit.findOne({ _id: params.id, active: true }).lean();
     const course = unit ? await Course.findOne({ _id: unit.courseId, active: true, levelId: me.currentLevelId ?? undefined }).lean() : null;
-    if (!unit || !course) throw new HttpError(404, "Unit tidak ditemukan");
+    if (!unit || !course) throw new HttpError(404, "Unit not found");
 
     const [mats, prog, mprog, quiz, running, pass] = await Promise.all([
       Material.find({ _id: { $in: unit.materialIds }, status: "published", ...visibleTo(me) }).select("title slug kind summary").lean(),

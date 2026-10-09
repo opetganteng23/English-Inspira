@@ -10,7 +10,7 @@ import { retryFallbackAnalyses } from "./analysis";
 import { PdfImport, pdfBucket } from "@/models/Pdf";
 
 // Job terjadwal (MTS §18). Dipanggil oleh instrumentation.ts (node-cron, PM2) atau /api/cron/[job] (cron sistem/Vercel).
-// Job berikutnya (reminder sesi, status plan, peringatan kuota) ditambahkan di sini pada Fase 5–6.
+// Job berikutnya (reminder sesi, status plan, peringatan kuota) ditambahkan di sini pada Fase 5-6.
 
 /** Tiap menit: kirim email di antrean (retry bertahap, batas undangan per jam). */
 export async function mailJob() {

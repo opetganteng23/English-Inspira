@@ -1,4 +1,4 @@
-# TODO Edulyfe EPTA — acuan: English_Inspira_LMS_MTS_V2_2.md
+# TODO English Inspira (repo Edulyfe EPTA) — acuan: English_Inspira_LMS_MTS_V2_2.md
 
 Legenda status: ✅ Sudah · 🔄 Sedang · ⬜ Belum · ⏭️ Sengaja dilewati/ditunda (alasan wajib) · ❌ Dihapus karena bertentangan dengan v2.2
 Prioritas: **P1** fondasi (Fase 1+3) → **P2** belajar & analitik (Fase 4+5) → **P3** coaching (Fase 6) → **P4** PDF/level-up/laporan/hardening (Fase 7+8) → **P5** opsional (Fase 9, sudah ada)
@@ -14,7 +14,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | K3 | Deploy: Biznet Gio Cloud + PM2 (satu instance) + Nginx | ✅ dokumen siap (README, `ecosystem.config.cjs`, `deploy/`) |
 | K4 | Bentuk **pure-analytics** (library/service) | ⬜ menunggu modul/kontrak. Sementara: perhitungan angka di kode sendiri (adapter §14) |
 | K5 | Angka level, tabel konversi skor resmi, retensi data, kuota Konselor | ⬜ placeholder dari MTS §5; admin dapat mengubah lewat Parameter Sistem |
-| K6 | Nama produk: "Edulyfe EPTA" (UI) vs "English Inspira" (judul MTS) | ⬜ perlu konfirmasi |
+| K6 | Nama produk di UI: **English Inspira** (sesuai MTS, desain, dan logo Inspira dari pemilik). Domain/DB/PM2 tetap `edulyfe` | ✅ |
 
 ## 1. Pembuangan model v1 (❌ → hapus) — P1
 
@@ -22,7 +22,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|---|
 | R1 | Koleksi `products`, `vouchers`, `orders`, `entitlements`, `leads` + seed produk | ✅ model & rute dihapus |
 | R2 | Midtrans, webhook, `/api/checkout`, `/api/cart`, `/api/orders`, invoice PDF, mode simulasi bayar | ✅ rute, Midtrans, invoice PDF dihapus |
-| R3 | Free trial (diganti placement), pendaftaran publik `/daftar`, landing publik, kode institusi self-join | ✅ `/daftar` 404 (teruji), self-join dihapus, `/` hanya mengalihkan |
+| R3 | Free trial (diganti placement), pendaftaran publik `/daftar`, landing publik, kode institusi self-join | ✅ `/daftar` 404 (teruji), self-join dihapus. `/` kini landing publik (tanpa harga/daftar/free trial; CTA Sign in + kontak institusi) |
 | R4 | Halaman Paket, Keranjang, Checkout, Pembayaran, Riwayat; admin Transaksi, Paket, Voucher, Lead; Journey v1 | ✅ halaman dihapus; menu baru |
 | R5 | Tagihan institusi (`InstInvoice`) — tidak ada di v2.2 | ✅ |
 
@@ -140,7 +140,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | Edit kunci soal saat attempt berjalan memengaruhi penilaian | ⬜ snapshot per attempt |
 | Hanya `route.ts` yang boleh mengekspor handler HTTP (skema Zod ke `lib/`) | ✅ aturan dipatuhi |
 | Respons `/api/itp/sessions` kehilangan `organizer`/`rescheduleDays`/`advice` (komentar `//` menelan sisa baris) | ✅ diperbaiki |
-| Pemeriksaan smoke "OTP tidak dikirim ke peserta yang aksesnya berakhir" kondisinya lemah (membandingkan posisi log) | ⬜ perketat |
+| Pemeriksaan smoke "OTP tidak dikirim ke peserta yang aksesnya berakhir" kondisinya lemah (membandingkan posisi log) | ✅ dihitung jumlah email OTP sebelum/sesudah |
 
 ## 11. Cakupan verifikasi (jujur)
 
@@ -161,5 +161,17 @@ Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 60 uj
 | P2 | L10 uji keamanan iframe di browser (akses parent/storage/cookie, jaringan, navigasi, popup) | ⬜ |
 | P3 | Uji panggilan Claude nyata, SMTP nyata, MongoDB nyata, node-cron di PM2 (menunggu kunci & URL DB) | ⬜ |
 | P3 | OCR untuk PDF hasil scan | ⬜ |
-| P3 | Perketat uji smoke "OTP tidak dikirim ke peserta yang aksesnya berakhir" | ⬜ |
-| – | Keputusan pemilik: K4 pure-analytics, K5 angka resmi (level, konversi skor, retensi, kuota), K6 nama produk | ⬜ |
+| – | Keputusan pemilik: K4 pure-analytics, K5 angka resmi (level, konversi skor, retensi, kuota) | ⬜ |
+
+## 13. Bahasa Inggris, font, landing, logo (permintaan pemilik 2026-10-09)
+
+| ID | Item | Status |
+|---|---|---|
+| E1 | Bug "Kode salah": dua email OTP berjudul sama ditumpuk Gmail, pengguna membaca kode lama | ✅ kode kini ada di judul email (`123456 is your English Inspira sign-in code`) |
+| E2 | Seluruh teks UI, API, email, PDF, prompt AI, preset materi dalam bahasa Inggris | ✅ sapuan kosakata + morfologi; sisa sengaja: nilai enum, alias kolom impor, URL rute, komentar kode, label uji smoke |
+| E3 | Tanpa tanda panah (←→↑↓…) dan em dash di teks tampilan | ✅ diganti teks (Previous/Next/Up/Down…) dan "-" |
+| E4 | Semua font Poppins (web, email, PDF, iframe materi) | ✅ PDF memakai TTF (WOFF2 membuat fontkit gagal: laporan PDF 500, kini diperbaiki) |
+| E5 | Landing page bahasa Inggris mengikuti `English Inspira — Redesign Website.html` | ✅ hero, mitra, cara kerja, Konselor AI, journey 7 tahap, untuk institusi, untuk siapa, FAQ, CTA; tanpa harga/daftar/free trial; dicek di 1440 px dan 500 px |
+| E6 | Logo Inspira (dari pemilik) di header, footer, favicon, PDF | ✅ `public/brand/logo-{white,navy}.png`, `app/icon.png` |
+| E7 | Data contoh lama di Atlas (nama tes "(contoh)", pembahasan soal) | 🔄 `scripts/migrate-en.ts` (hanya mengganti teks yang persis sama dengan seed lama) |
+| E8 | Ganti URL rute berbahasa Indonesia (/beranda, /masuk, …) ke bahasa Inggris | ⏭️ belum diminta; perlu konfirmasi karena mengubah tautan email yang sudah terkirim |

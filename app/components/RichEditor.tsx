@@ -32,7 +32,7 @@ const AudioBlock = Node.create({
   renderHTML({ HTMLAttributes }) { return ["audio", mergeAttributes(HTMLAttributes, { controls: "controls" })]; },
 });
 
-/** Blok interaktif (kuis, flashcard, isian, pencocokan, timer, catatan/tips). Konfigurasi JSON divalidasi saat disisipkan dan lagi di server. */
+/** Interactive block (kuis, flashcard, isian, pencocokan, timer, catatan/tips). Konfigurasi JSON divalidasi saat disisipkan dan lagi di server. */
 const InteractiveNode = Node.create({
   name: "interactiveBlock", group: "block", atom: true, draggable: true,
   addAttributes() {
@@ -41,14 +41,14 @@ const InteractiveNode = Node.create({
   },
   parseHTML() { return [{ tag: "div[data-ei-block]" }]; },
   renderHTML({ node, HTMLAttributes }) {
-    let label = "Blok interaktif";
+    let label = "Interactive block";
     try { label = blockSummary(node.attrs.type as BlockType, JSON.parse(node.attrs.config)) ?? label; } catch { /* tampilkan label bawaan */ }
     return ["div", mergeAttributes(HTMLAttributes, { style: "border:1.5px dashed #1B5FB8;border-radius:10px;padding:10px;background:#E9F0FA" }), `🧩 ${label}${node.attrs.topic ? ` · topik ${node.attrs.topic}` : ""}`];
   },
 });
 
 type AudioItem = { id: string; title: string; durationSec: number };
-const FONTS = [["", "Font bawaan"], ["Georgia, serif", "Serif"], ["Arial, sans-serif", "Sans-serif"], ["'Courier New', monospace", "Monospace"]] as const;
+const FONTS = [["", "Default font"], ["Georgia, serif", "Serif"], ["Arial, sans-serif", "Sans-serif"], ["'Courier New', monospace", "Monospace"]] as const;
 const SIZES = ["", "14px", "16px", "18px", "20px", "24px", "32px"];
 
 export function RichEditor({ initial, onChange, audios }: { initial?: unknown; onChange: (json: unknown, html: string) => void; audios: AudioItem[] }) {
@@ -66,7 +66,7 @@ export function RichEditor({ initial, onChange, audios }: { initial?: unknown; o
       TaskList, TaskItem.configure({ nested: true }), Table.configure({ resizable: false }), TableRow, TableCell, TableHeader, Youtube.configure({ width: 560, height: 315, nocookie: true }), CharacterCount, AudioBlock, InteractiveNode,
     ],
     content: (initial as object) || "",
-    editorProps: { attributes: { class: "prose-ei min-h-[280px] rounded-b-xl border border-line-strong bg-white p-4 outline-none focus:border-brand", "aria-label": "Isi materi" } },
+    editorProps: { attributes: { class: "prose-ei min-h-[280px] rounded-b-xl border border-line-strong bg-white p-4 outline-none focus:border-brand", "aria-label": "Material content" } },
     onUpdate: ({ editor: e }) => { setHtml(e.getHTML()); onChange(e.getJSON(), e.getHTML()); },
   });
   useEffect(() => { if (editor) { setHtml(editor.getHTML()); onChange(editor.getJSON(), editor.getHTML()); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [editor]);
@@ -84,19 +84,19 @@ export function RichEditor({ initial, onChange, audios }: { initial?: unknown; o
       const fd = new FormData(); fd.append("file", f);
       const r = await fetch("/api/material-files", { method: "POST", body: fd });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error ?? "Gagal mengunggah PDF");
+      if (!r.ok) throw new Error(d.error ?? "PDF upload failed");
       editor!.chain().focus().insertContent(`<p><a href="${d.url}">📎 ${String(d.filename).replace(/[<>&"]/g, "")}</a></p>`).run();
     } catch (e) { setErr((e as Error).message); }
   }
   function addLink() {
-    const url = window.prompt("Alamat tautan (https://…)");
+    const url = window.prompt("Link address (https://…)");
     if (url === null) return;
     if (url === "") editor!.chain().focus().unsetLink().run(); else editor!.chain().focus().setLink({ href: url }).run();
   }
   function addYoutube() { const url = window.prompt("URL video YouTube"); if (url) editor!.commands.setYoutubeVideo({ src: url }); }
   function addAudio(id: string) {
     if (!id) return;
-    const transcript = window.confirm("Tampilkan transkrip audio ini di bawah pemutar?\n(OK = tampilkan, Batal = tanpa transkrip)");
+    const transcript = window.confirm("Show this audio's transcript below the player?\n(OK = show, Cancel = no transcript)");
     editor!.chain().focus().insertContent({ type: "audioBlock", attrs: { audioId: id, transcript } }).run();
   }
 
@@ -108,10 +108,10 @@ export function RichEditor({ initial, onChange, audios }: { initial?: unknown; o
       <input ref={pdf} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => { addPdf(e.target.files?.[0]); e.target.value = ""; }} />
       {err && <p role="alert" className="mt-1 text-sm text-red-700">{err}</p>}
       <EditorContent editor={editor} />
-      <p className="mt-1 text-right text-xs text-ink-soft">{editor.storage.characterCount.words()} kata</p>
+      <p className="mt-1 text-right text-xs text-ink-soft">{editor.storage.characterCount.words()} words</p>
       {phone && (
-        <div className="mx-auto mt-3 w-full max-w-[391px] rounded-[28px] border-[6px] border-navy bg-white p-3" aria-label="Pratinjau tampilan ponsel">
-          <p className="mb-2 text-center text-[11px] text-ink-soft">Pratinjau ponsel (blok interaktif aktif, hasil tidak disimpan)</p>
+        <div className="mx-auto mt-3 w-full max-w-[391px] rounded-[28px] border-[6px] border-navy bg-white p-3" aria-label="Phone view preview">
+          <p className="mb-2 text-center text-[11px] text-ink-soft">Phone preview (interactive blocks active, results are not saved)</p>
           <RichViewer html={html} />
         </div>
       )}
@@ -132,63 +132,63 @@ function Toolbar({ editor: e, onImage, onPdf, onLink, onYoutube, onAudio, onBloc
   const inTable = e.isActive("table");
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-t-xl border border-b-0 border-line-strong bg-canvas p-2" role="toolbar" aria-label="Format teks">
-      <select aria-label="Gaya paragraf" className={sel} value={e.isActive("heading", { level: 2 }) ? "2" : e.isActive("heading", { level: 3 }) ? "3" : "p"} onChange={(ev) => { const v = ev.target.value; if (v === "p") e.chain().focus().setParagraph().run(); else e.chain().focus().toggleHeading({ level: Number(v) as 2 | 3 }).run(); }}><option value="p">Paragraf</option><option value="2">Judul</option><option value="3">Subjudul</option></select>
-      <select aria-label="Jenis font" className={sel} value={(e.getAttributes("textStyle").fontFamily as string) ?? ""} onChange={(ev) => (ev.target.value ? e.chain().focus().setFontFamily(ev.target.value).run() : e.chain().focus().unsetFontFamily().run())}>{FONTS.map(([v, l]) => <option key={l} value={v}>{l}</option>)}</select>
-      <select aria-label="Ukuran font" className={sel} value={(e.getAttributes("textStyle").fontSize as string) ?? ""} onChange={(ev) => (ev.target.value ? e.chain().focus().setFontSize(ev.target.value).run() : e.chain().focus().unsetFontSize().run())}>{SIZES.map((s) => <option key={s} value={s}>{s || "Ukuran"}</option>)}</select>
-      <B label="Tebal" active={e.isActive("bold")} on={() => e.chain().focus().toggleBold().run()}><b>B</b></B>
-      <B label="Miring" active={e.isActive("italic")} on={() => e.chain().focus().toggleItalic().run()}><i>I</i></B>
-      <B label="Garis bawah" active={e.isActive("underline")} on={() => e.chain().focus().toggleUnderline().run()}><u>U</u></B>
+      <select aria-label="Paragraph style" className={sel} value={e.isActive("heading", { level: 2 }) ? "2" : e.isActive("heading", { level: 3 }) ? "3" : "p"} onChange={(ev) => { const v = ev.target.value; if (v === "p") e.chain().focus().setParagraph().run(); else e.chain().focus().toggleHeading({ level: Number(v) as 2 | 3 }).run(); }}><option value="p">Paragraph</option><option value="2">Title</option><option value="3">Subheading</option></select>
+      <select aria-label="Font family" className={sel} value={(e.getAttributes("textStyle").fontFamily as string) ?? ""} onChange={(ev) => (ev.target.value ? e.chain().focus().setFontFamily(ev.target.value).run() : e.chain().focus().unsetFontFamily().run())}>{FONTS.map(([v, l]) => <option key={l} value={v}>{l}</option>)}</select>
+      <select aria-label="Font size" className={sel} value={(e.getAttributes("textStyle").fontSize as string) ?? ""} onChange={(ev) => (ev.target.value ? e.chain().focus().setFontSize(ev.target.value).run() : e.chain().focus().unsetFontSize().run())}>{SIZES.map((s) => <option key={s} value={s}>{s || "Size"}</option>)}</select>
+      <B label="Bold" active={e.isActive("bold")} on={() => e.chain().focus().toggleBold().run()}><b>B</b></B>
+      <B label="Italic" active={e.isActive("italic")} on={() => e.chain().focus().toggleItalic().run()}><i>I</i></B>
+      <B label="Underline" active={e.isActive("underline")} on={() => e.chain().focus().toggleUnderline().run()}><u>U</u></B>
       <B label="Coret" active={e.isActive("strike")} on={() => e.chain().focus().toggleStrike().run()}><s>S</s></B>
       <B label="Highlight" active={e.isActive("highlight")} on={() => e.chain().focus().toggleHighlight().run()}>▮</B>
-      <input aria-label="Warna teks" type="color" className="h-9 w-9 cursor-pointer rounded-md border border-line-strong bg-white p-1" onChange={(ev) => e.chain().focus().setColor(ev.target.value).run()} />
+      <input aria-label="Text color" type="color" className="h-9 w-9 cursor-pointer rounded-md border border-line-strong bg-white p-1" onChange={(ev) => e.chain().focus().setColor(ev.target.value).run()} />
       <B label="Subskrip" active={e.isActive("subscript")} on={() => e.chain().focus().toggleSubscript().run()}>x₂</B>
       <B label="Superskrip" active={e.isActive("superscript")} on={() => e.chain().focus().toggleSuperscript().run()}>x²</B>
       {sep}
-      <B label="Daftar poin" active={e.isActive("bulletList")} on={() => e.chain().focus().toggleBulletList().run()}>•≡</B>
-      <B label="Daftar nomor" active={e.isActive("orderedList")} on={() => e.chain().focus().toggleOrderedList().run()}>1.</B>
+      <B label="Bulleted list" active={e.isActive("bulletList")} on={() => e.chain().focus().toggleBulletList().run()}>•≡</B>
+      <B label="Numbered list" active={e.isActive("orderedList")} on={() => e.chain().focus().toggleOrderedList().run()}>1.</B>
       <B label="Checklist" active={e.isActive("taskList")} on={() => e.chain().focus().toggleTaskList().run()}>☑</B>
-      <B label="Kutipan" active={e.isActive("blockquote")} on={() => e.chain().focus().toggleBlockquote().run()}>“</B>
-      <B label="Blok kode" active={e.isActive("codeBlock")} on={() => e.chain().focus().toggleCodeBlock().run()}>{"</>"}</B>
-      <B label="Garis pemisah" on={() => e.chain().focus().setHorizontalRule().run()}>―</B>
+      <B label="Quote" active={e.isActive("blockquote")} on={() => e.chain().focus().toggleBlockquote().run()}>“</B>
+      <B label="Code block" active={e.isActive("codeBlock")} on={() => e.chain().focus().toggleCodeBlock().run()}>{"</>"}</B>
+      <B label="Divider" on={() => e.chain().focus().setHorizontalRule().run()}>―</B>
       {sep}
-      {(["left", "center", "right", "justify"] as const).map((a) => <B key={a} label={`Rata ${a}`} active={e.isActive({ textAlign: a })} on={() => e.chain().focus().setTextAlign(a).run()}>{a === "left" ? "⇤" : a === "center" ? "↔" : a === "right" ? "⇥" : "☰"}</B>)}
+      {(["left", "center", "right", "justify"] as const).map((a) => <B key={a} label={`Align ${a}`} active={e.isActive({ textAlign: a })} on={() => e.chain().focus().setTextAlign(a).run()}>{a === "left" ? "Left" : a === "center" ? "Center" : a === "right" ? "Right" : "Justify"}</B>)}
       {sep}
-      <B label="Tautan" active={e.isActive("link")} on={onLink}>🔗</B>
-      <B label="Sisipkan gambar" on={onImage}>🖼</B>
-      <B label="Sisipkan video YouTube" on={onYoutube}>▶</B>
-      <B label="Lampirkan PDF" on={onPdf}>📎</B>
-      <B label="Sisipkan tabel" on={() => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>▦</B>
-      <select aria-label="Sisipkan audio" className={`${sel} max-w-[160px]`} value="" onChange={(ev) => onAudio(ev.target.value)}><option value="">🔊 Sisipkan audio</option>{audios.map((a) => <option key={a.id} value={a.id}>{a.title} ({a.durationSec}s)</option>)}</select>
-      <button type="button" onClick={onBlock} className="h-9 rounded-md bg-brand px-3 text-sm font-semibold text-white">🧩 Blok interaktif</button>
+      <B label="Link" active={e.isActive("link")} on={onLink}>🔗</B>
+      <B label="Insert image" on={onImage}>🖼</B>
+      <B label="Insert YouTube video" on={onYoutube}>▶</B>
+      <B label="Attach PDF" on={onPdf}>📎</B>
+      <B label="Insert table" on={() => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>▦</B>
+      <select aria-label="Insert audio" className={`${sel} max-w-[160px]`} value="" onChange={(ev) => onAudio(ev.target.value)}><option value="">🔊 Insert audio</option>{audios.map((a) => <option key={a.id} value={a.id}>{a.title} ({a.durationSec}s)</option>)}</select>
+      <button type="button" onClick={onBlock} className="h-9 rounded-md bg-brand px-3 text-sm font-semibold text-white">🧩 Interactive block</button>
       {inTable && (
         <>
           {sep}
-          <B label="Tambah kolom" on={() => e.chain().focus().addColumnAfter().run()}>+kol</B>
-          <B label="Tambah baris" on={() => e.chain().focus().addRowAfter().run()}>+bar</B>
-          <B label="Hapus kolom" on={() => e.chain().focus().deleteColumn().run()}>−kol</B>
-          <B label="Hapus baris" on={() => e.chain().focus().deleteRow().run()}>−bar</B>
+          <B label="Add column" on={() => e.chain().focus().addColumnAfter().run()}>+kol</B>
+          <B label="Add row" on={() => e.chain().focus().addRowAfter().run()}>+bar</B>
+          <B label="Delete column" on={() => e.chain().focus().deleteColumn().run()}>−kol</B>
+          <B label="Delete row" on={() => e.chain().focus().deleteRow().run()}>−bar</B>
           <B label="Gabung sel" on={() => e.chain().focus().mergeCells().run()}>⊞</B>
           <B label="Pisah sel" on={() => e.chain().focus().splitCell().run()}>⊟</B>
-          <B label="Hapus tabel" on={() => e.chain().focus().deleteTable().run()}>🗑</B>
+          <B label="Delete table" on={() => e.chain().focus().deleteTable().run()}>🗑</B>
         </>
       )}
       {sep}
-      <B label="Urungkan" on={() => e.chain().focus().undo().run()}>↶</B>
-      <B label="Ulangi" on={() => e.chain().focus().redo().run()}>↷</B>
+      <B label="Undo" on={() => e.chain().focus().undo().run()}>Undo</B>
+      <B label="Redo" on={() => e.chain().focus().redo().run()}>Redo</B>
       {sep}
-      <B label="Pratinjau ponsel" active={phone} on={onPhone}>📱</B>
-      <B label={full ? "Keluar layar penuh" : "Layar penuh"} active={full} on={onFull}>⛶</B>
+      <B label="Phone preview" active={phone} on={onPhone}>📱</B>
+      <B label={full ? "Exit fullscreen" : "Fullscreen"} active={full} on={onFull}>⛶</B>
     </div>
   );
 }
 
 // ---------- Dialog blok interaktif ----------
-const LABEL: Record<BlockType, string> = { quiz: "Kuis pilihan ganda", flashcard: "Flashcard", fill: "Isian (fill-in-the-blank)", match: "Pencocokan (drag/pilih pasangan)", timer: "Timer latihan", note: "Catatan / tips" };
+const LABEL: Record<BlockType, string> = { quiz: "Multiple-choice quiz", flashcard: "Flashcard", fill: "Fill in the blank", match: "Matching (drag/choose pairs)", timer: "Practice timer", note: "Note / tips" };
 const HELP: Record<BlockType, string> = {
-  quiz: "Satu soal per paragraf (pisahkan dengan baris kosong). Baris pertama = pertanyaan, baris berikutnya = pilihan; awali pilihan yang benar dengan *.\nContoh:\nThe results ___ clear.\nis\n*are",
-  flashcard: "Satu kartu per baris: depan | belakang",
-  fill: "Satu kalimat per baris: kalimat dengan ___ => jawaban. Beberapa isian dipisah titik koma; alternatif jawaban dengan /.\nContoh: She ___ to school. => goes",
-  match: "Satu pasangan per baris: kiri | kanan",
+  quiz: "One question per paragraph (separate with a blank line). First line = question, following lines = options; start the correct option with *.\nExample:\nThe results ___ clear.\nis\n*are",
+  flashcard: "One card per line: front | back",
+  fill: "One sentence per line: sentence with ___ => answer. Separate several blanks with semicolons; alternative answers with /.\nExample: She ___ to school. => goes",
+  match: "One pair per line: left | right",
   timer: "", note: "",
 };
 
@@ -220,35 +220,35 @@ function BlockDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (a:
 
   function insert() {
     setErr("");
-    if (scored && !TOPIC_RE.test(topic.trim())) return setErr('Topik wajib, format "skill:topic" (mis. structure:subject-verb agreement)');
+    if (scored && !TOPIC_RE.test(topic.trim())) return setErr('Topic is required, format "skill:topic" (e.g. structure:subject-verb agreement)');
     const cfg = buildConfig(type, text, { minutes, prompt, kind });
     const ok = blockSchemas[type].safeParse(cfg);
-    if (!ok.success) return setErr("Isi blok belum lengkap/valid. Periksa format contoh di atas kolom isi.");
+    if (!ok.success) return setErr("The block content is incomplete or invalid. Check the example format above the content field.");
     onInsert({ type, config: JSON.stringify(ok.data), topic: scored ? topic.trim() : "", bid: Math.random().toString(36).slice(2, 10) });
   }
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Blok interaktif">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Interactive block">
       <div className="my-6 w-full max-w-xl rounded-2xl bg-white p-5">
-        <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">Blok interaktif</h2><button aria-label="Tutup" onClick={onClose} className="text-2xl leading-none text-ink-soft">×</button></div>
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">Interactive block</h2><button aria-label="Tutup" onClick={onClose} className="text-2xl leading-none text-ink-soft">×</button></div>
         <div className="flex flex-col gap-3 text-sm">
-          <label className="flex flex-col gap-1.5 font-semibold text-navy">Jenis blok<select className="field font-normal" value={type} onChange={(e) => { setType(e.target.value as BlockType); setText(""); setErr(""); }}>{BLOCK_TYPES.map((t) => <option key={t} value={t}>{LABEL[t]}</option>)}</select></label>
-          {scored && <label className="flex flex-col gap-1.5 font-semibold text-navy">Tag topik (wajib) <input className="field font-normal" placeholder="structure:subject-verb agreement" value={topic} onChange={(e) => setTopic(e.target.value)} /><span className="text-xs font-normal text-ink-soft">Hasil tiap butir masuk ke statistik topik peserta.</span></label>}
+          <label className="flex flex-col gap-1.5 font-semibold text-navy">Block type<select className="field font-normal" value={type} onChange={(e) => { setType(e.target.value as BlockType); setText(""); setErr(""); }}>{BLOCK_TYPES.map((t) => <option key={t} value={t}>{LABEL[t]}</option>)}</select></label>
+          {scored && <label className="flex flex-col gap-1.5 font-semibold text-navy">Topic tag (required) <input className="field font-normal" placeholder="structure:subject-verb agreement" value={topic} onChange={(e) => setTopic(e.target.value)} /><span className="text-xs font-normal text-ink-soft">Each item’s result goes into the participant’s topic statistics.</span></label>}
           {type === "timer" ? (
             <>
-              <label className="flex flex-col gap-1.5 font-semibold text-navy">Durasi (menit)<input className="field font-normal" type="number" min={1} max={60} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></label>
-              <label className="flex flex-col gap-1.5 font-semibold text-navy">Petunjuk (opsional)<input className="field font-normal" value={prompt} onChange={(e) => setPrompt(e.target.value)} /></label>
+              <label className="flex flex-col gap-1.5 font-semibold text-navy">Duration (minutes)<input className="field font-normal" type="number" min={1} max={60} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} /></label>
+              <label className="flex flex-col gap-1.5 font-semibold text-navy">Instructions (optional)<input className="field font-normal" value={prompt} onChange={(e) => setPrompt(e.target.value)} /></label>
             </>
           ) : type === "note" ? (
             <>
-              <label className="flex flex-col gap-1.5 font-semibold text-navy">Jenis<select className="field font-normal" value={kind} onChange={(e) => setKind(e.target.value as "catatan" | "tips")}><option value="catatan">Catatan</option><option value="tips">Tips</option></select></label>
-              <label className="flex flex-col gap-1.5 font-semibold text-navy">Isi<textarea className="field h-24 py-2 font-normal" value={text} onChange={(e) => setText(e.target.value)} /></label>
+              <label className="flex flex-col gap-1.5 font-semibold text-navy">Type<select className="field font-normal" value={kind} onChange={(e) => setKind(e.target.value as "catatan" | "tips")}><option value="catatan">Note</option><option value="tips">Tips</option></select></label>
+              <label className="flex flex-col gap-1.5 font-semibold text-navy">Content<textarea className="field h-24 py-2 font-normal" value={text} onChange={(e) => setText(e.target.value)} /></label>
             </>
           ) : (
-            <label className="flex flex-col gap-1.5 font-semibold text-navy">Isi<span className="whitespace-pre-line text-xs font-normal text-ink-soft">{HELP[type]}</span><textarea className="field h-40 py-2 font-mono text-xs font-normal" value={text} onChange={(e) => setText(e.target.value)} /></label>
+            <label className="flex flex-col gap-1.5 font-semibold text-navy">Content<span className="whitespace-pre-line text-xs font-normal text-ink-soft">{HELP[type]}</span><textarea className="field h-40 py-2 font-mono text-xs font-normal" value={text} onChange={(e) => setText(e.target.value)} /></label>
           )}
           {err && <p role="alert" className="text-red-700">{err}</p>}
-          <p className="text-xs text-ink-soft">Untuk mengubah blok yang sudah disisipkan: hapus lalu buat ulang.</p>
-          <div className="flex justify-end gap-2"><button className="btn-outline" onClick={onClose}>Batal</button><button className="btn-solid" onClick={insert}>Sisipkan</button></div>
+          <p className="text-xs text-ink-soft">To change an inserted block: delete it and create it again.</p>
+          <div className="flex justify-end gap-2"><button className="btn-outline" onClick={onClose}>Cancel</button><button className="btn-solid" onClick={insert}>Insert</button></div>
         </div>
       </div>
     </div>

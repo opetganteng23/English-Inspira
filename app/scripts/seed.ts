@@ -6,11 +6,11 @@ import { getLevels } from "../lib/config";
 import mongoose from "mongoose";
 
 (async () => {
-  if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI wajib diisi untuk seed (taruh di .env.local lalu: npm run seed)");
+  if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI is required for seeding (put it in .env.local, then: npm run seed)");
   console.log("levels:", (await getLevels()).map((l) => l.name).join(", "));
-  console.log("tes:", await seedTests());
+  console.log("tests:", await seedTests());
   if (process.argv.includes("--demo")) console.log("demo:", await seedDemo());
-  else console.log("(lewati data demo; tambahkan --demo untuk institusi/akun/jadwal/materi contoh)");
-  console.log("Selesai. Admin pertama: isi ADMIN_EMAILS lalu masuk dengan email itu.");
+  else console.log("(skipping demo data; add --demo for sample institutions/accounts/schedules/materials)");
+  console.log("Done. First admin: set ADMIN_EMAILS, then sign in with that email.");
   await mongoose.disconnect();
 })().catch((e) => { console.error(e); process.exit(1); });

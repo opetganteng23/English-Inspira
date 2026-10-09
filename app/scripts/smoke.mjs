@@ -25,10 +25,8 @@ async function otpFor(email) {
   for (let i = 0; i < 25; i++) {
     await sleep(300);
     const log = logText();
-    const at = log.lastIndexOf(`to=${email}\nsubject=Kode`);
-    const seg = at >= 0 ? log.slice(at, at + 700) : "";
-    const m = seg.match(/\b\d{6}\b/);
-    if (m) return m[0];
+    const all = [...log.matchAll(/to=(\S+)\nsubject=(\d{6}) is your English Inspira sign-in code/g)].filter((m) => m[1] === email);
+    if (all.length) return all[all.length - 1][2];
   }
   return null;
 }
@@ -78,7 +76,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(admin, "/api/admin/institutions", { method: "POST", json: { name: "Kampus Lain", code: "KLAIN", seats: 5 } }); const iB = r.data.id;
   r = await req(admin, `/api/admin/institutions/${iA}/import`, { method: "POST", form: csv(["email,nama,telepon", "p1@test.local,Peserta Satu,081234567890", "p2@test.local,Peserta Dua,", "bukan-email,X,", "p1@test.local,Dobel,", "p3@test.local,Peserta Tiga,", "p4@test.local,Peserta Empat,"]) });
   ok(r.status === 200 && r.data.created === 3 && r.data.failed.length === 3, "impor CSV: 3 dibuat; email salah, duplikat, dan kursi penuh gagal", J(r.data));
-  ok(r.data.failed.some((f) => /kursi/i.test(f.reason)), "baris di luar kursi dilaporkan 'kursi'", J(r.data.failed));
+  ok(r.data.failed.some((f) => /seats/i.test(f.reason)), "baris di luar kursi dilaporkan 'kursi'", J(r.data.failed));
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 1, status: "active" } }); ok(r.status === 409, "kursi tidak boleh di bawah yang terpakai");
   r = await req(admin, "/api/admin/users", { method: "POST", json: { email: "coach@test.local", name: "Coach Uji", role: "coach", institutionId: iA } }); ok(r.status === 201 || r.status === 200, "coach dibuat (diundang)", J(r.data));
   r = await req(admin, "/api/admin/users", { method: "POST", json: { email: "ia@test.local", name: "Admin Inst", role: "inst_admin", institutionId: iA } });
@@ -369,7 +367,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
 
   console.log("\n== Notifikasi, job harian, peta remedial, tinjauan Konselor ==");
   r = await req(p1, "/api/notifications"); ok(r.status === 200 && r.data.unread > 0 && r.data.items.some((n) => n.type === "placement_result" || n.title.includes("placement")), "notifikasi dalam aplikasi: hasil placement", J(r.data.items?.map((n) => n.title)));
-  ok(r.data.items.some((n) => /naik/i.test(n.title)) && r.data.items.some((n) => /analisis/i.test(n.title)), "notifikasi naik level & analisis siap");
+  ok(r.data.items.some((n) => /now at the/i.test(n.title)) && r.data.items.some((n) => /analysis/i.test(n.title)), "notifikasi naik level & analisis siap");
   r = await req(p1, "/api/notifications/read", { method: "POST", json: { all: true } }); ok(r.status === 200, "tandai semua dibaca");
   r = await req(p1, "/api/notifications"); ok(r.data.unread === 0, "jumlah belum dibaca menjadi 0");
   r = await req(null, "/api/notifications"); ok(r.status === 401, "notifikasi butuh login");
@@ -384,8 +382,8 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   // peringatan kontrak
   await req(admin, `/api/admin/institutions/${iB}`, { method: "PATCH", json: { name: "Kampus Lain", code: "KLAIN", seats: 5, status: "active", contractEnd: new Date(Date.now() + 5 * 86400000).toISOString() } });
   r = await req(null, "/api/cron/daily", { headers: { authorization: "Bearer testsecret" } }); ok(r.data.reminders.contract >= 1, "job harian: peringatan kontrak mendekati akhir", J(r.data.reminders));
-  r = await req(admin, "/api/notifications"); ok(r.data.items.some((n) => /Kampus Lain.*berakhir/.test(n.title)), "admin diberi notifikasi kontrak");
-  r = await req(null, "/api/cron/daily", { headers: { authorization: "Bearer testsecret" } }); r = await req(admin, "/api/notifications"); ok(r.data.items.filter((n) => /Kampus Lain.*berakhir/.test(n.title)).length === 1, "peringatan kontrak tidak berulang");
+  r = await req(admin, "/api/notifications"); ok(r.data.items.some((n) => /Kampus Lain.*contract ends/.test(n.title)), "admin diberi notifikasi kontrak");
+  r = await req(null, "/api/cron/daily", { headers: { authorization: "Bearer testsecret" } }); r = await req(admin, "/api/notifications"); ok(r.data.items.filter((n) => /Kampus Lain.*contract ends/.test(n.title)).length === 1, "peringatan kontrak tidak berulang");
 
   // peta remedial
   r = await req(admin, "/api/admin/remedial-map"); ok(r.status === 200 && r.data.topics.length > 0 && r.data.units.length > 0, "peta remedial: topik & unit tersedia", J(r.data.topics?.slice(0, 2)));
@@ -489,9 +487,10 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });
   ok(r.status === 200, "kontrak diubah ke masa lalu");
   r = await req(p1, "/api/home"); ok(r.status === 401 || r.status === 403, "peserta lama langsung kehilangan akses", String(r.status));
-  const p3 = { c: "" };
-  await req(null, "/api/auth/request-otp", { method: "POST", json: { email: "p2@test.local" } }); await sleep(600);
-  ok(!(logText().split("to=p2@test.local\nsubject=Kode").length > 1 && logText().lastIndexOf("to=p2@test.local\nsubject=Kode") > logText().lastIndexOf("Kampus Uji")), "OTP tidak dikirim ke peserta yang aksesnya berakhir");
+  const otpCount = () => (logText().match(/to=p2@test\.local\nsubject=\d{6} is your/g) ?? []).length;
+  const beforeOtp = otpCount();
+  await req(null, "/api/auth/request-otp", { method: "POST", json: { email: "p2@test.local" } }); await sleep(1500);
+  ok(otpCount() === beforeOtp, "OTP tidak dikirim ke peserta yang aksesnya berakhir", `${beforeOtp} -> ${otpCount()}`);
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractEnd: new Date(Date.now() + 90 * 86400000).toISOString() } });
   r = await req(p1, "/api/home"); ok(r.status === 200, "perpanjang kontrak memulihkan akses semua peserta");
   r = await req(admin, `/api/admin/participants/${pid}`, { method: "POST", json: { action: "disable" } }); ok(r.status === 200, "admin nonaktifkan peserta");
@@ -501,7 +500,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   console.log("\n== Hak data (UU PDP) ==");
   r = await req(p1, "/api/me/export"); ok(r.status === 200 && r.data.user?.email === "p1@test.local", "ekspor data pribadi");
   r = await req(p1, "/api/me/delete", { method: "POST", json: { confirm: "SALAH" } }); ok(r.status === 400, "pengajuan hapus tanpa konfirmasi ditolak");
-  r = await req(p1, "/api/me/delete", { method: "POST", json: { confirm: "HAPUS" } }); ok(r.status === 200, "pengajuan hapus tercatat (admin yang memproses)");
+  r = await req(p1, "/api/me/delete", { method: "POST", json: { confirm: "DELETE" } }); ok(r.status === 200, "pengajuan hapus tercatat (admin yang memproses)");
   r = await req(p1, "/api/me"); ok(r.status === 200, "akun tetap ada sampai admin memproses");
   r = await req(admin, `/api/admin/participants/${pid}`, { method: "POST", json: { action: "erase", reason: "Permintaan peserta" } }); ok(r.status === 200, "admin hapus data peserta");
   r = await req(p1, "/api/me"); ok(r.status === 401, "sesi tidak berlaku setelah data dihapus", String(r.status));

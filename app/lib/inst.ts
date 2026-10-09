@@ -16,11 +16,11 @@ export async function instContext(req: Request) {
   let institutionId: Types.ObjectId | string | undefined = user.institutionId ?? undefined;
   if (user.role === "admin") {
     institutionId = new URL(req.url).searchParams.get("institution") ?? undefined;
-    if (!institutionId || !/^[0-9a-f]{24}$/.test(institutionId)) throw new HttpError(400, "Pilih institusi (?institution=<id>)");
+    if (!institutionId || !/^[0-9a-f]{24}$/.test(institutionId)) throw new HttpError(400, "Choose an institution (?institution=<id>)");
   }
-  if (!institutionId) throw new HttpError(403, "Akun institusi belum terhubung");
+  if (!institutionId) throw new HttpError(403, "The institution account is not linked yet");
   const inst = await Institution.findById(institutionId).lean();
-  if (!inst) throw new HttpError(404, "Institusi tidak ditemukan");
+  if (!inst) throw new HttpError(404, "Institution not found");
   const scoped = (filter: Record<string, unknown> = {}) =>
     user.role === "inst_admin" ? scopeByInstitution(user, { role: "participant", ...filter } as never) : { role: "participant", institutionId: inst._id, ...filter };
   return { user, inst, scoped: scoped as (f?: Record<string, unknown>) => Record<string, unknown> };

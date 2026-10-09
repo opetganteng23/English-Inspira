@@ -20,10 +20,10 @@ import { PdfImport, pdfBucket } from "@/models/Pdf";
 export async function eraseUserData(userId: Types.ObjectId | string, actorId: Types.ObjectId | string, reason: string) {
   await connectDB();
   const u = await User.findById(userId);
-  if (!u) throw new HttpError(404, "Pengguna tidak ditemukan");
-  if (u.role === "admin") throw new HttpError(409, "Akun admin tidak dihapus lewat prosedur ini");
+  if (!u) throw new HttpError(404, "User not found");
+  if (u.role === "admin") throw new HttpError(409, "Admin accounts are not deleted through this procedure");
   if (await ItpRegistration.exists({ userId: u._id, status: { $in: ["submitted", "confirmed"] } }))
-    throw new HttpError(409, "Batalkan pendaftaran ITP yang aktif dulu.");
+    throw new HttpError(409, "Cancel the active ITP registration first.");
 
   const bucket = await pdfBucket();
   for (const p of await PdfImport.find({ userId: u._id, fileId: { $exists: true } })) await bucket.delete(p.fileId!).catch(() => {});
@@ -38,9 +38,9 @@ export async function eraseUserData(userId: Types.ObjectId | string, actorId: Ty
     PlanItem.deleteMany({ userId: u._id }),
     Analysis.deleteMany({ userId: u._id }),
     Otp.deleteMany({ email: u.email }),
-    ItpRegistration.updateMany({ userId: u._id }, { $set: { fullName: "Dihapus", nikEnc: "deleted", nikLast4: "", docNote: "" }, $unset: { idPhotoAssetId: 1, facePhotoAssetId: 1 } }),
-    Certificate.updateMany({ userId: u._id }, { $set: { "data.name": "Akun dihapus" } }),
+    ItpRegistration.updateMany({ userId: u._id }, { $set: { fullName: "Deleted", nikEnc: "deleted", nikLast4: "", docNote: "" }, $unset: { idPhotoAssetId: 1, facePhotoAssetId: 1 } }),
+    Certificate.updateMany({ userId: u._id }, { $set: { "data.name": "Deleted account" } }),
   ]);
-  await User.updateOne({ _id: u._id }, { $set: { email: `deleted-${u._id}@deleted.invalid`, name: "Akun dihapus", status: "disabled", deletedAt: new Date() }, $unset: { phone: 1, nik: 1, birthDate: 1, gender: 1 } });
+  await User.updateOne({ _id: u._id }, { $set: { email: `deleted-${u._id}@deleted.invalid`, name: "Deleted account", status: "disabled", deletedAt: new Date() }, $unset: { phone: 1, nik: 1, birthDate: 1, gender: 1 } });
   await audit(actorId, "data.erase", String(u._id), { reason });
 }

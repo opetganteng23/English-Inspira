@@ -13,14 +13,14 @@ import { User } from "@/models/User";
 export async function POST(req: Request) {
   try {
     const me = await requireRole(["participant", "coach", "inst_admin"]);
-    z.object({ confirm: z.literal("HAPUS") }).parse(await req.json());
+    z.object({ confirm: z.literal("DELETE") }).parse(await req.json());
     await connectDB();
     await audit(me._id, "data.erase_requested", String(me._id));
     const admins = await User.find({ role: "admin", status: "active" }).select("_id").lean();
     if (admins.length) await Notification.insertMany(admins.map((a) => ({ userId: a._id, type: "erase_request", payload: { userId: String(me._id), email: me.email } })));
-    return NextResponse.json({ ok: true, message: "Pengajuan dicatat. Admin akan memproses penghapusan datamu." });
+    return NextResponse.json({ ok: true, message: "Request recorded. The admin will process the deletion of your data." });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: 'Ketik "HAPUS" untuk konfirmasi' }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: 'Type "DELETE" to confirm' }, { status: 400 });
     return handleError(e);
   }
 }

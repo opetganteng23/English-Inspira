@@ -10,10 +10,10 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
     await requireRole(["admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Jadwal tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Schedule not found");
     await connectDB();
     const s = await ItpSession.findById(params.id).lean();
-    if (!s) throw new HttpError(404, "Jadwal tidak ditemukan");
+    if (!s) throw new HttpError(404, "Schedule not found");
     const regs = await ItpRegistration.find({ sessionId: s._id, status: { $ne: "cancelled" } }).sort({ createdAt: 1 }).lean();
     const users = new Map((await User.find({ _id: { $in: regs.map((r) => r.userId) } }).select("email phone").lean()).map((u) => [String(u._id), u]));
     return NextResponse.json({

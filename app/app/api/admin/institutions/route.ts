@@ -32,12 +32,12 @@ export async function POST(req: Request) {
     const admin = await requireRole(["admin"]);
     const b = institutionInput.parse(await req.json());
     await connectDB();
-    if (await Institution.exists({ code: b.code })) throw new HttpError(409, "Kode institusi sudah dipakai");
+    if (await Institution.exists({ code: b.code })) throw new HttpError(409, "Institution code already in use");
     const i = await Institution.create({ ...b, contractStart: b.contractStart ?? undefined, contractEnd: b.contractEnd ?? undefined, contactEmail: b.contactEmail || undefined });
     await audit(admin._id, "institution.create", String(i._id));
     return NextResponse.json({ id: String(i._id) }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

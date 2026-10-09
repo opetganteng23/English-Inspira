@@ -10,10 +10,10 @@ import { audit } from "@/lib/audit";
 import { Material, MaterialVersion } from "@/models/Material";
 
 async function find(id: string) {
-  if (!isValidObjectId(id)) throw new HttpError(404, "Materi tidak ditemukan");
+  if (!isValidObjectId(id)) throw new HttpError(404, "Material not found");
   await connectDB();
   const m = await Material.findById(id);
-  if (!m) throw new HttpError(404, "Materi tidak ditemukan");
+  if (!m) throw new HttpError(404, "Material not found");
   return m;
 }
 
@@ -34,7 +34,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const m = await find(params.id);
     assertCanWrite(admin, m);
     const b = normalizeMaterial(materialInput.parse(await req.json()));
-    if (admin.role !== "admin" && b.kind !== "rich") throw new HttpError(403, "Materi HTML hanya dikelola admin");
+    if (admin.role !== "admin" && b.kind !== "rich") throw new HttpError(403, "HTML materials are managed by admins only");
     if (b.title !== m.title) m.slug = await uniqueSlug(b.title, m._id);
     const htmlBefore = JSON.stringify(m.htmlDoc ?? null);
     m.set(b);
@@ -46,7 +46,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await audit(admin._id, "material.update", params.id, needsReview ? { resetToDraft: true } : undefined);
     return NextResponse.json({ ok: true, slug: m.slug, resetToDraft: needsReview });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

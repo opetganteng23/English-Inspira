@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 
-// Bagian murni mesin analisis (MTS §13.4–13.5): bentuk keluaran, validasi terhadap input, dan narasi template.
+// Bagian murni mesin analisis (MTS §13.4-13.5): bentuk keluaran, validasi terhadap input, dan narasi template.
 // Tanpa DB/jaringan agar mudah diuji. Pemanggilan Claude dan penyimpanan ada di lib/analysis.ts.
 
 export const analysisResultSchema = z.object({
@@ -42,7 +42,7 @@ export function inputHash(i: EngineInput, promptVersion: string) {
 // ---------- Validasi keluaran terhadap masukan ----------
 const NUM = /\d+(?:[.,]\d+)?/g;
 // Angka yang diikuti satuan rencana/kuantitas (mis. "20 soal", "2 minggu") bukan klaim tentang data, jadi tidak dicek.
-const UNIT_AFTER = /^\s*(hari|minggu|bulan|menit|jam|detik|soal|kali|sesi|butir|item|latihan|x\b)/i;
+const UNIT_AFTER = /^\s*(hari|minggu|bulan|menit|jam|detik|soal|kali|sesi|butir|item|latihan|days?|weeks?|months?|minutes?|mins?|hours?|seconds?|questions?|times|sessions?|items?|exercises?|practice|x)/i;
 
 const norm = (n: number) => Math.round(n * 10) / 10;
 
@@ -74,12 +74,12 @@ export function checkResult(r: AnalysisResult, i: EngineInput): string | null {
   const valid = new Set(i.validTopics);
   const topics = [...r.strengths.map((x) => x.topic), ...r.weaknesses.map((x) => x.topic), ...r.recommendations.map((x) => x.topic)];
   const bad = topics.find((t) => !valid.has(t));
-  if (bad) return `Topik di luar daftar valid: ${bad}`;
-  if (r.gapToNextLevel && i.gapToNextLevel && (r.gapToNextLevel.points !== i.gapToNextLevel.points || r.gapToNextLevel.target !== i.gapToNextLevel.target)) return "Jarak ke level berikutnya tidak sesuai data";
-  if (r.gapToNextLevel && !i.gapToNextLevel) return "Jarak ke level berikutnya tidak ada pada data";
+  if (bad) return `Topic outside the valid list: ${bad}`;
+  if (r.gapToNextLevel && i.gapToNextLevel && (r.gapToNextLevel.points !== i.gapToNextLevel.points || r.gapToNextLevel.target !== i.gapToNextLevel.target)) return "The gap to the next level does not match the data";
+  if (r.gapToNextLevel && !i.gapToNextLevel) return "The gap to the next level is not in the data";
   const allowed = allowedNumbers(i);
   const texts = [r.summary, r.narrative, ...r.strengths.map((x) => x.evidence), ...r.weaknesses.map((x) => x.evidence + " " + x.likelyCause)];
-  for (const t of texts) for (const n of numbersIn(t)) if (!allowed.has(norm(n)) && !allowed.has(Math.round(n))) return `Angka ${n} tidak ada pada data`;
+  for (const t of texts) for (const n of numbersIn(t)) if (!allowed.has(norm(n)) && !allowed.has(Math.round(n))) return `The number ${n} is not in the data`;
   return null;
 }
 
@@ -93,7 +93,7 @@ export function templateResult(i: EngineInput, tpl: NarrativeTemplate): Analysis
   const weak = i.topics.filter((t) => t.status === "weak" || t.status === "priority").sort((a, b) => a.score - b.score).slice(0, 4);
   const v = {
     level: i.level ?? "-", score: i.scoreEst != null ? String(i.scoreEst) : "-", next: i.gapToNextLevel?.nextLevel ?? "-", gap: i.gapToNextLevel ? String(i.gapToNextLevel.points) : "0",
-    strong: strong.map((t) => t.topic).join(", ") || "belum ada", weak: weak.map((t) => t.topic).join(", ") || "belum ada",
+    strong: strong.map((t) => t.topic).join(", ") || "none yet", weak: weak.map((t) => t.topic).join(", ") || "none yet",
   };
   const parts = [fill(tpl.summary, v)];
   if (strong.length) parts.push(fill(tpl.strong, v));
@@ -101,12 +101,12 @@ export function templateResult(i: EngineInput, tpl: NarrativeTemplate): Analysis
   if (i.gapToNextLevel) parts.push(fill(tpl.gap, v));
   return {
     summary: fill(tpl.summary, v).slice(0, 600),
-    strengths: strong.map((t) => ({ topic: t.topic, evidence: `Skor akumulatif ${norm(t.score)} dari ${t.items} butir.` })),
-    weaknesses: weak.map((t) => ({ topic: t.topic, severity: t.status === "priority" ? "priority" as const : "weak" as const, evidence: `Skor akumulatif ${norm(t.score)} dari ${t.items} butir.`, likelyCause: "Konsep perlu diperkuat dengan latihan terarah." })),
+    strengths: strong.map((t) => ({ topic: t.topic, evidence: `Cumulative score ${norm(t.score)} from ${t.items} items.` })),
+    weaknesses: weak.map((t) => ({ topic: t.topic, severity: t.status === "priority" ? "priority" as const : "weak" as const, evidence: `Cumulative score ${norm(t.score)} from ${t.items} items.`, likelyCause: "The concept needs strengthening with targeted practice." })),
     ...(i.gapToNextLevel ? { gapToNextLevel: { points: i.gapToNextLevel.points, target: i.gapToNextLevel.target } } : {}),
     recommendations: weak.map((t) => ({ topic: t.topic, priority: t.status === "priority" ? "high" as const : "medium" as const })),
     narrative: parts.join(" ").slice(0, 1500),
-    suggestions: [fill(tpl.suggestion, v).slice(0, 300) || "Lanjutkan latihan dan ulangi tes untuk melihat kemajuan."],
+    suggestions: [fill(tpl.suggestion, v).slice(0, 300) || "Keep practicing and retake the test to see your progress."],
   };
 }
 

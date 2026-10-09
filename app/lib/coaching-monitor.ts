@@ -24,8 +24,8 @@ export async function coachingMonitor() {
     const seatsLeft = openSlots.reduce((a, s) => a + Math.max(0, s.capacity - s.booked), 0);
     const marked = bookings.length, present = bookings.filter((b) => b.status === "present").length, absent = bookings.filter((b) => b.status === "absent").length;
     const warnings: string[] = [];
-    if (participants > 0 && coaches === 0) warnings.push("Belum ada coach untuk institusi ini.");
-    if (remaining > 0 && seatsLeft < remaining) warnings.push(`Kuota tersisa ${remaining} sesi, tetapi kursi slot terbuka sampai kontrak berakhir hanya ${seatsLeft}.`);
+    if (participants > 0 && coaches === 0) warnings.push("There is no coach for this institution yet.");
+    if (remaining > 0 && seatsLeft < remaining) warnings.push(`${remaining} quota sessions left, but only ${seatsLeft} open slot seats until the contract ends.`);
     out.push({ id: String(i._id), name: i.name, contractEnd: i.contractEnd ?? null, coaches, participants, quotaRemaining: remaining, openSeats: seatsLeft, sessionsMarked: marked, presentPct: marked ? Math.round((present / marked) * 100) : null, absent, warnings });
   }
   return out;

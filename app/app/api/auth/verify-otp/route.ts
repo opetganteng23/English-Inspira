@@ -14,7 +14,7 @@ import { sha256 } from "@/lib/participants";
 const MAX_ATTEMPTS = 5;
 const schema = z.object({ email: z.email().max(200), code: z.string().regex(/^\d{6}$/), invite: z.string().max(100).optional() });
 const adminEmails = () => (process.env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-const BAD = "Kode kedaluwarsa atau terkunci. Minta kode baru.";
+const BAD = "The code has expired or is locked. Request a new code.";
 
 export async function POST(req: Request) {
   try {
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     if (!otp) throw new HttpError(400, BAD);
     if (!(await bcrypt.compare(body.code, otp.codeHash))) {
       const left = MAX_ATTEMPTS - otp.attempts;
-      throw new HttpError(400, left > 0 ? `Kode salah. Sisa percobaan: ${left}` : "Kode terkunci. Minta kode baru.");
+      throw new HttpError(400, left > 0 ? `Wrong code. Attempts left: ${left}. Make sure you use the code from the latest email.` : "The code is locked. Request a new code.");
     }
     await Otp.deleteMany({ email }); // sekali pakai
 
@@ -42,8 +42,8 @@ export async function POST(req: Request) {
       if (!adminEmails().includes(email)) throw new HttpError(400, BAD);
       user = await User.create({ email, role: "admin", status: "active", consentAt: new Date() });
     }
-    if (user.status === "disabled") throw new HttpError(403, "Akun dinonaktifkan");
-    if (user.role !== "admin" && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Akses sudah berakhir. Hubungi institusimu.");
+    if (user.status === "disabled") throw new HttpError(403, "Account deactivated");
+    if (user.role !== "admin" && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Your access has ended. Contact your institution.");
 
     if (body.invite) await Invitation.updateOne({ tokenHash: sha256(body.invite), userId: user._id, status: "pending" }, { status: "used" });
     user.lastLoginAt = new Date();
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     await createSession(String(user._id), user.role);
     return NextResponse.json({ ok: true, role: user.role, needsConsent: user.status === "invited" });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

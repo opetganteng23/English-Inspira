@@ -8,5 +8,5 @@ export async function startScheduler() {
   cron.schedule("* * * * *", run("mail"));
   cron.schedule("0 * * * *", run("hourly"), { timezone: "Asia/Jakarta" });
   cron.schedule("0 1 * * *", run("daily"), { timezone: "Asia/Jakarta" });
-  console.log("[cron] aktif: mail (tiap menit), hourly, daily 01:00 WIB");
+  console.log("[cron] active: mail (every minute), hourly, daily 01:00 WIB");
 }

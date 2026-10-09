@@ -1,5 +1,5 @@
 // Template materi HTML interaktif. Admin non-teknis cukup mengubah data di bagian atas skrip.
-// Semua memakai window.EI.complete(skor0sampai100, jawaban) untuk melaporkan hasil ke induk.
+// Semua memakai EI.report / EI.complete(skor 0-100, jawaban) untuk melaporkan hasil ke induk.
 import type { HtmlDoc } from "./material-doc";
 
 const BASE_CSS = `body{max-width:720px;margin:0 auto}h2{margin:0 0 12px;color:#0F2F5E}button{font:inherit;cursor:pointer}
@@ -9,11 +9,11 @@ input[type=text]{font:inherit;padding:8px 10px;border:1.5px solid #C5D2E4;border
 
 export const PRESETS: { key: string; name: string; desc: string; doc: HtmlDoc }[] = [
   {
-    key: "quiz", name: "Kuis pilihan ganda", desc: "Soal dengan pilihan A–D, skor di akhir.",
+    key: "quiz", name: "Multiple-choice quiz", desc: "Questions with options A-D, score at the end.",
     doc: {
       css: BASE_CSS + `.opt{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 14px;border:1.5px solid #C5D2E4;border-radius:10px;background:#fff}.opt.sel{border-color:#1B5FB8;background:#E9F0FA}.opt.right{border-color:#1D6B3F;background:#E6F4EC}.opt.wrong{border-color:#B3261E;background:#FDECEA}`,
-      html: `<h2>Kuis: Subject–Verb Agreement</h2><div id="app"></div>`,
-      js: `// UBAH DATA DI SINI: q = pertanyaan, o = pilihan, a = indeks jawaban benar (mulai dari 0)
+      html: `<h2>Quiz: Subject-Verb Agreement</h2><div id="app"></div>`,
+      js: `// EDIT DATA HERE: q = question, o = options, a = index of the correct answer (starting at 0)
 var DATA=[
  {q:"The results of the experiment ___ surprising.",o:["was","were","is","has been"],a:1},
  {q:"She avoided ___ the question.",o:["to answer","answering","answer","answered"],a:1},
@@ -21,22 +21,22 @@ var DATA=[
 ];
 var i=0,score=0,picked=null,answers=[],app=document.getElementById('app');
 function show(){
- if(i>=DATA.length){var pct=Math.round(score/DATA.length*100);app.innerHTML='<div class="card"><h2>Selesai</h2><p>Skor kamu <b>'+score+' dari '+DATA.length+'</b> ('+pct+'%).</p><button class="btn" onclick="restart()">Ulangi</button></div>';EI.complete(pct,answers);return;}
- var d=DATA[i];app.innerHTML='<div class="card"><p class="muted">Soal '+(i+1)+' dari '+DATA.length+'</p><p><b>'+d.q+'</b></p>'+d.o.map(function(t,k){return '<button class="opt" data-k="'+k+'">'+"ABCD"[k]+'. '+t+'</button>'}).join('')+'<p id="fb"></p><button class="btn" id="next" style="display:none">'+(i+1<DATA.length?'Berikutnya':'Lihat skor')+'</button></div>';
- var opts=app.querySelectorAll('.opt');opts.forEach(function(b){b.onclick=function(){if(picked!==null)return;picked=+b.dataset.k;answers.push(picked);var ok=picked===d.a;if(ok)score++;opts.forEach(function(x,k){if(k===d.a)x.classList.add('right');else if(k===picked)x.classList.add('wrong')});document.getElementById('fb').innerHTML=ok?'<span class="ok">Benar!</span>':'<span class="bad">Kurang tepat.</span> Jawaban: '+"ABCD"[d.a];var n=document.getElementById('next');n.style.display='inline-block';n.onclick=function(){i++;picked=null;show()}}})}
+ if(i>=DATA.length){var pct=Math.round(score/DATA.length*100);app.innerHTML='<div class="card"><h2>Done</h2><p>Your score: <b>'+score+' of '+DATA.length+'</b> ('+pct+'%).</p><button class="btn" onclick="restart()">Try again</button></div>';EI.complete(pct,answers);return;}
+ var d=DATA[i];app.innerHTML='<div class="card"><p class="muted">Question '+(i+1)+' of '+DATA.length+'</p><p><b>'+d.q+'</b></p>'+d.o.map(function(t,k){return '<button class="opt" data-k="'+k+'">'+"ABCD"[k]+'. '+t+'</button>'}).join('')+'<p id="fb"></p><button class="btn" id="next" style="display:none">'+(i+1<DATA.length?'Next':'See score')+'</button></div>';
+ var opts=app.querySelectorAll('.opt');opts.forEach(function(b){b.onclick=function(){if(picked!==null)return;picked=+b.dataset.k;answers.push(picked);var ok=picked===d.a;if(ok)score++;opts.forEach(function(x,k){if(k===d.a)x.classList.add('right');else if(k===picked)x.classList.add('wrong')});document.getElementById('fb').innerHTML=ok?'<span class="ok">Correct!</span>':'<span class="bad">Not quite.</span> Answer: '+"ABCD"[d.a];var n=document.getElementById('next');n.style.display='inline-block';n.onclick=function(){i++;picked=null;show()}}})}
 function restart(){i=0;score=0;picked=null;answers=[];show()}
 show();`,
     },
   },
   {
-    key: "flashcard", name: "Flashcard", desc: "Kartu bolak-balik, tandai sudah hafal.",
+    key: "flashcard", name: "Flashcard", desc: "Two-sided cards; mark the ones you know.",
     doc: {
       css: BASE_CSS + `.fc{min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:700;color:#0F2F5E;cursor:pointer;user-select:none}`,
       html: `<h2>Flashcard: Vocabulary</h2><div id="app"></div>`,
-      js: `// UBAH DATA DI SINI: f = sisi depan, b = sisi belakang
-var DATA=[{f:"reluctant",b:"enggan, tidak mau"},{f:"adequate",b:"cukup, memadai"},{f:"hinder",b:"menghambat"},{f:"thrive",b:"berkembang pesat"}];
+      js: `// EDIT DATA HERE: f = front, b = back
+var DATA=[{f:"reluctant",b:"unwilling, hesitant"},{f:"adequate",b:"sufficient, enough"},{f:"hinder",b:"to obstruct, hold back"},{f:"thrive",b:"to grow strongly, flourish"}];
 var i=0,flip=false,known={},app=document.getElementById('app');
-function show(){var n=Object.keys(known).length;var d=DATA[i];app.innerHTML='<p class="muted">Kartu '+(i+1)+' dari '+DATA.length+' · hafal: '+n+'</p><div class="card fc" id="c" tabindex="0" role="button" aria-label="Balik kartu">'+(flip?d.b:d.f)+'</div><p class="muted" style="text-align:center">Klik kartu untuk membalik</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn alt" id="p">←</button><button class="btn" id="k">Sudah hafal</button><button class="btn alt" id="n">→</button></div>';
+function show(){var n=Object.keys(known).length;var d=DATA[i];app.innerHTML='<p class="muted">Card '+(i+1)+' of '+DATA.length+' · known: '+n+'</p><div class="card fc" id="c" tabindex="0" role="button" aria-label="Flip card">'+(flip?d.b:d.f)+'</div><p class="muted" style="text-align:center">Click the card to flip it</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn alt" id="p">Previous</button><button class="btn" id="k">I know it</button><button class="btn alt" id="n">Next</button></div>';
  var c=document.getElementById('c');c.onclick=function(){flip=!flip;show()};c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();flip=!flip;show()}};
  document.getElementById('p').onclick=function(){i=(i-1+DATA.length)%DATA.length;flip=false;show()};document.getElementById('n').onclick=function(){i=(i+1)%DATA.length;flip=false;show()};
  document.getElementById('k').onclick=function(){known[i]=1;EI.report(Math.round(Object.keys(known).length/DATA.length*100),Object.keys(known));i=(i+1)%DATA.length;flip=false;show()}}
@@ -44,40 +44,40 @@ show();`,
     },
   },
   {
-    key: "fillblank", name: "Isian kosong", desc: "Kalimat dengan bagian kosong yang diisi peserta.",
+    key: "fillblank", name: "Fill in the blank", desc: "Sentences with a blank for participants to fill in.",
     doc: {
       css: BASE_CSS,
-      html: `<h2>Isi bagian yang kosong</h2><div id="app"></div><button class="btn" id="chk">Periksa jawaban</button><p id="res"></p>`,
-      js: `// UBAH DATA DI SINI: pakai ___ untuk bagian kosong, ans = jawaban benar (huruf besar/kecil diabaikan)
+      html: `<h2>Fill in the blanks</h2><div id="app"></div><button class="btn" id="chk">Check answers</button><p id="res"></p>`,
+      js: `// EDIT DATA HERE: use ___ for the blank, ans = correct answer (case-insensitive)
 var DATA=[{t:"The scientists ___ the results yesterday.",ans:"published"},{t:"She is interested ___ marine biology.",ans:"in"},{t:"If it ___ tomorrow, we will stay home.",ans:"rains"}];
 var app=document.getElementById('app');
-app.innerHTML=DATA.map(function(d,i){return '<div class="card">'+(i+1)+'. '+d.t.replace('___','<input type="text" data-i="'+i+'" aria-label="Jawaban '+(i+1)+'" autocomplete="off">')+'<span id="m'+i+'"></span></div>'}).join('');
-document.getElementById('chk').onclick=function(){var ok=0,ans=[];DATA.forEach(function(d,i){var v=app.querySelector('[data-i="'+i+'"]').value.trim();ans.push(v);var good=v.toLowerCase()===d.ans.toLowerCase();if(good)ok++;document.getElementById('m'+i).innerHTML=good?' <span class="ok">✓</span>':' <span class="bad">✗ ('+d.ans+')</span>'});var pct=Math.round(ok/DATA.length*100);document.getElementById('res').innerHTML='<b>Skor: '+ok+' dari '+DATA.length+' ('+pct+'%)</b>';EI.complete(pct,ans)};`,
+app.innerHTML=DATA.map(function(d,i){return '<div class="card">'+(i+1)+'. '+d.t.replace('___','<input type="text" data-i="'+i+'" aria-label="Answer '+(i+1)+'" autocomplete="off">')+'<span id="m'+i+'"></span></div>'}).join('');
+document.getElementById('chk').onclick=function(){var ok=0,ans=[];DATA.forEach(function(d,i){var v=app.querySelector('[data-i="'+i+'"]').value.trim();ans.push(v);var good=v.toLowerCase()===d.ans.toLowerCase();if(good)ok++;document.getElementById('m'+i).innerHTML=good?' <span class="ok">✓</span>':' <span class="bad">✗ ('+d.ans+')</span>'});var pct=Math.round(ok/DATA.length*100);document.getElementById('res').innerHTML='<b>Score: '+ok+' of '+DATA.length+' ('+pct+'%)</b>';EI.complete(pct,ans)};`,
     },
   },
   {
-    key: "matching", name: "Pencocokan (drag & drop)", desc: "Seret atau ketuk kata ke pasangannya.",
+    key: "matching", name: "Matching (drag & drop)", desc: "Drag or tap each word to its match.",
     doc: {
       css: BASE_CSS + `.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.it{padding:10px 12px;margin:6px 0;border:1.5px solid #C5D2E4;border-radius:10px;background:#fff;touch-action:manipulation}.it.sel{border-color:#1B5FB8;background:#E9F0FA}.it.done{opacity:.5}.drop{min-height:44px;padding:10px 12px;margin:6px 0;border:2px dashed #C5D2E4;border-radius:10px}.drop.good{border-color:#1D6B3F;background:#E6F4EC}`,
-      html: `<h2>Cocokkan kata dengan artinya</h2><p class="muted">Seret kata ke kotak artinya, atau ketuk kata lalu ketuk kotak.</p><div class="row"><div id="L"></div><div id="R"></div></div><p id="res"></p>`,
-      js: `// UBAH DATA DI SINI: w = kata, m = arti
-var DATA=[{w:"reluctant",m:"enggan"},{w:"adequate",m:"memadai"},{w:"hinder",m:"menghambat"},{w:"thrive",m:"berkembang"}];
+      html: `<h2>Match each word with its meaning</h2><p class="muted">Drag a word onto its meaning, or tap a word and then tap a box.</p><div class="row"><div id="L"></div><div id="R"></div></div><p id="res"></p>`,
+      js: `// EDIT DATA HERE: w = word, m = meaning
+var DATA=[{w:"reluctant",m:"unwilling"},{w:"adequate",m:"sufficient"},{w:"hinder",m:"obstruct"},{w:"thrive",m:"flourish"}];
 var L=document.getElementById('L'),R=document.getElementById('R'),sel=null,got=0,tries=0;
 function shuffle(a){return a.map(function(x){return [Math.random(),x]}).sort(function(p,q){return p[0]-q[0]}).map(function(p){return p[1]})}
 shuffle(DATA).forEach(function(d){var e=document.createElement('div');e.className='it';e.textContent=d.w;e.draggable=true;e.dataset.w=d.w;e.onclick=function(){if(e.classList.contains('done'))return;document.querySelectorAll('.it.sel').forEach(function(x){x.classList.remove('sel')});sel=e;e.classList.add('sel')};e.ondragstart=function(ev){ev.dataTransfer.setData('text/plain',d.w);sel=e};L.appendChild(e)});
-shuffle(DATA).forEach(function(d){var t=document.createElement('div');t.className='drop';t.textContent=d.m;t.dataset.w=d.w;function tryDrop(w){tries++;if(w===d.w&&!t.classList.contains('good')){t.classList.add('good');t.textContent=d.m+' ← '+w;got++;var el=L.querySelector('[data-w="'+w+'"]');if(el){el.classList.add('done');el.classList.remove('sel')}sel=null;if(got===DATA.length){var pct=Math.max(0,Math.round(DATA.length/tries*100));document.getElementById('res').innerHTML='<b class="ok">Semua cocok! Percobaan: '+tries+'</b>';EI.complete(pct,{tries:tries})}}else if(w!==d.w){document.getElementById('res').innerHTML='<span class="bad">Belum cocok, coba lagi.</span>'}}
+shuffle(DATA).forEach(function(d){var t=document.createElement('div');t.className='drop';t.textContent=d.m;t.dataset.w=d.w;function tryDrop(w){tries++;if(w===d.w&&!t.classList.contains('good')){t.classList.add('good');t.textContent=d.m+': '+w;got++;var el=L.querySelector('[data-w="'+w+'"]');if(el){el.classList.add('done');el.classList.remove('sel')}sel=null;if(got===DATA.length){var pct=Math.max(0,Math.round(DATA.length/tries*100));document.getElementById('res').innerHTML='<b class="ok">All matched! Attempts: '+tries+'</b>';EI.complete(pct,{tries:tries})}}else if(w!==d.w){document.getElementById('res').innerHTML='<span class="bad">Not a match, try again.</span>'}}
  t.ondragover=function(ev){ev.preventDefault()};t.ondrop=function(ev){ev.preventDefault();tryDrop(ev.dataTransfer.getData('text/plain'))};t.onclick=function(){if(sel)tryDrop(sel.dataset.w)};R.appendChild(t)});`,
     },
   },
   {
-    key: "timer", name: "Timer latihan", desc: "Hitung mundur untuk latihan membaca per passage.",
+    key: "timer", name: "Practice timer", desc: "A countdown for timed reading practice per passage.",
     doc: {
       css: BASE_CSS + `.big{font-size:56px;font-weight:800;color:#0F2F5E;text-align:center}.late{color:#B3261E}`,
-      html: `<h2>Timer latihan Reading</h2><p class="muted">Atur durasi, baca passage, dan selesaikan sebelum waktu habis.</p><div class="card"><div class="big" id="t">11:00</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><label>Menit <input type="text" id="m" value="11" size="3" inputmode="numeric" aria-label="Menit"></label><button class="btn" id="go">Mulai</button><button class="btn alt" id="rs">Reset</button></div><p id="msg" class="muted" style="text-align:center"></p></div>`,
+      html: `<h2>Reading practice timer</h2><p class="muted">Set the duration, read the passage, and finish before time runs out.</p><div class="card"><div class="big" id="t">11:00</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><label>Minutes <input type="text" id="m" value="11" size="3" inputmode="numeric" aria-label="Minutes"></label><button class="btn" id="go">Start</button><button class="btn alt" id="rs">Reset</button></div><p id="msg" class="muted" style="text-align:center"></p></div>`,
       js: `var T=document.getElementById('t'),M=document.getElementById('m'),msg=document.getElementById('msg'),left=0,iv=null,total=0;
 function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function set(){var m=Math.max(1,Math.min(90,parseInt(M.value,10)||11));total=m*60;left=total;T.textContent=fmt(left);T.classList.remove('late')}
-document.getElementById('go').onclick=function(){if(iv)return;set();msg.textContent='Berjalan…';iv=setInterval(function(){left--;T.textContent=fmt(Math.max(0,left));if(left<=60)T.classList.add('late');if(left<=0){clearInterval(iv);iv=null;msg.textContent='Waktu habis!';EI.complete(100,{minutes:total/60})}},1000)};
+document.getElementById('go').onclick=function(){if(iv)return;set();msg.textContent='Running…';iv=setInterval(function(){left--;T.textContent=fmt(Math.max(0,left));if(left<=60)T.classList.add('late');if(left<=0){clearInterval(iv);iv=null;msg.textContent='Time is up!';EI.complete(100,{minutes:total/60})}},1000)};
 document.getElementById('rs').onclick=function(){clearInterval(iv);iv=null;set();msg.textContent=''};M.onchange=set;set();`,
     },
   },

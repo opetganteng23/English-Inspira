@@ -5,7 +5,7 @@ import type { Types } from "mongoose";
 
 export function slugify(t: string) {
   const s = t.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
-  return s || "materi";
+  return s || "material";
 }
 
 export async function uniqueSlug(title: string, exceptId?: Types.ObjectId | string) {

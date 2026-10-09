@@ -5,10 +5,10 @@ function key(): Buffer {
   const raw = process.env.FIELD_ENCRYPTION_KEY;
   if (raw) {
     const b = Buffer.from(raw, "base64");
-    if (b.length !== 32) throw new Error("FIELD_ENCRYPTION_KEY harus 32 byte (base64)");
+    if (b.length !== 32) throw new Error("FIELD_ENCRYPTION_KEY must be 32 bytes (base64)");
     return b;
   }
-  if (process.env.NODE_ENV === "production") throw new Error("FIELD_ENCRYPTION_KEY wajib diisi di production");
+  if (process.env.NODE_ENV === "production") throw new Error("FIELD_ENCRYPTION_KEY is required in production");
   return createHash("sha256").update(`dev-only:${process.env.JWT_SECRET ?? "x"}`).digest(); // hanya dev
 }
 
@@ -21,7 +21,7 @@ export function encryptField(plain: string) {
 
 export function decryptField(packed: string) {
   const [v, iv, tag, enc] = packed.split(":");
-  if (v !== "v1") throw new Error("Format enkripsi tidak dikenal");
+  if (v !== "v1") throw new Error("Unknown encryption format");
   const d = createDecipheriv("aes-256-gcm", key(), Buffer.from(iv, "base64"));
   d.setAuthTag(Buffer.from(tag, "base64"));
   return Buffer.concat([d.update(Buffer.from(enc, "base64")), d.final()]).toString("utf8");

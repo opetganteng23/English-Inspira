@@ -36,14 +36,14 @@ export async function PATCH(req: Request) {
   try {
     const admin = await requireRole(["admin"]);
     const b = z.object({ id: z.string(), status: z.enum(["clean", "suspicious", "invalid"]), note: z.string().max(500).optional() }).parse(await req.json());
-    if (!isValidObjectId(b.id)) throw new HttpError(404, "Attempt tidak ditemukan");
+    if (!isValidObjectId(b.id)) throw new HttpError(404, "Attempt not found");
     await connectDB();
     const r = await Attempt.updateOne({ _id: b.id, status: "submitted" }, { proctorReview: { status: b.status, note: b.note, at: new Date(), by: admin._id } });
-    if (!r.matchedCount) throw new HttpError(404, "Attempt tidak ditemukan");
+    if (!r.matchedCount) throw new HttpError(404, "Attempt not found");
     await audit(admin._id, "proctoring.review", b.id, { status: b.status });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

@@ -15,7 +15,7 @@ export function materialCsp(origin: string) {
     "style-src 'unsafe-inline'",
     `img-src data: blob: ${origin}`,
     `media-src ${origin} blob:`,
-    "font-src data:",
+    `font-src data: ${origin}`,
     "connect-src 'none'",
     "form-action 'none'",
     "frame-src 'none'",
@@ -26,7 +26,7 @@ export function materialCsp(origin: string) {
 }
 
 export function buildSrcdoc(doc: HtmlDoc, origin: string, nonce: string) {
-  if (!/^[A-Za-z0-9]{16,64}$/.test(nonce)) throw new Error("Nonce tidak valid");
+  if (!/^[A-Za-z0-9]{16,64}$/.test(nonce)) throw new Error("Invalid nonce");
   // Jembatan dijalankan pertama dan menghapus dirinya sendiri dari DOM, supaya nonce (literal di teks skrip)
   // tidak bisa dibaca skrip materi lewat document.scripts. Nonce hidup hanya di closure fungsi jembatan.
   const bridge = `<script>(function(n){
@@ -44,9 +44,9 @@ if(window.ResizeObserver){new ResizeObserver(height).observe(document.documentEl
 var s=document.currentScript;if(s&&s.parentNode){s.parentNode.removeChild(s);}
 })(${JSON.stringify(nonce)});<\/script>`;
 
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="${materialCsp(origin)}">
-<style>html,body{margin:0}body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#1C2B44;line-height:1.5;padding:16px;box-sizing:border-box}*{box-sizing:border-box}img,video{max-width:100%}</style>
+<style>@font-face{font-family:Poppins;font-weight:400;src:url(${origin}/fonts/poppins-400.woff2) format("woff2")}@font-face{font-family:Poppins;font-weight:600;src:url(${origin}/fonts/poppins-600.woff2) format("woff2")}@font-face{font-family:Poppins;font-weight:700;src:url(${origin}/fonts/poppins-700.woff2) format("woff2")}html,body{margin:0}body{font-family:Poppins,system-ui,sans-serif;color:#1C2B44;line-height:1.5;padding:16px;box-sizing:border-box}*{box-sizing:border-box}img,video{max-width:100%}</style>
 ${bridge}<style>${doc.css ?? ""}</style></head><body>${doc.html ?? ""}<script>${doc.js ?? ""}<\/script></body></html>`;
 }
 

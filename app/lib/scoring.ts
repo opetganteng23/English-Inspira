@@ -4,7 +4,7 @@ import type { PARAM_DEFAULTS } from "./config";
 export type Conversion = (typeof PARAM_DEFAULTS)["score_conversion"];
 export type SectionResult = { section: Section; raw: number; total: number; scaled: number };
 
-/** Raw → skala section 31–68. Mode 'table' membaca tabel resmi dari config_params (score_conversion). */
+/** Raw → skala section 31-68. Mode 'table' membaca tabel resmi dari config_params (score_conversion). */
 export function scaleSection(conv: Conversion, section: Section, raw: number, total: number): number {
   if (conv.mode === "table") {
     const hit = conv.tables[section]?.[String(raw)];
@@ -14,7 +14,7 @@ export function scaleSection(conv: Conversion, section: Section, raw: number, to
   return Math.round(conv.scaledMin + ((conv.scaledMax - conv.scaledMin) * raw) / total);
 }
 
-/** Skor total ITP = rata-rata 3 section × 10, rentang 310–677. */
+/** Skor total ITP = rata-rata 3 section × 10, rentang 310-677. */
 export function estimateTotal(sections: SectionResult[]): number {
   if (!sections.length) return 310;
   const avg = sections.reduce((a, s) => a + s.scaled, 0) / sections.length;

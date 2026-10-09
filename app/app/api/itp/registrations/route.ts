@@ -13,12 +13,12 @@ const oid = z.string().regex(/^[0-9a-f]{24}$/);
 const schema = z.object({
   sessionId: oid,
   fullName: z.string().trim().min(2).max(100),
-  nik: z.string().trim().regex(/^(\d{16}|[A-Za-z0-9]{5,20})$/, "NIK harus 16 digit, atau nomor paspor 5–20 karakter"),
+  nik: z.string().trim().regex(/^(\d{16}|[A-Za-z0-9]{5,20})$/, "National ID must be 16 digits, or a passport number of 5-20 characters"),
   birthDate: z.coerce.date(),
   gender: z.enum(["L", "P"]),
   idPhotoAssetId: oid,
   facePhotoAssetId: oid,
-  agree: z.literal(true, { message: "Centang pernyataan bahwa data sudah benar" }),
+  agree: z.literal(true, { message: "Tick the statement that your details are correct" }),
 });
 
 export async function POST(req: Request) {
@@ -26,20 +26,20 @@ export async function POST(req: Request) {
     const me = await requireRole(["participant"]);
     const b = schema.parse(await req.json());
     const age = (Date.now() - +b.birthDate) / (365.25 * 86_400_000);
-    if (age < 14 || age > 90) throw new HttpError(400, "Tanggal lahir tidak valid");
+    if (age < 14 || age > 90) throw new HttpError(400, "Invalid date of birth");
     await connectDB();
 
     // Foto harus milik peserta sendiri dan bertanda sensitif (diunggah lewat alur dokumen).
     const assets = await Asset.find({ _id: { $in: [b.idPhotoAssetId, b.facePhotoAssetId] }, ownerId: me._id, sensitive: true }).select("_id").lean();
-    if (assets.length !== (b.idPhotoAssetId === b.facePhotoAssetId ? 1 : 2)) throw new HttpError(400, "Foto dokumen tidak valid. Unggah ulang.");
+    if (assets.length !== (b.idPhotoAssetId === b.facePhotoAssetId ? 1 : 2)) throw new HttpError(400, "Invalid document photo. Please upload again.");
 
     const session = await ItpSession.findById(b.sessionId).lean();
-    if (!session || session.status !== "open" || session.date <= new Date()) throw new HttpError(404, "Jadwal tidak tersedia");
-    if (await ItpRegistration.exists({ userId: me._id, sessionId: session._id, status: { $ne: "cancelled" } })) throw new HttpError(409, "Kamu sudah terdaftar di jadwal ini");
+    if (!session || session.status !== "open" || session.date <= new Date()) throw new HttpError(404, "Schedule not available");
+    if (await ItpRegistration.exists({ userId: me._id, sessionId: session._id, status: { $ne: "cancelled" } })) throw new HttpError(409, "You are already registered for this schedule");
 
-    if (await ItpRegistration.exists({ userId: me._id, status: { $in: ["submitted", "confirmed"] } })) throw new HttpError(409, "Kamu masih punya pendaftaran ITP aktif. Batalkan dulu untuk memilih jadwal lain.");
+    if (await ItpRegistration.exists({ userId: me._id, status: { $in: ["submitted", "confirmed"] } })) throw new HttpError(409, "You still have an active ITP registration. Cancel it first to choose another schedule.");
     const seat = await ItpSession.findOneAndUpdate({ _id: session._id, status: "open", $expr: { $lt: ["$registered", "$quota"] } }, { $inc: { registered: 1 } }, { new: true });
-    if (!seat) throw new HttpError(409, "Kuota jadwal ini sudah penuh. Pilih jadwal lain.");
+    if (!seat) throw new HttpError(409, "This schedule is full. Choose another schedule.");
 
     let reg;
     try {
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     await enqueueMail(me.email, "itp_registered", { name: b.fullName, title: session.title, date: session.date, place: session.place });
     return NextResponse.json({ id: String(reg._id) }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

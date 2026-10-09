@@ -33,7 +33,7 @@ const unitProgressSchema = new Schema(
     courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },
     materialsDone: [{ type: Schema.Types.ObjectId, ref: "Material" }],
-    quizBest: Number, // persen benar terbaik (0–100)
+    quizBest: Number, // persen benar terbaik (0-100)
     quizPassed: { type: Boolean, default: false },
     status: { type: String, enum: ["in_progress", "completed"], default: "in_progress" },
     completedAt: Date,

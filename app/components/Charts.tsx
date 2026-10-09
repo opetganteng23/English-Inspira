@@ -1,8 +1,8 @@
 // Grafik SVG ringan: responsif lewat viewBox, aksesibel lewat <title>/aria-label. Warna dari token merek.
 
-export function LineChart({ points, target, min = 310, max = 677, label = "Perkembangan skor" }: { points: { label: string; value: number }[]; target?: number | null; min?: number; max?: number; label?: string }) {
+export function LineChart({ points, target, min = 310, max = 677, label = "Score progress" }: { points: { label: string; value: number }[]; target?: number | null; min?: number; max?: number; label?: string }) {
   const W = 600, H = 220, P = { l: 40, r: 16, t: 16, b: 34 };
-  if (!points.length) return <p className="py-8 text-center text-sm text-ink-soft">Belum ada hasil tes.</p>;
+  if (!points.length) return <p className="py-8 text-center text-sm text-ink-soft">No test results yet.</p>;
   const lo = Math.min(min, ...points.map((p) => p.value), target ?? min), hi = Math.max(max, ...points.map((p) => p.value), target ?? max);
   const x = (i: number) => P.l + (points.length === 1 ? (W - P.l - P.r) / 2 : (i * (W - P.l - P.r)) / (points.length - 1));
   const y = (v: number) => P.t + (1 - (v - lo) / (hi - lo)) * (H - P.t - P.b);
@@ -21,12 +21,12 @@ export function LineChart({ points, target, min = 310, max = 677, label = "Perke
 /** Batang horizontal berlabel. `max` default = nilai terbesar. */
 export function HBars({ rows, max, unit = "", color = "#1B5FB8" }: { rows: { label: string; value: number; sub?: string }[]; max?: number; unit?: string; color?: string }) {
   const m = max ?? Math.max(1, ...rows.map((r) => r.value));
-  if (!rows.length) return <p className="py-6 text-center text-sm text-ink-soft">Belum ada data.</p>;
+  if (!rows.length) return <p className="py-6 text-center text-sm text-ink-soft">No data yet.</p>;
   return (
     <ul className="flex flex-col gap-3">
       {rows.map((r) => (
         <li key={r.label}>
-          <div className="mb-1 flex justify-between gap-3 text-sm"><span className="min-w-0 truncate font-medium text-navy">{r.label}</span><span className="shrink-0 font-semibold text-navy">{r.value.toLocaleString("id-ID")}{unit}{r.sub ? <span className="ml-1 font-normal text-ink-soft">{r.sub}</span> : null}</span></div>
+          <div className="mb-1 flex justify-between gap-3 text-sm"><span className="min-w-0 truncate font-medium text-navy">{r.label}</span><span className="shrink-0 font-semibold text-navy">{r.value.toLocaleString("en-GB")}{unit}{r.sub ? <span className="ml-1 font-normal text-ink-soft">{r.sub}</span> : null}</span></div>
           <div className="h-2.5 rounded-full bg-canvas" role="presentation"><div className="h-2.5 rounded-full" style={{ width: `${Math.max(2, (r.value / m) * 100)}%`, background: color }} /></div>
         </li>
       ))}
@@ -44,6 +44,6 @@ export function Stat({ label, value, sub, tone }: { label: string; value: React.
   );
 }
 
-export function Loading({ text = "Memuat…" }: { text?: string }) { return <p className="py-6 text-ink-soft" role="status">{text}</p>; }
+export function Loading({ text = "Loading…" }: { text?: string }) { return <p className="py-6 text-ink-soft" role="status">{text}</p>; }
 export function ErrorNote({ text }: { text: string }) { return text ? <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{text}</p> : null; }
 export function Empty({ children }: { children: React.ReactNode }) { return <div className="card py-10 text-center text-ink-soft">{children}</div>; }

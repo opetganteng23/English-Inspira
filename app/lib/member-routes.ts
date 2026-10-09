@@ -8,12 +8,12 @@ import { importMembers } from "./import-members";
 /** Logika bersama endpoint impor/undangan untuk admin dan inst_admin (keduanya memanggil dengan institusi yang sudah dipastikan). */
 export async function handleImport(req: Request, institutionId: Types.ObjectId | string, actorId: Types.ObjectId | string) {
   const file = (await req.formData()).get("file");
-  if (!(file instanceof File)) throw new HttpError(400, "File wajib diisi");
+  if (!(file instanceof File)) throw new HttpError(400, "A file is required");
   const rows = await parseMembersFile(file);
   return NextResponse.json(await importMembers(institutionId, rows, actorId));
 }
 
-const invitesSchema = z.object({ emails: z.array(z.string().trim().toLowerCase()).min(1, "Isi minimal satu email").max(100, "Maksimal 100 email per kirim") });
+const invitesSchema = z.object({ emails: z.array(z.string().trim().toLowerCase()).min(1, "Enter at least one email").max(100, "Maximum 100 emails per send") });
 export async function handleInvites(req: Request, institutionId: Types.ObjectId | string, actorId: Types.ObjectId | string) {
   const { emails } = invitesSchema.parse(await req.json());
   const rows = Array.from(new Set(emails)).map((email, i) => ({ row: i + 1, email }));

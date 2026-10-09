@@ -17,10 +17,10 @@ import { CoachingQuota } from "@/models/Config";
 export const dynamic = "force-dynamic";
 
 async function find(id: string) {
-  if (!isValidObjectId(id)) throw new HttpError(404, "Peserta tidak ditemukan");
+  if (!isValidObjectId(id)) throw new HttpError(404, "Participant not found");
   await connectDB();
   const u = await User.findOne({ _id: id, role: "participant" });
-  if (!u) throw new HttpError(404, "Peserta tidak ditemukan");
+  if (!u) throw new HttpError(404, "Participant not found");
   return u;
 }
 
@@ -70,12 +70,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     switch (b.action) {
       case "note": await audit(admin._id, "participant.note", params.id, { text: b.text }); break;
       case "allow_placement_retake":
-        if (!u.placementAttemptId) throw new HttpError(409, "Peserta belum mengerjakan placement");
+        if (!u.placementAttemptId) throw new HttpError(409, "The participant has not taken the placement test");
         u.placementRetakeAllowed = true; await u.save(); await audit(admin._id, "placement.retake_allowed", params.id, { reason: b.reason }); break;
       case "resend_invitation": {
-        if (u.status !== "invited") throw new HttpError(409, "Peserta sudah aktif");
+        if (u.status !== "invited") throw new HttpError(409, "The participant is already active");
         const inst = await Institution.findById(u.institutionId);
-        if (!inst) throw new HttpError(409, "Institusi tidak ditemukan");
+        if (!inst) throw new HttpError(409, "Institution not found");
         await issueInvitation(u, inst, admin._id); await audit(admin._id, "invitation.resend", params.id); break;
       }
       case "erase": await eraseUserData(u._id, admin._id, b.reason); break;
@@ -83,7 +83,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       case "enable": await enableMember(u._id); await audit(admin._id, "participant.enable", params.id); break;
       case "extend_enrollment": {
         const e = await Enrollment.findOne({ userId: u._id }).sort({ createdAt: -1 });
-        if (!e) throw new HttpError(404, "Enrollment tidak ditemukan");
+        if (!e) throw new HttpError(404, "Enrollment not found");
         const base = e.expiresAt && e.expiresAt > new Date() ? e.expiresAt : new Date();
         e.expiresAt = new Date(+base + b.days * 86_400_000); e.status = "active"; await e.save();
         await audit(admin._id, "enrollment.extend", params.id, { days: b.days, reason: b.reason }); break;
@@ -91,7 +91,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

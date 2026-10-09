@@ -16,7 +16,7 @@ export const slotInput = z.object({
 export const slotAction = z.discriminatedUnion("action", [
   z.object({ action: z.literal("publish") }),
   z.object({ action: z.literal("unpublish") }),
-  z.object({ action: z.literal("cancel"), reason: z.string().trim().min(3, "Alasan pembatalan wajib diisi").max(300) }),
+  z.object({ action: z.literal("cancel"), reason: z.string().trim().min(3, "A cancellation reason is required").max(300) }),
 ]);
 
 export const attendanceInput = z.object({ status: z.enum(["present", "absent", "excused"]) });

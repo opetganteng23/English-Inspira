@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
 import { ConsentForm } from "./ConsentForm";
 
-export const metadata = { title: "Persetujuan Data — Edulyfe EPTA" };
+export const metadata = { title: "Data Consent | English Inspira" };
 export const dynamic = "force-dynamic";
 
 export default async function Page() {

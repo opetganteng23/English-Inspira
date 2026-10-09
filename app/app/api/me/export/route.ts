@@ -27,7 +27,7 @@ export async function GET() {
       attempts, counselorThreads: threads, certificates: certs, materialProgress: progress,
       itpRegistrations: regs.map(({ nikEnc, ...r }) => ({ ...r, nik: decryptField(nikEnc) })), // NIK milik sendiri didekripsi
     };
-    return new Response(JSON.stringify(data, null, 2), { headers: { "Content-Type": "application/json", "Content-Disposition": 'attachment; filename="data-saya.json"', "Cache-Control": "private, no-store" } });
+    return new Response(JSON.stringify(data, null, 2), { headers: { "Content-Type": "application/json", "Content-Disposition": 'attachment; filename="my-data.json"', "Cache-Control": "private, no-store" } });
   } catch (e) {
     return handleError(e);
   }

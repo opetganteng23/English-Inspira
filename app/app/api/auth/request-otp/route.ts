@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ ok: true, expiresInSec: 300 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Email tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     return handleError(e);
   }
 }

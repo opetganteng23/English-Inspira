@@ -16,9 +16,9 @@ export const sha256 = (s: string) => createHash("sha256").update(s).digest("hex"
 export async function activeInstitution(id: Types.ObjectId | string) {
   await connectDB();
   const inst = await Institution.findById(id);
-  if (!inst) throw new HttpError(404, "Institusi tidak ditemukan");
-  if (inst.status !== "active") throw new HttpError(409, "Institusi tidak aktif");
-  if (inst.contractEnd && inst.contractEnd < new Date()) throw new HttpError(409, "Kontrak institusi sudah berakhir");
+  if (!inst) throw new HttpError(404, "Institution not found");
+  if (inst.status !== "active") throw new HttpError(409, "The institution is inactive");
+  if (inst.contractEnd && inst.contractEnd < new Date()) throw new HttpError(409, "The institution's contract has ended");
   return inst;
 }
 
@@ -46,14 +46,14 @@ export async function createMember(institutionId: Types.ObjectId | string, input
 
   const existing = await User.findOne({ email });
   if (existing) {
-    if (String(existing.institutionId) !== String(inst._id)) throw new HttpError(409, "Email sudah terdaftar di institusi lain");
+    if (String(existing.institutionId) !== String(inst._id)) throw new HttpError(409, "Email already registered at another institution");
     if (existing.status === "invited") { await issueInvitation(existing, inst, invitedBy); return { userId: existing._id, resent: true }; }
-    throw new HttpError(409, "Email sudah terdaftar dan aktif");
+    throw new HttpError(409, "Email already registered and active");
   }
 
   if (role === "participant") {
     const seat = await Institution.findOneAndUpdate({ _id: inst._id, $expr: { $lt: ["$seatsUsed", "$seats"] } }, { $inc: { seatsUsed: 1 } });
-    if (!seat) throw new HttpError(409, "Kursi institusi sudah penuh");
+    if (!seat) throw new HttpError(409, "The institution's seats are full");
   }
   let user;
   try {
@@ -70,7 +70,7 @@ export async function createMember(institutionId: Types.ObjectId | string, input
 /** Nonaktifkan anggota: enrollment dinonaktifkan dan kursi dikembalikan. Riwayat tidak dihapus. */
 export async function disableMember(userId: Types.ObjectId | string) {
   const u = await User.findById(userId);
-  if (!u) throw new HttpError(404, "Pengguna tidak ditemukan");
+  if (!u) throw new HttpError(404, "User not found");
   if (u.status === "disabled") return;
   u.status = "disabled";
   await u.save();
@@ -81,11 +81,11 @@ export async function disableMember(userId: Types.ObjectId | string) {
 /** Aktifkan kembali (butuh kursi kosong untuk peserta). */
 export async function enableMember(userId: Types.ObjectId | string) {
   const u = await User.findById(userId);
-  if (!u) throw new HttpError(404, "Pengguna tidak ditemukan");
+  if (!u) throw new HttpError(404, "User not found");
   if (u.status !== "disabled") return;
   if (u.role === "participant" && u.institutionId) {
     const seat = await Institution.findOneAndUpdate({ _id: u.institutionId, $expr: { $lt: ["$seatsUsed", "$seats"] } }, { $inc: { seatsUsed: 1 } });
-    if (!seat) throw new HttpError(409, "Kursi institusi sudah penuh");
+    if (!seat) throw new HttpError(409, "The institution's seats are full");
   }
   u.status = u.consentAt ? "active" : "invited";
   await u.save();

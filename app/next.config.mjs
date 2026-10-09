@@ -16,7 +16,10 @@ const nextConfig = {
     serverComponentsExternalPackages: ["mongodb-memory-server", "mongoose", "pdfkit", "exceljs", "qrcode", "music-metadata", "pdf-parse", "node-cron", "mongodb-memory-server-core"],
   },
   async headers() {
-    return [{
+    return [
+      // Font untuk iframe materi (origin buram) wajib CORS terbuka.
+      { source: "/fonts/:file*", headers: [{ key: "Access-Control-Allow-Origin", value: "*" }, { key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      {
       source: "/:path*",
       headers: [
         { key: "Content-Security-Policy", value: csp },

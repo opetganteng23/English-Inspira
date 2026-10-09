@@ -7,6 +7,6 @@ export async function api<T = any>(url: string, init?: RequestInit & { json?: un
   return d as T;
 }
 
-export const rupiah = (n: number) => "Rp" + Math.round(n).toLocaleString("id-ID");
+export const rupiah = (n: number) => "Rp" + Math.round(n).toLocaleString("en-GB");
 export const tgl = (d: string | Date, withTime = false) =>
-  new Date(d).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}) });
+  new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}) });

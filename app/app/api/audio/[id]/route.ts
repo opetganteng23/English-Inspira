@@ -59,7 +59,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       { ...(typeof body.title === "string" && { title: body.title.trim() }), ...(typeof body.transcript === "string" && { transcript: body.transcript }) },
       { new: true }
     );
-    if (!a) throw new HttpError(404, "Audio tidak ditemukan");
+    if (!a) throw new HttpError(404, "Audio not found");
     return NextResponse.json({ ok: true });
   } catch (e) {
     return handleError(e);
@@ -71,10 +71,10 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     await requireRole(["admin"]);
     await connectDB();
     const a = await Audio.findById(params.id);
-    if (!a) throw new HttpError(404, "Audio tidak ditemukan");
+    if (!a) throw new HttpError(404, "Audio not found");
     // Audio yang masih dipakai grup soal tidak boleh dihapus.
     const used = await QuestionGroup.exists({ audioId: a._id });
-    if (used) throw new HttpError(409, "Audio masih dipakai soal");
+    if (used) throw new HttpError(409, "The audio is still used by questions");
     await (await audioBucket()).delete(a.gridFsId);
     await a.deleteOne();
     return NextResponse.json({ ok: true });

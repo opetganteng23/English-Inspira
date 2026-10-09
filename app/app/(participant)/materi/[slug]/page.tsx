@@ -17,27 +17,27 @@ export default function MateriViewer({ params }: { params: { slug: string } }) {
   useActiveTime("material", data?.id ?? null);
   // Skor dari materi diteruskan induk ke API; materi sendiri tidak pernah memanggil API.
   const onProgress = useCallback(async (score: number, answers: unknown, final: boolean) => {
-    try { await api(`/api/materials/${params.slug}/progress`, { json: { score, answers, final } }); if (final) setToast(`Skor ${Math.round(score)} tersimpan.`); }
+    try { await api(`/api/materials/${params.slug}/progress`, { json: { score, answers, final } }); if (final) setToast(`Score ${Math.round(score)} saved.`); }
     catch (e) { setToast((e as Error).message); }
     setTimeout(() => setToast(""), 4000);
   }, [params.slug]);
 
   if (loading) return <Loading />;
   if (error && !data) {
-    return <div className="card max-w-lg"><ErrorNote text={error} /><Link href="/materi" className="mt-3 block text-sm font-semibold text-brand">← Semua materi</Link></div>;
+    return <div className="card max-w-lg"><ErrorNote text={error} /><Link href="/materi" className="mt-3 block text-sm font-semibold text-brand">All materials</Link></div>;
   }
   if (!data) return null;
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <Link href="/materi" className="text-sm font-semibold text-brand">← Semua materi</Link>
-      <div><h1 className="page-title">{data.title}</h1>{data.summary && <p className="mt-1 text-ink-soft">{data.summary}</p>}{data.progress?.completed && <p className="mt-1 text-sm text-success">Skor terakhir {data.progress.score} · {data.progress.attempts}× dikerjakan</p>}</div>
+      <Link href="/materi" className="text-sm font-semibold text-brand">All materials</Link>
+      <div><h1 className="page-title">{data.title}</h1>{data.summary && <p className="mt-1 text-ink-soft">{data.summary}</p>}{data.progress?.completed && <p className="mt-1 text-sm text-success">Last score {data.progress.score} · {data.progress.attempts}× attempted</p>}</div>
       {toast && <p role="status" className="rounded-lg bg-success-tint p-3 text-sm text-success">{toast}</p>}
       {data.kind === "html" && data.htmlDoc
         ? <MaterialFrame doc={data.htmlDoc} onProgress={onProgress} />
         : <>
             <article className="card"><RichViewer html={data.contentHtml ?? ""} materialId={data.id} /></article>
-            <button className="btn-solid self-start" onClick={() => onProgress(100, null, true)}>{data.progress?.completed ? "Tandai selesai lagi" : "Tandai sudah dipelajari"}</button>
+            <button className="btn-solid self-start" onClick={() => onProgress(100, null, true)}>{data.progress?.completed ? "Mark as done again" : "Mark as studied"}</button>
           </>}
     </div>
   );

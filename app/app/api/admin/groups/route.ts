@@ -29,11 +29,11 @@ export async function POST(req: Request) {
     await requireRole(["admin"]);
     const b = groupSchema.parse(await req.json());
     await connectDB();
-    if (b.audioId && !(await Audio.exists({ _id: b.audioId }))) return NextResponse.json({ error: "Audio tidak ditemukan" }, { status: 400 });
+    if (b.audioId && !(await Audio.exists({ _id: b.audioId }))) return NextResponse.json({ error: "Audio not found" }, { status: 400 });
     const g = await QuestionGroup.create({ ...b, audioId: b.audioId ?? undefined, passageHtml: b.passageHtml ? sanitizePassage(b.passageHtml) : undefined });
     return NextResponse.json({ id: String(g._id) }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

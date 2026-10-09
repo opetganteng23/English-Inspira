@@ -8,10 +8,10 @@ import { QuestionGroup, Question } from "@/models/Question";
 import { groupSchema } from "@/lib/admin-schemas";
 
 async function find(id: string) {
-  if (!isValidObjectId(id)) throw new HttpError(404, "Grup tidak ditemukan");
+  if (!isValidObjectId(id)) throw new HttpError(404, "Group not found");
   await connectDB();
   const g = await QuestionGroup.findById(id);
-  if (!g) throw new HttpError(404, "Grup tidak ditemukan");
+  if (!g) throw new HttpError(404, "Group not found");
   return g;
 }
 
@@ -33,7 +33,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await g.save();
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }
@@ -42,7 +42,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   try {
     await requireRole(["admin"]);
     const g = await find(params.id);
-    if (await Question.exists({ groupId: g._id })) throw new HttpError(409, "Grup masih dipakai soal");
+    if (await Question.exists({ groupId: g._id })) throw new HttpError(409, "The group is still used by questions");
     await g.deleteOne();
     return NextResponse.json({ ok: true });
   } catch (e) {

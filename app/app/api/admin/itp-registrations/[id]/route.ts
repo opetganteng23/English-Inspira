@@ -9,10 +9,10 @@ import { applyOfficialScore } from "@/lib/itp-score";
 import { ItpRegistration } from "@/models/Itp";
 
 async function find(id: string) {
-  if (!isValidObjectId(id)) throw new HttpError(404, "Pendaftaran tidak ditemukan");
+  if (!isValidObjectId(id)) throw new HttpError(404, "Registration not found");
   await connectDB();
   const r = await ItpRegistration.findById(id);
-  if (!r) throw new HttpError(404, "Pendaftaran tidak ditemukan");
+  if (!r) throw new HttpError(404, "Registration not found");
   return r;
 }
 
@@ -22,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const admin = await requireRole(["admin"]);
     const r = await find(params.id);
     const b = z.object({ docStatus: z.enum(["pending", "valid", "rejected"]), docNote: z.string().max(500).optional() }).parse(await req.json());
-    if (b.docStatus === "rejected" && !b.docNote?.trim()) throw new HttpError(400, "Isi alasan penolakan dokumen");
+    if (b.docStatus === "rejected" && !b.docNote?.trim()) throw new HttpError(400, "Enter the document rejection reason");
     r.docStatus = b.docStatus;
     r.docNote = b.docNote;
     if (b.docStatus === "valid" && r.status === "submitted") r.status = "confirmed";
@@ -30,7 +30,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await audit(admin._id, "itp.doc_review", params.id, { docStatus: b.docStatus });
     return NextResponse.json({ ok: true, status: r.status });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }
@@ -45,7 +45,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     await audit(admin._id, "itp.score", params.id, { total: out.total });
     return NextResponse.json({ ok: true, ...out });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

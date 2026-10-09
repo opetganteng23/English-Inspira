@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const { user, inst, scoped } = await instContext(req);
     const pdf = await institutionReportPdf((await buildInstSummary(inst, scoped)) as never);
     await audit(user._id, "inst.report_pdf", String(inst._id));
-    return new Response(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="laporan-${inst.code}.pdf"`, "Cache-Control": "private, no-store" } });
+    return new Response(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="report-${inst.code}.pdf"`, "Cache-Control": "private, no-store" } });
   } catch (e) {
     return handleError(e);
   }

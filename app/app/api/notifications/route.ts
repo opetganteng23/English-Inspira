@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const me = await getCurrentUser();
-    if (!me) return NextResponse.json({ error: "Belum masuk" }, { status: 401 });
+    if (!me) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     await connectDB();
     const [list, unread] = await Promise.all([
       Notification.find({ userId: me._id }).sort({ createdAt: -1 }).limit(30).lean(),
@@ -20,7 +20,7 @@ export async function GET() {
       unread,
       items: list.map((n) => {
         const p = (n.payload ?? {}) as { title?: string; body?: string; href?: string; email?: string };
-        return { id: String(n._id), type: n.type, title: p.title ?? (n.type === "erase_request" ? "Pengajuan penghapusan data" : "Notifikasi"), body: p.body ?? (p.email ?? ""), href: p.href ?? (n.type === "erase_request" ? "/admin/peserta" : ""), read: !!n.readAt, at: n.createdAt };
+        return { id: String(n._id), type: n.type, title: p.title ?? (n.type === "erase_request" ? "Data deletion request" : "Notifikasi"), body: p.body ?? (p.email ?? ""), href: p.href ?? (n.type === "erase_request" ? "/admin/peserta" : ""), read: !!n.readAt, at: n.createdAt };
       }),
     });
   } catch (e) {

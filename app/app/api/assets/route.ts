@@ -14,15 +14,15 @@ export async function POST(req: Request) {
     const form = await req.formData();
     const file = form.get("file");
     const sensitive = form.get("sensitive") === "true";
-    if (!(file instanceof File)) throw new HttpError(400, "File wajib diisi");
+    if (!(file instanceof File)) throw new HttpError(400, "A file is required");
     // Aset publik (materi/soal) hanya boleh diunggah admin; peserta hanya aset sensitif miliknya.
-    if (!sensitive && user.role !== "admin") throw new HttpError(403, "Tidak punya akses");
+    if (!sensitive && user.role !== "admin") throw new HttpError(403, "No access");
 
     const buf = Buffer.from(await file.arrayBuffer());
     if (buf.length > (sensitive ? MAX_SENSITIVE : MAX_GENERAL))
-      throw new HttpError(413, "Gambar terlalu besar. Kompres di klien (maks 300 KB)");
+      throw new HttpError(413, "Image too large. Compress it on the client (max 300 KB)");
     const mime = sniffImage(buf);
-    if (!mime) throw new HttpError(415, "Hanya JPEG, PNG, WebP, atau GIF");
+    if (!mime) throw new HttpError(415, "Only JPEG, PNG, WebP, or GIF");
 
     await connectDB();
     const sha256 = createHash("sha256").update(buf).digest("hex");

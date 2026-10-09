@@ -9,11 +9,11 @@ import { handleImport } from "@/lib/member-routes";
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const admin = await requireRole(["admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Institusi tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Institution not found");
     await connectDB();
     return await handleImport(req, params.id, admin._id);
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

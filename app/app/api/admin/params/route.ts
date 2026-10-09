@@ -22,12 +22,12 @@ export async function PUT(req: Request) {
   try {
     const admin = await requireRole(["admin"]);
     const { key, value } = body.parse(await req.json());
-    if (!(key in PARAM_SCHEMAS)) return NextResponse.json({ error: "Parameter tidak dikenal" }, { status: 404 });
+    if (!(key in PARAM_SCHEMAS)) return NextResponse.json({ error: "Unknown parameter" }, { status: 404 });
     await setParam(key as ParamKey, value, admin._id);
     await audit(admin._id, "param.update", key, { value });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Nilai tidak valid untuk parameter ini" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid value for this parameter" }, { status: 400 });
     return handleError(e);
   }
 }

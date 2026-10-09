@@ -8,7 +8,7 @@ type Sec = { name: string; durationSec: number; questionIds: string[] };
 type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; sections: Sec[]; attempts: number };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
-const KIND: Record<string, string> = { placement: "Placement", sim: "Simulasi", practice: "Latihan", quiz: "Kuis unit" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulasi", practice: "Practice", quiz: "Unit quiz" };
 const DEFAULT_MIN: Record<string, number> = { listening: 35, structure: 25, reading: 55 };
 
 async function api(url: string, init?: RequestInit) {
@@ -31,7 +31,7 @@ export default function TesAdmin() {
     catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
-    if (!confirm("Hapus tes ini?")) return;
+    if (!confirm("Delete this test?")) return;
     try { await api(`/api/admin/tests/${id}`, { method: "DELETE" }); load(); } catch (e) { setErr((e as Error).message); }
   }
 
@@ -39,25 +39,25 @@ export default function TesAdmin() {
     <div className="flex max-w-5xl flex-col gap-5">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="font-display text-3xl font-extrabold text-navy">Tes</h1>
-          <p className="text-sm text-ink-soft">Susun tes dari soal berstatus published di Bank Soal.</p>
+          <h1 className="font-display text-3xl font-extrabold text-navy">Tests</h1>
+          <p className="text-sm text-ink-soft">Build tests from published questions in the Question Bank.</p>
         </div>
         <button onClick={() => setDraft({ name: "", kind: "placement", levelId: "", active: true, attempts: 0, sections: [{ name: "listening", durationSec: 35 * 60, questionIds: [] }, { name: "structure", durationSec: 25 * 60, questionIds: [] }, { name: "reading", durationSec: 55 * 60, questionIds: [] }] })}
-          className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ Tes baru</button>
+          className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ New test</button>
       </div>
       {err && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</p>}
       <div className="overflow-x-auto rounded-2xl border border-line bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="bg-canvas text-xs uppercase text-ink-soft"><tr><th className="p-3">Nama</th><th>Jenis</th><th>Soal</th><th>Durasi</th><th>Dikerjakan</th><th>Status</th><th /></tr></thead>
+          <thead className="bg-canvas text-xs uppercase text-ink-soft"><tr><th className="p-3">Name</th><th>Type</th><th>Question</th><th>Durasi</th><th>Dikerjakan</th><th>Status</th><th /></tr></thead>
           <tbody>
             {tests.map((t) => (
               <tr key={t.id} className="border-t border-line">
                 <td className="p-3 font-semibold text-navy">{t.name}</td><td>{KIND[t.kind]}</td><td>{t.questions}</td><td>{Math.round(t.durationSec / 60)} mnt</td><td>{t.attempts}×</td>
-                <td><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${t.active ? "bg-success-tint text-success" : "bg-canvas text-ink-soft"}`}>{t.active ? "aktif" : "nonaktif"}</span></td>
-                <td className="whitespace-nowrap p-3 text-right"><button className="mr-3 font-semibold text-brand" onClick={() => open(t.id)}>Edit</button><button className="font-semibold text-red-700" onClick={() => remove(t.id)}>Hapus</button></td>
+                <td><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${t.active ? "bg-success-tint text-success" : "bg-canvas text-ink-soft"}`}>{t.active ? "active" : "inactive"}</span></td>
+                <td className="whitespace-nowrap p-3 text-right"><button className="mr-3 font-semibold text-brand" onClick={() => open(t.id)}>Edit</button><button className="font-semibold text-red-700" onClick={() => remove(t.id)}>Delete</button></td>
               </tr>
             ))}
-            {tests.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">Belum ada tes.</td></tr>}
+            {tests.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No tests yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -87,24 +87,24 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
   return (
     <div className="fixed inset-0 z-20 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
       <div role="dialog" aria-modal className="my-6 w-full max-w-3xl rounded-2xl bg-white p-6">
-        <div className="mb-4 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">{v.id ? "Edit tes" : "Tes baru"}</h2><button onClick={onClose} aria-label="Tutup" className="text-2xl leading-none text-ink-soft">×</button></div>
-        {locked && <p className="mb-4 rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">Tes ini sudah dikerjakan {v.attempts}×. Susunan soal dan durasi dikunci agar skor lama tetap valid. Kamu masih bisa mengubah nama dan status aktif.</p>}
+        <div className="mb-4 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">{v.id ? "Edit test" : "New test"}</h2><button onClick={onClose} aria-label="Tutup" className="text-2xl leading-none text-ink-soft">×</button></div>
+        {locked && <p className="mb-4 rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">This test has been taken {v.attempts} times. The question set and durations are locked so earlier scores stay valid. You can still change the name and active status.</p>}
         <div className="grid gap-4 sm:grid-cols-3">
-          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy sm:col-span-2">Nama tes<input className="field font-normal" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} /></label>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Jenis<select disabled={locked} className="field" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value })}>{Object.entries(KIND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy sm:col-span-2">Test name<input className="field font-normal" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} /></label>
+          <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Type<select disabled={locked} className="field" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value })}>{Object.entries(KIND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
         </div>
-        <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Aktif (tampil di daftar tes)</label>
-        <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-xs">Level sasaran<select disabled={locked || v.kind === "placement"} className="field font-normal" value={v.kind === "placement" ? "" : v.levelId} onChange={(e) => setV({ ...v, levelId: e.target.value })}><option value="">Semua level</option>{levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
-        {v.kind === "placement" && <p className="mt-2 text-xs text-ink-soft">Placement dikerjakan satu kali per peserta dan menentukan levelnya, sehingga tidak dibatasi level.</p>}
-        {v.kind === "quiz" && <p className="mt-2 text-xs text-ink-soft">Kuis unit tidak muncul di Tes Saya; dipakai lewat unit belajar.</p>}
+        <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Active (shown in the test list)</label>
+        <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-xs">Target level<select disabled={locked || v.kind === "placement"} className="field font-normal" value={v.kind === "placement" ? "" : v.levelId} onChange={(e) => setV({ ...v, levelId: e.target.value })}><option value="">All levels</option>{levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
+        {v.kind === "placement" && <p className="mt-2 text-xs text-ink-soft">Placement is taken once per participant and determines their level, so it is not limited by level.</p>}
+        {v.kind === "quiz" && <p className="mt-2 text-xs text-ink-soft">Unit quizzes do not appear in My Tests; they are taken from learning units.</p>}
 
         <div className="mt-5 flex flex-col gap-5">
           {v.sections.map((s, i) => <SectionBox key={s.name} s={s} locked={locked} onChange={(n) => setSec(i, n)} />)}
         </div>
         {err && <p role="alert" className="mt-4 text-sm text-red-700">{err}</p>}
         <div className="mt-5 flex justify-end gap-3">
-          <button onClick={onClose} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">Batal</button>
-          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy ? "Menyimpan…" : "Simpan tes"}</button>
+          <button onClick={onClose} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">Cancel</button>
+          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy ? "Saving…" : "Save test"}</button>
         </div>
       </div>
     </div>
@@ -133,8 +133,8 @@ function SectionBox({ s, locked, onChange }: { s: Sec; locked: boolean; onChange
 
   return (
     <fieldset className="rounded-xl border border-line p-4">
-      <legend className="px-2 font-display font-extrabold text-navy">{SECTION[s.name]} · {ids.length} soal</legend>
-      <label className="flex items-center gap-2 text-sm font-semibold text-navy">Durasi (menit)
+      <legend className="px-2 font-display font-extrabold text-navy">{SECTION[s.name]} · {ids.length} questions</legend>
+      <label className="flex items-center gap-2 text-sm font-semibold text-navy">Duration (minutes)
         <input type="number" min={1} max={180} disabled={locked} className="field w-24" value={Math.round(s.durationSec / 60)} onChange={(e) => onChange({ ...s, durationSec: Math.max(1, Number(e.target.value) || DEFAULT_MIN[s.name]) * 60 })} />
       </label>
       <ol className="mt-3 flex flex-col gap-1.5">
@@ -145,26 +145,26 @@ function SectionBox({ s, locked, onChange }: { s: Sec; locked: boolean; onChange
               <span className="w-6 font-semibold text-ink-soft">{i + 1}</span>
               <span className="flex-1 truncate">{r ? r.stem : id}</span>
               {!locked && <>
-                <button disabled={i === 0} onClick={() => move(i, -1)} aria-label="Naikkan" className="px-1 disabled:opacity-30">↑</button>
-                <button disabled={i === ids.length - 1} onClick={() => move(i, 1)} aria-label="Turunkan" className="px-1 disabled:opacity-30">↓</button>
-                <button onClick={() => onChange({ ...s, questionIds: ids.filter((x) => x !== id) })} aria-label="Keluarkan" className="px-1 text-red-700">×</button>
+                <button disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up" className="px-1 text-xs font-semibold disabled:opacity-30">Up</button>
+                <button disabled={i === ids.length - 1} onClick={() => move(i, 1)} aria-label="Move down" className="px-1 text-xs font-semibold disabled:opacity-30">Down</button>
+                <button onClick={() => onChange({ ...s, questionIds: ids.filter((x) => x !== id) })} aria-label="Remove" className="px-1 text-red-700">×</button>
               </>}
             </li>
           );
         })}
-        {ids.length === 0 && <li className="text-sm text-ink-soft">Belum ada soal. Pilih dari daftar di bawah.</li>}
+        {ids.length === 0 && <li className="text-sm text-ink-soft">No questions yet. Choose from the list below.</li>}
       </ol>
       {!locked && (
         <div className="mt-3">
-          <input className="field mb-2" placeholder={`Cari soal ${SECTION[s.name]} (published)`} value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="field mb-2" placeholder={`Search ${SECTION[s.name]} questions (published)`} value={q} onChange={(e) => setQ(e.target.value)} />
           <ul className="max-h-48 overflow-y-auto rounded-lg border border-line">
             {pool.filter((p) => !ids.includes(p._id)).map((p) => (
               <li key={p._id} className="flex items-center gap-2 border-b border-line px-3 py-1.5 text-sm last:border-0">
                 <span className="flex-1 truncate">{p.stem}</span><span className="text-xs text-ink-soft">{p.type}</span>
-                <button onClick={() => onChange({ ...s, questionIds: [...ids, p._id] })} className="font-semibold text-brand">+ Tambah</button>
+                <button onClick={() => onChange({ ...s, questionIds: [...ids, p._id] })} className="font-semibold text-brand">+ Add</button>
               </li>
             ))}
-            {pool.filter((p) => !ids.includes(p._id)).length === 0 && <li className="p-3 text-sm text-ink-soft">Tidak ada soal published yang cocok.</li>}
+            {pool.filter((p) => !ids.includes(p._id)).length === 0 && <li className="p-3 text-sm text-ink-soft">No matching published questions.</li>}
           </ul>
         </div>
       )}

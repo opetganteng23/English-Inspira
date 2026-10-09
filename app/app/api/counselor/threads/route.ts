@@ -35,19 +35,19 @@ export async function POST(req: Request) {
     const user = await requireRole([...ROLES]);
     const { attemptId } = schema.parse(await req.json().catch(() => ({})));
     await connectDB();
-    let title = "Percakapan baru";
+    let title = "New conversation";
     if (attemptId) {
-      if (!isValidObjectId(attemptId)) throw new HttpError(400, "Attempt tidak valid");
+      if (!isValidObjectId(attemptId)) throw new HttpError(400, "Invalid attempt");
       const a = await Attempt.findOne({ _id: attemptId, userId: user._id, status: "submitted" }).select("kind").lean();
-      if (!a) throw new HttpError(404, "Hasil tes tidak ditemukan");
+      if (!a) throw new HttpError(404, "Test result not found");
       const existing = await CounselorThread.findOne({ userId: user._id, attemptId });
       if (existing) return NextResponse.json({ id: String(existing._id), reused: true });
-      title = a.kind === "placement" ? "Hasil placement" : "Hasil tes";
+      title = a.kind === "placement" ? "Placement result" : "Test result";
     }
     const t = await CounselorThread.create({ userId: user._id, attemptId, title });
     return NextResponse.json({ id: String(t._id) }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

@@ -34,22 +34,22 @@ export async function POST(req: Request) {
     const me = await requireRole(["participant"]);
     await limit("verifyIp", `pdf:${me._id}`);
     const file = (await req.formData()).get("file");
-    if (!(file instanceof File)) throw new HttpError(400, "File wajib diisi");
-    if (file.size > MAX_PDF_BYTES) throw new HttpError(413, "Maksimal 10 MB");
+    if (!(file instanceof File)) throw new HttpError(400, "A file is required");
+    if (file.size > MAX_PDF_BYTES) throw new HttpError(413, "Maximum 10 MB");
     const buf = Buffer.from(await file.arrayBuffer());
-    if (!isPdf(buf)) throw new HttpError(415, "File bukan PDF yang valid");
+    if (!isPdf(buf)) throw new HttpError(415, "The file is not a valid PDF");
 
     let text = "";
     try {
       const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: new Uint8Array(buf) });
       try { text = (await parser.getText()).text ?? ""; } finally { await parser.destroy(); }
-    } catch (e) { console.error("[pdf] ekstraksi gagal:", (e as Error).message); /* rusak/terenkripsi/scan: lanjut tanpa teks, peserta mengisi manual */ }
+    } catch (e) { console.error("[pdf] extraction failed:", (e as Error).message); /* rusak/terenkripsi/scan: lanjut tanpa teks, peserta mengisi manual */ }
     const { template, scores } = parseItpScores(text);
 
     await connectDB();
     const bucket = await pdfBucket();
-    const name = (file.name || "hasil.pdf").replace(/[^\w.\- ]/g, "_").slice(0, 120);
+    const name = (file.name || "result.pdf").replace(/[^\w.\- ]/g, "_").slice(0, 120);
     const up = bucket.openUploadStream(name, { metadata: { userId: String(me._id) } });
     await new Promise<void>((resolve, reject) => { Readable.from(buf).pipe(up).on("finish", () => resolve()).on("error", reject); });
 

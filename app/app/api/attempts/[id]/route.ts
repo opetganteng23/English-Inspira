@@ -60,7 +60,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     const user = await requireRole([...ROLES]);
     const { attempt, test } = await loadAttempt(params.id, user);
-    if (attempt.status !== "in_progress") throw new HttpError(409, "Waktu habis atau tes sudah selesai");
+    if (attempt.status !== "in_progress") throw new HttpError(409, "Time is up or the test is already finished");
     const body = patchSchema.parse(await req.json());
 
     const allowed = new Set(test.sections[attempt.sectionIdx].questionIds.map(String));
@@ -80,7 +80,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await attempt.save();
     return NextResponse.json({ ok: true, savedAt: now });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

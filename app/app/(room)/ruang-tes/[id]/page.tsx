@@ -142,8 +142,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
     } catch (e) { setBusy(false); if (!auto) setErr((e as Error).message); else await load(); }
   }
 
-  if (err) return <Center><div className="max-w-sm text-center"><p className="text-red-700">{err}</p><button className="btn-outline mt-4" onClick={() => { setErr(""); load(); }}>Muat ulang</button></div></Center>;
-  if (!st) return <Center>Memuat tes…</Center>;
+  if (err) return <Center><div className="max-w-sm text-center"><p className="text-red-700">{err}</p><button className="btn-outline mt-4" onClick={() => { setErr(""); load(); }}>Reload</button></div></Center>;
+  if (!st) return <Center>Loading test…</Center>;
 
   const q = st.questions[cur];
   const group = st.groups.find((g) => g.id === q.groupId);
@@ -151,17 +151,17 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const choose = (i: number) => { setAns((a) => ({ ...a, [q.id]: i })); queue(q.id); };
   const toggleFlag = () => { setFlagged((f) => ({ ...f, [q.id]: !f[q.id] })); queue(q.id); };
   const answered = Object.keys(ans).filter((id) => st.questions.some((x) => x.id === id)).length;
-  const finishLabel = last ? "Kumpulkan tes" : "Selesaikan section";
+  const finishLabel = last ? "Submit test" : "Finish section";
 
   const navigator = (
     <>
       <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-6">
         {st.questions.map((x, i) => (
-          <button key={x.id} onClick={() => { setCur(i); setNavOpen(false); }} aria-label={`Soal ${i + 1}${ans[x.id] != null ? ", dijawab" : ""}${flagged[x.id] ? ", ditandai" : ""}`} aria-current={i === cur}
+          <button key={x.id} onClick={() => { setCur(i); setNavOpen(false); }} aria-label={`Question ${i + 1}${ans[x.id] != null ? ", answered" : ""}${flagged[x.id] ? ", flagged" : ""}`} aria-current={i === cur}
             className={`h-10 rounded-lg text-sm font-semibold ${i === cur ? "ring-2 ring-brand " : ""}${flagged[x.id] ? "bg-accent-tint text-accent-dark" : ans[x.id] != null ? "bg-brand text-white" : "bg-canvas text-ink-soft"}`}>{i + 1}</button>
         ))}
       </div>
-      <p className="mt-3 text-xs text-ink-soft">{answered} dari {st.questions.length} dijawab · biru = dijawab, oranye = ditandai</p>
+      <p className="mt-3 text-xs text-ink-soft">{answered} of {st.questions.length} answered · blue = answered, orange = flagged</p>
     </>
   );
 
@@ -173,11 +173,11 @@ export default function Ruang({ params }: { params: { id: string } }) {
           <p className="truncate text-xs text-mist">Section {st.section.index + 1}/{st.section.total} · {LABEL[st.section.name]}</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className={`hidden sm:inline ${saved === "fail" ? "text-orange-300" : "text-mist"}`}>{saved === "saving" ? "Menyimpan…" : saved === "fail" ? "Gagal menyimpan, mencoba lagi" : "✓ Tersimpan otomatis"}</span>
-          <span className={`rounded-lg px-3 py-1.5 font-display text-lg font-extrabold ${left < 60 ? "bg-accent" : "bg-navy-700"}`} role="timer" aria-label="Sisa waktu section">{mmss(left)}</span>
-          <button className="hidden rounded-lg border border-white/40 px-3 py-1.5 text-xs md:block" onClick={() => document.documentElement.requestFullscreen?.()}>Layar penuh</button>
+          <span className={`hidden sm:inline ${saved === "fail" ? "text-orange-300" : "text-mist"}`}>{saved === "saving" ? "Saving…" : saved === "fail" ? "Save failed, retrying" : "Saved automatically"}</span>
+          <span className={`rounded-lg px-3 py-1.5 font-display text-lg font-extrabold ${left < 60 ? "bg-accent" : "bg-navy-700"}`} role="timer" aria-label="Section time remaining">{mmss(left)}</span>
+          <button className="hidden rounded-lg border border-white/40 px-3 py-1.5 text-xs md:block" onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
         </div>
-        {saved === "fail" && <p className="basis-full text-xs text-orange-300 sm:hidden">Gagal menyimpan, mencoba lagi…</p>}
+        {saved === "fail" && <p className="basis-full text-xs text-orange-300 sm:hidden">Save failed, retrying…</p>}
       </header>
 
       <div className="mx-auto grid w-full max-w-6xl flex-1 gap-5 p-4 sm:p-6 lg:grid-cols-[1fr_280px]">
@@ -191,13 +191,13 @@ export default function Ruang({ params }: { params: { id: string } }) {
             </article>
           )}
           <section className="card">
-            <p className="text-sm text-ink-soft">Soal {cur + 1} dari {st.questions.length}</p>
+            <p className="text-sm text-ink-soft">Question {cur + 1} of {st.questions.length}</p>
             <h2 className="mt-2 text-lg font-medium leading-relaxed">{q.stem}</h2>
             {q.assetIds?.map((a) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={a} src={`/api/assets/${a}`} alt="Gambar soal" className="mt-3 max-h-72 rounded-lg border border-line" />
+              <img key={a} src={`/api/assets/${a}`} alt="Question image" className="mt-3 max-h-72 rounded-lg border border-line" />
             ))}
-            <div role="radiogroup" aria-label="Pilihan jawaban" className="mt-5 flex flex-col gap-3">
+            <div role="radiogroup" aria-label="Answer options" className="mt-5 flex flex-col gap-3">
               {q.options.map((o, i) => (
                 <button key={i} role="radio" aria-checked={ans[q.id] === i} onClick={() => choose(i)}
                   className={`flex min-h-[52px] items-center gap-3 rounded-xl border-[1.5px] px-4 py-3 text-left transition ${ans[q.id] === i ? "border-brand bg-brand-tint" : "border-line-strong hover:border-brand"}`}>
@@ -206,15 +206,15 @@ export default function Ruang({ params }: { params: { id: string } }) {
               ))}
             </div>
             <div className="mt-5 flex items-center justify-between">
-              <button onClick={toggleFlag} className="min-h-[44px] text-sm font-semibold text-accent-dark">{flagged[q.id] ? "★ Ditandai" : "☆ Tandai soal"}</button>
+              <button onClick={toggleFlag} className="min-h-[44px] text-sm font-semibold text-accent-dark">{flagged[q.id] ? "★ Flagged" : "☆ Flag question"}</button>
               <button className="btn-outline hidden lg:inline-flex" onClick={() => setConfirm(true)}>{finishLabel}</button>
             </div>
           </section>
-          <p className="text-xs text-ink-soft">Setelah section diselesaikan, kamu tidak bisa kembali ke section ini.</p>
+          <p className="text-xs text-ink-soft">After finishing a section, you cannot return to it.</p>
         </main>
 
         <aside className="hidden h-fit rounded-2xl border border-line bg-white p-5 lg:block">
-          <h3 className="mb-3 font-display font-extrabold text-navy">Navigator soal</h3>
+          <h3 className="mb-3 font-display font-extrabold text-navy">Question navigator</h3>
           {navigator}
         </aside>
       </div>
@@ -223,29 +223,29 @@ export default function Ruang({ params }: { params: { id: string } }) {
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white lg:hidden">
         {navOpen && <div className="max-h-[45vh] overflow-y-auto border-b border-line p-4">{navigator}<button className="btn-outline mt-3 w-full" onClick={() => { setNavOpen(false); setConfirm(true); }}>{finishLabel}</button></div>}
         <div className="flex items-center gap-2 p-3">
-          <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => setCur(cur - 1)} aria-label="Soal sebelumnya">←</button>
-          <button className="btn-outline flex-1" onClick={() => setNavOpen(!navOpen)} aria-expanded={navOpen}>{cur + 1}/{st.questions.length} · {answered} dijawab {navOpen ? "▾" : "▴"}</button>
+          <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => setCur(cur - 1)} aria-label="Previous question">Previous</button>
+          <button className="btn-outline flex-1" onClick={() => setNavOpen(!navOpen)} aria-expanded={navOpen}>{cur + 1}/{st.questions.length} · {answered} answered</button>
           {cur < st.questions.length - 1
-            ? <button className="btn-solid !px-5" onClick={() => setCur(cur + 1)} aria-label="Soal berikutnya">→</button>
-            : <button className="btn-accent !px-4" onClick={() => setConfirm(true)}>Selesai</button>}
+            ? <button className="btn-solid !px-5" onClick={() => setCur(cur + 1)} aria-label="Next question">Next</button>
+            : <button className="btn-accent !px-4" onClick={() => setConfirm(true)}>Done</button>}
         </div>
       </div>
       <div className="mx-auto hidden w-full max-w-6xl items-center justify-between px-6 pb-6 lg:flex">
-        <button className="btn-outline" disabled={cur === 0} onClick={() => setCur(cur - 1)}>← Sebelumnya</button>
-        {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => setCur(cur + 1)}>Berikutnya →</button> : <button className="btn-accent" onClick={() => setConfirm(true)}>{finishLabel}</button>}
+        <button className="btn-outline" disabled={cur === 0} onClick={() => setCur(cur - 1)}>Previous</button>
+        {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => setCur(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => setConfirm(true)}>{finishLabel}</button>}
       </div>
 
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-          <div role="dialog" aria-modal="true" aria-label="Konfirmasi" className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
-            <h3 className="font-display text-xl font-extrabold text-navy">{last ? "Kumpulkan tes?" : "Selesaikan section ini?"}</h3>
+          <div role="dialog" aria-modal="true" aria-label="Confirm" className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
+            <h3 className="font-display text-xl font-extrabold text-navy">{last ? "Submit the test?" : "Finish this section?"}</h3>
             <p className="mt-2 text-sm text-ink-soft">
-              {st.questions.length - answered > 0 ? `${st.questions.length - answered} soal belum dijawab. ` : "Semua soal sudah dijawab. "}
-              {last ? "Setelah dikumpulkan, jawaban tidak bisa diubah." : "Kamu tidak bisa kembali ke section ini."}
+              {st.questions.length - answered > 0 ? `${st.questions.length - answered} questions unanswered. ` : "All questions answered. "}
+              {last ? "After submitting, your answers cannot be changed." : "You cannot return to this section."}
             </p>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button onClick={() => setConfirm(false)} className="btn-outline">Kembali</button>
-              <button disabled={busy} onClick={() => next()} className="btn-solid">{busy ? "Memproses…" : "Ya, lanjut"}</button>
+              <button onClick={() => setConfirm(false)} className="btn-outline">Back</button>
+              <button disabled={busy} onClick={() => next()} className="btn-solid">{busy ? "Memproses…" : "Yes, continue"}</button>
             </div>
           </div>
         </div>
@@ -273,7 +273,7 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
     } catch (e) {
       const status = (e as { status?: number }).status;
       setPhase(status === 403 ? "done" : "error");
-      setMsg(e instanceof DOMException ? "Browser memblokir pemutaran. Klik “Mulai audio” lagi." : (e as Error).message);
+      setMsg(e instanceof DOMException ? "The browser blocked playback. Click “Start audio” again." : (e as Error).message);
     }
   }
 
@@ -289,15 +289,15 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
 
   return (
     <div className="card">
-      <p className="text-sm font-semibold text-navy">{instruction ?? "Dengarkan audio"}</p>
+      <p className="text-sm font-semibold text-navy">{instruction ?? "Listen to the audio"}</p>
       <audio ref={el} preload="auto" controlsList="nodownload noplaybackrate"
         onEnded={() => { setPhase("done"); api(base, { method: "PATCH", json: { posSec: el.current?.duration ?? lastPos.current, done: true } }).catch(() => {}); }}
         onSeeking={() => { const a = el.current; if (a && a.currentTime > lastPos.current + 1) a.currentTime = lastPos.current; }}
-        onError={() => { if (phase === "playing") { setPhase("error"); setMsg("Audio gagal dimuat. Klik “Muat ulang audio”; ini tidak dihitung sebagai pemutaran ulang."); } }} />
-      {phase === "idle" && <button onClick={start} className="btn-solid mt-3">▶ Mulai audio (hanya sekali)</button>}
-      {phase === "playing" && <p className="mt-3 text-sm text-success" role="status">🔊 Audio sedang diputar. Tidak bisa dijeda atau diulang.</p>}
-      {phase === "done" && <p className="mt-3 text-sm text-ink-soft">Audio sudah diputar.</p>}
-      {phase === "error" && <button onClick={start} className="btn-outline mt-3">Muat ulang audio</button>}
+        onError={() => { if (phase === "playing") { setPhase("error"); setMsg("Audio failed to load. Click “Reload audio”; this does not count as replaying."); } }} />
+      {phase === "idle" && <button onClick={start} className="btn-solid mt-3">Start audio (once only)</button>}
+      {phase === "playing" && <p className="mt-3 text-sm text-success" role="status">Audio is playing. It cannot be paused or replayed.</p>}
+      {phase === "done" && <p className="mt-3 text-sm text-ink-soft">Audio has been played.</p>}
+      {phase === "error" && <button onClick={start} className="btn-outline mt-3">Reload audio</button>}
       {msg && <p role="alert" className="mt-2 text-sm text-red-700">{msg}</p>}
     </div>
   );
@@ -315,7 +315,7 @@ function PracticeAudio({ attemptId, audioId, instruction }: { attemptId: string;
   useEffect(() => { if (el.current) el.current.playbackRate = rate; }, [rate, src]);
   return (
     <div className="card">
-      <p className="text-sm font-semibold text-navy">{instruction ?? "Dengarkan audio"} <span className="font-normal text-ink-soft">(mode latihan: boleh diulang)</span></p>
+      <p className="text-sm font-semibold text-navy">{instruction ?? "Listen to the audio"} <span className="font-normal text-ink-soft">(practice mode: replay allowed)</span></p>
       {err && <p role="alert" className="mt-2 text-sm text-red-700">{err}</p>}
       <audio ref={el} src={src || undefined} controls preload="auto" controlsList="nodownload" className="mt-3 w-full" />
       <label className="mt-2 flex items-center gap-2 text-sm text-ink-soft">Kecepatan

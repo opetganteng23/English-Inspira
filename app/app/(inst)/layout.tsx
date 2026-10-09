@@ -2,14 +2,14 @@ import { AppShell, type NavGroup } from "@/components/AppShell";
 
 const nav: NavGroup[] = [
   { items: [
-    { href: "/institusi", label: "Ringkasan" },
-    { href: "/institusi/peserta", label: "Peserta & undangan" },
-    { href: "/institusi/jadwal", label: "Jadwal tes rombongan" },
-    { href: "/institusi/laporan", label: "Laporan" },
-    { href: "/institusi/materi", label: "Materi institusi" },
+    { href: "/institusi", label: "Overview" },
+    { href: "/institusi/peserta", label: "Participants & invitations" },
+    { href: "/institusi/jadwal", label: "Group test schedule" },
+    { href: "/institusi/laporan", label: "Reports" },
+    { href: "/institusi/materi", label: "Institution materials" },
   ] },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <AppShell roles={["inst_admin", "admin"]} nav={nav} title="Portal institusi">{children}</AppShell>;
+  return <AppShell roles={["inst_admin", "admin"]} nav={nav} title="Institution portal">{children}</AppShell>;
 }

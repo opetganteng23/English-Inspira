@@ -257,7 +257,7 @@ describe("mesin analisis (MTS §13.5)", () => {
     thresholds: { weak: 60, priority: 40, minItems: 5 }, validTopics: ["subject-verb", "inference"],
   };
   const tpl = { summary: "Estimasi skormu {score} di level {level}.", strong: "Kuat: {strong}.", weak: "Perlu diperkuat: {weak}.", gap: "Selisih ke {next}: {gap} poin.", suggestion: "Latih {weak}." };
-  const good = () => ({ summary: "Skor 505, jarak 38 poin ke Advanced.", strengths: [{ topic: "inference", evidence: "Skor 85 dari 6 butir." }], weaknesses: [{ topic: "subject-verb", severity: "priority" as const, evidence: "Skor 35.5 dari 8 butir.", likelyCause: "Konsep belum kuat." }], gapToNextLevel: { points: 38, target: 543 }, recommendations: [{ topic: "subject-verb", priority: "high" as const }], narrative: "Fokus pada subject-verb selama 2 minggu dengan 20 soal per hari.", suggestions: ["Latih 20 soal subject-verb setiap hari"] });
+  const good = () => ({ summary: "Skor 505, jarak 38 poin ke Advanced.", strengths: [{ topic: "inference", evidence: "Skor 85 dari 6 butir." }], weaknesses: [{ topic: "subject-verb", severity: "priority" as const, evidence: "Skor 35.5 dari 8 butir.", likelyCause: "Konsep belum kuat." }], gapToNextLevel: { points: 38, target: 543 }, recommendations: [{ topic: "subject-verb", priority: "high" as const }], narrative: "Focus on subject-verb for 2 weeks with 20 questions a day.", suggestions: ["Practice 20 subject-verb questions every day"] });
   it("template menghasilkan keluaran yang lolos skema dan pemeriksaan", () => {
     const t = templateResult(input, tpl);
     expect(analysisResultSchema.safeParse(t).success).toBe(true);
@@ -266,10 +266,10 @@ describe("mesin analisis (MTS §13.5)", () => {
     expect(t.weaknesses[0].topic).toBe("subject-verb");
   });
   it("keluaran sah diterima, termasuk angka berstatuan rencana (2 minggu, 20 soal)", () => expect(checkResult(good(), input)).toBeNull());
-  it("menolak topik di luar daftar valid", () => { const r = good(); r.weaknesses[0].topic = "karangan"; expect(checkResult(r, input)).toMatch(/Topik/); });
-  it("menolak angka yang tidak ada pada data", () => { const r = good(); r.summary = "Skor 520 sudah bagus."; expect(checkResult(r, input)).toMatch(/Angka 520/); });
-  it("menolak jarak level yang tidak cocok dengan data", () => { const r = good(); r.gapToNextLevel = { points: 10, target: 543 }; expect(checkResult(r, input)).toMatch(/Jarak/); });
-  it("angka berstatuan tidak dicek; angka telanjang dicek", () => { expect(numbersIn("20 soal selama 2 minggu, skor 505")).toEqual([505]); });
+  it("menolak topik di luar daftar valid", () => { const r = good(); r.weaknesses[0].topic = "karangan"; expect(checkResult(r, input)).toMatch(/Topic outside/); });
+  it("menolak angka yang tidak ada pada data", () => { const r = good(); r.summary = "A score of 520 is already good."; expect(checkResult(r, input)).toMatch(/number 520/); });
+  it("menolak jarak level yang tidak cocok dengan data", () => { const r = good(); r.gapToNextLevel = { points: 10, target: 543 }; expect(checkResult(r, input)).toMatch(/gap to the next level/); });
+  it("angka berstatuan tidak dicek; angka telanjang dicek", () => { expect(numbersIn("20 questions for 2 weeks, score 505")).toEqual([505]); });
   it("alias tidak membocorkan id dan hash cache tidak bergantung alias", () => {
     expect(aliasFor("abc123")).toMatch(/^p-[0-9a-f]{10}$/);
     expect(aliasFor("abc123")).not.toContain("abc123");
@@ -320,8 +320,8 @@ describe("impor soal (Bank Soal)", () => {
   it("melaporkan alasan per baris, bukan menggagalkan semua", () => {
     const rows = mapQuestionRows([head, ["xx", "t", "s", "a", "b", "", "", "A", "", "", "", ""], ["reading", "t", "s", "a", "b", "", "", "Z", "", "", "", ""], ["reading", "t", "s", "a", "b", "", "", "A", "", "", "", "published"], ["reading", "t", "s", "a", "b", "", "", "A", "", "", "", "draft"]]);
     expect(rows.map((r) => r.ok)).toEqual([false, false, false, true]);
-    expect(!rows[0].ok && rows[0].error).toMatch(/Section/);
-    expect(!rows[1].ok && rows[1].error).toMatch(/Kunci/);
+    expect(!rows[0].ok && rows[0].error).toMatch(/Unknown section/);
+    expect(!rows[1].ok && rows[1].error).toMatch(/Invalid answer key/);
     expect(!rows[2].ok && rows[2].error).toMatch(/tag/i); // published tanpa tag
   });
   it("kolom wajib hilang dilaporkan sekali", () => { const r = mapQuestionRows([["foo", "bar"], ["1", "2"]]); expect(r).toHaveLength(1); expect(r[0].ok).toBe(false); });

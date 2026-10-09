@@ -17,8 +17,8 @@ export const materialInput = z.object({
 
 export function normalizeMaterial(b: z.infer<typeof materialInput>) {
   if (b.kind === "html") {
-    if (!b.htmlDoc || docSize(b.htmlDoc) === 0) throw new HttpError(400, "Isi HTML materi kosong");
-    if (docSize(b.htmlDoc) > MAX_DOC_BYTES) throw new HttpError(413, "Dokumen materi maksimal 2 MB");
+    if (!b.htmlDoc || docSize(b.htmlDoc) === 0) throw new HttpError(400, "The material's HTML content is empty");
+    if (docSize(b.htmlDoc) > MAX_DOC_BYTES) throw new HttpError(413, "Material document maximum 2 MB");
     return { ...b, contentJson: undefined, contentHtml: undefined };
   }
   return { ...b, htmlDoc: undefined, contentHtml: sanitizeRich(b.contentHtml ?? "") }; // sanitasi wajib saat simpan

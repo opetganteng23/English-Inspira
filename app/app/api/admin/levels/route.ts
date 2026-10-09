@@ -36,14 +36,14 @@ export async function PUT(req: Request) {
     const { levels } = z.object({ levels: z.array(level).min(1).max(10) }).parse(await req.json());
     const sorted = [...levels].sort((a, b) => a.order - b.order);
     for (const l of sorted) if (l.scoreMin > l.scoreMax) throw new HttpError(400, `${l.name}: batas bawah melebihi batas atas`);
-    for (let i = 1; i < sorted.length; i++) if (sorted[i].scoreMin <= sorted[i - 1].scoreMax) throw new HttpError(400, `Rentang ${sorted[i - 1].name} dan ${sorted[i].name} tumpang tindih`);
-    if (new Set(levels.map((l) => l.key)).size !== levels.length || new Set(levels.map((l) => l.order)).size !== levels.length) throw new HttpError(400, "Key dan urutan level harus unik");
+    for (let i = 1; i < sorted.length; i++) if (sorted[i].scoreMin <= sorted[i - 1].scoreMax) throw new HttpError(400, `The ranges of ${sorted[i - 1].name} and ${sorted[i].name} overlap`);
+    if (new Set(levels.map((l) => l.key)).size !== levels.length || new Set(levels.map((l) => l.order)).size !== levels.length) throw new HttpError(400, "Level keys and order must be unique");
     await connectDB();
     for (const l of levels) await Level.updateOne({ key: l.key }, l, { upsert: true });
     await audit(admin._id, "levels.update", undefined, { levels });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

@@ -9,7 +9,7 @@ export function unitComplete(requiredMaterialIds: string[], done: Set<string>, h
   return requiredMaterialIds.every((id) => done.has(id)) && (!hasQuiz || quizPassed);
 }
 
-/** Persen benar dari skor section sebuah attempt (dasar `unit_pass_score`, bukan skala 310–677). */
+/** Persen benar dari skor section sebuah attempt (dasar `unit_pass_score`, bukan skala 310-677). */
 export function percentCorrect(sections: { raw?: number | null; total?: number | null }[]) {
   const raw = sections.reduce((a, s) => a + (s.raw ?? 0), 0), total = sections.reduce((a, s) => a + (s.total ?? 0), 0);
   return total ? Math.round((raw / total) * 100) : 0;

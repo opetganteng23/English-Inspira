@@ -27,7 +27,7 @@ function firstNumberAfter(text: string, label: RegExp, min: number, max: number)
 }
 
 /**
- * Template yang dikenali: laporan skor bergaya TOEFL ITP (skor per section 31–68 dan total 310–677).
+ * Template yang dikenali: laporan skor bergaya TOEFL ITP (skor per section 31-68 dan total 310-677).
  * Template lain ditambah belakangan. PDF hasil scan (tanpa teks) mengembalikan kosong → peserta mengisi manual di layar verifikasi.
  */
 export function parseItpScores(text: string): { template: string; scores: ParsedScores } {
@@ -42,14 +42,14 @@ export function parseItpScores(text: string): { template: string; scores: Parsed
   return { template: found ? (/toefl|itp|ets/i.test(text) ? "itp-report" : "generic-itp") : "unknown", scores };
 }
 
-/** Validasi nilai terverifikasi. Total dihitung dari tiga section bila lengkap; bila tidak, total manual harus 310–677. */
+/** Validasi nilai terverifikasi. Total dihitung dari tiga section bila lengkap; bila tidak, total manual harus 310-677. */
 export function verifyScores(i: ParsedScores): { ok: true; scores: Required<Pick<ParsedScores, never>> & ParsedScores } | { ok: false; error: string } {
   const parts: (keyof ParsedScores)[] = ["listening", "structure", "reading"];
-  for (const k of parts) if (i[k] !== undefined && !validSectionScore(i[k])) return { ok: false, error: `Skor ${k} harus bilangan bulat 31–68` };
+  for (const k of parts) if (i[k] !== undefined && !validSectionScore(i[k])) return { ok: false, error: `The ${k} score must be a whole number from 31 to 68` };
   const have = parts.filter((k) => i[k] !== undefined);
-  if (!have.length && i.total === undefined) return { ok: false, error: "Isi minimal satu nilai" };
+  if (!have.length && i.total === undefined) return { ok: false, error: "Enter at least one score" };
   let total = i.total;
   if (have.length === 3) total = itpTotal(i.listening!, i.structure!, i.reading!);
-  else if (total !== undefined && !(Number.isInteger(total) && total >= 310 && total <= 677)) return { ok: false, error: "Skor total harus 310–677" };
+  else if (total !== undefined && !(Number.isInteger(total) && total >= 310 && total <= 677)) return { ok: false, error: "Total score must be 310-677" };
   return { ok: true, scores: { ...i, ...(total !== undefined ? { total } : {}) } };
 }

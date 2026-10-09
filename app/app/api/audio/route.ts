@@ -14,22 +14,22 @@ export async function POST(req: Request) {
     const user = await requireRole(["admin"]);
     const form = await req.formData();
     const file = form.get("file");
-    if (!(file instanceof File)) throw new HttpError(400, "File wajib diisi");
-    if (!file.name.toLowerCase().endsWith(".mp3")) throw new HttpError(415, "Hanya file .mp3");
-    if (file.size > MAX_BYTES) throw new HttpError(413, "Maksimal 15 MB");
+    if (!(file instanceof File)) throw new HttpError(400, "A file is required");
+    if (!file.name.toLowerCase().endsWith(".mp3")) throw new HttpError(415, "Only .mp3 files");
+    if (file.size > MAX_BYTES) throw new HttpError(413, "Maximum 15 MB");
 
     const buf = Buffer.from(await file.arrayBuffer());
-    if (!isMp3(buf)) throw new HttpError(415, "Isi file bukan MP3 yang valid"); // cek magic bytes
+    if (!isMp3(buf)) throw new HttpError(415, "The file content is not a valid MP3"); // cek magic bytes
 
     const { parseBuffer } = await import("music-metadata");
     let durationSec = 0;
     try {
       durationSec = Math.round((await parseBuffer(buf, { mimeType: "audio/mpeg" })).format.duration ?? 0);
     } catch {
-      throw new HttpError(415, "File audio rusak atau tidak bisa dibaca");
+      throw new HttpError(415, "The audio file is damaged or cannot be read");
     }
-    if (!durationSec) throw new HttpError(415, "Durasi audio tidak terbaca");
-    if (durationSec > MAX_DURATION) throw new HttpError(413, "Durasi maksimal 10 menit");
+    if (!durationSec) throw new HttpError(415, "Audio duration cannot be read");
+    if (durationSec > MAX_DURATION) throw new HttpError(413, "Maximum duration is 10 minutes");
 
     const sha256 = createHash("sha256").update(buf).digest("hex");
     const dup = await Audio.findOne({ sha256 }).select("_id");

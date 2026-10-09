@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   try {
     const user = await requireRole(["participant", "admin"]);
     const { attempt, test } = await loadAttempt(params.id, user);
-    if (attempt.status !== "submitted") throw new HttpError(409, "Tes belum selesai");
+    if (attempt.status !== "submitted") throw new HttpError(409, "The test is not finished yet");
     await connectDB();
 
     const ids = test.sections.flatMap((s) => s.questionIds);

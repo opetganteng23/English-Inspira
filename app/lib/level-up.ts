@@ -19,10 +19,10 @@ export type LevelUpRules = { requireRemedialDone: boolean; minSimScoreFromNextLe
  */
 export function levelUpDecision(i: { score: number | null; nextMin: number | null; remedialPending: number; coachRecommends: boolean; rules: LevelUpRules }) {
   const reasons: string[] = [];
-  if (i.nextMin == null) return { up: false, reasons: ["Sudah di level tertinggi"] };
-  if (i.score == null) reasons.push("Belum ada skor simulasi");
-  else if (i.rules.minSimScoreFromNextLevel && i.score < i.nextMin) reasons.push(`Skor simulasi ${i.score} belum mencapai ${i.nextMin}`);
-  if (i.rules.requireRemedialDone && i.remedialPending > 0 && !i.coachRecommends) reasons.push(`${i.remedialPending} item remedial prioritas tinggi belum selesai`);
+  if (i.nextMin == null) return { up: false, reasons: ["Already at the highest level"] };
+  if (i.score == null) reasons.push("No simulation score yet");
+  else if (i.rules.minSimScoreFromNextLevel && i.score < i.nextMin) reasons.push(`Simulation score ${i.score} has not reached ${i.nextMin}`);
+  if (i.rules.requireRemedialDone && i.remedialPending > 0 && !i.coachRecommends) reasons.push(`${i.remedialPending} high-priority remedial items not finished`);
   return { up: reasons.length === 0, reasons };
 }
 
@@ -71,7 +71,7 @@ export async function evaluateLevelUp(attempt: HydratedDocument<AttemptDoc>) {
       const topics = await TopicStat.find({ userId: g.user._id }).lean();
       await refreshStudyPlan(g.user._id, g.user.institutionId ?? undefined, topics.map((t) => ({ skill: t.skill, topic: t.topic, score: t.score, status: t.status })));
       await enqueueMail(g.user.email, "level_up", { level: g.next.name, quota: g.next.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/beranda` });
-      await notify(g.user._id, "level_up", { title: `Selamat, naik ke level ${g.next.name}`, body: `Kuota coaching baru ${g.next.coachingQuota} sesi.`, href: "/beranda" }, String(attempt._id));
+      await notify(g.user._id, "level_up", { title: `Congratulations, you are now at the ${g.next.name} level`, body: `New coaching quota: ${g.next.coachingQuota} sessions.`, href: "/beranda" }, String(attempt._id));
       await audit(g.user._id, "level.up", String(attempt._id), { from: g.cur.key, to: g.next.key, score: attempt.scoreEst });
       result = { up: true, reasons: [], level: g.next.name };
     }

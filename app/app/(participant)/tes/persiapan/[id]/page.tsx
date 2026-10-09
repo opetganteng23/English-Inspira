@@ -27,7 +27,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
       const o = ctx.current.createOscillator(), g = ctx.current.createGain();
       o.frequency.value = 523; g.gain.value = 0.15;
       o.connect(g); g.connect(ctx.current.destination); o.start(); o.stop(ctx.current.currentTime + 0.6);
-    } catch { setErr("Perangkat audio tidak terdeteksi di browser ini."); }
+    } catch { setErr("No audio device detected in this browser."); }
   }
   async function begin() {
     setBusy(true); setErr("");
@@ -39,31 +39,31 @@ export default function Persiapan({ params }: { params: { id: string } }) {
   }
 
   if (loading) return <Loading />;
-  if (!t) return <ErrorNote text={error || "Tes tidak ditemukan"} />;
-  if (!t.unlocked) return <div className="card"><p>{t.reason ?? "Tes ini belum terbuka di akunmu."}</p><Link href="/tes" className="btn-solid mt-3">Kembali ke daftar tes</Link></div>;
+  if (!t) return <ErrorNote text={error || "Test not found"} />;
+  if (!t.unlocked) return <div className="card"><p>{t.reason ?? "This test is not unlocked for your account yet."}</p><Link href="/tes" className="btn-solid mt-3">Back to the test list</Link></div>;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <div><p className="text-sm font-semibold text-brand">PERSIAPAN</p><h1 className="page-title">{t.name}</h1><p className="mt-1 text-ink-soft">Format penuh: {t.totalQuestions} soal · ±{Math.round(t.totalSec / 60)} menit · Listening, Structure & Written Expression, Reading</p></div>
+      <div><p className="text-sm font-semibold text-brand">PREPARATION</p><h1 className="page-title">{t.name}</h1><p className="mt-1 text-ink-soft">Full format: {t.totalQuestions} questions · about {Math.round(t.totalSec / 60)} minutes · Listening, Structure & Written Expression, Reading</p></div>
 
       <section className="card flex flex-col gap-3">
-        <h2 className="font-display text-lg font-extrabold text-navy">Cek perangkat</h2>
-        <p className="text-sm text-ink-soft">Pasang headset, lalu putar nada uji. Audio Listening nanti hanya diputar <b>sekali</b>.</p>
+        <h2 className="font-display text-lg font-extrabold text-navy">Device check</h2>
+        <p className="text-sm text-ink-soft">Put on your headset, then play the test tone. Listening audio will only be played <b>sekali</b>.</p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button type="button" className="btn-outline" onClick={beep}>🔊 Putar nada uji</button>
-          <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={audioOk} onChange={(e) => setAudioOk(e.target.checked)} />Saya mendengar nadanya</label>
+          <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={audioOk} onChange={(e) => setAudioOk(e.target.checked)} />I can hear the tone</label>
         </div>
       </section>
 
       <section className="card">
-        <h2 className="font-display text-lg font-extrabold text-navy">Aturan selama tes</h2>
+        <h2 className="font-display text-lg font-extrabold text-navy">Rules during the test</h2>
         <ul className="mt-2 flex flex-col gap-1.5 text-sm text-ink-soft">
-          {["Tetap di layar penuh; pindah tab atau keluar layar penuh akan dicatat.", "Audio Listening diputar sekali, tanpa jeda atau ulang.", "Tidak bisa kembali ke section sebelumnya.", "Timer dipegang server: refresh tidak mengubah sisa waktu, jawaban tersimpan otomatis.", "Sesi dengan catatan aktivitas tidak biasa ditinjau admin. Tidak ada rekaman kamera atau mikrofon."].map((r) => <li key={r}>• {r}</li>)}
+          {["Stay in fullscreen; switching tabs or leaving fullscreen is recorded.", "Listening audio plays once, without pausing or replaying.", "You cannot go back to a previous section.", "The timer runs on the server: refreshing does not change the remaining time, and answers are saved automatically.", "Sessions with unusual activity notes are reviewed by the admin. No camera or microphone recording."].map((r) => <li key={r}>• {r}</li>)}
         </ul>
-        <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={ready} onChange={(e) => setReady(e.target.checked)} /><span>Saya paham aturannya dan siap mengerjakan sampai selesai. Jatah tes dikurangi saat tes dimulai.</span></label>
+        <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={ready} onChange={(e) => setReady(e.target.checked)} /><span>I understand the rules and am ready to finish the test. The test attempt is counted when the test starts.</span></label>
         <ErrorNote text={err} />
-        <button className="btn-primary mt-4" disabled={!audioOk || !ready || busy} onClick={begin}>{busy ? "Memulai…" : `Mulai ${t.name}`}</button>
-        <Link href="/tes" className="mt-3 block text-center text-sm font-semibold text-brand">Batal</Link>
+        <button className="btn-primary mt-4" disabled={!audioOk || !ready || busy} onClick={begin}>{busy ? "Memulai…" : `Start ${t.name}`}</button>
+        <Link href="/tes" className="mt-3 block text-center text-sm font-semibold text-brand">Cancel</Link>
       </section>
     </div>
   );

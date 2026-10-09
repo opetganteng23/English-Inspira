@@ -14,7 +14,7 @@ type U = { role: string; institutionId?: Types.ObjectId | null };
 /** Filter daftar/akses materi untuk penulis: admin semua; lainnya hanya milik institusinya. */
 export function authorScope(u: U): Record<string, unknown> {
   if (u.role === "admin") return {};
-  if (!u.institutionId) throw new HttpError(403, "Akunmu belum terhubung ke institusi");
+  if (!u.institutionId) throw new HttpError(403, "Your account is not linked to an institution yet");
   return { institutionId: u.institutionId };
 }
 
@@ -23,6 +23,6 @@ export const visibleTo = (u: { institutionId?: Types.ObjectId | null }) => ({ in
 
 export function assertCanWrite(u: U, m: { institutionId?: Types.ObjectId | null; kind: string }) {
   if (u.role === "admin") return;
-  if (!m.institutionId || String(m.institutionId) !== String(u.institutionId)) throw new HttpError(404, "Materi tidak ditemukan");
-  if (m.kind !== "rich") throw new HttpError(403, "Materi HTML hanya dikelola admin");
+  if (!m.institutionId || String(m.institutionId) !== String(u.institutionId)) throw new HttpError(404, "Material not found");
+  if (m.kind !== "rich") throw new HttpError(403, "HTML materials are managed by admins only");
 }

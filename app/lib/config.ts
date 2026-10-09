@@ -46,35 +46,35 @@ export const PARAM_DEFAULTS: { [K in ParamKey]: z.infer<(typeof PARAM_SCHEMAS)[K
   pdf_retention_days: 180, // placeholder retensi (MTS §25)
   analysis_prompt: {
     version: "v1",
-    text: "Kamu analis belajar TOEFL ITP. Tafsirkan angka yang diberikan: kekuatan, kelemahan, pola kesalahan, dugaan penyebab (konsep belum kuat, ragu-ragu karena sering ganti jawaban, atau terburu-buru), prioritas, dan sugesti langkah berikutnya. Gunakan HANYA topik dari validTopics dan HANYA angka yang ada di data. Jangan membuat angka baru.",
+    text: "You are a TOEFL ITP learning analyst. Interpret the given numbers: strengths, weaknesses, error patterns, likely causes (concept not yet solid, hesitation from frequently changing answers, or rushing), priorities, and suggestions for next steps. Use ONLY topics from validTopics and ONLY numbers present in the data. Do not invent new numbers. Write in English.",
   },
   // Placeholder: {level} {score} {strong} {weak} {gap} {next}
   narrative_template: {
-    summary: "Estimasi skormu {score} di level {level}.",
-    strong: "Topik yang sudah kuat: {strong}.",
-    weak: "Topik yang perlu diperkuat: {weak}.",
-    gap: "Selisih ke level {next}: {gap} poin.",
-    suggestion: "Kerjakan latihan dan materi untuk topik {weak}, lalu ulangi tes untuk melihat kemajuan.",
+    summary: "Your estimated score is {score} at the {level} level.",
+    strong: "Strong topics: {strong}.",
+    weak: "Topics to strengthen: {weak}.",
+    gap: "Gap to the {next} level: {gap} points.",
+    suggestion: "Do exercises and materials on {weak}, then retake a test to see your progress.",
   },
 };
 
 export const PARAM_HELP: Record<ParamKey, string> = {
-  score_conversion: "Tabel raw → skala 31–68 per section. WAJIB diverifikasi ke sumber resmi sebelum produksi.",
-  weakness: "Ambang kelemahan: lemah < 60, prioritas < 40, minimum 5 butir sebelum topik dinilai.",
-  unit_pass_score: "Syarat lulus kuis unit (dari bank soal).",
-  level_up: "Syarat naik level: skor simulasi ≥ batas bawah level berikutnya dan remedial prioritas tinggi selesai.",
-  booking: "Daftar maks N jam sebelum sesi; batal/izin maks N jam sebelum sesi.",
-  quota_rules: "Aturan kuota coaching per kehadiran.",
-  stuck: "Deteksi stuck: waktu > N× median (min sampel) atau N salah beruntun.",
-  idle_timeout_sec: "Waktu tidak aktif yang tidak dihitung (detik).",
-  plan_deadline_days: "Deadline otomatis study plan (hari) untuk prioritas tinggi dan sedang.",
-  plan_max_active: "Jumlah maksimum item study plan aktif.",
-  alpha: "Bobot skor baru pada akumulasi skor topik (0.05–1).",
-  counselor_quota: "Batas pesan Konselor AI per bulan per peserta.",
-  invite_hourly_cap: "Batas email undangan per jam.",
-  pdf_retention_days: "Lama file PDF asli disimpan (hari). Setelah itu file dihapus otomatis; nilai terverifikasi tetap ada. PLACEHOLDER: tetapkan bersama mitra.",
-  analysis_prompt: "Prompt analisis Claude (berversi). Ubah versi setiap mengganti teks agar hasil lama tetap dapat ditelusuri.",
-  narrative_template: "Narasi cadangan bila Claude tidak tersedia. Placeholder: {level} {score} {strong} {weak} {gap} {next}.",
+  score_conversion: "Raw to 31-68 scale table per section. MUST be verified against the official source before production.",
+  weakness: "Weakness thresholds: weak < 60, priority < 40, minimum 5 items before a topic is rated.",
+  unit_pass_score: "Unit quiz pass mark (from the question bank).",
+  level_up: "Level-up requirements: simulation score at least the next level's lower bound and high-priority remedial items done.",
+  booking: "Register at most N hours before a session; cancel/excuse at most N hours before a session.",
+  quota_rules: "Coaching quota rules per attendance status.",
+  stuck: "Stuck detection: time > N times the median (min samples) or N consecutive wrong answers.",
+  idle_timeout_sec: "Inactive time that is not counted (seconds).",
+  plan_deadline_days: "Automatic study plan deadlines (days) for high and medium priority.",
+  plan_max_active: "Maximum number of active study plan items.",
+  alpha: "Weight of the new score in the cumulative topic score (0.05-1).",
+  counselor_quota: "AI Counselor message limit per participant per month.",
+  invite_hourly_cap: "Invitation email limit per hour.",
+  pdf_retention_days: "How long the original PDF file is kept (days). After that the file is deleted automatically; verified scores remain. PLACEHOLDER: agree with partners.",
+  analysis_prompt: "Claude analysis prompt (versioned). Change the version whenever you change the text so older results remain traceable.",
+  narrative_template: "Fallback narrative when Claude is unavailable. Placeholders: {level} {score} {strong} {weak} {gap} {next}.",
 };
 
 export async function getParam<K extends ParamKey>(key: K): Promise<z.infer<(typeof PARAM_SCHEMAS)[K]>> {

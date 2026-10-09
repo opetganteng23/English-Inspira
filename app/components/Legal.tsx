@@ -8,10 +8,10 @@ export async function Legal({ title, children }: { title: string; children: Reac
     <>
       <PublicHeader />
       <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <p className="rounded-lg bg-accent-tint p-3 text-sm text-accent-dark"><b>Draf.</b> Dokumen ini belum ditinjau konsultan hukum. Jangan dipublikasikan sebagai ketentuan final.</p>
+        <p className="rounded-lg bg-accent-tint p-3 text-sm text-accent-dark"><b>Draft.</b> This document has not been reviewed by a legal consultant. Do not publish it as final terms.</p>
         <h1 className="page-title mt-6">{title}</h1>
         <div className="prose-ei mt-6 text-[15px]">{children}</div>
-        <p className="mt-8 text-sm text-ink-soft">Pertanyaan? {info.supportEmail ? <a className="text-brand" href={`mailto:${info.supportEmail}`}>{info.supportEmail}</a> : "Hubungi admin lewat menu Bantuan."}</p>
+        <p className="mt-8 text-sm text-ink-soft">Questions? {info.supportEmail ? <a className="text-brand" href={`mailto:${info.supportEmail}`}>{info.supportEmail}</a> : "Contact the admin through the Help menu."}</p>
       </main>
       <PublicFooter email={info.supportEmail} whatsapp={info.supportWhatsapp} />
     </>

@@ -18,31 +18,31 @@ const snap = (m: InstanceType<typeof Material>) => ({ title: m.title, summary: m
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const admin = await requireAuthor();
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Materi tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Material not found");
     const b = z.object({ action: z.enum(["submit_review", "reject", "publish", "unpublish", "rollback"]), version: z.number().int().optional(), note: z.string().trim().max(500).optional() }).parse(await req.json());
     await connectDB();
     const m = await Material.findById(params.id);
-    if (!m) throw new HttpError(404, "Materi tidak ditemukan");
+    if (!m) throw new HttpError(404, "Material not found");
     assertCanWrite(admin, m);
 
     if (b.action === "submit_review") {
-      if (m.status !== "draft") throw new HttpError(409, "Hanya draf yang bisa diajukan untuk review");
+      if (m.status !== "draft") throw new HttpError(409, "Only drafts can be submitted for review");
       m.status = "review"; m.reviewNote = undefined; await m.save();
     } else if (b.action === "reject") {
-      if (m.status !== "review") throw new HttpError(409, "Materi tidak sedang dalam review");
-      if (!b.note || b.note.length < 3) throw new HttpError(400, "Alasan penolakan wajib diisi");
+      if (m.status !== "review") throw new HttpError(409, "The material is not under review");
+      if (!b.note || b.note.length < 3) throw new HttpError(400, "A rejection reason is required");
       m.status = "draft"; m.reviewNote = b.note; await m.save();
     } else if (b.action === "unpublish") { m.status = "draft"; await m.save(); }
     else {
       if (b.action === "publish" && m.kind === "html") {
-        if (m.status !== "review") throw new HttpError(409, "Materi HTML harus diajukan untuk review dulu");
+        if (m.status !== "review") throw new HttpError(409, "HTML materials must be submitted for review first");
         const admins = await User.countDocuments({ role: "admin", status: "active" });
-        if (admins > 1 && m.editorId && String(m.editorId) === String(admin._id)) throw new HttpError(403, "Penerbit harus berbeda dari penyunting terakhir");
+        if (admins > 1 && m.editorId && String(m.editorId) === String(admin._id)) throw new HttpError(403, "The publisher must be different from the last editor");
         m.reviewerId = admin._id; m.reviewedAt = new Date();
       }
       if (b.action === "rollback") {
         const v = await MaterialVersion.findOne({ materialId: m._id, version: b.version });
-        if (!v) throw new HttpError(404, "Versi tidak ditemukan");
+        if (!v) throw new HttpError(404, "Version not found");
         m.set(v.snapshot as object);
       }
       m.version += 1;
@@ -54,7 +54,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await audit(admin._id, `material.${b.action}`, params.id, { version: m.version });
     return NextResponse.json({ ok: true, version: m.version, status: m.status });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }
@@ -62,10 +62,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
     const me = await requireAuthor();
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Materi tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Material not found");
     await connectDB();
     const own = await Material.findById(params.id).select("institutionId kind");
-    if (!own) throw new HttpError(404, "Materi tidak ditemukan");
+    if (!own) throw new HttpError(404, "Material not found");
     assertCanWrite(me, own);
     const vs = await MaterialVersion.find({ materialId: params.id }).select("version createdAt").sort({ version: -1 }).lean();
     return NextResponse.json({ versions: vs.map((v) => ({ version: v.version, at: v.createdAt })) });

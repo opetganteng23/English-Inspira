@@ -26,11 +26,11 @@ const body = z.object({
 export async function POST(req: Request) {
   try {
     const me = await requireRole(["participant"]);
-    try { await limiter.consume(String(me._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Terlalu sering"); throw e; }
+    try { await limiter.consume(String(me._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Too many requests"); throw e; }
     const b = body.parse(await req.json());
     await connectDB();
     const m = await Material.findOne({ _id: b.materialId, status: "published", ...visibleTo(me) }).select("contentHtml").lean();
-    if (!m || !(m.contentHtml ?? "").includes(`data-topic="${b.topic}"`)) throw new HttpError(404, "Blok tidak ditemukan");
+    if (!m || !(m.contentHtml ?? "").includes(`data-topic="${b.topic}"`)) throw new HttpError(404, "Block not found");
     const { skill, topic } = parseTopic(b.topic);
     const ins = await BlockEvent.updateOne(
       { userId: me._id, materialId: b.materialId, blockId: b.blockId, itemId: b.itemId, day: dayWib() },
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ ok: true, counted });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

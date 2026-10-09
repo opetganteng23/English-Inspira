@@ -21,5 +21,5 @@ export async function counselorAccess(userId: Types.ObjectId | string) {
   ]);
   const used = agg[0]?.n ?? 0;
   const allowed = used < quota;
-  return { allowed, used, quota, remaining: Math.max(0, quota - used), resetsAt: next, reason: allowed ? null : `Batas ${quota} pesan bulan ini tercapai. Kuota direset ${next.toLocaleDateString("id-ID", { day: "numeric", month: "long" })}.` };
+  return { allowed, used, quota, remaining: Math.max(0, quota - used), resetsAt: next, reason: allowed ? null : `The limit of ${quota} messages this month has been reached. The quota resets on ${next.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}.` };
 }

@@ -1,7 +1,7 @@
 import { connectDB } from "./db";
 import { getSetting } from "@/models/Settings";
 
-export const GENERAL_DEFAULTS = { siteName: "Edulyfe EPTA", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 };
+export const GENERAL_DEFAULTS = { siteName: "English Inspira", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 };
 
 /** Pengaturan umum yang boleh tampil publik (placeholder desain diganti nilai dari admin, atau teks netral). */
 export async function publicInfo() {
@@ -10,6 +10,6 @@ export async function publicInfo() {
   return {
     ...g,
     organizerText: g.itpOrganizer || "mitra penyelenggara resmi",
-    rescheduleText: g.refundPolicy || `Perubahan jadwal bisa dilakukan sampai ${g.rescheduleDays} hari sebelum tes lewat menu Tes ITP Resmi. Ketentuan lengkap akan diumumkan oleh admin.`,
+    rescheduleText: g.refundPolicy || `Schedule changes can be made up to ${g.rescheduleDays} days before the test from the Official ITP Test menu. Full terms will be announced by the admin.`,
   };
 }

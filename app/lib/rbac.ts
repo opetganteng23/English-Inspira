@@ -15,9 +15,9 @@ export class HttpError extends Error {
  */
 export async function requireRole(roles: Role[], opts: { allowInvited?: boolean } = {}) {
   const user = await getCurrentUser();
-  if (!user) throw new HttpError(401, "Belum masuk");
-  if (!roles.includes(user.role)) throw new HttpError(403, "Tidak punya akses");
-  if (user.status === "invited" && !opts.allowInvited) throw new HttpError(403, "Lengkapi persetujuan data dulu", "consent_required");
+  if (!user) throw new HttpError(401, "Not signed in");
+  if (!roles.includes(user.role)) throw new HttpError(403, "No access");
+  if (user.status === "invited" && !opts.allowInvited) throw new HttpError(403, "Complete the data consent first", "consent_required");
   return user;
 }
 
@@ -29,7 +29,7 @@ export function scopeByInstitution<T = UserDoc>(
   filter: QueryFilter<T> = {}
 ): QueryFilter<T> {
   if (INSTITUTION_SCOPED.includes(user.role)) {
-    if (!user.institutionId) throw new HttpError(403, "Akun belum terhubung ke institusi");
+    if (!user.institutionId) throw new HttpError(403, "The account is not linked to an institution yet");
     return { ...filter, institutionId: user.institutionId } as QueryFilter<T>;
   }
   return filter;

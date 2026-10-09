@@ -12,7 +12,7 @@ export async function limit(name: keyof typeof limiters, key: string) {
   try {
     await limiters[name].consume(key);
   } catch (e) {
-    if (e instanceof RateLimiterRes) throw new HttpError(429, "Terlalu banyak percobaan, coba lagi nanti");
+    if (e instanceof RateLimiterRes) throw new HttpError(429, "Too many attempts, please try again later");
     throw e;
   }
 }

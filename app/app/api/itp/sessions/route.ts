@@ -25,7 +25,7 @@ export async function GET() {
     if (last?.scoreEst && u?.targetScore) {
       const gap = Math.max(0, u.targetScore - last.scoreEst);
       const weeks = gap === 0 ? 1 : Math.max(2, Math.ceil(gap / 15));
-      advice = { weeks, minDate: new Date(Date.now() + weeks * 7 * 86_400_000).toISOString(), basis: `Skor simulasi terakhir ${last.scoreEst}, target ${u.targetScore}` };
+      advice = { weeks, minDate: new Date(Date.now() + weeks * 7 * 86_400_000).toISOString(), basis: `Last simulation score ${last.scoreEst}, target ${u.targetScore}` };
     }
     const regSessions = new Map((await ItpSession.find({ _id: { $in: regs.map((r) => r.sessionId) } }).lean()).map((s) => [String(s._id), s]));
     return NextResponse.json({

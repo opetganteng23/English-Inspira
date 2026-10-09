@@ -13,19 +13,19 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
     const admin = await requireRole(["admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Jadwal tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Schedule not found");
     await connectDB();
     const s = await ItpSession.findById(params.id).lean();
-    if (!s) throw new HttpError(404, "Jadwal tidak ditemukan");
+    if (!s) throw new HttpError(404, "Schedule not found");
     const regs = await ItpRegistration.find({ sessionId: s._id, status: { $ne: "cancelled" } }).sort({ createdAt: 1 }).lean();
     const users = new Map((await User.find({ _id: { $in: regs.map((r) => r.userId) } }).select("email phone").lean()).map((u) => [String(u._id), u]));
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Roster");
     ws.columns = [
-      { header: "registrationId", key: "id", width: 26 }, { header: "Nama (sesuai KTP)", key: "name", width: 30 }, { header: "NIK/Paspor", key: "nik", width: 22 },
-      { header: "Tanggal lahir", key: "dob", width: 14 }, { header: "Gender", key: "g", width: 8 }, { header: "Email", key: "email", width: 28 }, { header: "WhatsApp", key: "phone", width: 16 },
-      { header: "Dokumen", key: "doc", width: 12 }, { header: "listening", key: "l", width: 10 }, { header: "structure", key: "s", width: 10 }, { header: "reading", key: "r", width: 10 },
+      { header: "registrationId", key: "id", width: 26 }, { header: "Name (as on ID)", key: "name", width: 30 }, { header: "NIK/Paspor", key: "nik", width: 22 },
+      { header: "Date of birth", key: "dob", width: 14 }, { header: "Gender", key: "g", width: 8 }, { header: "Email", key: "email", width: 28 }, { header: "WhatsApp", key: "phone", width: 16 },
+      { header: "Documents", key: "doc", width: 12 }, { header: "listening", key: "l", width: 10 }, { header: "structure", key: "s", width: 10 }, { header: "reading", key: "r", width: 10 },
     ];
     ws.getRow(1).font = { bold: true };
     for (const r of regs) {

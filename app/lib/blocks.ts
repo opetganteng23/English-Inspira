@@ -33,12 +33,12 @@ export const parseTopic = (topic: string) => { const [skill, ...rest] = topic.sp
 export function blockSummary(type: BlockType, cfg: unknown) {
   const c = cfg as { items?: unknown[]; cards?: unknown[]; pairs?: unknown[]; minutes?: number; kind?: string; text?: string };
   switch (type) {
-    case "quiz": return `Kuis pilihan ganda · ${c.items?.length ?? 0} soal`;
-    case "flashcard": return `Flashcard · ${c.cards?.length ?? 0} kartu`;
-    case "fill": return `Isian · ${c.items?.length ?? 0} kalimat`;
-    case "match": return `Pencocokan · ${c.pairs?.length ?? 0} pasang`;
-    case "timer": return `Timer latihan · ${c.minutes ?? 0} menit`;
-    case "note": return `${c.kind === "tips" ? "Tips" : "Catatan"}: ${String(c.text ?? "").slice(0, 80)}`;
+    case "quiz": return `Multiple-choice quiz · ${c.items?.length ?? 0} questions`;
+    case "flashcard": return `Flashcard · ${c.cards?.length ?? 0} cards`;
+    case "fill": return `Fill in the blank · ${c.items?.length ?? 0} sentences`;
+    case "match": return `Matching · ${c.pairs?.length ?? 0} pairs`;
+    case "timer": return `Practice timer · ${c.minutes ?? 0} minutes`;
+    case "note": return `${c.kind === "tips" ? "Tips" : "Note"}: ${String(c.text ?? "").slice(0, 80)}`;
   }
 }
 

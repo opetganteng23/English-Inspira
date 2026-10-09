@@ -55,6 +55,6 @@ export function RichViewer({ html, materialId }: { html: string; materialId?: st
     return () => { setTimeout(() => roots.forEach((r) => r.unmount())); };
   }, [clean, materialId]);
 
-  if (clean === null) return <div className="h-40 animate-pulse rounded-xl bg-canvas" aria-label="Memuat materi" />;
+  if (clean === null) return <div className="h-40 animate-pulse rounded-xl bg-canvas" aria-label="Loading material" />;
   return <div ref={box} className="prose-ei" dangerouslySetInnerHTML={{ __html: clean }} />;
 }

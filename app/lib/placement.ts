@@ -37,7 +37,7 @@ export async function applyPlacement(attempt: HydratedDocument<AttemptDoc>) {
     quota = await CoachingQuota.create({ userId: user._id, institutionId: user.institutionId, levelId: level._id, total: level.coachingQuota });
   }
   await enqueueMail(user.email, "placement_result", { score: attempt.scoreEst, level: level.name, quota: quota?.total ?? level.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/beranda` });
-  await notify(user._id, "placement_result", { title: `Hasil placement: level ${level.name}`, body: `Estimasi skor ${attempt.scoreEst}. Kuota coaching ${quota?.total ?? level.coachingQuota} sesi.`, href: "/beranda" }, String(attempt._id));
+  await notify(user._id, "placement_result", { title: `Placement result: ${level.name} level`, body: `Estimated score ${attempt.scoreEst}. Coaching quota ${quota?.total ?? level.coachingQuota} sessions.`, href: "/beranda" }, String(attempt._id));
   await audit(user._id, "placement.applied", String(attempt._id), { level: level.key, score: attempt.scoreEst });
   return { level, quota };
 }

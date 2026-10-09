@@ -18,12 +18,12 @@ const schema = z.object({ score: z.number().min(0).max(100), answers: z.unknown(
 export async function POST(req: Request, { params }: { params: { slug: string } }) {
   try {
     const user = await requireRole(["participant", "admin"]);
-    try { await limiter.consume(String(user._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Terlalu sering"); throw e; }
+    try { await limiter.consume(String(user._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Too many requests"); throw e; }
     const b = schema.parse(await req.json());
-    if (JSON.stringify(b.answers ?? null).length > 20_000) throw new HttpError(413, "Data jawaban terlalu besar");
+    if (JSON.stringify(b.answers ?? null).length > 20_000) throw new HttpError(413, "Answer data is too large");
     await connectDB();
     const m = await Material.findOne({ slug: params.slug, status: "published", ...visibleTo(user) }).select("access").lean();
-    if (!m) throw new HttpError(404, "Materi tidak ditemukan");
+    if (!m) throw new HttpError(404, "Material not found");
     const p = await MaterialProgress.findOneAndUpdate(
       { userId: user._id, materialId: m._id },
       // Laporan sementara (final=false) hanya menyimpan skor terakhir; penyelesaian menandai selesai dan menambah percobaan.
@@ -33,7 +33,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     if (b.final && user.role === "participant") await markMaterialDone(user, m._id); // memajukan unit yang mensyaratkan materi ini
     return NextResponse.json({ ok: true, attempts: p.attempts });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Data progres tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid progress data" }, { status: 400 });
     return handleError(e);
   }
 }

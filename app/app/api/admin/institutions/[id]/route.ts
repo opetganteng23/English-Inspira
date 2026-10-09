@@ -12,13 +12,13 @@ import { Enrollment } from "@/models/Access";
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const admin = await requireRole(["admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Institusi tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Institution not found");
     const b = institutionInput.parse(await req.json());
     await connectDB();
     const i = await Institution.findById(params.id);
-    if (!i) throw new HttpError(404, "Institusi tidak ditemukan");
-    if (b.code !== i.code && (await Institution.exists({ code: b.code }))) throw new HttpError(409, "Kode institusi sudah dipakai");
-    if (b.seats < i.seatsUsed) throw new HttpError(409, `Kursi tidak boleh di bawah yang sudah terpakai (${i.seatsUsed})`);
+    if (!i) throw new HttpError(404, "Institution not found");
+    if (b.code !== i.code && (await Institution.exists({ code: b.code }))) throw new HttpError(409, "Institution code already in use");
+    if (b.seats < i.seatsUsed) throw new HttpError(409, `Seats cannot be lower than those already used (${i.seatsUsed})`);
     const endChanged = String(b.contractEnd ?? "") !== String(i.contractEnd ?? "");
     i.set({ ...b, contractStart: b.contractStart ?? undefined, contractEnd: b.contractEnd ?? undefined, contactEmail: b.contactEmail || undefined });
     await i.save();
@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     await audit(admin._id, "institution.update", params.id);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }
@@ -35,9 +35,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
     const admin = await requireRole(["admin"]);
-    if (!isValidObjectId(params.id)) throw new HttpError(404, "Institusi tidak ditemukan");
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Institution not found");
     await connectDB();
-    if (await User.exists({ institutionId: params.id })) throw new HttpError(409, "Institusi sudah punya anggota. Nonaktifkan saja.");
+    if (await User.exists({ institutionId: params.id })) throw new HttpError(409, "This institution already has members. Deactivate it instead.");
     await Institution.deleteOne({ _id: params.id });
     await audit(admin._id, "institution.delete", params.id);
     return NextResponse.json({ ok: true });

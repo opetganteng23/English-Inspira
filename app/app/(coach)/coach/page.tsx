@@ -13,15 +13,15 @@ export default function CoachHome() {
   const { data, loading, error } = useApi<{ participants: P[] }>(`/api/coach/participants${q ? `?q=${encodeURIComponent(q)}` : ""}`);
   return (
     <div className="flex flex-col gap-5">
-      <div><h1 className="page-title">Peserta saya</h1><p className="text-sm text-ink-soft">Peserta di institusimu beserta level, skor, dan sisa kuota coaching. Klik nama untuk laporan pra-sesi.</p></div>
-      <input className="field max-w-xs" placeholder="Cari nama atau email" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div><h1 className="page-title">My participants</h1><p className="text-sm text-ink-soft">Participants in your institution with their level, score, and remaining coaching quota. Click a name for the pre-session report.</p></div>
+      <input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} />
       <ErrorNote text={error} />
-      {loading && !data ? <Loading /> : data?.participants.length === 0 ? <Empty>Belum ada peserta.</Empty> : (
+      {loading && !data ? <Loading /> : data?.participants.length === 0 ? <Empty>No participants yet.</Empty> : (
         <div className="table-wrap"><table>
-          <thead><tr><th>Peserta</th><th>Level</th><th>Skor</th><th>Kuota</th><th>Tes terakhir</th></tr></thead>
+          <thead><tr><th>Participant</th><th>Level</th><th>Score</th><th>Quota</th><th>Last test</th></tr></thead>
           <tbody>{data?.participants.map((p) => (
-            <tr key={p.id}><td className="font-semibold text-navy"><Link className="text-brand" href={`/coach/peserta/${p.id}`}>{p.name ?? "(belum ada nama)"}</Link><br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · menunggu aktivasi" : ""}</span></td>
-              <td>{p.level ?? "–"}</td><td>{p.scoreEst ?? "–"}</td><td>{p.quota ? `${p.quota.total - p.quota.used} / ${p.quota.total}` : "–"}</td><td>{p.lastAt ? tgl(p.lastAt) : "–"}</td></tr>
+            <tr key={p.id}><td className="font-semibold text-navy"><Link className="text-brand" href={`/coach/peserta/${p.id}`}>{p.name ?? "(no name yet)"}</Link><br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td>
+              <td>{p.level ?? "-"}</td><td>{p.scoreEst ?? "-"}</td><td>{p.quota ? `${p.quota.total - p.quota.used} / ${p.quota.total}` : "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td></tr>
           ))}</tbody>
         </table></div>
       )}

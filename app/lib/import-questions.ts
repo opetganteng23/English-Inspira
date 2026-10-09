@@ -4,9 +4,9 @@ import { SECTIONS } from "@/models/Question";
 // Impor soal dari CSV/Excel (MTS §6, Bank Soal). Bagian murni: memetakan baris tabel ke input soal yang divalidasi questionSchema.
 const ALIASES: Record<string, string[]> = {
   section: ["section", "bagian", "seksi"],
-  type: ["type", "tipe", "tipe soal", "jenis"],
-  stem: ["stem", "soal", "pertanyaan", "kalimat soal"],
-  answer: ["answer", "jawaban", "kunci", "kunci jawaban"],
+  type: ["type", "tipe", "question type", "jenis"],
+  stem: ["stem", "soal", "pertanyaan", "question text"],
+  answer: ["answer", "jawaban", "kunci", "answer key"],
   explanation: ["explanation", "pembahasan", "penjelasan"],
   difficulty: ["difficulty", "kesulitan", "level kesulitan"],
   tags: ["tags", "tag", "topik"],
@@ -34,23 +34,23 @@ export function mapQuestionRows(table: string[][]): QuestionRowResult[] {
   const col = (k: keyof typeof ALIASES) => ALIASES[k].map((a) => head.get(a)).find((x) => x !== undefined);
   const opt = OPTION_LETTERS.map((l) => head.get(l) ?? head.get(`pilihan ${l}`) ?? head.get(`option ${l}`));
   const need = (["section", "stem", "answer"] as const).filter((k) => col(k) === undefined);
-  if (need.length || opt[0] === undefined || opt[1] === undefined) return [{ row: 1, ok: false, error: `Kolom wajib tidak ditemukan: ${[...need, ...(opt[0] === undefined || opt[1] === undefined ? ["A", "B"] : [])].join(", ")}` }];
+  if (need.length || opt[0] === undefined || opt[1] === undefined) return [{ row: 1, ok: false, error: `Required columns not found: ${[...need, ...(opt[0] === undefined || opt[1] === undefined ? ["A", "B"] : [])].join(", ")}` }];
 
   return table.slice(1).map((r, i) => {
     const row = i + 2, get = (k: keyof typeof ALIASES) => (col(k) !== undefined ? (r[col(k)!] ?? "").trim() : "");
     const section = SECT[get("section").toLowerCase()];
-    if (!section) return { row, ok: false as const, error: `Section "${get("section")}" tidak dikenal (listening/structure/reading)` };
+    if (!section) return { row, ok: false as const, error: `Unknown section "${get("section")}" (listening/structure/reading)` };
     const options = opt.map((c) => (c !== undefined ? (r[c] ?? "").trim() : "")).filter((o, idx, arr) => o && arr.slice(0, idx).every(Boolean));
     const ans = get("answer").toUpperCase();
     const answerKey = /^[A-F]$/.test(ans) ? ans.charCodeAt(0) - 65 : /^[1-6]$/.test(ans) ? Number(ans) - 1 : -1;
-    if (answerKey < 0) return { row, ok: false as const, error: `Kunci jawaban "${get("answer")}" tidak valid (A–F)` };
+    if (answerKey < 0) return { row, ok: false as const, error: `Invalid answer key "${get("answer")}" (A-F)` };
     const diff = get("difficulty") ? DIFF[get("difficulty").toLowerCase()] : "medium";
-    if (!diff) return { row, ok: false as const, error: `Kesulitan "${get("difficulty")}" tidak dikenal (mudah/sedang/sulit)` };
+    if (!diff) return { row, ok: false as const, error: `Unknown difficulty "${get("difficulty")}" (easy/medium/hard)` };
     const status = (get("status").toLowerCase() || "draft") as "draft" | "review" | "published";
     const parsed = questionSchema.safeParse({
       section, type: get("type") || "umum", stem: get("stem"), options, answerKey, explanation: get("explanation") || undefined,
       difficulty: diff, tags: parseTags(get("tags"), section), status,
     });
-    return parsed.success ? { row, ok: true as const, data: parsed.data } : { row, ok: false as const, error: parsed.error.issues[0]?.message ?? "Baris tidak valid" };
+    return parsed.success ? { row, ok: true as const, data: parsed.data } : { row, ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid row" };
   });
 }

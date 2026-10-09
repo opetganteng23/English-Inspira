@@ -36,17 +36,17 @@ export async function POST(req: Request) {
     await connectDB();
     if (b.role === "admin") {
       const email = b.email.toLowerCase();
-      if (await User.exists({ email })) throw new HttpError(409, "Email sudah terdaftar");
+      if (await User.exists({ email })) throw new HttpError(409, "Email already registered");
       const u = await User.create({ email, name: b.name, role: "admin", status: "active", consentAt: new Date() });
       await audit(admin._id, "user.create", String(u._id), { role: "admin" });
       return NextResponse.json({ id: String(u._id) }, { status: 201 });
     }
-    if (!b.institutionId) throw new HttpError(400, "Coach dan admin institusi wajib dihubungkan ke institusi");
+    if (!b.institutionId) throw new HttpError(400, "Coaches and institution admins must be linked to an institution");
     const out = await createMember(b.institutionId, { email: b.email, name: b.name, role: b.role }, admin._id);
     await audit(admin._id, "user.create", String(out.userId), { role: b.role, resent: out.resent });
     return NextResponse.json({ id: String(out.userId), resent: out.resent }, { status: out.resent ? 200 : 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
     return handleError(e);
   }
 }

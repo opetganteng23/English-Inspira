@@ -11,7 +11,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const { status } = attendanceInput.parse(await req.json());
     return NextResponse.json({ ok: true, ...(await markAttendance(me, params.id, status)) });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: "Status kehadiran tidak valid" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid attendance status" }, { status: 400 });
     return handleError(e);
   }
 }
