@@ -5,6 +5,7 @@ import { Question } from "@/models/Question";
 import { User } from "@/models/User";
 import { ItpRegistration, ItpSession } from "@/models/Itp";
 import { CounselorThread } from "@/models/Counselor";
+import { Analysis } from "@/models/Learning";
 import type { Types } from "mongoose";
 
 /** Susun data ringkas untuk analisis: skor per section, tipe soal yang paling sering salah, waktu, dan soal kosong. */
@@ -56,9 +57,11 @@ export async function runAnalysis(attemptId: Types.ObjectId | string) {
     if (!input) throw new Error("Data analisis tidak lengkap");
     const { analysis, mock } = await generateAnalysis(input);
     await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "ready", ...analysis, mock, generatedAt: new Date() } });
+    await Analysis.updateOne({ attemptId }, { status: "ready", narrative: analysis, mock });
   } catch (e) {
     console.error("[analysis] gagal", e);
     await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "failed", error: "Analisis belum tersedia. Coba lagi." } });
+    await Analysis.updateOne({ attemptId }, { status: "failed" });
   }
 }
 

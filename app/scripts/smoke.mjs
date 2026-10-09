@@ -128,6 +128,18 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(p1, "/api/home");
   ok(r.status === 200 && r.data.level?.name === lvlName && r.data.quota?.total > 0 && r.data.quota.used === 0 && r.data.scoreEst, "beranda: level, skor, kuota coaching", J(r.data).slice(0, 300));
   ok(r.data.step.href === "/tes" && !/placement/i.test(r.data.step.cta), "langkah berikutnya bergeser setelah placement", J(r.data.step));
+  await sleep(800); // pipeline belajar berjalan async setelah submit
+  r = await req(p1, "/api/study-plan");
+  ok(r.status === 200 && Array.isArray(r.data.topics) && r.data.topics.length > 0, "topic_stats terbentuk dari placement", J(r.data).slice(0, 200));
+  ok(r.data.topics.every((t) => ["strong", "ok", "weak", "priority", "insufficient"].includes(t.status)), "status topik valid");
+  const planned = r.data.items.filter((i) => i.status === "active");
+  ok(planned.length <= 5 && planned.every((i) => i.source === "auto" && i.dueAt), "study plan: maks 5 aktif, otomatis, berdeadline", J(r.data.items).slice(0, 200));
+  if (planned.length) {
+    const pr = await req(p1, `/api/study-plan/${planned[0].id}`, { method: "PATCH", json: { done: true } }); ok(pr.status === 200, "centang item rencana");
+    const again = (await req(p1, "/api/study-plan")).data.items.find((i) => i.id === planned[0].id); ok(again.status === "done", "item tercentang berstatus done");
+  } else ok(true, "(tidak ada topik lemah ber-cukup-data pada placement uji; item rencana dilewati)");
+  r = await req(p1, "/api/home"); ok(Array.isArray(r.data.plan) && Array.isArray(r.data.weakTopics), "beranda memuat rencana & topik lemah");
+  r = await req(admin, "/api/study-plan"); ok(r.status === 403, "study plan hanya untuk peserta");
   r = await req(p1, `/api/tests/${placement.id}/start`, { method: "POST", json: {} }); ok(r.status === 403, "placement tidak bisa diulang tanpa izin");
   const pid = (await req(admin, "/api/admin/participants?q=p1@test.local")).data.participants[0].id;
   r = await req(admin, `/api/admin/participants/${pid}`, { method: "POST", json: { action: "allow_placement_retake", reason: "Uji" } }); ok(r.status === 200, "admin izinkan ulang placement");

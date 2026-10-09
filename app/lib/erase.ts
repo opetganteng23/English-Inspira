@@ -10,6 +10,7 @@ import { ItpRegistration, Certificate } from "@/models/Itp";
 import { MaterialProgress } from "@/models/Material";
 import { Otp } from "@/models/Otp";
 import { Notification } from "@/models/Access";
+import { TopicStat, PlanItem, Analysis } from "@/models/Learning";
 
 /**
  * Penghapusan data pribadi (UU PDP; MTS §8): prosedur admin yang tercatat di audit_logs.
@@ -29,6 +30,9 @@ export async function eraseUserData(userId: Types.ObjectId | string, actorId: Ty
     CounselorThread.deleteMany({ userId: u._id }),
     MaterialProgress.deleteMany({ userId: u._id }),
     Notification.deleteMany({ userId: u._id }),
+    TopicStat.deleteMany({ userId: u._id }),
+    PlanItem.deleteMany({ userId: u._id }),
+    Analysis.deleteMany({ userId: u._id }),
     Otp.deleteMany({ email: u.email }),
     ItpRegistration.updateMany({ userId: u._id }, { $set: { fullName: "Dihapus", nikEnc: "deleted", nikLast4: "", docNote: "" }, $unset: { idPhotoAssetId: 1, facePhotoAssetId: 1 } }),
     Certificate.updateMany({ userId: u._id }, { $set: { "data.name": "Akun dihapus" } }),

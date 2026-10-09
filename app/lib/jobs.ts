@@ -3,6 +3,7 @@ import { processMailQueue } from "./mailq";
 import { expireEnrollments } from "./access";
 import { MailJob, Invitation } from "@/models/Access";
 import { Otp } from "@/models/Otp";
+import { expirePlanItems } from "./study-plan";
 
 // Job terjadwal (MTS §18). Dipanggil oleh instrumentation.ts (node-cron, PM2) atau /api/cron/[job] (cron sistem/Vercel).
 // Job berikutnya (reminder sesi, status plan, peringatan kuota) ditambahkan di sini pada Fase 5–6.
@@ -25,7 +26,8 @@ export async function dailyJob() {
   const mails = await MailJob.deleteMany({ status: { $in: ["sent", "failed"] }, updatedAt: { $lt: old } });
   const invs = await Invitation.deleteMany({ status: { $ne: "pending" }, updatedAt: { $lt: old } });
   await Otp.deleteMany({ expiresAt: { $lt: new Date() } }); // TTL juga membersihkan; ini cadangan
-  return { enrollmentsExpired: expired, mailsPurged: mails.deletedCount, invitationsPurged: invs.deletedCount };
+  const planExpired = await expirePlanItems();
+  return { enrollmentsExpired: expired, planExpired, mailsPurged: mails.deletedCount, invitationsPurged: invs.deletedCount };
 }
 
 export const JOBS = { mail: mailJob, hourly: hourlyJob, daily: dailyJob } as const;

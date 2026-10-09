@@ -9,6 +9,9 @@ import { extractJson, ruleBasedAnalysis, detectDistress, analysisSchema } from "
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { nextTopicScore, topicStatus } from "@/lib/topic-stats";
+import { planCandidates } from "@/lib/study-plan";
+import { stuckFrom, median } from "@/lib/stuck";
 
 const conv = PARAM_DEFAULTS.score_conversion;
 
@@ -117,4 +120,41 @@ describe("isolasi institusi (level query)", () => {
     expect(() => scopeByInstitution({ role: "inst_admin", institutionId: undefined } as never)).toThrow(HttpError);
   });
   it("admin tidak dibatasi", () => expect(scopeByInstitution({ role: "admin" } as never, { a: 1 } as never)).toEqual({ a: 1 }));
+});
+
+describe("analitik topik (MTS §13.2)", () => {
+  const th = { weak: 60, priority: 40, minItems: 5 };
+  it("skor akumulatif memakai alpha; topik baru memakai skor pengerjaan", () => {
+    expect(nextTopicScore(null, 50, 0.3)).toBe(50);
+    expect(nextTopicScore(80, 20, 0.3)).toBe(62); // 0.3×20 + 0.7×80
+  });
+  it("status: data kurang → insufficient; batas weak/priority/strong", () => {
+    expect(topicStatus(10, 4, th)).toBe("insufficient");
+    expect(topicStatus(39, 5, th)).toBe("priority");
+    expect(topicStatus(40, 5, th)).toBe("weak");
+    expect(topicStatus(59, 5, th)).toBe("weak");
+    expect(topicStatus(60, 5, th)).toBe("ok");
+    expect(topicStatus(80, 5, th)).toBe("strong");
+  });
+  it("median ganjil/genap/kosong", () => {
+    expect([median([3, 1, 2]), median([1, 2, 3, 4]), median([])]).toEqual([2, 2.5, 0]);
+  });
+  it("stuck: waktu > 2× median, atau 3 salah beruntun pada topik sama", () => {
+    const cfg = { medianMultiplier: 2, consecutiveWrong: 3 };
+    const base = (qid: string, t: string, wrong: boolean, timeSec: number | null) => ({ qid, topics: [t], wrong, timeSec });
+    expect(stuckFrom([base("a", "s|x", false, 50)], new Map([["a", 20]]), cfg)).toEqual(["s|x"]);
+    expect(stuckFrom([base("a", "s|x", false, 50)], new Map(), cfg)).toEqual([]); // sampel kurang → tanpa median
+    expect(stuckFrom([base("a", "s|y", true, 5), base("b", "s|y", true, 5), base("c", "s|y", true, 5)], new Map(), cfg)).toEqual(["s|y"]);
+    expect(stuckFrom([base("a", "s|y", true, 5), base("b", "s|y", false, 5), base("c", "s|y", true, 5), base("d", "s|y", true, 5)], new Map(), cfg)).toEqual([]);
+  });
+});
+
+describe("study plan (MTS §15)", () => {
+  const t = (topic: string, score: number, status: "priority" | "weak" | "ok") => ({ skill: "structure", topic, score, status });
+  it("priority lebih dulu, lalu skor terendah; mengikuti sisa slot; melewati topik yang sudah aktif", () => {
+    const topics = [t("a", 55, "weak"), t("b", 30, "priority"), t("c", 20, "priority"), t("d", 75, "ok"), t("e", 58, "weak")];
+    expect(planCandidates(topics, new Set(), 3).map((x) => x.topic)).toEqual(["c", "b", "a"]);
+    expect(planCandidates(topics, new Set(["structure|c"]), 2).map((x) => x.topic)).toEqual(["b", "a"]);
+    expect(planCandidates(topics, new Set(), 0)).toEqual([]);
+  });
 });
