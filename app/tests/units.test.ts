@@ -6,7 +6,8 @@ import { encryptField, decryptField, maskName, maskNik } from "@/lib/crypto";
 import { buildSrcdoc, SANDBOX } from "@/lib/material-doc";
 import { parseBridgeMessage, makeRateGate } from "@/lib/material-bridge";
 import { sanitizePassage, sanitizeRich } from "@/lib/sanitize";
-import { extractJson, ruleBasedAnalysis, detectDistress, analysisSchema } from "@/lib/ai";
+import { extractJson, detectDistress } from "@/lib/ai";
+import { analysisResultSchema, checkResult, templateResult, numbersIn, aliasFor, inputHash, type EngineInput } from "@/lib/analysis-engine";
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
@@ -124,12 +125,6 @@ describe("berkas", () => {
 
 describe("AI (mode dasar & parser)", () => {
   it("mengambil JSON dari teks berpagar kode", () => expect(extractJson('Berikut:\n```json\n{"a":1}\n```')).toEqual({ a: 1 }));
-  it("analisis berbasis aturan lolos skema dan menyebut selisih target", () => {
-    const a = ruleBasedAnalysis({ testName: "T", kind: "sim", targetScore: 550, scoreEst: 500, sections: [{ section: "reading", raw: 10, total: 30, scaled: 45, avgSecPerQuestion: 90, unanswered: 2 }, { section: "structure", raw: 20, total: 30, scaled: 55, avgSecPerQuestion: 30, unanswered: 0 }], weakTypes: [{ section: "structure", type: "subject-verb", wrong: 4, total: 6 }] });
-    expect(analysisSchema.safeParse(a).success).toBe(true);
-    expect(a.gapToTarget.gap).toBe(50);
-    expect(a.summary).toContain("50 poin");
-  });
   it("mendeteksi tanda stres berat", () => {
     expect(detectDistress("saya ingin bunuh diri")).toBe(true);
     expect(detectDistress("bagaimana cara naik skor reading?")).toBe(false);
@@ -246,4 +241,35 @@ describe("naik level (MTS §12)", () => {
     expect(levelUpDecision({ ...base, score: null }).up).toBe(false);
   });
   it("aturan bisa dimatikan admin", () => expect(levelUpDecision({ ...base, score: 100, remedialPending: 3, rules: { requireRemedialDone: false, minSimScoreFromNextLevel: false } }).up).toBe(true));
+});
+
+describe("mesin analisis (MTS §13.5)", () => {
+  const input: EngineInput = {
+    alias: "p-x", kind: "sim", level: "Intermediate", scoreEst: 505,
+    sections: [{ section: "structure", raw: 20, total: 40, scaled: 50 }],
+    topics: [{ topic: "subject-verb", skill: "structure", score: 35.5, items: 8, status: "priority", thisAttempt: 40 }, { topic: "inference", skill: "reading", score: 85, items: 6, status: "strong", thisAttempt: 90 }],
+    gapToNextLevel: { points: 38, target: 543, nextLevel: "Advanced" },
+    behaviour: { answered: 38, unanswered: 2, answerChanges: 7, avgSecPerAnswer: 31.5, stuckTopics: [] },
+    thresholds: { weak: 60, priority: 40, minItems: 5 }, validTopics: ["subject-verb", "inference"],
+  };
+  const tpl = { summary: "Estimasi skormu {score} di level {level}.", strong: "Kuat: {strong}.", weak: "Perlu diperkuat: {weak}.", gap: "Selisih ke {next}: {gap} poin.", suggestion: "Latih {weak}." };
+  const good = () => ({ summary: "Skor 505, jarak 38 poin ke Advanced.", strengths: [{ topic: "inference", evidence: "Skor 85 dari 6 butir." }], weaknesses: [{ topic: "subject-verb", severity: "priority" as const, evidence: "Skor 35.5 dari 8 butir.", likelyCause: "Konsep belum kuat." }], gapToNextLevel: { points: 38, target: 543 }, recommendations: [{ topic: "subject-verb", priority: "high" as const }], narrative: "Fokus pada subject-verb selama 2 minggu dengan 20 soal per hari.", suggestions: ["Latih 20 soal subject-verb setiap hari"] });
+  it("template menghasilkan keluaran yang lolos skema dan pemeriksaan", () => {
+    const t = templateResult(input, tpl);
+    expect(analysisResultSchema.safeParse(t).success).toBe(true);
+    expect(checkResult(t, input)).toBeNull();
+    expect(t.summary).toContain("505");
+    expect(t.weaknesses[0].topic).toBe("subject-verb");
+  });
+  it("keluaran sah diterima, termasuk angka berstatuan rencana (2 minggu, 20 soal)", () => expect(checkResult(good(), input)).toBeNull());
+  it("menolak topik di luar daftar valid", () => { const r = good(); r.weaknesses[0].topic = "karangan"; expect(checkResult(r, input)).toMatch(/Topik/); });
+  it("menolak angka yang tidak ada pada data", () => { const r = good(); r.summary = "Skor 520 sudah bagus."; expect(checkResult(r, input)).toMatch(/Angka 520/); });
+  it("menolak jarak level yang tidak cocok dengan data", () => { const r = good(); r.gapToNextLevel = { points: 10, target: 543 }; expect(checkResult(r, input)).toMatch(/Jarak/); });
+  it("angka berstatuan tidak dicek; angka telanjang dicek", () => { expect(numbersIn("20 soal selama 2 minggu, skor 505")).toEqual([505]); });
+  it("alias tidak membocorkan id dan hash cache tidak bergantung alias", () => {
+    expect(aliasFor("abc123")).toMatch(/^p-[0-9a-f]{10}$/);
+    expect(aliasFor("abc123")).not.toContain("abc123");
+    expect(inputHash(input, "v1")).toBe(inputHash({ ...input, alias: "p-lain" }, "v1"));
+    expect(inputHash(input, "v1")).not.toBe(inputHash(input, "v2"));
+  });
 });

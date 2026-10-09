@@ -22,6 +22,8 @@ export const PARAM_SCHEMAS = {
   alpha: z.number().min(0.05).max(1), // bobot skor baru pada akumulasi topik
   counselor_quota: z.number().int().min(0), // pesan per bulan
   invite_hourly_cap: z.number().int().min(1), // batas email undangan per jam (Gmail ±500/hari)
+  analysis_prompt: z.object({ version: z.string().min(1).max(40), text: z.string().min(20).max(4000) }), // prompt analisis berversi (MTS §13.5)
+  narrative_template: z.object({ summary: z.string().max(600), strong: z.string().max(300), weak: z.string().max(300), gap: z.string().max(300), suggestion: z.string().max(300) }), // narasi cadangan
 } as const;
 export type ParamKey = keyof typeof PARAM_SCHEMAS;
 
@@ -40,6 +42,18 @@ export const PARAM_DEFAULTS: { [K in ParamKey]: z.infer<(typeof PARAM_SCHEMAS)[K
   alpha: 0.3,
   counselor_quota: 30,
   invite_hourly_cap: 100,
+  analysis_prompt: {
+    version: "v1",
+    text: "Kamu analis belajar TOEFL ITP. Tafsirkan angka yang diberikan: kekuatan, kelemahan, pola kesalahan, dugaan penyebab (konsep belum kuat, ragu-ragu karena sering ganti jawaban, atau terburu-buru), prioritas, dan sugesti langkah berikutnya. Gunakan HANYA topik dari validTopics dan HANYA angka yang ada di data. Jangan membuat angka baru.",
+  },
+  // Placeholder: {level} {score} {strong} {weak} {gap} {next}
+  narrative_template: {
+    summary: "Estimasi skormu {score} di level {level}.",
+    strong: "Topik yang sudah kuat: {strong}.",
+    weak: "Topik yang perlu diperkuat: {weak}.",
+    gap: "Selisih ke level {next}: {gap} poin.",
+    suggestion: "Kerjakan latihan dan materi untuk topik {weak}, lalu ulangi tes untuk melihat kemajuan.",
+  },
 };
 
 export const PARAM_HELP: Record<ParamKey, string> = {
@@ -56,6 +70,8 @@ export const PARAM_HELP: Record<ParamKey, string> = {
   alpha: "Bobot skor baru pada akumulasi skor topik (0.05–1).",
   counselor_quota: "Batas pesan Konselor AI per bulan per peserta.",
   invite_hourly_cap: "Batas email undangan per jam.",
+  analysis_prompt: "Prompt analisis Claude (berversi). Ubah versi setiap mengganti teks agar hasil lama tetap dapat ditelusuri.",
+  narrative_template: "Narasi cadangan bila Claude tidak tersedia. Placeholder: {level} {score} {strong} {weak} {gap} {next}.",
 };
 
 export async function getParam<K extends ParamKey>(key: K): Promise<z.infer<(typeof PARAM_SCHEMAS)[K]>> {

@@ -48,8 +48,17 @@ const analysisSchema = new Schema(
     attemptId: { type: Schema.Types.ObjectId, ref: "Attempt", index: true },
     status: { type: String, enum: ["calculated", "ready", "failed"], default: "calculated" },
     calculated: Schema.Types.Mixed, // topik + status, stuck; tanpa PII
-    narrative: Schema.Types.Mixed, // keluaran AI/aturan yang sudah divalidasi
-    mock: Boolean,
+    narrative: Schema.Types.Mixed, // keluaran AI/template yang sudah divalidasi
+    mock: Boolean, // true bila narasi dari template (bukan Claude)
+    engine: { type: String, enum: ["claude", "template"] },
+    model: String,
+    promptVersion: String,
+    tokensIn: Number,
+    tokensOut: Number,
+    inputHash: { type: String, index: true },
+    fallbackReason: String, // api_error | invalid_output | rate_limited | no_key | light_kind
+    retries: { type: Number, default: 0 },
+    claimedAt: Date, // klaim atomik agar tidak ada dua panggilan AI untuk satu hasil
   },
   { timestamps: true }
 );

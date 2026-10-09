@@ -80,9 +80,9 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|---|
 | A1 | `topic_stats` akumulatif (α=0.3), status strong/ok/weak/priority/insufficient, minimum 5 butir (§13.2) | ✅ `topic_stats` akumulatif (α dari config), 5 status, min 5 butir — diuji unit + smoke |
 | A2 | Deteksi stuck (>2× median, min 20 sampel; 3 salah beruntun) (§13.2) | ✅ stuck: >N× median (min sampel) atau N salah beruntun — diuji unit; median lintas peserta belum diuji dengan data nyata |
-| A3 | Koleksi `analyses` (calculated → ready) dibuat **setiap** selesai: placement, kuis, unit, sim, remedial, PDF (§13.3) | 🔄 koleksi `analyses` dibuat tiap pengerjaan selesai (calculated → ready/failed), narasi masih tertanam juga di attempt; untuk unit/remedial/PDF menyusul bersama fiturnya |
-| A4 | Claude: input tanpa PII + alias, output Zod, retry 2×, validasi topik & angka narasi, cache hash input, catat model/versi prompt/token, prompt berversi di config (§13.5) | 🔄 dasar ada; validasi/cache/log/versi ⬜ |
-| A5 | Template narasi cadangan dikelola admin (§13.4) | ⬜ |
+| A3 | Koleksi `analyses` (calculated → ready) dibuat **setiap** selesai: placement, kuis, unit, sim, remedial, PDF (§13.3) | ✅ `analyses` dibuat tiap pengerjaan selesai (placement, sim, practice, kuis unit): `calculated` langsung tampil → `ready`/`failed`; remedial/PDF menyusul bersama fiturnya |
+| A4 | Claude: input tanpa PII + alias, output Zod, retry 2×, validasi topik & angka narasi, cache hash input, catat model/versi prompt/token, prompt berversi di config (§13.5) | 🔄 output Zod berbentuk §13.5, topik wajib dari daftar valid, angka dicek terhadap input, retry 2×, cache hash input, catat engine/model/versi prompt/token, batas laju per peserta & institusi, prompt berversi di Parameter Sistem — logika murni teruji unit; **panggilan Claude nyata belum diuji (menunggu kunci API)** |
+| A5 | Template narasi cadangan dikelola admin (§13.4) | ✅ template narasi cadangan dikelola admin (Parameter Sistem `narrative_template`); API gagal → template + ulang tiap jam (maks 3×); status gagal & pemakaian token tampil di dashboard admin |
 | A6 | `remedial_map` + admin | ⬜ |
 | A7 | `study_plans`: item berdeadline otomatis (7/14 hari), maks 5 aktif, `source` auto/coach, tidak menimpa item coach (§15) | 🔄 `plan_items` otomatis (priority/medium, deadline 7/14 hari, maks 5 aktif, resolved bila topik membaik, expired lewat job harian) ✅ teruji; item coach & edit coach ⬜ (Fase 6) |
 | A8 | Adapter `lmsAdapter` / `pdfAdapter` (§14); integrasi pure-analytics bila modul tersedia (K4) | ⬜ |
@@ -105,7 +105,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | ID | Item (MTS §) | Status |
 |---|---|---|
 | P1 | Upload PDF (GridFS `pdf`, magic bytes, 10 MB), `pdf-parse`, layar verifikasi, analisis; file tidak dikirim ke AI (§14) | ⬜ |
-| P2 | Konselor AI: kuota **30 pesan/bulan** (`counselor_quota`), konteks dari `analyses` + study plan, tidak mengubah plan langsung, tinjauan admin **dan coach** (§17) | 🔄 kuota 30/bulan dari config ✅; konteks `analyses`/study plan & tinjauan coach ⬜ |
+| P2 | Konselor AI: kuota **30 pesan/bulan** (`counselor_quota`), konteks dari `analyses` + study plan, tidak mengubah plan langsung, tinjauan admin **dan coach** (§17) | 🔄 kuota 30/bulan ✅; konteks dari `analyses` + study plan ✅ (AI hanya mengusulkan); tinjauan admin ✅; tinjauan coach ⬜ |
 | P3 | Aturan naik level otomatis + tahan/rekomendasi coach; kuota baru sesuai level, plan dibuat ulang (§12) | ✅ naik level otomatis (skor sim ≥ batas level berikutnya + remedial prioritas tinggi selesai; rekomendasi coach membebaskan syarat remedial), kuota baru, rencana dibuat ulang, email — teruji smoke + unit; status syarat tampil di Beranda & hasil |
 | P4 | Dashboard admin & institusi v2.2 (level, kuota, kehadiran, kepatuhan, analisis gagal) | ⬜ |
 | P5 | Portal institusi sesuai batas privasi §4 (tanpa isi analisis individu & catatan sesi) | 🔄 kode & tagihan dihapus; pemangkasan data individu ⬜ |
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 40 uji) & `scripts/smoke.mjs` v2.2 (166 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 46 uji) & `scripts/smoke.mjs` v2.2 (167 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)

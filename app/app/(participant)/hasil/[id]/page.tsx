@@ -10,7 +10,7 @@ import { Loading, ErrorNote, HBars } from "@/components/Charts";
 type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
-type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
+type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
 type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number } | null; transcripts: { groupId: string; title: string; text: string }[] };
 
 const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "TES SIMULASI", practice: "LATIHAN" };
@@ -97,6 +97,8 @@ export default function Hasil({ params }: { params: { id: string } }) {
           {a.status === "ready" && (
             <div className="mt-3 flex flex-col gap-3 text-sm">
               <p className="leading-relaxed">{a.summary}</p>
+              {a.narrative && a.narrative !== a.summary && <p className="leading-relaxed text-ink-soft">{a.narrative}</p>}
+              {!!a.strengths?.length && <div><p className="font-semibold text-navy">Yang sudah kuat</p><ul className="mt-1 flex flex-col gap-1 text-ink-soft">{a.strengths.map((x) => <li key={x.topic}><b className="text-navy">{x.topic}</b> · {x.evidence}</li>)}</ul></div>}
               {!!a.weaknesses?.length && <div><p className="font-semibold text-navy">Yang perlu diperkuat</p><ul className="mt-1 flex flex-col gap-2">{a.weaknesses.map((w) => <li key={w.title} className="rounded-lg bg-canvas p-3"><b className="text-navy">{w.title}</b><br /><span className="text-ink-soft">{w.detail}</span></li>)}</ul></div>}
               {!!a.nextSteps?.length && <div><p className="font-semibold text-navy">Langkah berikutnya</p><ol className="mt-1 list-decimal pl-5 text-ink-soft">{a.nextSteps.map((s) => <li key={s}>{s}</li>)}</ol></div>}
             </div>

@@ -8,6 +8,7 @@ import { Attempt } from "@/models/Test";
 import { MailJob } from "@/models/Access";
 import { ItpRegistration, ItpSession } from "@/models/Itp";
 import { CounselorThread } from "@/models/Counselor";
+import { Analysis } from "@/models/Learning";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
     const days = Math.min(365, Math.max(1, Number(new URL(req.url).searchParams.get("days")) || 30));
     const since = new Date(Date.now() - days * 86_400_000), now = new Date();
 
-    const [levels, insts, byStatus, byLevel, tests, placements, activeUsers, docsPending, pastUnscored, needReview, mailFailed, mailQueued, upcoming, expiring] = await Promise.all([
+    const [levels, insts, byStatus, byLevel, tests, placements, activeUsers, docsPending, pastUnscored, needReview, mailFailed, mailQueued, upcoming, expiring, aiAgg, aiFailed] = await Promise.all([
       getLevels(),
       Institution.countDocuments({ status: "active" }),
       User.aggregate([{ $match: { role: "participant" } }, { $group: { _id: "$status", n: { $sum: 1 } } }]),
@@ -34,6 +35,8 @@ export async function GET(req: Request) {
       MailJob.countDocuments({ status: { $in: ["queued", "sending"] } }),
       ItpSession.find({ date: { $gte: now }, status: "open" }).sort({ date: 1 }).limit(5).lean(),
       Institution.find({ status: "active", contractEnd: { $gte: now, $lte: new Date(+now + 30 * 86_400_000) } }).select("name contractEnd").lean(),
+      Analysis.aggregate([{ $match: { createdAt: { $gte: since }, status: "ready" } }, { $group: { _id: "$engine", n: { $sum: 1 }, tin: { $sum: "$tokensIn" }, tout: { $sum: "$tokensOut" } } }]),
+      Analysis.countDocuments({ status: "failed" }),
     ]);
     const st = (k: string) => byStatus.find((x) => x._id === k)?.n ?? 0;
     const total = st("invited") + st("active") + st("disabled");
@@ -51,8 +54,10 @@ export async function GET(req: Request) {
         { label: "Dokumen ITP menunggu verifikasi", n: docsPending, href: "/admin/jadwal-itp" },
         { label: "Skor ITP belum diinput (sesi lewat)", n: unscored, href: "/admin/jadwal-itp" },
         { label: "Kontrak institusi berakhir ≤ 30 hari", n: expiring.length, href: "/admin/institusi" },
+        { label: "Analisis AI gagal (perlu dicoba ulang)", n: aiFailed, href: "/admin" },
       ],
       mail: { queued: mailQueued, failed: mailFailed },
+      ai: { claude: aiAgg.find((x) => x._id === "claude")?.n ?? 0, template: aiAgg.find((x) => x._id === "template")?.n ?? 0, tokensIn: aiAgg.reduce((a, x) => a + (x.tin ?? 0), 0), tokensOut: aiAgg.reduce((a, x) => a + (x.tout ?? 0), 0), failed: aiFailed },
       expiring: expiring.map((i) => ({ name: i.name, contractEnd: i.contractEnd })),
       upcoming: upcoming.map((s) => ({ id: String(s._id), title: s.title, date: s.date, place: s.place, registered: s.registered, quota: s.quota })),
     });

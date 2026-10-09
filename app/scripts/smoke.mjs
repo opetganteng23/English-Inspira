@@ -129,6 +129,8 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   ok(r.status === 200 && r.data.level?.name === lvlName && r.data.quota?.total > 0 && r.data.quota.used === 0 && r.data.scoreEst, "beranda: level, skor, kuota coaching", J(r.data).slice(0, 300));
   ok(r.data.step.href === "/tes" && !/placement/i.test(r.data.step.cta), "langkah berikutnya bergeser setelah placement", J(r.data.step));
   await sleep(800); // pipeline belajar berjalan async setelah submit
+  let ana; for (let i = 0; i < 12; i++) { ana = (await req(p1, `/api/attempts/${aid}/result`)).data.analysis; if (ana?.status === "ready") break; await sleep(500); }
+  ok(ana?.status === "ready" && ana.narrative && ana.mock === true && ana.engine === "template" && Array.isArray(ana.weaknesses) && Array.isArray(ana.nextSteps), "analisis: angka dulu, lalu narasi (template karena tanpa kunci AI)", J(ana).slice(0, 200));
   r = await req(p1, "/api/study-plan");
   ok(r.status === 200 && Array.isArray(r.data.topics) && r.data.topics.length > 0, "topic_stats terbentuk dari placement", J(r.data).slice(0, 200));
   ok(r.data.topics.every((t) => ["strong", "ok", "weak", "priority", "insufficient"].includes(t.status)), "status topik valid");
@@ -287,7 +289,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(admin, "/api/admin/coaching"); const ci = r.data.institutions?.find((i) => i.id === iA);
   ok(r.status === 200 && ci && ci.coaches >= 1 && typeof ci.quotaRemaining === "number", "pantauan admin: kuota, kursi terbuka, kehadiran", J(ci));
   r = await req(null, "/api/cron/hourly"); ok(r.status === 401, "job per jam tanpa rahasia ditolak");
-  r = await req(null, "/api/cron/hourly", { headers: { authorization: "Bearer testsecret" } }); ok(r.status === 200 && typeof r.data.emails === "number", "job pengingat sesi berjalan", J(r.data));
+  r = await req(null, "/api/cron/hourly", { headers: { authorization: "Bearer testsecret" } }); ok(r.status === 200 && typeof r.data.reminders?.emails === "number" && typeof r.data.analysis?.retried === "number", "job per jam: pengingat sesi + ulang narasi AI", J(r.data));
 
   console.log("\n== Naik level (simulasi) ==");
   const keyCache = new Map();
