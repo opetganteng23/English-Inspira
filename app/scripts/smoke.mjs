@@ -394,6 +394,41 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(coach, "/api/coach/counselor"); ok(!r.data.threads.some((t) => t.id === th), "yang sudah ditinjau keluar dari antrean");
   r = await req(admin, "/api/admin/counselor?filter=flagged"); ok(r.data.threads.some((t) => t.id === th), "admin melihat tanda dari coach");
 
+  console.log("\n== Laporan institusi (agregat) ==");
+  r = await req(ia, "/api/inst/summary"); ok(r.status === 200 && typeof r.data.placementPct === "number" && Array.isArray(r.data.levels) && r.data.coaching, "ringkasan institusi v2.2", J(r.data).slice(0, 160));
+  ok(!/narrative|rahasia coach|Konselor/i.test(J(r.data)), "ringkasan institusi tidak memuat analisis/catatan/percakapan individu");
+  r = await req(ia, "/api/inst/report.pdf"); const rp = Buffer.from(await r.res.arrayBuffer()); ok(r.status === 200 && rp.subarray(0, 4).toString() === "%PDF", "laporan PDF kelompok");
+  r = await req(p1, "/api/inst/report.pdf"); ok(r.status === 403, "peserta tidak bisa mengunduh laporan institusi");
+  r = await req(ia, `/api/inst/participants/${pid}`); ok(r.status === 200, "inst_admin membuka hasil peserta (dicatat audit)");
+
+  console.log("\n== Tes ITP resmi (tanpa paket) ==");
+  const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  const png = () => { const f = new FormData(); f.append("file", new Blob([PNG], { type: "image/png" }), "x.png"); f.append("sensitive", "true"); return f; };
+  r = await req(admin, "/api/admin/itp-sessions", { method: "POST", json: { title: "Sesi ITP Uji", date: iso(24 * 30), place: "Lab Uji", quota: 5 } }); ok(r.status === 201, "admin membuat sesi ITP", J(r.data)); const sess = r.data.id;
+  r = await req(p1, "/api/itp/sessions"); ok(r.status === 200 && r.data.itpRemaining === 1 && r.data.sessions.some((x) => x.id === sess) && "rescheduleDays" in r.data, "peserta melihat sesi (tanpa jatah beli)", J(Object.keys(r.data)));
+  r = await req(p1, "/api/assets", { method: "POST", form: png() }); ok(r.status === 201, "unggah KTP (sensitif)"); const idA = r.data.id;
+  r = await req(p1, "/api/assets", { method: "POST", form: png() }); const faceA = r.data.id;
+  r = await req(null, `/api/assets/${idA}`); ok(r.status === 401, "KTP tanpa login ditolak");
+  r = await req(coach, `/api/assets/${idA}`); ok(r.status === 403 || r.status === 404, "KTP tidak terbuka untuk coach");
+  r = await req(admin, `/api/assets/${idA}`); ok(r.status === 200, "admin boleh membuka KTP (dicatat audit)");
+  const reg = { sessionId: sess, fullName: "Peserta Satu", nik: "3201010101010001", birthDate: "2000-05-01", gender: "L", idPhotoAssetId: idA, facePhotoAssetId: faceA, agree: true };
+  r = await req(p1, "/api/itp/registrations", { method: "POST", json: { ...reg, nik: "123" } }); ok(r.status === 400, "NIK tidak valid ditolak");
+  r = await req(p1, "/api/itp/registrations", { method: "POST", json: reg }); ok(r.status === 201, "pendaftaran ITP", J(r.data)); const regId = r.data.id;
+  r = await req(p1, "/api/itp/registrations", { method: "POST", json: reg }); ok(r.status === 409 || r.status === 403, "daftar ganda ditolak");
+  r = await req(p1, "/api/me", { method: "PATCH", json: { name: "Nama Lain" } }); ok(r.status === 409, "nama terkunci setelah daftar ITP");
+  r = await req(admin, `/api/admin/itp-sessions/${sess}/roster`); ok(r.data.roster.length === 1 && r.data.roster[0].nikLast4 === "0001" && !J(r.data).includes("3201010101010001"), "roster hanya menampilkan 4 digit NIK");
+  r = await req(admin, `/api/admin/itp-registrations/${regId}`, { method: "PATCH", json: { docStatus: "rejected" } }); ok(r.status === 400, "tolak dokumen tanpa alasan ditolak");
+  r = await req(admin, `/api/admin/itp-registrations/${regId}`, { method: "PATCH", json: { docStatus: "valid" } }); ok(r.data.status === "confirmed", "dokumen valid: terkonfirmasi");
+  r = await req(admin, `/api/admin/itp-registrations/${regId}`, { method: "PUT", json: { listening: 99, structure: 50, reading: 50 } }); ok(r.status === 400, "skor di luar 31–68 ditolak");
+  r = await req(admin, `/api/admin/itp-registrations/${regId}`, { method: "PUT", json: { listening: 50, structure: 52, reading: 51 } }); ok(r.status === 200 && r.data.total === 510 && /^EPTA-ITP-\d{4}-\d{4}$/.test(r.data.certificateNumber), "skor resmi: total 510 + nomor sertifikat", J(r.data)); const certNo = r.data.certificateNumber;
+  r = await req(admin, `/api/admin/itp-registrations/${regId}`, { method: "PUT", json: { listening: 50, structure: 52, reading: 51 } });
+  r = await req(p1, "/api/certificates"); const itpCerts = r.data.certificates.filter((c) => c.type === "itp"); ok(itpCerts.length === 1, "sertifikat tidak dobel saat skor disimpan ulang");
+  r = await req(p1, `/api/certificates/${itpCerts[0].id}/pdf`); const cpdf = Buffer.from(await r.res.arrayBuffer()); ok(r.status === 200 && cpdf.subarray(0, 4).toString() === "%PDF", "PDF sertifikat valid");
+  r = await req(coachB, `/api/certificates/${itpCerts[0].id}/pdf`); ok(r.status === 404 || r.status === 403, "PDF sertifikat orang lain ditolak");
+  r = await req(null, `/api/certificates/verify/${certNo}`); ok(r.status === 200 && r.data.valid && r.data.total === 510 && !J(r.data).includes("Peserta Satu"), "verifikasi publik: nama disamarkan", J(r.data));
+  r = await req(null, "/api/certificates/verify/EPTA-ITP-2026-9999"); ok(r.status === 404, "nomor palsu 404");
+  r = await req(admin, `/api/admin/itp-sessions/${sess}/export.xlsx`); const xx = Buffer.from(await r.res.arrayBuffer()); ok(r.status === 200 && xx.subarray(0, 2).toString() === "PK", "ekspor roster .xlsx");
+
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });
   ok(r.status === 200, "kontrak diubah ke masa lalu");

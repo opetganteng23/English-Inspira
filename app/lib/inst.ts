@@ -28,7 +28,7 @@ export async function instContext(req: Request) {
 
 /** Ringkasan hasil per peserta institusi: skor awal, skor terakhir, jumlah tes, aktivitas terakhir. */
 export async function memberResults(ids: Types.ObjectId[]) {
-  const attempts = await Attempt.find({ userId: { $in: ids }, status: "submitted" }).sort({ finishedAt: 1 }).select("userId kind scoreEst sectionScores finishedAt aiAnalysis").lean();
+  const attempts = await Attempt.find({ userId: { $in: ids }, status: "submitted" }).sort({ finishedAt: 1 }).select("userId kind scoreEst sectionScores finishedAt").lean();
   const by = new Map<string, typeof attempts>();
   for (const a of attempts) { const k = String(a.userId); by.set(k, [...(by.get(k) ?? []), a]); }
   return by;

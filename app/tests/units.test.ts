@@ -11,6 +11,7 @@ import { analysisResultSchema, checkResult, templateResult, numbersIn, aliasFor,
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { mongoSanitize } from "@/lib/mongo-sanitize";
 import { parseItpScores, verifyScores, isPdf } from "@/lib/pdf-import";
 import { levelUpDecision } from "@/lib/level-up";
 import { overlaps, canRegister, canCancel, chargesQuota, bookableLeft, canMarkAttendance } from "@/lib/coaching-rules";
@@ -293,4 +294,16 @@ describe("impor PDF (MTS §14)", () => {
     expect(verifyScores({ total: 480 }).ok).toBe(true);
   });
   it("magic bytes PDF", () => { expect(isPdf(Buffer.from("%PDF-1.7 ..."))).toBe(true); expect(isPdf(Buffer.from("<html>"))).toBe(false); });
+});
+
+describe("mongo-sanitize (MTS §20)", () => {
+  it("membuang kunci operator dan titik di kedalaman berapa pun", () => {
+    const dirty = { a: 1, $gt: 5, "b.c": 2, n: { $where: "x", ok: [{ $ne: 1, v: 3 }] }, __proto__: { x: 1 } };
+    expect(mongoSanitize(dirty)).toEqual({ a: 1, n: { ok: [{ v: 3 }] } });
+  });
+  it("nilai primitif dan null tidak berubah; kedalaman berlebih dipotong", () => {
+    expect(mongoSanitize("x")).toBe("x"); expect(mongoSanitize(null)).toBeNull();
+    let deep: unknown = 1; for (let i = 0; i < 20; i++) deep = { a: deep };
+    expect(JSON.stringify(mongoSanitize(deep))).toContain("null");
+  });
 });

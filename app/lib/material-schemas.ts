@@ -1,3 +1,4 @@
+import { mongoSanitize } from "./mongo-sanitize";
 import { z } from "zod";
 import { HttpError } from "./rbac";
 import { sanitizeRich } from "./sanitize";
@@ -7,7 +8,7 @@ export const materialInput = z.object({
   title: z.string().trim().min(1).max(150),
   summary: z.string().max(400).optional(),
   kind: z.enum(["rich", "html"]),
-  contentJson: z.unknown().optional(),
+  contentJson: z.unknown().optional().transform((v) => mongoSanitize(v)),
   contentHtml: z.string().max(500_000).optional(),
   htmlDoc: z.object({ html: z.string().optional(), css: z.string().optional(), js: z.string().optional() }).optional(),
   tags: z.array(z.string().trim().min(1).max(30)).max(10).default([]),
