@@ -9,6 +9,7 @@ import { User } from "@/models/User";
 import { runAnalysis } from "./analysis";
 import { processAttemptLearning } from "./learning-pipeline";
 import { recordQuizResult } from "./units";
+import { evaluateLevelUp } from "./level-up";
 import { ensureSimReport } from "./certificates";
 import { Attempt, Test, type AttemptDoc } from "@/models/Test";
 import { Question, type Section } from "@/models/Question";
@@ -84,6 +85,7 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
       if (attempt.kind === "quiz") await recordQuizResult(attempt);
     } catch (e) { console.error("[finalize] efek samping gagal", e); }
     try { await processAttemptLearning(attempt); } catch (e) { console.error("[finalize] pipeline belajar gagal", e); }
+    try { if (attempt.kind === "sim") await evaluateLevelUp(attempt); } catch (e) { console.error("[finalize] cek naik level gagal", e); } // setelah pipeline: memakai rencana yang sudah diperbarui
     void runAnalysis(attempt._id);
   })();
 }

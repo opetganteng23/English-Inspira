@@ -289,6 +289,41 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(null, "/api/cron/hourly"); ok(r.status === 401, "job per jam tanpa rahasia ditolak");
   r = await req(null, "/api/cron/hourly", { headers: { authorization: "Bearer testsecret" } }); ok(r.status === 200 && typeof r.data.emails === "number", "job pengingat sesi berjalan", J(r.data));
 
+  console.log("\n== Naik level (simulasi) ==");
+  const keyCache = new Map();
+  const keyOf = async (qid) => { if (!keyCache.has(qid)) keyCache.set(qid, (await req(admin, `/api/admin/questions/${qid}`)).data.answerKey); return keyCache.get(qid); };
+  const runSim = async () => {
+    const st = await req(p1, `/api/tests/${sim.id}/start`, { method: "POST", json: {} });
+    if (st.status !== 201 && st.status !== 200) return { err: J(st.data) };
+    const id = st.data.attemptId;
+    for (let n = 0; n < 4; n++) {
+      const g = await req(p1, `/api/attempts/${id}`);
+      if (g.data.status === "submitted") break;
+      const answers = []; for (const q of g.data.questions) answers.push({ qid: q.id, choice: await keyOf(q.id), timeSpentSec: 4 });
+      await req(p1, `/api/attempts/${id}`, { method: "PATCH", json: { answers } });
+      if (g.data.section.index >= g.data.section.total - 1) await req(p1, `/api/attempts/${id}/submit`, { method: "POST", json: {} });
+      else await req(p1, `/api/attempts/${id}/advance`, { method: "POST", json: {} });
+    }
+    await sleep(1500);
+    return { id, result: (await req(p1, `/api/attempts/${id}/result`)).data };
+  };
+  const lvBefore = (await req(p1, "/api/home")).data.level.name;
+  r = await req(p1, "/api/home"); ok(r.data.levelUp && typeof r.data.levelUp.up === "boolean" && r.data.levelUp.nextLevel, "beranda memuat status syarat naik level", J(r.data.levelUp));
+  let pend = (await req(p1, "/api/study-plan")).data.items.filter((i) => i.status === "active" && i.priority === "high" && i.source === "auto");
+  if (pend.length) {
+    const s1r = await runSim();
+    ok(s1r.result?.levelUp && s1r.result.levelUp.up === false && s1r.result.levelUp.reasons.some((x) => /remedial/i.test(x)), "remedial prioritas tinggi belum selesai: tidak naik level", J(s1r.result?.levelUp));
+    for (const it of pend) await req(p1, `/api/study-plan/${it.id}`, { method: "PATCH", json: { done: true } });
+    pend = (await req(p1, "/api/study-plan")).data.items.filter((i) => i.status === "active" && i.priority === "high" && i.source === "auto");
+  } else ok(true, "(tidak ada remedial prioritas tinggi pada data uji; cabang 'tertahan remedial' dilewati, tercakup uji unit)");
+  const s2r = await runSim();
+  ok(s2r.result?.scoreEst >= 600, "simulasi semua benar menghasilkan skor tinggi", J(s2r.err ?? s2r.result?.scoreEst));
+  ok(s2r.result?.levelUp?.up === true && s2r.result.levelUp.level, "memenuhi syarat: naik level otomatis", J(s2r.result?.levelUp));
+  r = await req(p1, "/api/home");
+  ok(r.data.level.name !== lvBefore && r.data.quota.used === 0 && r.data.quota.total > 0, "level baru + kuota coaching baru (kuota lama hangus)", `${lvBefore} -> ${r.data.level.name} ${J(r.data.quota)}`);
+  r = await req(p1, "/api/study-plan"); ok(!r.data.items.some((i) => i.status === "active" && i.source === "auto" && i.dueAt && new Date(i.dueAt) < new Date()), "rencana belajar diperbarui setelah naik level");
+  r = await req(p1, "/api/coaching"); ok(r.data.quota.total === (await req(p1, "/api/home")).data.quota.total, "kuota coaching mengikuti level baru");
+
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });
   ok(r.status === 200, "kontrak diubah ke masa lalu");

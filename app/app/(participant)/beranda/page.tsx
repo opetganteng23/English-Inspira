@@ -13,6 +13,7 @@ type Home = {
   quota: { used: number; total: number; left: number } | null;
   counselor: { used: number; quota: number; remaining: number };
   step: { title: string; body: string; cta: string; href: string } | null;
+  levelUp: { nextLevel: string | null; up: boolean; reasons: string[] } | null;
   plan: { id: string; title: string; priority: "high" | "medium"; source: string; dueAt: string | null }[];
   weakTopics: { skill: string; topic: string; score: number; status: string }[];
   progress: { id: string; name: string; kind: string; score: number; at: string }[];
@@ -63,6 +64,15 @@ export default function Beranda() {
           </div>
         )}
       </section>
+
+      {h.levelUp?.nextLevel && (
+        <section className="card">
+          <h2 className="font-display text-lg font-extrabold text-navy">Menuju {h.levelUp.nextLevel}</h2>
+          {h.levelUp.up ? <p className="mt-1 text-sm text-success">Syarat terpenuhi. Level naik otomatis setelah simulasi berikutnya dinilai.</p> : (
+            <><p className="mt-1 text-sm text-ink-soft">Yang masih dibutuhkan untuk naik level:</p><ul className="mt-1 list-disc pl-5 text-sm text-ink-soft">{h.levelUp.reasons.map((r) => <li key={r}>{r}</li>)}</ul></>
+          )}
+        </section>
+      )}
 
       <section className="card">
         <h2 className="font-display text-lg font-extrabold text-navy">Rencana belajar</h2>

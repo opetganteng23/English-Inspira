@@ -8,6 +8,7 @@ import { Attempt, Test } from "@/models/Test";
 import { CoachingQuota } from "@/models/Config";
 import { Institution } from "@/models/Institution";
 import { PlanItem, TopicStat } from "@/models/Learning";
+import { levelUpStatus } from "@/lib/level-up";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export async function GET() {
   try {
     const me = await requireRole(["participant"]);
     await connectDB();
-    const [u, levels, attempts, quota, inProgress, inst, counselor, plan, weak] = await Promise.all([
+    const [u, levels, attempts, quota, inProgress, inst, counselor, plan, weak, levelUp] = await Promise.all([
       User.findById(me._id).lean(), getLevels(),
       Attempt.find({ userId: me._id, status: "submitted" }).sort({ finishedAt: 1 }).select("kind scoreEst sectionScores finishedAt testId").lean(),
       CoachingQuota.findOne({ userId: me._id, active: true }).lean(),
@@ -25,6 +26,7 @@ export async function GET() {
       counselorAccess(me._id),
       PlanItem.find({ userId: me._id, status: "active" }).sort({ priority: 1, dueAt: 1 }).lean(),
       TopicStat.find({ userId: me._id, status: { $in: ["priority", "weak"] } }).sort({ score: 1 }).limit(5).lean(),
+      levelUpStatus(me._id),
     ]);
     const tests = new Map((await Test.find({ _id: { $in: attempts.map((a) => a.testId) } }).select("name").lean()).map((t) => [String(t._id), t.name]));
     const level = levels.find((l) => String(l._id) === String(u?.currentLevelId));
@@ -44,6 +46,7 @@ export async function GET() {
       quota: quota ? { used: quota.used, total: quota.total, left: Math.max(0, quota.total - quota.used) } : null,
       counselor: { used: counselor.used, quota: counselor.quota, remaining: counselor.remaining },
       step,
+      levelUp,
       plan: plan.map((p) => ({ id: String(p._id), title: p.title, priority: p.priority, source: p.source, dueAt: p.dueAt ?? null })),
       weakTopics: weak.map((w) => ({ skill: w.skill, topic: w.topic, score: Math.round(w.score), status: w.status })),
       progress: attempts.map((a) => ({ id: String(a._id), name: tests.get(String(a.testId)) ?? "-", kind: a.kind, score: a.scoreEst, at: a.finishedAt })),

@@ -10,6 +10,7 @@ import { extractJson, ruleBasedAnalysis, detectDistress, analysisSchema } from "
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { levelUpDecision } from "@/lib/level-up";
 import { overlaps, canRegister, canCancel, chargesQuota, bookableLeft, canMarkAttendance } from "@/lib/coaching-rules";
 import { unitComplete, percentCorrect } from "@/lib/units";
 import { nextTopicScore, topicStatus } from "@/lib/topic-stats";
@@ -228,4 +229,21 @@ describe("aturan coaching (MTS §16)", () => {
     expect(canMarkAttendance(at(1), at(2))).toBe(false);
     expect(canMarkAttendance(at(2), at(2))).toBe(true);
   });
+});
+
+describe("naik level (MTS §12)", () => {
+  const rules = { requireRemedialDone: true, minSimScoreFromNextLevel: true };
+  const base = { score: 500, nextMin: 460, remedialPending: 0, coachRecommends: false, rules };
+  it("naik bila skor ≥ batas bawah level berikutnya dan remedial selesai", () => expect(levelUpDecision(base)).toEqual({ up: true, reasons: [] }));
+  it("tertahan bila skor kurang", () => expect(levelUpDecision({ ...base, score: 459 }).up).toBe(false));
+  it("tertahan bila remedial prioritas tinggi belum selesai, kecuali coach merekomendasikan", () => {
+    expect(levelUpDecision({ ...base, remedialPending: 2 }).reasons[0]).toMatch(/remedial/);
+    expect(levelUpDecision({ ...base, remedialPending: 2, coachRecommends: true }).up).toBe(true);
+  });
+  it("rekomendasi coach tidak membebaskan syarat skor", () => expect(levelUpDecision({ ...base, score: 400, coachRecommends: true }).up).toBe(false));
+  it("level tertinggi tidak naik lagi; tanpa skor tertahan", () => {
+    expect(levelUpDecision({ ...base, nextMin: null }).up).toBe(false);
+    expect(levelUpDecision({ ...base, score: null }).up).toBe(false);
+  });
+  it("aturan bisa dimatikan admin", () => expect(levelUpDecision({ ...base, score: 100, remedialPending: 3, rules: { requireRemedialDone: false, minSimScoreFromNextLevel: false } }).up).toBe(true));
 });

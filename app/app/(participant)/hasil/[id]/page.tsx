@@ -11,7 +11,7 @@ type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number } | null; transcripts: { groupId: string; title: string; text: string }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number } | null; transcripts: { groupId: string; title: string; text: string }[] };
 
 const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "TES SIMULASI", practice: "LATIHAN" };
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -74,6 +74,9 @@ export default function Hasil({ params }: { params: { id: string } }) {
         <p className="mt-4 rounded-lg bg-accent-tint p-3 text-xs text-accent-dark">Estimasi dari tes simulasi, bukan skor resmi. Skor resmi hanya dari tes TOEFL ITP yang diselenggarakan pihak resmi.</p>
       </section>
 
+      {r.levelUp?.up && <section className="card border-success bg-success-tint"><p className="font-display text-xl font-extrabold text-success">Selamat, kamu naik ke level {r.levelUp.level}!</p><p className="text-sm text-ink-soft">Kuota coaching baru dan rencana belajar sudah disiapkan.</p></section>}
+      {r.levelUp && !r.levelUp.up && r.levelUp.reasons.length > 0 && <section className="card"><p className="font-semibold text-navy">Belum naik level</p><ul className="mt-1 list-disc pl-5 text-sm text-ink-soft">{r.levelUp.reasons.map((x) => <li key={x}>{x}</li>)}</ul></section>}
+      {r.stuck?.length > 0 && <section className="card"><p className="font-semibold text-navy">Topik yang membuatmu tertahan</p><p className="text-sm text-ink-soft">{r.stuck.join(", ")}. Coba kerjakan lagi dengan tenang dan minta bantuan coach.</p></section>}
       {r.level && (
         <section className="card border-brand bg-brand-tint">
           <p className="text-xs font-semibold tracking-wider text-brand">LEVELMU</p>

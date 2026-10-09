@@ -106,7 +106,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|---|
 | P1 | Upload PDF (GridFS `pdf`, magic bytes, 10 MB), `pdf-parse`, layar verifikasi, analisis; file tidak dikirim ke AI (§14) | ⬜ |
 | P2 | Konselor AI: kuota **30 pesan/bulan** (`counselor_quota`), konteks dari `analyses` + study plan, tidak mengubah plan langsung, tinjauan admin **dan coach** (§17) | 🔄 kuota 30/bulan dari config ✅; konteks `analyses`/study plan & tinjauan coach ⬜ |
-| P3 | Aturan naik level otomatis + tahan/rekomendasi coach; kuota baru sesuai level, plan dibuat ulang (§12) | ⬜ |
+| P3 | Aturan naik level otomatis + tahan/rekomendasi coach; kuota baru sesuai level, plan dibuat ulang (§12) | ✅ naik level otomatis (skor sim ≥ batas level berikutnya + remedial prioritas tinggi selesai; rekomendasi coach membebaskan syarat remedial), kuota baru, rencana dibuat ulang, email — teruji smoke + unit; status syarat tampil di Beranda & hasil |
 | P4 | Dashboard admin & institusi v2.2 (level, kuota, kehadiran, kepatuhan, analisis gagal) | ⬜ |
 | P5 | Portal institusi sesuai batas privasi §4 (tanpa isi analisis individu & catatan sesi) | 🔄 kode & tagihan dihapus; pemangkasan data individu ⬜ |
 | P6 | Laporan PDF + Excel (§8) | 🔄 Excel ✅, PDF ⬜ |
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 34 uji) & `scripts/smoke.mjs` v2.2 (159 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 40 uji) & `scripts/smoke.mjs` v2.2 (166 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)

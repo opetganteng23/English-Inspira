@@ -6,6 +6,7 @@ import { Question, QuestionGroup } from "@/models/Question";
 import { Audio } from "@/models/Audio";
 import { Level } from "@/models/Config";
 import { User } from "@/models/User";
+import { Analysis } from "@/models/Learning";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const u = await User.findById(attempt.userId).select("currentLevelId targetScore").lean();
     const level = attempt.kind === "placement" && u?.currentLevelId ? await Level.findById(u.currentLevelId).select("name coachingQuota scoreMin scoreMax").lean() : null;
 
+    const calc = (await Analysis.findOne({ attemptId: attempt._id }).select("calculated").lean())?.calculated as { levelUp?: { up: boolean; reasons: string[]; level?: string }; stuck?: string[] } | undefined;
     return NextResponse.json({
+      levelUp: calc?.levelUp ?? null, stuck: (calc?.stuck ?? []).map((k) => k.split("|")[1] ?? k),
       kind: attempt.kind, testName: test.name, finishedAt: attempt.finishedAt,
       durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,
       scoreRaw: attempt.scoreRaw, scoreEst: attempt.scoreEst, sectionScores: attempt.sectionScores, topicScores: attempt.topicScores,
