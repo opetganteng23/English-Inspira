@@ -21,8 +21,7 @@ export default function MateriViewer({ params }: { params: { slug: string } }) {
 
   if (loading) return <Loading />;
   if (error && !data) {
-    const locked = /Journey|paket/i.test(error);
-    return <div className="card max-w-lg"><ErrorNote text={error} />{locked && <Link href="/paket" className="btn-solid mt-3">Lihat paket</Link>}<Link href="/materi" className="mt-3 block text-sm font-semibold text-brand">← Semua materi</Link></div>;
+    return <div className="card max-w-lg"><ErrorNote text={error} /><Link href="/materi" className="mt-3 block text-sm font-semibold text-brand">← Semua materi</Link></div>;
   }
   if (!data) return null;
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useApi } from "@/lib/useApi";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
-type M = { id: string; title: string; slug: string; summary?: string; kind: "rich" | "html"; tags: string[]; access: "free" | "paid"; locked: boolean; progress: { score: number | null; completed: boolean } | null };
+type M = { id: string; title: string; slug: string; summary?: string; kind: "rich" | "html"; tags: string[]; locked: boolean; progress: { score: number | null; completed: boolean } | null };
 
 export default function Materi() {
   const { data, loading, error } = useApi<{ materials: M[] }>("/api/materials");
@@ -22,15 +22,14 @@ export default function Materi() {
       {list.length === 0 ? <Empty>Belum ada materi yang dipublikasikan.</Empty> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((m) => (
-            <Link key={m.id} href={m.locked ? "/paket" : `/materi/${m.slug}`} className={`card flex flex-col gap-2 hover:border-brand ${m.locked ? "bg-canvas" : ""}`}>
+            <Link key={m.id} href={`/materi/${m.slug}`} className={`card flex flex-col gap-2 hover:border-brand ${m.locked ? "bg-canvas" : ""}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="badge-muted">{m.kind === "html" ? "Latihan interaktif" : "Bacaan"}</span>
-                {m.locked ? <span className="badge-muted">🔒 Paket Journey</span> : m.access === "free" ? <span className="badge-ok">Gratis</span> : null}
                 {m.progress?.completed && <span className="badge-ok">Skor {m.progress.score ?? "–"}</span>}
               </div>
               <h2 className="font-display text-lg font-extrabold text-navy">{m.title}</h2>
               {m.summary && <p className="flex-1 text-sm text-ink-soft">{m.summary}</p>}
-              <p className="text-sm font-semibold text-brand">{m.locked ? "Buka lewat paket →" : m.progress ? "Buka lagi →" : "Mulai belajar →"}</p>
+              <p className="text-sm font-semibold text-brand">{m.progress ? "Buka lagi →" : "Mulai belajar →"}</p>
             </Link>
           ))}
         </div>

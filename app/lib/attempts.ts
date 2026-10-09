@@ -2,6 +2,10 @@ import { isValidObjectId, type HydratedDocument } from "mongoose";
 import { connectDB } from "./db";
 import { HttpError } from "./rbac";
 import { gradeAttempt } from "./scoring";
+import { getParam } from "./config";
+import { computeTopicScores } from "./topics";
+import { applyPlacement } from "./placement";
+import { User } from "@/models/User";
 import { runAnalysis } from "./analysis";
 import { ensureSimReport } from "./certificates";
 import { Attempt, Test, type AttemptDoc } from "@/models/Test";
@@ -55,16 +59,27 @@ export async function advance(attempt: AttemptHydrated, test: Parameters<typeof 
 export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof syncTimer>[1], at = new Date()) {
   if (attempt.status === "submitted") return;
   const ids = test.sections.flatMap((s) => s.questionIds.map(String));
-  const keys = new Map<string, number>();
-  for (const q of await Question.find({ _id: { $in: ids } }).select("answerKey").lean()) keys.set(String(q._id), q.answerKey);
+  const qs = await Question.find({ _id: { $in: ids } }).select("answerKey tags").lean();
+  const keys = new Map<string, number>(qs.map((q) => [String(q._id), q.answerKey]));
   const answers = new Map<string, number | undefined>(attempt.answers.map((a) => [String(a.qid), a.choice ?? undefined]));
+  const conv = await getParam("score_conversion"); // tabel konversi dari config_params, bukan hard-code
   const graded = gradeAttempt(
+    conv,
     test.sections.map((s) => ({ name: s.name as Section, questionIds: s.questionIds.map(String) })),
     keys,
     answers
   );
-  attempt.set({ ...graded, status: "submitted", finishedAt: at });
+  const topicScores = computeTopicScores(qs, answers, keys);
+  attempt.set({ ...graded, topicScores, status: "submitted", finishedAt: at });
   await attempt.save();
-  void runAnalysis(attempt._id); // async: tidak memblokir submit
-  void ensureSimReport(attempt._id).catch(() => {});
+
+  // Efek samping setelah submit: tidak boleh menggagalkan submit, dan tidak memblokir respons.
+  void (async () => {
+    try {
+      if (attempt.kind === "placement") await applyPlacement(attempt);
+      else if (attempt.kind === "sim" && attempt.scoreEst != null) await User.updateOne({ _id: attempt.userId }, { currentScoreEst: attempt.scoreEst });
+      if (attempt.kind === "sim") await ensureSimReport(attempt._id);
+    } catch (e) { console.error("[finalize] efek samping gagal", e); }
+    void runAnalysis(attempt._id);
+  })();
 }

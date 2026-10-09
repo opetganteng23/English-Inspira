@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { connectDB } from "./db";
+import { hasActiveEnrollment } from "./access";
 import { User, type Role } from "@/models/User";
 
 export const SESSION_COOKIE = "epta_session";
@@ -44,11 +45,17 @@ export async function verifyToken(token?: string): Promise<Session | null> {
   }
 }
 
-/** Ambil user terkini dari DB (status/peran bisa berubah setelah token terbit). */
+/**
+ * User terkini dari DB. Peran/status dicek ulang (bisa berubah setelah token terbit):
+ * akun disabled ditolak, dan semua peran selain admin wajib punya enrollment aktif.
+ * Status "invited" lolos di sini agar bisa menyelesaikan persetujuan data; handler lain menolaknya lewat requireRole.
+ */
 export async function getCurrentUser() {
   const sess = await verifyToken(cookies().get(SESSION_COOKIE)?.value);
   if (!sess) return null;
   await connectDB();
   const user = await User.findById(sess.uid).lean();
-  return user && user.status === "active" ? user : null;
+  if (!user || user.status === "disabled") return null;
+  if (user.role !== "admin" && !(await hasActiveEnrollment(user._id))) return null;
+  return user;
 }

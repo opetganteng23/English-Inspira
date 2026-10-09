@@ -2,7 +2,7 @@ import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { Asset } from "@/models/Asset";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   if (!isValidObjectId(params.id)) return new Response("Not found", { status: 404 });

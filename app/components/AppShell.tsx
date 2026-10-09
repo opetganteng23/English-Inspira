@@ -12,6 +12,7 @@ export async function AppShell({
 }: { roles: Role[]; nav: NavGroup[]; title?: string; children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect("/masuk");
+  if (user.status === "invited") redirect("/persetujuan");
   if (!roles.includes(user.role)) redirect("/masuk");
 
   return (

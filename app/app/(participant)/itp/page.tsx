@@ -75,12 +75,12 @@ export default function Itp() {
       ))}
 
       {!canRegister && active.length === 0 && (
-        <section className="card text-center"><p className="font-semibold text-navy">Kamu belum punya jatah pendaftaran ITP.</p><p className="mt-1 text-sm text-ink-soft">Beli pendaftaran ITP, bundle, atau Paket Journey untuk mendaftar tes resmi.</p><Link href="/paket" className="btn-solid mt-4">Lihat paket</Link></section>
+        <section className="card text-center"><p className="font-semibold text-navy">Pendaftaran baru belum tersedia.</p><p className="mt-1 text-sm text-ink-soft">Kamu sudah punya satu pendaftaran aktif. Batalkan atau tunggu selesai sebelum mendaftar lagi.</p></section>
       )}
 
       {canRegister && (
         <section className="card">
-          <p className="rounded-lg bg-brand-tint p-3 text-sm">Pendaftaran ITP resmi sudah dibayar. Jatah tersisa: <b>{data.itpRemaining}</b>. Pilih jadwal dan lengkapi data peserta.</p>
+          <p className="rounded-lg bg-brand-tint p-3 text-sm">Pilih jadwal tes ITP resmi dan lengkapi data peserta.</p>
           {data.advice && <p className="mt-3 rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">Saran Konselor: jadwalkan minimal <b>{data.advice.weeks} minggu</b> lagi ({data.advice.basis}). Ini perkiraan, bukan jaminan skor.</p>}
 
           <ol className="mt-4 flex gap-2 text-sm" aria-label="Langkah pendaftaran">{["Pilih jadwal", "Data peserta", "Konfirmasi"].map((t, i) => <li key={t} className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold ${step === i + 1 ? "bg-navy text-white" : step > i + 1 ? "bg-success-tint text-success" : "bg-canvas text-ink-soft"}`}>{i + 1}. {t}</li>)}</ol>

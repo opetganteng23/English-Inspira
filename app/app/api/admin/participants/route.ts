@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
+import { getLevels } from "@/lib/config";
 import { User } from "@/models/User";
-import { Order, Entitlement, Product } from "@/models/Commerce";
-import { Attempt } from "@/models/Test";
 import { Institution } from "@/models/Institution";
+import { Attempt } from "@/models/Test";
+import { CoachingQuota } from "@/models/Config";
 
 export const dynamic = "force-dynamic";
 
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Daftar peserta lintas institusi untuk admin: level, skor estimasi, kuota coaching, status undangan. */
 export async function GET(req: Request) {
   try {
     await requireRole(["admin"]);
@@ -15,34 +19,32 @@ export async function GET(req: Request) {
     const sp = new URL(req.url).searchParams;
     const filter: Record<string, unknown> = { role: "participant" };
     const q = sp.get("q")?.trim();
-    if (q) { const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"); filter.$or = [{ name: rx }, { email: rx }]; }
-    if (sp.get("institution")) filter.institutionId = sp.get("institution") === "none" ? { $exists: false } : sp.get("institution");
-    const stage = sp.get("stage");
+    if (q) { const rx = new RegExp(esc(q), "i"); filter.$or = [{ name: rx }, { email: rx }]; }
+    if (sp.get("institution")) filter.institutionId = sp.get("institution");
+    if (sp.get("status")) filter.status = sp.get("status");
+    if (sp.get("level")) filter.currentLevelId = sp.get("level");
     const page = Math.max(1, Number(sp.get("page")) || 1), size = 25;
 
-    // Tahap diturunkan dari data: institusi > journey > pembeli > free trial > baru. Disaring setelah ditentukan.
-    const users = await User.find(filter).sort({ createdAt: -1 }).limit(2000).lean();
-    const ids = users.map((u) => u._id);
-    const [paid, attempts, ents, insts] = await Promise.all([
-      Order.find({ userId: { $in: ids }, status: "paid" }).select("userId items").lean(),
-      Attempt.find({ userId: { $in: ids }, status: "submitted" }).sort({ finishedAt: -1 }).select("userId kind scoreEst finishedAt").lean(),
-      Entitlement.find({ userId: { $in: ids }, revokedAt: { $exists: false } }).select("userId productId expiresAt").lean(),
-      Institution.find().select("name").lean(),
+    const [users, total, levels, insts] = await Promise.all([
+      User.find(filter).sort({ createdAt: -1 }).skip((page - 1) * size).limit(size).lean(),
+      User.countDocuments(filter), getLevels(), Institution.find().select("name").lean(),
     ]);
-    const journeyIds = new Set((await Product.find({ kind: "journey" }).select("_id").lean()).map((p) => String(p._id)));
-    const instName = new Map(insts.map((i) => [String(i._id), i.name]));
-    const rows = users.map((u) => {
-      const id = String(u._id);
-      const myOrders = paid.filter((o) => String(o.userId) === id);
-      const mine = attempts.filter((a) => String(a.userId) === id);
-      const hasJourney = ents.some((e) => String(e.userId) === id && e.productId && journeyIds.has(String(e.productId)));
-      const st = u.institutionId ? "Institusi" : hasJourney ? "Journey" : myOrders.length ? "Pembeli" : mine.length ? "Free trial" : "Baru";
-      const last = mine[0]?.scoreEst ?? null;
-      const target = u.targetScore ?? null;
-      const readiness = last && target ? (last >= target ? "Siap" : last >= target - 30 ? "Hampir" : "Belum") : "-";
-      return { id, name: u.name ?? null, email: u.email, stage: st, institution: u.institutionId ? instName.get(String(u.institutionId)) ?? "-" : null, lastScore: last, target, readiness, status: u.status, orders: myOrders.length, createdAt: u.createdAt };
-    }).filter((r) => !stage || r.stage === stage);
-    return NextResponse.json({ total: rows.length, page, pages: Math.max(1, Math.ceil(rows.length / size)), participants: rows.slice((page - 1) * size, page * size) });
+    const ids = users.map((u) => u._id);
+    const [quotas, lastAt] = await Promise.all([
+      CoachingQuota.find({ userId: { $in: ids }, active: true }).lean(),
+      Attempt.aggregate([{ $match: { userId: { $in: ids }, status: "submitted" } }, { $group: { _id: "$userId", at: { $max: "$finishedAt" }, n: { $sum: 1 } } }]),
+    ]);
+    const lv = new Map(levels.map((l) => [String(l._id), l.name])), inst = new Map(insts.map((i) => [String(i._id), i.name]));
+    return NextResponse.json({
+      total, page, pages: Math.max(1, Math.ceil(total / size)),
+      levels: levels.map((l) => ({ id: String(l._id), name: l.name })),
+      participants: users.map((u) => {
+        const qt = quotas.find((x) => String(x.userId) === String(u._id)), la = lastAt.find((x) => String(x._id) === String(u._id));
+        return { id: String(u._id), name: u.name ?? null, email: u.email, status: u.status, institution: u.institutionId ? inst.get(String(u.institutionId)) ?? "-" : null,
+          level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? "-" : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId,
+          quota: qt ? { used: qt.used, total: qt.total } : null, tests: la?.n ?? 0, lastAt: la?.at ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt };
+      }),
+    });
   } catch (e) {
     return handleError(e);
   }

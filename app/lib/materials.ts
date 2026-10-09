@@ -1,5 +1,4 @@
 import { signAudioToken } from "./audio-store";
-import { hasMaterials } from "./entitlements";
 import { Material } from "@/models/Material";
 import type { Types } from "mongoose";
 
@@ -29,8 +28,4 @@ export async function injectAudio(html: string, materialId: string) {
     out = out.split(`data-audio-id="${id}"`).join(`data-audio-id="${id}" src="${url}" controlslist="nodownload"`).split(`ei-audio:${id}`).join(url);
   }
   return out;
-}
-
-export async function canReadMaterial(user: { _id: Types.ObjectId; role: string }, access: string) {
-  return access === "free" || user.role === "admin" || (await hasMaterials(user._id));
 }

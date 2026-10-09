@@ -1,6 +1,7 @@
 import { connectDB } from "./db";
 import { Institution } from "@/models/Institution";
-import { Product } from "@/models/Commerce";
+import { createMember } from "./participants";
+import { User } from "@/models/User";
 import { ItpSession } from "@/models/Itp";
 import { Material } from "@/models/Material";
 import { PRESETS } from "./material-presets";
@@ -10,12 +11,21 @@ import { sanitizeRich } from "./sanitize";
 export async function seedDemo() {
   await connectDB();
 
-  const journey = await Product.findOne({ slug: "journey-6m" }).select("_id").lean();
   await Institution.updateOne(
     { code: "DEMO2026" },
-    { $setOnInsert: { name: "Universitas Contoh", code: "DEMO2026", seats: 120, batch: "Batch 2026", contactEmail: "koordinator@contoh.ac.id", productId: journey?._id, active: true } },
+    { $setOnInsert: { name: "Universitas Contoh", code: "DEMO2026", seats: 120, batch: "Batch 2026", contactEmail: "koordinator@contoh.ac.id", contractStart: new Date(), contractEnd: new Date(Date.now() + 365 * 86_400_000), status: "active" } },
     { upsert: true }
   );
+  // Akun contoh diundang (email undangan dicetak ke konsol di dev). Masuk dengan OTP ke email ini.
+  const inst = await Institution.findOne({ code: "DEMO2026" });
+  const demo: { email: string; name: string; role: "coach" | "inst_admin" | "participant" }[] = [
+    { email: "coach@demo.local", name: "Coach Demo", role: "coach" },
+    { email: "instadmin@demo.local", name: "Admin Institusi Demo", role: "inst_admin" },
+    { email: "peserta1@demo.local", name: "Peserta Satu", role: "participant" },
+    { email: "peserta2@demo.local", name: "Peserta Dua", role: "participant" },
+    { email: "peserta3@demo.local", name: "Peserta Tiga", role: "participant" },
+  ];
+  for (const d of demo) if (inst && !(await User.exists({ email: d.email }))) await createMember(inst._id, d);
 
   const now = Date.now();
   const day = 86_400_000;

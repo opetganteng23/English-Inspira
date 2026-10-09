@@ -3,12 +3,12 @@ import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { counselorAccess } from "@/lib/entitlements";
+import { counselorAccess } from "@/lib/counselor-access";
 import { CounselorThread } from "@/models/Counselor";
 import { Attempt } from "@/models/Test";
 
 export const dynamic = "force-dynamic";
-const ROLES = ["participant", "admin", "inst_admin"] as const;
+const ROLES = ["participant", "admin"] as const;
 
 export async function GET() {
   try {
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       if (!a) throw new HttpError(404, "Hasil tes tidak ditemukan");
       const existing = await CounselorThread.findOne({ userId: user._id, attemptId });
       if (existing) return NextResponse.json({ id: String(existing._id), reused: true });
-      title = a.kind === "trial" ? "Hasil Free Trial" : "Hasil tes";
+      title = a.kind === "placement" ? "Hasil placement" : "Hasil tes";
     }
     const t = await CounselorThread.create({ userId: user._id, attemptId, title });
     return NextResponse.json({ id: String(t._id) }, { status: 201 });

@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { refundGrant } from "@/lib/entitlements";
-import { audit } from "@/lib/orders";
-import { getSetting } from "@/models/Commerce";
+import { audit } from "@/lib/audit";
+import { getSetting } from "@/models/Settings";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
 
 /**
@@ -28,7 +27,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const done = await ItpRegistration.findOneAndUpdate({ _id: reg._id, status: { $in: ["submitted", "confirmed"] } }, { status: "cancelled" });
     if (!done) throw new HttpError(409, "Sudah dibatalkan");
     await ItpSession.updateOne({ _id: reg.sessionId, registered: { $gt: 0 } }, { $inc: { registered: -1 } });
-    if (reg.entitlementId) await refundGrant(reg.entitlementId, "itp");
     await audit(me._id, "itp.cancel", params.id);
     return NextResponse.json({ ok: true });
   } catch (e) {

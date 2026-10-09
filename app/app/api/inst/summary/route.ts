@@ -37,7 +37,7 @@ export async function GET(req: Request) {
     const avg = (a: number[]) => (a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null);
     const avgLatest = avg(latest), avgFirst = avg(first);
     return NextResponse.json({
-      institution: { name: inst.name, batch: inst.batch ?? null, code: inst.code, seats: inst.seats },
+      institution: { name: inst.name, batch: inst.batch ?? null, contractEnd: inst.contractEnd ?? null, seats: inst.seats },
       registered: members.length, seats: inst.seats, seatsLeft: Math.max(0, inst.seats - members.length),
       activeCounseling: active.size, inactiveCounseling: members.length - active.size,
       avgEstimate: avgLatest, avgDelta: avgLatest != null && avgFirst != null ? avgLatest - avgFirst : null,

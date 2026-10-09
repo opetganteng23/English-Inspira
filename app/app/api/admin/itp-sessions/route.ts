@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 import { sessionInput } from "@/lib/admin-schemas";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
 

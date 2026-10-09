@@ -4,12 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/lib/useApi";
-import { api, tgl } from "@/lib/client";
+import { tgl } from "@/lib/client";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
-type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; remaining: number | null; inProgressAttemptId: string | null; lastScore: number | null };
+type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null; lastScore: number | null };
 type A = { id: string; name: string; kind: string; status: string; finishedAt: string | null; scoreEst: number | null; sections: Record<string, number>; reportId: string | null };
-const KIND: Record<string, string> = { trial: "Free Trial", diagnostic: "Diagnostic", prediction: "Prediction", sim: "Tes Simulasi" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulasi", practice: "Latihan" };
 
 export default function TesSaya() {
   const router = useRouter();
@@ -20,10 +20,7 @@ export default function TesSaya() {
   async function start(t: T) {
     setErr("");
     if (t.inProgressAttemptId) return router.push(`/ruang-tes/${t.inProgressAttemptId}`);
-    // Tes penuh: halaman persiapan dulu (timer baru berjalan setelah "Mulai"). Free trial langsung mulai.
-    if (t.kind !== "trial") return router.push(`/tes/persiapan/${t.id}`);
-    try { const d = await api(`/api/tests/${t.id}/start`, { json: {} }); router.push(`/ruang-tes/${d.attemptId}`); }
-    catch (e) { setErr((e as Error).message); }
+    router.push(`/tes/persiapan/${t.id}`); // timer baru berjalan setelah "Mulai" di halaman persiapan
   }
 
   return (
@@ -35,13 +32,13 @@ export default function TesSaya() {
         {tests.data?.tests.map((t) => (
           <div key={t.id} className={`card flex flex-col justify-between gap-4 ${t.unlocked ? "" : "bg-canvas"}`}>
             <div>
-              <div className="flex flex-wrap items-center gap-2"><span className="badge-muted">{KIND[t.kind]}</span>{!t.unlocked && <span className="badge-muted">🔒 Terkunci</span>}{t.remaining != null && t.unlocked && <span className="badge-ok">{t.remaining} jatah</span>}</div>
+              <div className="flex flex-wrap items-center gap-2"><span className="badge-muted">{KIND[t.kind]}</span>{!t.unlocked && <span className="badge-muted">🔒 Terkunci</span>}</div>
               <h2 className="mt-2 font-display text-lg font-extrabold text-navy">{t.name}</h2>
               <p className="text-sm text-ink-soft">{t.totalQuestions} soal · ±{Math.round(t.totalSec / 60)} menit{t.lastScore ? ` · skor terakhir ${t.lastScore}` : ""}</p>
             </div>
             {t.unlocked
               ? <button onClick={() => start(t)} className="btn-solid">{t.inProgressAttemptId ? "Lanjutkan" : "Mulai"}</button>
-              : <Link href="/paket" className="btn-outline">Buka lewat paket</Link>}
+              : <p className="text-sm text-ink-soft">{t.reason ?? "Belum tersedia untukmu."}</p>}
           </div>
         ))}
       </div>

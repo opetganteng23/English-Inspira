@@ -5,10 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 type T = { id: string; name: string; kind: string; active: boolean; questions: number; durationSec: number; attempts: number };
 type QRow = { _id: string; section: string; type: string; stem: string };
 type Sec = { name: string; durationSec: number; questionIds: string[] };
-type Draft = { id?: string; name: string; kind: string; active: boolean; sections: Sec[]; attempts: number };
+type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; sections: Sec[]; attempts: number };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
-const KIND: Record<string, string> = { trial: "Free Trial", diagnostic: "Diagnostic", prediction: "Prediction", sim: "Simulasi" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulasi", practice: "Latihan", quiz: "Kuis unit" };
 const DEFAULT_MIN: Record<string, number> = { listening: 35, structure: 25, reading: 55 };
 
 async function api(url: string, init?: RequestInit) {
@@ -27,7 +27,7 @@ export default function TesAdmin() {
   useEffect(() => { load(); }, [load]);
 
   async function open(id: string) {
-    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, active: t.active, attempts: t.attempts, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
+    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, levelId: t.levelId ? String(t.levelId) : "", active: t.active, attempts: t.attempts, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
     catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
@@ -42,7 +42,7 @@ export default function TesAdmin() {
           <h1 className="font-display text-3xl font-extrabold text-navy">Tes</h1>
           <p className="text-sm text-ink-soft">Susun tes dari soal berstatus published di Bank Soal.</p>
         </div>
-        <button onClick={() => setDraft({ name: "", kind: "diagnostic", active: true, attempts: 0, sections: [{ name: "listening", durationSec: 35 * 60, questionIds: [] }, { name: "structure", durationSec: 25 * 60, questionIds: [] }, { name: "reading", durationSec: 55 * 60, questionIds: [] }] })}
+        <button onClick={() => setDraft({ name: "", kind: "placement", levelId: "", active: true, attempts: 0, sections: [{ name: "listening", durationSec: 35 * 60, questionIds: [] }, { name: "structure", durationSec: 25 * 60, questionIds: [] }, { name: "reading", durationSec: 55 * 60, questionIds: [] }] })}
           className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ Tes baru</button>
       </div>
       {err && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</p>}
@@ -70,12 +70,14 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
   const [v, setV] = useState(draft);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [levels, setLevels] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => { api("/api/admin/levels").then((d) => setLevels(d.levels)).catch(() => {}); }, []);
   const locked = v.attempts > 0; // susunan dikunci bila sudah dikerjakan
 
   async function save() {
     setBusy(true); setErr("");
     try {
-      const body = { name: v.name, kind: v.kind, active: v.active, sections: v.sections.filter((s) => s.questionIds.length) };
+      const body = { name: v.name, kind: v.kind, levelId: v.levelId || null, active: v.active, sections: v.sections.filter((s) => s.questionIds.length) };
       await api(v.id ? `/api/admin/tests/${v.id}` : "/api/admin/tests", { method: v.id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       onSaved();
     } catch (e) { setErr((e as Error).message); setBusy(false); }
@@ -92,7 +94,9 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Jenis<select disabled={locked} className="field" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value })}>{Object.entries(KIND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Aktif (tampil di daftar tes)</label>
-        {v.kind === "trial" && <p className="mt-2 text-xs text-ink-soft">Free trial hanya bisa dikerjakan sekali per akun, apa pun tes trial-nya.</p>}
+        <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-xs">Level sasaran<select disabled={locked || v.kind === "placement"} className="field font-normal" value={v.kind === "placement" ? "" : v.levelId} onChange={(e) => setV({ ...v, levelId: e.target.value })}><option value="">Semua level</option>{levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
+        {v.kind === "placement" && <p className="mt-2 text-xs text-ink-soft">Placement dikerjakan satu kali per peserta dan menentukan levelnya, sehingga tidak dibatasi level.</p>}
+        {v.kind === "quiz" && <p className="mt-2 text-xs text-ink-soft">Kuis unit tidak muncul di Tes Saya; dipakai lewat unit belajar.</p>}
 
         <div className="mt-5 flex flex-col gap-5">
           {v.sections.map((s, i) => <SectionBox key={s.name} s={s} locked={locked} onChange={(n) => setSec(i, n)} />)}

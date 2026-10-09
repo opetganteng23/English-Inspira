@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { canReadMaterial, injectAudio } from "@/lib/materials";
+import { injectAudio } from "@/lib/materials";
 import { sanitizeRich } from "@/lib/sanitize";
 import { Material, MaterialProgress } from "@/models/Material";
 
@@ -9,11 +9,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: { slug: string } }) {
   try {
-    const user = await requireRole(["participant", "admin", "inst_admin"]);
+    const user = await requireRole(["participant", "admin"]);
     await connectDB();
     const m = await Material.findOne({ slug: params.slug, ...(user.role === "admin" ? {} : { status: "published" }) }).lean();
     if (!m) throw new HttpError(404, "Materi tidak ditemukan");
-    if (!(await canReadMaterial(user, m.access))) throw new HttpError(402, "Materi ini bagian dari Paket Journey. Beli paket untuk membukanya.");
 
     const id = String(m._id);
     const progress = await MaterialProgress.findOne({ userId: user._id, materialId: m._id }).lean();

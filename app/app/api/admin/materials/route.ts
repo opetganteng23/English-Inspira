@@ -4,7 +4,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { uniqueSlug } from "@/lib/materials";
 import { materialInput, normalizeMaterial } from "@/lib/material-schemas";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 import { Material } from "@/models/Material";
 
 export const dynamic = "force-dynamic";

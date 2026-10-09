@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { counselorAccess } from "@/lib/entitlements";
+import { counselorAccess } from "@/lib/counselor-access";
 import { buildCounselorContext } from "@/lib/analysis";
 import { counselorReply, detectDistress, DISTRESS_NOTICE } from "@/lib/ai";
 import { CounselorThread } from "@/models/Counselor";
@@ -14,7 +14,7 @@ const schema = z.object({ content: z.string().trim().min(1, "Tulis pertanyaanmu"
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await requireRole(["participant", "admin", "inst_admin"]);
+    const user = await requireRole(["participant", "admin"]);
     const { content } = schema.parse(await req.json());
     try { await perMinute.consume(String(user._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Terlalu cepat, tunggu sebentar."); throw e; }
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Percakapan tidak ditemukan");
@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     // Kuota dicek dari entitlement/jatah gratis, bukan dari klien.
     const access = await counselorAccess(user._id);
-    if (!access.allowed) throw new HttpError(402, access.reason ?? "Akses Konselor AI belum terbuka");
+    if (!access.allowed) throw new HttpError(429, access.reason ?? "Kuota Konselor AI bulan ini habis");
 
     const now = new Date();
     thread.messages.push({ role: "user", content, at: now } as never);

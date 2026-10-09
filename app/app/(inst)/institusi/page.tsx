@@ -6,7 +6,7 @@ import { useInstQuery } from "@/lib/inst-client";
 import { HBars, Stat, Loading, ErrorNote } from "@/components/Charts";
 
 type S = {
-  institution: { name: string; batch: string | null; code: string; seats: number };
+  institution: { name: string; batch: string | null; contractEnd: string | null; seats: number };
   registered: number; seats: number; seatsLeft: number; activeCounseling: number; inactiveCounseling: number;
   avgEstimate: number | null; avgDelta: number | null; reachedPct: number | null; reached: number; withScore: number;
   distribution: { label: string; n: number }[]; commonWeaknesses: { title: string; n: number }[];
@@ -23,7 +23,7 @@ export default function InstHome() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><p className="text-xs font-semibold tracking-wider text-brand">{s.institution.batch ?? "PORTAL INSTITUSI"}</p><h1 className="page-title">{s.institution.name}</h1><p className="text-sm text-ink-soft">Ringkasan kelompok · diperbarui setiap hasil tes masuk</p></div>
-        <div className="flex flex-col gap-2 sm:flex-row"><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Unduh laporan (Excel)</a><Link className="btn-solid" href={withQ("/institusi/kode")}>Undang peserta</Link></div>
+        <div className="flex flex-col gap-2 sm:flex-row"><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Unduh laporan (Excel)</a><Link className="btn-solid" href={withQ("/institusi/peserta")}>Tambah peserta</Link></div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

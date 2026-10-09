@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 import { applyOfficialScore } from "@/lib/itp-score";
 import { ItpRegistration } from "@/models/Itp";
 

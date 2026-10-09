@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isValidObjectId, type Types } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { counselorAccess } from "@/lib/entitlements";
+import { counselorAccess } from "@/lib/counselor-access";
 import { CounselorThread } from "@/models/Counselor";
 import { Attempt } from "@/models/Test";
 
@@ -19,7 +19,7 @@ async function mine(id: string, userId: Types.ObjectId) {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await requireRole(["participant", "admin", "inst_admin"]);
+    const user = await requireRole(["participant", "admin"]);
     const t = await mine(params.id, user._id);
     const a = t.attemptId ? await Attempt.findById(t.attemptId).select("kind scoreEst sectionScores finishedAt").lean() : null;
     return NextResponse.json({
@@ -36,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await requireRole(["participant", "admin", "inst_admin"]);
+    const user = await requireRole(["participant", "admin"]);
     const t = await mine(params.id, user._id);
     const b = z.object({ helpful: z.boolean() }).parse(await req.json());
     t.helpful = b.helpful;

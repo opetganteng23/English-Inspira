@@ -6,11 +6,12 @@ const institutionSchema = new Schema(
     code: { type: String, required: true, unique: true, uppercase: true, trim: true },
     seats: { type: Number, default: 0 },
     seatsUsed: { type: Number, default: 0 },
+    contractStart: Date,
+    contractEnd: Date, // enrollment peserta berakhir di sini
     contactEmail: String,
-    batch: String, // mis. "Batch 2026"
-    productId: { type: Schema.Types.ObjectId, ref: "Product" }, // akses yang diberikan ke anggota
-    validUntil: Date,
-    active: { type: Boolean, default: true },
+    batch: String,
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
+    configOverrides: Schema.Types.Mixed, // disiapkan, TIDAK dipakai di v2 (MTS §5)
   },
   { timestamps: true }
 );

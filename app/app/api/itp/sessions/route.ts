@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
-import { accessSummary } from "@/lib/entitlements";
-import { getSetting } from "@/models/Commerce";
+import { getSetting } from "@/models/Settings";
 import { Attempt } from "@/models/Test";
 import { User } from "@/models/User";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
@@ -13,10 +12,9 @@ export async function GET() {
   try {
     const user = await requireRole(["participant", "admin", "inst_admin"]);
     await connectDB();
-    const [sessions, regs, access, last, u, cfg] = await Promise.all([
+    const [sessions, regs, last, u, cfg] = await Promise.all([
       ItpSession.find({ status: "open", date: { $gt: new Date() } }).sort({ date: 1 }).lean(),
       ItpRegistration.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
-      accessSummary(user._id),
       Attempt.findOne({ userId: user._id, status: "submitted" }).sort({ finishedAt: -1 }).select("scoreEst kind finishedAt").lean(),
       User.findById(user._id).select("targetScore name").lean(),
       getSetting("general", { itpOrganizer: "", rescheduleDays: 7, refundPolicy: "" }),
@@ -31,7 +29,9 @@ export async function GET() {
     }
     const regSessions = new Map((await ItpSession.find({ _id: { $in: regs.map((r) => r.sessionId) } }).lean()).map((s) => [String(s._id), s]));
     return NextResponse.json({
-      itpRemaining: access.itp, organizer: cfg.itpOrganizer, rescheduleDays: cfg.rescheduleDays, advice,
+      // Tes ITP resmi tidak berbayar di platform ini: peserta ber-enrollment boleh mendaftar, satu pendaftaran aktif sekaligus.
+      itpRemaining: regs.some((r) => ["submitted", "confirmed"].includes(r.status)) ? 0 : 1,
+      organizer: cfg.itpOrganizer, rescheduleDays: cfg.rescheduleDays, advice,
       sessions: sessions.map((s) => ({ id: String(s._id), title: s.title, date: s.date, place: s.place, organizer: s.organizer ?? cfg.itpOrganizer, quota: s.quota, left: Math.max(0, s.quota - s.registered), tooSoon: advice ? +s.date < +new Date(advice.minDate) : false })),
       registrations: regs.map((r) => {
         const s = regSessions.get(String(r.sessionId));

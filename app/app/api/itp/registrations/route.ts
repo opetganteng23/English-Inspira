@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { consumeGrant, refundGrant } from "@/lib/entitlements";
 import { encryptField } from "@/lib/crypto";
-import { sendMail, itpRegisteredEmail } from "@/lib/mailer";
-import { audit } from "@/lib/orders";
+import { enqueueMail } from "@/lib/mailq";
+import { audit } from "@/lib/audit";
 import { Asset } from "@/models/Asset";
 import { User } from "@/models/User";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
@@ -38,26 +37,24 @@ export async function POST(req: Request) {
     if (!session || session.status !== "open" || session.date <= new Date()) throw new HttpError(404, "Jadwal tidak tersedia");
     if (await ItpRegistration.exists({ userId: me._id, sessionId: session._id, status: { $ne: "cancelled" } })) throw new HttpError(409, "Kamu sudah terdaftar di jadwal ini");
 
-    const entId = await consumeGrant(me._id, "itp");
-    if (!entId) throw new HttpError(403, "Kamu belum punya jatah pendaftaran ITP. Beli paketnya dulu.");
+    if (await ItpRegistration.exists({ userId: me._id, status: { $in: ["submitted", "confirmed"] } })) throw new HttpError(409, "Kamu masih punya pendaftaran ITP aktif. Batalkan dulu untuk memilih jadwal lain.");
     const seat = await ItpSession.findOneAndUpdate({ _id: session._id, status: "open", $expr: { $lt: ["$registered", "$quota"] } }, { $inc: { registered: 1 } }, { new: true });
-    if (!seat) { await refundGrant(entId, "itp"); throw new HttpError(409, "Kuota jadwal ini sudah penuh. Pilih jadwal lain."); }
+    if (!seat) throw new HttpError(409, "Kuota jadwal ini sudah penuh. Pilih jadwal lain.");
 
     let reg;
     try {
       reg = await ItpRegistration.create({
-        userId: me._id, sessionId: session._id, entitlementId: entId, fullName: b.fullName, nikEnc: encryptField(b.nik), nikLast4: b.nik.slice(-4),
+        userId: me._id, sessionId: session._id, fullName: b.fullName, nikEnc: encryptField(b.nik), nikLast4: b.nik.slice(-4),
         birthDate: b.birthDate, gender: b.gender, idPhotoAssetId: b.idPhotoAssetId, facePhotoAssetId: b.facePhotoAssetId,
       });
     } catch (err) { // gagal menyimpan: kembalikan kursi dan jatah
       await ItpSession.updateOne({ _id: session._id }, { $inc: { registered: -1 } });
-      await refundGrant(entId, "itp");
       throw err;
     }
     // Nama sesuai identitas menjadi nama akun (terkunci setelah ini).
     await User.updateOne({ _id: me._id }, { name: b.fullName, birthDate: b.birthDate, gender: b.gender });
     await audit(me._id, "itp.register", String(reg._id), { sessionId: String(session._id) });
-    void sendMail(me.email, "Pendaftaran TOEFL ITP diterima", itpRegisteredEmail(b.fullName, session.title, session.date.toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" }), session.place)).catch(() => {});
+    await enqueueMail(me.email, "itp_registered", { name: b.fullName, title: session.title, date: session.date, place: session.place });
     return NextResponse.json({ id: String(reg._id) }, { status: 201 });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });

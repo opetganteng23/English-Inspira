@@ -4,7 +4,7 @@
 //
 // SATU instance (fork) disengaja: rate limit OTP/pesan dan penjadwal pengingat mingguan berjalan di dalam proses.
 // Menjadikannya cluster (instances > 1) akan menggandakan pengingat dan membuat batas rate tidak akurat.
-// Jika nanti perlu scale-out: set ENABLE_INPROCESS_CRON=false, jadwalkan /api/cron/reminders lewat cron sistem,
+// Jika nanti perlu scale-out: set ENABLE_INPROCESS_CRON=false, jadwalkan /api/cron/{mail,hourly,daily} lewat cron sistem,
 // dan pindahkan rate limiter ke penyimpanan bersama (lihat TODO C11).
 // Rahasia (JWT_SECRET, MONGODB_URI, dst.) dibaca Next dari .env.local / .env.production.local di folder ini.
 module.exports = {

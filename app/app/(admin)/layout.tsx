@@ -3,16 +3,11 @@ import { AppShell, type NavGroup } from "@/components/AppShell";
 const nav: NavGroup[] = [
   { items: [
     { href: "/admin", label: "Ringkasan" },
-    { href: "/admin/peserta", label: "Peserta" },
     { href: "/admin/institusi", label: "Institusi" },
-    { href: "/admin/leads", label: "Lead Free Trial" },
+    { href: "/admin/peserta", label: "Peserta" },
+    { href: "/admin/pengguna", label: "Coach & Admin" },
   ] },
-  { label: "Penjualan", items: [
-    { href: "/admin/transaksi", label: "Transaksi" },
-    { href: "/admin/paket", label: "Paket & Harga" },
-    { href: "/admin/voucher", label: "Voucher" },
-  ] },
-  { label: "Tes & AI", items: [
+  { label: "Tes & Materi", items: [
     { href: "/admin/bank-soal", label: "Bank Soal" },
     { href: "/admin/tes", label: "Tes" },
     { href: "/admin/materi", label: "Materi" },
@@ -21,7 +16,7 @@ const nav: NavGroup[] = [
   ] },
   { label: "Operasional", items: [
     { href: "/admin/jadwal-itp", label: "Jadwal ITP & Skor" },
-    { href: "/admin/pengguna", label: "Pengguna & Hak Akses" },
+    { href: "/admin/parameter", label: "Parameter Sistem" },
     { href: "/admin/pengaturan", label: "Pengaturan" },
   ] },
 ];

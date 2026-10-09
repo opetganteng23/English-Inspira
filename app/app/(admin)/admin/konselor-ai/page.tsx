@@ -7,7 +7,7 @@ import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote, Stat } from "@/components/Charts";
 
 type T = { id: string; user: string; title: string; flagged: boolean; reviewed: boolean; helpful: boolean | null; messages: number; updatedAt: string; last: string };
-type R = { stats: { conversations30d: number; helpfulPct: number | null; plans30d: number; needReview: number }; settings: { freeMessages: number }; ai: { enabled: boolean; model: string | null }; threads: T[] };
+type R = { stats: { conversations30d: number; helpfulPct: number | null; plans30d: number; needReview: number }; settings: { monthlyQuota: number }; ai: { enabled: boolean; model: string | null }; threads: T[] };
 type D = { id: string; user: { name?: string; email?: string; targetScore?: number }; title: string; flagged: boolean; reviewed: boolean; reviewNote: string; helpful: boolean | null; messages: { role: string; content: string; at: string; mock?: boolean }[]; actionPlan: { text: string; done: boolean }[] };
 
 export default function KonselorAdmin() {
@@ -19,7 +19,7 @@ export default function KonselorAdmin() {
 
   async function saveQuota() {
     setMsg("");
-    try { await api("/api/admin/settings/counselor", { method: "PUT", json: { freeMessages: Number(free) } }); setMsg("Kuota gratis disimpan."); reload(); }
+    try { await api("/api/admin/params", { method: "PUT", json: { key: "counselor_quota", value: Number(free) } }); setMsg("Kuota bulanan disimpan."); reload(); }
     catch (e) { setMsg((e as Error).message); }
   }
   return (
@@ -55,9 +55,9 @@ export default function KonselorAdmin() {
               <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Pengaturan konselor</h2>
                 <p className="mt-2 text-sm text-ink-soft">Sumber data yang dibaca AI: skor per section, jawaban per soal, waktu pengerjaan, riwayat tes, target skor.</p>
                 <p className="mt-2 text-sm text-ink-soft">Batasan: tidak menjanjikan skor atau kelulusan, tidak menuliskan esai, tanda stres berat menampilkan info bantuan profesional dan menandai percakapan.</p>
-                <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy">Pertanyaan gratis (free trial)<input className="field font-normal" type="number" min={0} max={50} value={free === "" ? data.settings.freeMessages : free} onChange={(e) => setFree(e.target.value)} /></label>
+                <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy">Pesan per peserta per bulan<input className="field font-normal" type="number" min={0} max={1000} value={free === "" ? data.settings.monthlyQuota : free} onChange={(e) => setFree(e.target.value)} /></label>
                 <button className="btn-outline mt-3" onClick={saveQuota}>Simpan kuota</button>{msg && <p role="status" className="mt-2 text-sm text-ink-soft">{msg}</p>}
-                <p className="mt-3 text-xs text-ink-soft">Kuota paket (pesan/hari, masa berlaku) diatur di menu Paket & Harga.</p></section>
+                <p className="mt-3 text-xs text-ink-soft">Kuota ini juga ada di Parameter Sistem (counselor_quota).</p></section>
             </aside>
           </div>
         </>

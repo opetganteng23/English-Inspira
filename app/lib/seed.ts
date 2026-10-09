@@ -65,14 +65,18 @@ async function insert(section: Section, items: Item[], groupId?: unknown) {
   return Question.insertMany(
     items.map((it) => ({
       section, type: it.type, stem: it.stem, options: it.options, answerKey: it.key,
-      explanation: it.why, tags: [it.type], groupId, status: "published",
+      explanation: it.why, tags: [{ skill: section === "structure" ? "grammar" : section, topic: it.type }], groupId, status: "published",
     }))
   );
 }
 
-export async function seedTrial() {
+/**
+ * Tes contoh untuk pengembangan: placement (42 soal, 15/12/15), simulasi, dan latihan Structure.
+ * SOAL CONTOH, bukan soal resmi; ganti lewat Bank Soal. Idempoten.
+ */
+export async function seedTests() {
   await connectDB();
-  if (await Test.exists({ kind: "trial" })) return { skipped: true };
+  if (await Test.exists({ kind: "placement" })) return { skipped: true };
 
   const listeningQs = await insert("listening", listening);
   const structureQs = await insert("structure", structure.slice(0, 12));
@@ -81,14 +85,13 @@ export async function seedTrial() {
     const g = await QuestionGroup.create({ section: "reading", passageTitle: p.title, passageHtml: p.html, instruction: "Read the passage and answer the questions." });
     readingIds.push(...(await insert("reading", p.items, g._id)).map((q) => q._id));
   }
-  const test = await Test.create({
-    name: "Free Trial — Mini TOEFL ITP",
-    kind: "trial",
-    sections: [
-      { name: "listening", durationSec: 12 * 60, questionIds: listeningQs.map((q) => q._id) },
-      { name: "structure", durationSec: 8 * 60, questionIds: structureQs.map((q) => q._id) },
-      { name: "reading", durationSec: 17 * 60, questionIds: readingIds },
-    ],
-  });
-  return { testId: String(test._id), questions: listeningQs.length + structureQs.length + readingIds.length };
+  const full = [
+    { name: "listening", durationSec: 12 * 60, questionIds: listeningQs.map((q) => q._id) },
+    { name: "structure", durationSec: 8 * 60, questionIds: structureQs.map((q) => q._id) },
+    { name: "reading", durationSec: 17 * 60, questionIds: readingIds },
+  ];
+  const placement = await Test.create({ name: "Placement Test (contoh)", kind: "placement", sections: full });
+  await Test.create({ name: "Simulasi ITP (contoh)", kind: "sim", sections: full });
+  await Test.create({ name: "Latihan Structure (contoh)", kind: "practice", sections: [{ name: "structure", durationSec: 8 * 60, questionIds: structureQs.map((q) => q._id) }] });
+  return { placementId: String(placement._id), questions: listeningQs.length + structureQs.length + readingIds.length };
 }

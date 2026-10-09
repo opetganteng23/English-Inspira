@@ -1,5 +1,5 @@
 import { connectDB } from "./db";
-import { getSetting } from "@/models/Commerce";
+import { getSetting } from "@/models/Settings";
 
 export const GENERAL_DEFAULTS = { siteName: "Edulyfe EPTA", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 };
 

@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { audit } from "@/lib/orders";
-import { Setting, getSetting } from "@/models/Commerce";
-import { COUNSELOR_DEFAULTS } from "@/lib/entitlements";
+import { audit } from "@/lib/audit";
+import { Setting, getSetting } from "@/models/Settings";
 
 export const dynamic = "force-dynamic";
 
-// Daftar pengaturan yang boleh diubah admin, beserta skema dan nilai awalnya.
+// Pengaturan umum (kontak, mitra ITP, retensi). Angka sistem ada di Parameter Sistem (/api/admin/params).
 const SETTINGS = {
-  counselor: { schema: z.object({ freeMessages: z.number().int().min(0).max(50) }), defaults: COUNSELOR_DEFAULTS },
   general: {
     schema: z.object({ siteName: z.string().min(1).max(60), supportEmail: z.email().or(z.literal("")), supportWhatsapp: z.string().max(20), itpOrganizer: z.string().max(120), refundPolicy: z.string().max(2000), rescheduleDays: z.number().int().min(0).max(60), idRetentionDays: z.number().int().min(1).max(3650) }),
     defaults: { siteName: "Edulyfe EPTA", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 },

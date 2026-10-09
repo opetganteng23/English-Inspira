@@ -7,7 +7,7 @@ import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 
-type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; remaining: number | null; inProgressAttemptId: string | null };
+type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null };
 
 export default function Persiapan({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -40,7 +40,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
 
   if (loading) return <Loading />;
   if (!t) return <ErrorNote text={error || "Tes tidak ditemukan"} />;
-  if (!t.unlocked) return <div className="card"><p>Tes ini belum terbuka di akunmu.</p><Link href="/paket" className="btn-solid mt-3">Lihat paket</Link></div>;
+  if (!t.unlocked) return <div className="card"><p>{t.reason ?? "Tes ini belum terbuka di akunmu."}</p><Link href="/tes" className="btn-solid mt-3">Kembali ke daftar tes</Link></div>;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 import { Material, MaterialVersion } from "@/models/Material";
 
 const snap = (m: InstanceType<typeof Material>) => ({ title: m.title, summary: m.summary, kind: m.kind, contentJson: m.contentJson, contentHtml: m.contentHtml, htmlDoc: m.htmlDoc, tags: m.tags, access: m.access });

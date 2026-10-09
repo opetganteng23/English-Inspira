@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { handleError } from "@/lib/rbac";
 import { instContext, memberResults } from "@/lib/inst";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";

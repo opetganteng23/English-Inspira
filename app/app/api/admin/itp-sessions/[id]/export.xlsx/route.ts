@@ -3,7 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { decryptField } from "@/lib/crypto";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
 import { User } from "@/models/User";
 

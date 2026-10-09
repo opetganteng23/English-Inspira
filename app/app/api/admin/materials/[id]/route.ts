@@ -5,7 +5,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { uniqueSlug } from "@/lib/materials";
 import { materialInput, normalizeMaterial } from "@/lib/material-schemas";
-import { audit } from "@/lib/orders";
+import { audit } from "@/lib/audit";
 import { Material, MaterialVersion } from "@/models/Material";
 
 async function find(id: string) {

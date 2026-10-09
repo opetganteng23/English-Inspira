@@ -12,7 +12,8 @@ const questionSchema = new Schema(
     options: { type: [String], validate: (v: string[]) => v.length >= 2 && v.length <= 6 },
     answerKey: { type: Number, required: true }, // indeks pada options
     explanation: String,
-    tags: { type: [String], index: true },
+    // Tag DUA TINGKAT wajib (MTS §6): skill (mis. grammar) + topic (mis. subject-verb). Dasar topic_stats & remedial_map.
+    tags: [{ _id: false, skill: { type: String, required: true, trim: true }, topic: { type: String, required: true, trim: true } }],
     assetIds: [{ type: Schema.Types.ObjectId, ref: "Asset" }],
     difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "medium" },
     status: { type: String, enum: ["draft", "review", "published"], default: "draft", index: true },

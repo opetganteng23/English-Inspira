@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
 
 export type NavGroup = { label?: string; items: { href: string; label: string }[] };
-const ROLE: Record<string, string> = { participant: "Peserta", admin: "Admin", inst_admin: "Admin institusi" };
+const ROLE: Record<string, string> = { participant: "Peserta", admin: "Admin", inst_admin: "Admin institusi", coach: "Coach" };
 
 export function ShellNav({
   nav, title, user, children,

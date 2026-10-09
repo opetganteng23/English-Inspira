@@ -2,7 +2,6 @@ import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
 
 const NAVY = "#0F2F5E", BLUE = "#1B5FB8", GRAY = "#4B5A70", LINE = "#DCE3ED";
-const rp = (n: number) => "Rp" + Math.round(n).toLocaleString("id-ID");
 const fmt = (d: Date | string) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
 function render(build: (doc: PDFKit.PDFDocument) => void | Promise<void>, opts: PDFKit.PDFDocumentOptions = {}) {
@@ -21,35 +20,6 @@ function brand(doc: PDFKit.PDFDocument) {
   doc.fillColor("#fff").font("Helvetica-Bold").fontSize(13).text("EP", 48, 55, { width: 34, align: "center" });
   doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(15).text("EDULYFE EPTA", 92, 53);
   doc.fillColor(GRAY).font("Helvetica").fontSize(8).text("English Proficiency Test & Analytics", 92, 71);
-}
-
-export function invoicePdf(o: {
-  invoiceNo: string; status: string; paidAt?: Date | null; createdAt: Date; buyer: { name?: string | null; email?: string | null };
-  items: { name: string; price: number }[]; subtotal: number; upgradeCredit: number; discount: number; voucherCode?: string | null; total: number; paymentType?: string | null;
-}) {
-  return render((doc) => {
-    brand(doc);
-    doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(22).text("INVOICE", 48, 110);
-    doc.fillColor(GRAY).font("Helvetica").fontSize(10)
-      .text(`No. ${o.invoiceNo}`, 48, 140).text(`Tanggal ${fmt(o.paidAt ?? o.createdAt)}`, 48, 154)
-      .text(`Status: ${o.status === "paid" ? "LUNAS" : o.status.toUpperCase()}${o.paymentType ? ` (${o.paymentType})` : ""}`, 48, 168);
-    doc.fillColor(NAVY).font("Helvetica-Bold").text("Ditagihkan kepada", 340, 140).font("Helvetica").fillColor(GRAY)
-      .text(o.buyer.name ?? "-", 340, 154).text(o.buyer.email ?? "-", 340, 168);
-
-    let y = 215;
-    doc.moveTo(48, y).lineTo(547, y).strokeColor(LINE).stroke();
-    doc.fillColor(GRAY).font("Helvetica-Bold").fontSize(9).text("PRODUK", 48, y + 8).text("HARGA", 440, y + 8, { width: 107, align: "right" });
-    y += 28;
-    doc.font("Helvetica").fontSize(11).fillColor(NAVY);
-    for (const i of o.items) { doc.text(i.name, 48, y, { width: 380 }).text(rp(i.price), 440, y, { width: 107, align: "right" }); y += 22; }
-    doc.moveTo(48, y).lineTo(547, y).strokeColor(LINE).stroke(); y += 12;
-    const row = (k: string, v: string, bold = false) => { doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(bold ? 13 : 10.5).fillColor(bold ? NAVY : GRAY).text(k, 300, y, { width: 140 }).text(v, 440, y, { width: 107, align: "right" }); y += bold ? 24 : 18; };
-    row("Subtotal", rp(o.subtotal));
-    if (o.upgradeCredit) row("Potongan upgrade", "-" + rp(o.upgradeCredit));
-    if (o.discount) row(`Voucher ${o.voucherCode ?? ""}`, "-" + rp(o.discount));
-    row("Total", rp(o.total), true);
-    doc.font("Helvetica").fontSize(8.5).fillColor(GRAY).text("Harga sudah termasuk pajak. Produk digital, akses terbuka otomatis setelah pembayaran dikonfirmasi.", 48, 740, { width: 499 });
-  });
 }
 
 export async function certificatePdf(c: {

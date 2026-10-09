@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, tgl } from "@/lib/client";
 
-type Access = { allowed: boolean; mode: "paid" | "free" | "none"; remaining: number | null; dailyCap: number | null; expiresAt: string | null; reason: string | null };
+type Access = { allowed: boolean; used: number; quota: number; remaining: number; resetsAt: string; reason: string | null };
 type Msg = { role: "user" | "assistant"; content: string; at?: string };
 type Plan = { id: string; text: string; done: boolean; dueAt: string | null };
 type Thread = { id: string; title: string; messages: Msg[]; actionPlan: Plan[]; helpful: boolean | null; basis: { kind: string; scoreEst: number; sections: { section: string; scaled: number }[]; finishedAt: string; attemptId: string } | null; access: Access };
@@ -81,7 +81,7 @@ function Chat() {
         <section className="card !p-4">
           <h2 className="text-xs font-semibold tracking-wider text-ink-soft">DASAR PERCAKAPAN</h2>
           <p className="mt-1 font-display text-3xl font-extrabold text-navy">{t.basis.scoreEst}</p>
-          <p className="text-xs text-ink-soft">{t.basis.kind === "trial" ? "Free trial" : "Tes"} · {tgl(t.basis.finishedAt)}</p>
+          <p className="text-xs text-ink-soft">{t.basis.kind === "placement" ? "Placement" : t.basis.kind === "sim" ? "Simulasi" : "Tes"} · {tgl(t.basis.finishedAt)}</p>
           <ul className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">{t.basis.sections.map((s) => <li key={s.section} className="rounded-lg bg-canvas p-2"><span className="text-ink-soft">{SEC[s.section]}</span><br /><b className="text-navy">{s.scaled}</b></li>)}</ul>
           <Link href={`/hasil/${t.basis.attemptId}`} className="mt-3 inline-block text-sm font-semibold text-brand">Lihat laporan lengkap →</Link>
         </section>
@@ -95,10 +95,7 @@ function Chat() {
       </section>
       <section className="card !p-4 text-sm">
         <h2 className="text-xs font-semibold tracking-wider text-ink-soft">AKSES KONSELOR AI</h2>
-        {access?.mode === "paid" && <p className="mt-1">{access.expiresAt ? `Aktif sampai ${tgl(access.expiresAt)}.` : "Aktif tanpa batas waktu."} {access.dailyCap ? `${access.remaining} dari ${access.dailyCap} pesan tersisa hari ini.` : "Pesan tanpa batas."}</p>}
-        {access?.mode === "free" && <p className="mt-1">Jatah gratis: <b>{access.remaining}</b> pertanyaan tersisa.</p>}
-        {access?.mode === "none" && <p className="mt-1 text-ink-soft">{access.reason}</p>}
-        <Link href="/paket" className="mt-2 inline-block font-semibold text-brand">{access?.mode === "paid" ? "Perpanjang akses" : "Lihat paket"} →</Link>
+        {access && <p className="mt-1">Pesan bulan ini: <b>{access.used}</b> dari {access.quota} terpakai. {access.allowed ? `Sisa ${access.remaining}, direset ${tgl(access.resetsAt)}.` : access.reason}</p>}
       </section>
     </div>
   );
@@ -106,7 +103,7 @@ function Chat() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div><h1 className="page-title">Konselor AI</h1><p className="text-sm text-ink-soft">Membaca semua hasil tesmu{t?.basis ? ` · terakhir ${t.basis.kind === "trial" ? "Free Trial" : "tes"}` : ""}</p></div>
+        <div><h1 className="page-title">Konselor AI</h1><p className="text-sm text-ink-soft">Membaca semua hasil tesmu{t?.basis ? ` · terakhir ${t.basis.kind === "placement" ? "placement" : "tes"}` : ""}</p></div>
         <button className="btn-outline" onClick={newThread}>+ Percakapan baru</button>
       </div>
 
@@ -140,7 +137,7 @@ function Chat() {
           {t && t.messages.length > 1 && t.helpful == null && <div className="flex items-center gap-2 border-t border-line px-4 py-2 text-xs text-ink-soft">Jawaban membantu? <button className="rounded-md border border-line px-2 py-1" onClick={() => rate(true)}>👍 Ya</button><button className="rounded-md border border-line px-2 py-1" onClick={() => rate(false)}>👎 Belum</button></div>}
           {err && <p role="alert" className="mx-4 mb-2 rounded-lg bg-red-50 p-2 text-sm text-red-700">{err}</p>}
           {blocked ? (
-            <div className="border-t border-line p-4 text-sm"><p className="text-ink-soft">{access?.reason}</p><Link href="/paket" className="btn-solid mt-2">Lihat paket</Link></div>
+            <div className="border-t border-line p-4 text-sm"><p className="text-ink-soft">{access?.reason}</p></div>
           ) : (
             <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex items-end gap-2 border-t border-line p-3">
               <label className="sr-only" htmlFor="msg">Tulis pertanyaan</label>

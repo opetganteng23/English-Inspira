@@ -25,7 +25,7 @@ export default function Pengaturan() {
   const set = <K extends keyof G>(k: K, val: G[K]) => setV({ ...v, [k]: val });
   return (
     <div className="flex max-w-3xl flex-col gap-5">
-      <div><h1 className="page-title">Pengaturan</h1><p className="text-sm text-ink-soft">Nilai ini menggantikan placeholder di landing page, FAQ, dan halaman kebijakan.</p></div>
+      <div><h1 className="page-title">Pengaturan</h1><p className="text-sm text-ink-soft">Kontak bantuan dan informasi tes resmi. Angka level dan kuota ada di Parameter Sistem.</p></div>
       {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? "bg-success-tint text-success" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
       <form onSubmit={save} className="card flex flex-col gap-4">
         <label className={label}>Nama produk<input className="field font-normal" value={v.siteName} onChange={(e) => set("siteName", e.target.value)} /></label>
@@ -38,7 +38,7 @@ export default function Pengaturan() {
           <label className={label}>Batas ubah jadwal ITP (hari sebelum tes)<input className="field font-normal" type="number" min={0} max={60} value={v.rescheduleDays} onChange={(e) => set("rescheduleDays", Number(e.target.value))} /></label>
           <label className={label}>Retensi dokumen identitas (hari)<input className="field font-normal" type="number" min={1} value={v.idRetentionDays} onChange={(e) => set("idRetentionDays", Number(e.target.value))} /></label>
         </div>
-        <label className={label}>Teks kebijakan refund / reschedule (opsional)<textarea className="field font-normal" rows={4} value={v.refundPolicy} onChange={(e) => set("refundPolicy", e.target.value)} placeholder="Kosongkan untuk memakai teks bawaan." /></label>
+        <label className={label}>Teks kebijakan perubahan jadwal ITP (opsional)<textarea className="field font-normal" rows={4} value={v.refundPolicy} onChange={(e) => set("refundPolicy", e.target.value)} placeholder="Kosongkan untuk memakai teks bawaan." /></label>
         <button className="btn-solid self-start" disabled={busy}>{busy ? "Menyimpan…" : "Simpan pengaturan"}</button>
       </form>
     </div>

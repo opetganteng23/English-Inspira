@@ -1,7 +1,7 @@
 import { connectDB } from "./db";
 import { Certificate } from "@/models/Itp";
 import { Attempt, Test } from "@/models/Test";
-import { nextSeq } from "@/models/Commerce";
+import { nextSeq } from "@/models/Settings";
 import type { Types } from "mongoose";
 
 /** Skor total ITP dari 3 skor section (skala 31-68): rata-rata x 10, dibatasi 310-677. */
