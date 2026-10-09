@@ -18,8 +18,9 @@ let maint = { at: 0, on: false };
 async function maintenanceOn(req: NextRequest) {
   if (TTL && Date.now() - maint.at < TTL) return maint.on;
   try {
+    // Wajib di server: INTERNAL_URL=http://127.0.0.1:<port>. Lewat domain publik dari server sendiri bisa lambat/gagal.
     const base = process.env.INTERNAL_URL || req.nextUrl.origin;
-    const r = await fetch(`${base}/api/maintenance`, { cache: "no-store", headers: { "x-maint-check": "1" } });
+    const r = await fetch(`${base}/api/maintenance`, { cache: "no-store", headers: { "x-maint-check": "1" }, signal: AbortSignal.timeout(2000) });
     maint = { at: Date.now(), on: !!(await r.json()).on };
   } catch {
     maint = { at: Date.now(), on: maint.on }; // gagal cek: pakai status terakhir
