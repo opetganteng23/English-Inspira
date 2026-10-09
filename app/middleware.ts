@@ -47,6 +47,8 @@ export async function middleware(req: NextRequest) {
   const open = MAINT_STATIC.test(pathname) || (isApi ? MAINT_OPEN_API.some((p) => pathname === p || pathname.startsWith(p)) : MAINT_OPEN_PAGES.includes(pathname));
   if (role !== "admin" && !open && (await maintenanceOn(req))) {
     if (isApi) return NextResponse.json({ error: "The site is under maintenance. Please try again later.", maintenance: true }, { status: 503 });
+    // Halaman admin tanpa sesi admin: arahkan ke login admin, bukan halaman pemeliharaan.
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) return NextResponse.redirect(new URL("/admin/login", req.url));
     return NextResponse.rewrite(new URL("/maintenance", req.url));
   }
 
