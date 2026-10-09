@@ -171,6 +171,23 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(admin, "/api/admin/questions", { method: "POST", json: { ...q0, status: "draft" } }); ok(r.status === 201, "draft tanpa tag boleh");
   r = await req(admin, "/api/admin/groups", { method: "POST", json: { section: "listening", audioId: "a".repeat(24) } }); ok(r.status === 400, "grup dengan audio tak ada ditolak");
 
+  console.log("\n== Materi: alur review & progres ==");
+  r = await req(admin, "/api/admin/materials", { method: "POST", json: { title: "Latihan HTML Uji", kind: "html", htmlDoc: { html: "<button id=b>ok</button>", js: "EI.complete(80,[1])" } } });
+  ok(r.status === 201, "materi HTML dibuat"); const mh = r.data.id, mhSlug = r.data.slug;
+  r = await req(admin, `/api/admin/materials/${mh}/publish`, { method: "POST", json: { action: "publish" } }); ok(r.status === 409, "HTML tidak bisa terbit tanpa review");
+  r = await req(p1, `/api/materials/${mhSlug}`); ok(r.status === 404, "peserta tidak melihat materi yang belum terbit");
+  r = await req(admin, `/api/admin/materials/${mh}/publish`, { method: "POST", json: { action: "submit_review" } }); ok(r.status === 200, "ajukan review");
+  r = await req(admin, `/api/admin/materials/${mh}/publish`, { method: "POST", json: { action: "reject" } }); ok(r.status === 400, "tolak tanpa alasan ditolak");
+  r = await req(admin, `/api/admin/materials/${mh}/publish`, { method: "POST", json: { action: "publish" } }); ok(r.status === 200, "admin tunggal boleh menyetujui (tidak ada penyunting lain)", J(r.data));
+  r = await req(p1, `/api/materials/${mhSlug}`); ok(r.status === 200 && r.data.htmlDoc.html.includes("button"), "materi HTML terbit terbaca peserta");
+  r = await req(p1, `/api/materials/${mhSlug}/progress`, { method: "POST", json: { score: 50, answers: [1], final: false } }); ok(r.status === 200 && r.data.attempts === 0, "laporan sementara tidak menghitung percobaan", J(r.data));
+  r = await req(p1, `/api/materials/${mhSlug}/progress`, { method: "POST", json: { score: 80, answers: [1], final: true } }); ok(r.status === 200 && r.data.attempts === 1, "penyelesaian tercatat");
+  r = await req(p1, `/api/materials/${mhSlug}/progress`, { method: "POST", json: { score: 180 } }); ok(r.status === 400, "skor di luar 0–100 ditolak");
+  r = await req(admin, `/api/admin/materials/${mh}`, { method: "PATCH", json: { title: "Latihan HTML Uji", kind: "html", htmlDoc: { html: "<b>baru</b>", js: "" } } }); ok(r.status === 200 && r.data.resetToDraft === true, "mengubah isi HTML terbit mengembalikannya ke draf");
+  r = await req(p1, `/api/materials/${mhSlug}`); ok(r.status === 404, "materi yang diubah tidak tampil sebelum ditinjau ulang");
+  r = await req(admin, "/api/admin/materials", { method: "POST", json: { title: "Bacaan Uji", kind: "rich", contentHtml: "<p>Halo</p>" } }); const mr = r.data.id;
+  r = await req(admin, `/api/admin/materials/${mr}/publish`, { method: "POST", json: { action: "publish" } }); ok(r.status === 200, "rich text boleh langsung terbit");
+
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });
   ok(r.status === 200, "kontrak diubah ke masa lalu");

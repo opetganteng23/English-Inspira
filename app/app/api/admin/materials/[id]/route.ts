@@ -31,10 +31,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const m = await find(params.id);
     const b = normalizeMaterial(materialInput.parse(await req.json()));
     if (b.title !== m.title) m.slug = await uniqueSlug(b.title, m._id);
+    const htmlBefore = JSON.stringify(m.htmlDoc ?? null);
     m.set(b);
+    m.editorId = admin._id;
+    // Isi HTML yang berubah wajib ditinjau ulang sebelum tampil ke peserta (MTS §10.3).
+    const needsReview = m.kind === "html" && m.status !== "draft" && JSON.stringify(m.htmlDoc ?? null) !== htmlBefore;
+    if (needsReview) { m.status = "draft"; m.reviewerId = undefined; m.reviewedAt = undefined; }
     await m.save();
-    await audit(admin._id, "material.update", params.id);
-    return NextResponse.json({ ok: true, slug: m.slug });
+    await audit(admin._id, "material.update", params.id, needsReview ? { resetToDraft: true } : undefined);
+    return NextResponse.json({ ok: true, slug: m.slug, resetToDraft: needsReview });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Input tidak valid" }, { status: 400 });
     return handleError(e);

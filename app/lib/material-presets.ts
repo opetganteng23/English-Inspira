@@ -1,5 +1,5 @@
 // Template materi HTML interaktif. Admin non-teknis cukup mengubah data di bagian atas skrip.
-// Semua memakai window.EI.progress(skor0sampai100, jawaban) untuk melaporkan hasil ke induk.
+// Semua memakai window.EI.complete(skor0sampai100, jawaban) untuk melaporkan hasil ke induk.
 import type { HtmlDoc } from "./material-doc";
 
 const BASE_CSS = `body{max-width:720px;margin:0 auto}h2{margin:0 0 12px;color:#0F2F5E}button{font:inherit;cursor:pointer}
@@ -21,7 +21,7 @@ var DATA=[
 ];
 var i=0,score=0,picked=null,answers=[],app=document.getElementById('app');
 function show(){
- if(i>=DATA.length){var pct=Math.round(score/DATA.length*100);app.innerHTML='<div class="card"><h2>Selesai</h2><p>Skor kamu <b>'+score+' dari '+DATA.length+'</b> ('+pct+'%).</p><button class="btn" onclick="restart()">Ulangi</button></div>';EI.progress(pct,answers);return;}
+ if(i>=DATA.length){var pct=Math.round(score/DATA.length*100);app.innerHTML='<div class="card"><h2>Selesai</h2><p>Skor kamu <b>'+score+' dari '+DATA.length+'</b> ('+pct+'%).</p><button class="btn" onclick="restart()">Ulangi</button></div>';EI.complete(pct,answers);return;}
  var d=DATA[i];app.innerHTML='<div class="card"><p class="muted">Soal '+(i+1)+' dari '+DATA.length+'</p><p><b>'+d.q+'</b></p>'+d.o.map(function(t,k){return '<button class="opt" data-k="'+k+'">'+"ABCD"[k]+'. '+t+'</button>'}).join('')+'<p id="fb"></p><button class="btn" id="next" style="display:none">'+(i+1<DATA.length?'Berikutnya':'Lihat skor')+'</button></div>';
  var opts=app.querySelectorAll('.opt');opts.forEach(function(b){b.onclick=function(){if(picked!==null)return;picked=+b.dataset.k;answers.push(picked);var ok=picked===d.a;if(ok)score++;opts.forEach(function(x,k){if(k===d.a)x.classList.add('right');else if(k===picked)x.classList.add('wrong')});document.getElementById('fb').innerHTML=ok?'<span class="ok">Benar!</span>':'<span class="bad">Kurang tepat.</span> Jawaban: '+"ABCD"[d.a];var n=document.getElementById('next');n.style.display='inline-block';n.onclick=function(){i++;picked=null;show()}}})}
 function restart(){i=0;score=0;picked=null;answers=[];show()}
@@ -39,7 +39,7 @@ var i=0,flip=false,known={},app=document.getElementById('app');
 function show(){var n=Object.keys(known).length;var d=DATA[i];app.innerHTML='<p class="muted">Kartu '+(i+1)+' dari '+DATA.length+' · hafal: '+n+'</p><div class="card fc" id="c" tabindex="0" role="button" aria-label="Balik kartu">'+(flip?d.b:d.f)+'</div><p class="muted" style="text-align:center">Klik kartu untuk membalik</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn alt" id="p">←</button><button class="btn" id="k">Sudah hafal</button><button class="btn alt" id="n">→</button></div>';
  var c=document.getElementById('c');c.onclick=function(){flip=!flip;show()};c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();flip=!flip;show()}};
  document.getElementById('p').onclick=function(){i=(i-1+DATA.length)%DATA.length;flip=false;show()};document.getElementById('n').onclick=function(){i=(i+1)%DATA.length;flip=false;show()};
- document.getElementById('k').onclick=function(){known[i]=1;EI.progress(Math.round(Object.keys(known).length/DATA.length*100),Object.keys(known));i=(i+1)%DATA.length;flip=false;show()}}
+ document.getElementById('k').onclick=function(){known[i]=1;EI.report(Math.round(Object.keys(known).length/DATA.length*100),Object.keys(known));i=(i+1)%DATA.length;flip=false;show()}}
 show();`,
     },
   },
@@ -52,7 +52,7 @@ show();`,
 var DATA=[{t:"The scientists ___ the results yesterday.",ans:"published"},{t:"She is interested ___ marine biology.",ans:"in"},{t:"If it ___ tomorrow, we will stay home.",ans:"rains"}];
 var app=document.getElementById('app');
 app.innerHTML=DATA.map(function(d,i){return '<div class="card">'+(i+1)+'. '+d.t.replace('___','<input type="text" data-i="'+i+'" aria-label="Jawaban '+(i+1)+'" autocomplete="off">')+'<span id="m'+i+'"></span></div>'}).join('');
-document.getElementById('chk').onclick=function(){var ok=0,ans=[];DATA.forEach(function(d,i){var v=app.querySelector('[data-i="'+i+'"]').value.trim();ans.push(v);var good=v.toLowerCase()===d.ans.toLowerCase();if(good)ok++;document.getElementById('m'+i).innerHTML=good?' <span class="ok">✓</span>':' <span class="bad">✗ ('+d.ans+')</span>'});var pct=Math.round(ok/DATA.length*100);document.getElementById('res').innerHTML='<b>Skor: '+ok+' dari '+DATA.length+' ('+pct+'%)</b>';EI.progress(pct,ans)};`,
+document.getElementById('chk').onclick=function(){var ok=0,ans=[];DATA.forEach(function(d,i){var v=app.querySelector('[data-i="'+i+'"]').value.trim();ans.push(v);var good=v.toLowerCase()===d.ans.toLowerCase();if(good)ok++;document.getElementById('m'+i).innerHTML=good?' <span class="ok">✓</span>':' <span class="bad">✗ ('+d.ans+')</span>'});var pct=Math.round(ok/DATA.length*100);document.getElementById('res').innerHTML='<b>Skor: '+ok+' dari '+DATA.length+' ('+pct+'%)</b>';EI.complete(pct,ans)};`,
     },
   },
   {
@@ -65,7 +65,7 @@ var DATA=[{w:"reluctant",m:"enggan"},{w:"adequate",m:"memadai"},{w:"hinder",m:"m
 var L=document.getElementById('L'),R=document.getElementById('R'),sel=null,got=0,tries=0;
 function shuffle(a){return a.map(function(x){return [Math.random(),x]}).sort(function(p,q){return p[0]-q[0]}).map(function(p){return p[1]})}
 shuffle(DATA).forEach(function(d){var e=document.createElement('div');e.className='it';e.textContent=d.w;e.draggable=true;e.dataset.w=d.w;e.onclick=function(){if(e.classList.contains('done'))return;document.querySelectorAll('.it.sel').forEach(function(x){x.classList.remove('sel')});sel=e;e.classList.add('sel')};e.ondragstart=function(ev){ev.dataTransfer.setData('text/plain',d.w);sel=e};L.appendChild(e)});
-shuffle(DATA).forEach(function(d){var t=document.createElement('div');t.className='drop';t.textContent=d.m;t.dataset.w=d.w;function tryDrop(w){tries++;if(w===d.w&&!t.classList.contains('good')){t.classList.add('good');t.textContent=d.m+' ← '+w;got++;var el=L.querySelector('[data-w="'+w+'"]');if(el){el.classList.add('done');el.classList.remove('sel')}sel=null;if(got===DATA.length){var pct=Math.max(0,Math.round(DATA.length/tries*100));document.getElementById('res').innerHTML='<b class="ok">Semua cocok! Percobaan: '+tries+'</b>';EI.progress(pct,{tries:tries})}}else if(w!==d.w){document.getElementById('res').innerHTML='<span class="bad">Belum cocok, coba lagi.</span>'}}
+shuffle(DATA).forEach(function(d){var t=document.createElement('div');t.className='drop';t.textContent=d.m;t.dataset.w=d.w;function tryDrop(w){tries++;if(w===d.w&&!t.classList.contains('good')){t.classList.add('good');t.textContent=d.m+' ← '+w;got++;var el=L.querySelector('[data-w="'+w+'"]');if(el){el.classList.add('done');el.classList.remove('sel')}sel=null;if(got===DATA.length){var pct=Math.max(0,Math.round(DATA.length/tries*100));document.getElementById('res').innerHTML='<b class="ok">Semua cocok! Percobaan: '+tries+'</b>';EI.complete(pct,{tries:tries})}}else if(w!==d.w){document.getElementById('res').innerHTML='<span class="bad">Belum cocok, coba lagi.</span>'}}
  t.ondragover=function(ev){ev.preventDefault()};t.ondrop=function(ev){ev.preventDefault();tryDrop(ev.dataTransfer.getData('text/plain'))};t.onclick=function(){if(sel)tryDrop(sel.dataset.w)};R.appendChild(t)});`,
     },
   },
@@ -77,7 +77,7 @@ shuffle(DATA).forEach(function(d){var t=document.createElement('div');t.classNam
       js: `var T=document.getElementById('t'),M=document.getElementById('m'),msg=document.getElementById('msg'),left=0,iv=null,total=0;
 function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 function set(){var m=Math.max(1,Math.min(90,parseInt(M.value,10)||11));total=m*60;left=total;T.textContent=fmt(left);T.classList.remove('late')}
-document.getElementById('go').onclick=function(){if(iv)return;set();msg.textContent='Berjalan…';iv=setInterval(function(){left--;T.textContent=fmt(Math.max(0,left));if(left<=60)T.classList.add('late');if(left<=0){clearInterval(iv);iv=null;msg.textContent='Waktu habis!';EI.progress(100,{minutes:total/60})}},1000)};
+document.getElementById('go').onclick=function(){if(iv)return;set();msg.textContent='Berjalan…';iv=setInterval(function(){left--;T.textContent=fmt(Math.max(0,left));if(left<=60)T.classList.add('late');if(left<=0){clearInterval(iv);iv=null;msg.textContent='Waktu habis!';EI.complete(100,{minutes:total/60})}},1000)};
 document.getElementById('rs').onclick=function(){clearInterval(iv);iv=null;set();msg.textContent=''};M.onchange=set;set();`,
     },
   },

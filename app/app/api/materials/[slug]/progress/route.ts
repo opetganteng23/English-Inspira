@@ -6,7 +6,7 @@ import { Material, MaterialProgress } from "@/models/Material";
 import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 
 const limiter = new RateLimiterMemory({ points: 20, duration: 60 });
-const schema = z.object({ score: z.number().min(0).max(100), answers: z.unknown().optional() });
+const schema = z.object({ score: z.number().min(0).max(100), answers: z.unknown().optional(), final: z.boolean().default(true) });
 
 /**
  * Menerima progres dari materi (lewat jembatan postMessage di induk). Materi tidak pernah memanggil API langsung.
@@ -23,7 +23,8 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     if (!m) throw new HttpError(404, "Materi tidak ditemukan");
     const p = await MaterialProgress.findOneAndUpdate(
       { userId: user._id, materialId: m._id },
-      { $set: { score: b.score, answers: b.answers ?? null, completedAt: new Date() }, $inc: { attempts: 1 } },
+      // Laporan sementara (final=false) hanya menyimpan skor terakhir; penyelesaian menandai selesai dan menambah percobaan.
+      b.final ? { $set: { score: b.score, answers: b.answers ?? null, completedAt: new Date() }, $inc: { attempts: 1 } } : { $set: { score: b.score, answers: b.answers ?? null }, $setOnInsert: { attempts: 0 } },
       { upsert: true, new: true }
     );
     return NextResponse.json({ ok: true, attempts: p.attempts });

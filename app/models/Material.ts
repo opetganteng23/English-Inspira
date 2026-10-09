@@ -12,9 +12,13 @@ const materialSchema = new Schema(
     assetIds: [{ type: Schema.Types.ObjectId, ref: "Asset" }],
     tags: [String],
     access: { type: String, enum: ["free", "paid"], default: "paid" },
-    status: { type: String, enum: ["draft", "published"], default: "draft", index: true },
+    status: { type: String, enum: ["draft", "review", "published"], default: "draft", index: true }, // HTML wajib lewat review (MTS §10.3)
     version: { type: Number, default: 0 },
     authorId: { type: Schema.Types.ObjectId, ref: "User" },
+    editorId: { type: Schema.Types.ObjectId, ref: "User" }, // penyunting terakhir
+    reviewerId: { type: Schema.Types.ObjectId, ref: "User" },
+    reviewedAt: Date,
+    reviewNote: String,
     publishedAt: Date,
   },
   { timestamps: true }

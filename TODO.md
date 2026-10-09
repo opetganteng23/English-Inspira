@@ -68,10 +68,10 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | L4 | Rich text lengkap: ukuran/jenis font, audio dengan transkrip, lampiran PDF, layar penuh, pratinjau ponsel, DOMPurify klien (§10.2) | ⬜ |
 | L5 | Blok interaktif bawaan di rich text (kuis/flashcard/isian/pencocokan/timer) bertag topik → `learning_events` | ⬜ |
 | L6 | Penulis rich text: admin, coach, inst_admin (sekarang admin saja) | ⬜ |
-| L7 | HTML sandbox: **hanya** `allow-scripts allow-forms`; CSP baseline ketat tanpa host eksternal (§10.3) | 🔄 ada, tapi `allow-modals` + cdnjs/fonts harus dicabut |
-| L8 | Jembatan: pesan ber-versi + **nonce** + tipe `report`/`complete` + Zod + batas frekuensi; hapus global `EI` umum (§10.3) | ⬜ |
-| L9 | Status materi draft → **review** → published, audit penulis/reviewer/publish/rollback (§10.3) | ⬜ |
-| L10 | Uji keamanan iframe: akses parent/storage/cookie, jaringan, navigasi, popup, pesan palsu, nonce salah, iframe lama (§20, §24) | ⬜ |
+| L7 | HTML sandbox: **hanya** `allow-scripts allow-forms`; CSP baseline ketat tanpa host eksternal (§10.3) | ✅ sandbox hanya `allow-scripts allow-forms`; CSP baseline tanpa host eksternal (diuji unit); isolasi di browser nyata belum diuji |
+| L8 | Jembatan: pesan ber-versi + **nonce** + tipe `report`/`complete` + Zod + batas frekuensi; hapus global `EI` umum (§10.3) | ✅ pesan ber-versi + nonce (jembatan menghapus dirinya dari DOM) + Zod + batas frekuensi; `EI` dibekukan; `report`/`complete` (diuji unit) |
+| L9 | Status materi draft → **review** → published, audit penulis/reviewer/publish/rollback (§10.3) | ✅ draft → review → published, HTML wajib review, penerbit ≠ penyunting bila >1 admin, ubah isi HTML terbit → draf; audit tiap langkah (teruji smoke) |
+| L10 | Uji keamanan iframe: akses parent/storage/cookie, jaringan, navigasi, popup, pesan palsu, nonce salah, iframe lama (§20, §24) | 🔄 validasi pesan/nonce/CSP diuji unit; pengujian di browser (akses parent/storage/cookie, jaringan, navigasi, popup) ⬜ |
 | L11 | `learning_events` + heartbeat `POST /api/events` (waktu aktif saja, `idle_timeout_sec`) (§13.1) | ⬜ |
 
 ## 5. Analitik & study plan — Fase 5 (P2)
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 25 uji) & `scripts/smoke.mjs` v2.2 (83 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 27 uji) & `scripts/smoke.mjs` v2.2 (96 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)

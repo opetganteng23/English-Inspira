@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useApi } from "@/lib/useApi";
-import { tgl } from "@/lib/client";
+import { api, tgl } from "@/lib/client";
 import { LineChart, Loading, ErrorNote } from "@/components/Charts";
 
 type Home = {
@@ -12,13 +13,20 @@ type Home = {
   quota: { used: number; total: number; left: number } | null;
   counselor: { used: number; quota: number; remaining: number };
   step: { title: string; body: string; cta: string; href: string } | null;
+  plan: { id: string; title: string; priority: "high" | "medium"; source: string; dueAt: string | null }[];
+  weakTopics: { skill: string; topic: string; score: number; status: string }[];
   progress: { id: string; name: string; kind: string; score: number; at: string }[];
   last: { id: string; name: string; score: number; delta: number | null; sections: { section: string; scaled: number }[] } | null;
 };
 const SEC: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 
 export default function Beranda() {
-  const { data: h, error, loading } = useApi<Home>("/api/home");
+  const { data: h, error, loading, reload } = useApi<Home>("/api/home");
+  const [err, setErr] = useState("");
+  async function done(id: string) {
+    setErr("");
+    try { await api(`/api/study-plan/${id}`, { method: "PATCH", json: { done: true } }); reload(); } catch (e) { setErr((e as Error).message); }
+  }
   if (loading) return <Loading />;
   if (!h) return <ErrorNote text={error} />;
 
@@ -54,6 +62,23 @@ export default function Beranda() {
             {h.last.sections.map((s) => <div key={s.section} className="rounded-xl bg-canvas p-3"><p className="text-xs text-ink-soft">{SEC[s.section] ?? s.section}</p><p className="font-display text-2xl font-extrabold text-navy">{s.scaled}</p></div>)}
           </div>
         )}
+      </section>
+
+      <section className="card">
+        <h2 className="font-display text-lg font-extrabold text-navy">Rencana belajar</h2>
+        <p className="text-sm text-ink-soft">Dibuat otomatis dari topik yang perlu diperkuat, dengan batas waktu.</p>
+        <ErrorNote text={err} />
+        {h.plan.length ? (
+          <ul className="mt-3 flex flex-col divide-y divide-line">
+            {h.plan.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <span className="min-w-0 flex-1 text-sm"><b className="text-navy">{p.title}</b><br /><span className="text-xs text-ink-soft">{p.priority === "high" ? "Prioritas tinggi" : "Prioritas sedang"}{p.dueAt ? ` · target ${tgl(p.dueAt)}` : ""}{p.source === "coach" ? " · dari coach" : ""}</span></span>
+                <button className="btn-outline !min-h-[40px]" onClick={() => done(p.id)}>Tandai selesai</button>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="mt-3 text-sm text-ink-soft">{h.weakTopics.length ? "Belum ada item aktif." : "Belum ada topik lemah yang terdeteksi. Rencana muncul setelah ada cukup data dari tesmu."}</p>}
+        {h.weakTopics.length > 0 && <p className="mt-3 text-xs text-ink-soft">Topik terlemah: {h.weakTopics.map((w) => `${w.topic} (${w.score}%)`).join(", ")}</p>}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">

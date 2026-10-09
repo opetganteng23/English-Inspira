@@ -3,7 +3,8 @@ import { scaleSection, estimateTotal, gradeAttempt } from "@/lib/scoring";
 import { itpTotal, validSectionScore } from "@/lib/certificates";
 import { PARAM_DEFAULTS } from "@/lib/config";
 import { encryptField, decryptField, maskName, maskNik } from "@/lib/crypto";
-import { buildSrcdoc } from "@/lib/material-doc";
+import { buildSrcdoc, SANDBOX } from "@/lib/material-doc";
+import { parseBridgeMessage, makeRateGate } from "@/lib/material-bridge";
 import { sanitizePassage, sanitizeRich } from "@/lib/sanitize";
 import { extractJson, ruleBasedAnalysis, detectDistress, analysisSchema } from "@/lib/ai";
 import { isMp3, sniffImage } from "@/lib/files";
@@ -59,12 +60,38 @@ describe("enkripsi & penyamaran", () => {
 });
 
 describe("keamanan materi", () => {
-  it("srcdoc: CSP memblokir koneksi/anak dokumen dan jembatan progres ada", () => {
-    const d = buildSrcdoc({ html: "<b>x</b>", js: "1" }, "https://app.test");
+  it("srcdoc: CSP ketat tanpa host eksternal, jembatan ber-nonce, sandbox minimal", () => {
+    const d = buildSrcdoc({ html: "<b>x</b>", js: "1" }, "https://app.test", "abcdef0123456789abcdef");
     expect(d).toContain("connect-src 'none'");
     expect(d).toContain("default-src 'none'");
     expect(d).toContain("media-src https://app.test");
-    expect(d).toContain("window.EI=");
+    expect(d).toContain("base-uri 'none'");
+    expect(d).not.toMatch(/cdnjs|googleapis|gstatic/);
+    expect(d).toContain('"abcdef0123456789abcdef"');
+    expect(d).toContain("removeChild(s)"); // jembatan menghapus dirinya (nonce tak terbaca skrip materi)
+    expect(SANDBOX).toBe("allow-scripts allow-forms");
+    expect(() => buildSrcdoc({}, "https://app.test", "pendek")).toThrow();
+  });
+  it("jembatan: hanya pesan berversi, bernonce benar, dan bentuk valid yang diterima", () => {
+    const ok = (t: string, p: unknown, n = "N0NCE0123456789a") => parseBridgeMessage({ v: 1, n, t, p }, "N0NCE0123456789a");
+    expect(ok("report", { score: 80, answers: [1, 2] })).toEqual({ type: "report", score: 80, answers: [1, 2] });
+    expect(ok("complete", { score: 100 })).toMatchObject({ type: "complete", score: 100 });
+    expect(ok("height", { h: 300 })).toEqual({ type: "height", h: 300 });
+    expect(ok("report", { score: 80 }, "salah")).toBeNull(); // nonce salah
+    expect(ok("report", { score: 101 })).toBeNull();
+    expect(ok("report", { score: NaN })).toBeNull();
+    expect(ok("other", {})).toBeNull();
+    expect(ok("report", { score: 5, answers: "x".repeat(25_000) })).toBeNull();
+    expect(parseBridgeMessage({ __ei: "progress", score: 50 }, "N0NCE0123456789a")).toBeNull(); // format lama
+    expect(parseBridgeMessage(null, "x")).toBeNull();
+  });
+  it("pembatas frekuensi jembatan", () => {
+    let t = 0; const gate = makeRateGate(500, 3, () => t);
+    t = 1000; expect(gate()).toBe(true);
+    t = 1200; expect(gate()).toBe(false);
+    t = 1600; expect(gate()).toBe(true);
+    t = 2200; expect(gate()).toBe(true);
+    t = 3000; expect(gate()).toBe(false); // melewati batas total
   });
   it("sanitizePassage membuang script, handler, dan gambar luar", () => {
     const o = sanitizePassage('<p onclick="x()">a</p><script>1</script><img src="http://evil/x.png"><img src="/api/assets/aaaaaaaaaaaaaaaaaaaaaaaa">');

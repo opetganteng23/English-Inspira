@@ -13,8 +13,8 @@ export default function MateriViewer({ params }: { params: { slug: string } }) {
   const { data, loading, error } = useApi<Mat>(`/api/materials/${params.slug}`);
   const [toast, setToast] = useState("");
   // Skor dari materi diteruskan induk ke API; materi sendiri tidak pernah memanggil API.
-  const onProgress = useCallback(async (score: number, answers: unknown) => {
-    try { await api(`/api/materials/${params.slug}/progress`, { json: { score, answers } }); setToast(`Skor ${Math.round(score)} tersimpan.`); }
+  const onProgress = useCallback(async (score: number, answers: unknown, final: boolean) => {
+    try { await api(`/api/materials/${params.slug}/progress`, { json: { score, answers, final } }); if (final) setToast(`Skor ${Math.round(score)} tersimpan.`); }
     catch (e) { setToast((e as Error).message); }
     setTimeout(() => setToast(""), 4000);
   }, [params.slug]);
