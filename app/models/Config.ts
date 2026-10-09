@@ -26,6 +26,7 @@ const quotaSchema = new Schema(
     total: { type: Number, required: true },
     used: { type: Number, default: 0 },
     active: { type: Boolean, default: true }, // kuota level lama dinonaktifkan saat naik level
+    lowWarnedAt: Date, // peringatan "kuota hampir habis" sudah dikirim
   },
   { timestamps: true }
 );

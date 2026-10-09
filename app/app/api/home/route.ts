@@ -24,7 +24,7 @@ export async function GET() {
       Attempt.findOne({ userId: me._id, status: "in_progress" }).select("_id").lean(),
       me.institutionId ? Institution.findById(me.institutionId).select("name contractEnd").lean() : null,
       counselorAccess(me._id),
-      PlanItem.find({ userId: me._id, status: "active" }).sort({ priority: 1, dueAt: 1 }).lean(),
+      PlanItem.find({ userId: me._id, status: { $in: ["active", "late"] } }).sort({ priority: 1, dueAt: 1 }).lean(),
       TopicStat.find({ userId: me._id, status: { $in: ["priority", "weak"] } }).sort({ score: 1 }).limit(5).lean(),
       levelUpStatus(me._id),
     ]);
@@ -47,7 +47,7 @@ export async function GET() {
       counselor: { used: counselor.used, quota: counselor.quota, remaining: counselor.remaining },
       step,
       levelUp,
-      plan: plan.map((p) => ({ id: String(p._id), title: p.title, priority: p.priority, source: p.source, dueAt: p.dueAt ?? null })),
+      plan: plan.map((p) => ({ id: String(p._id), title: p.title, priority: p.priority, source: p.source, dueAt: p.dueAt ?? null, late: p.status === "late", unitId: p.unitId ? String(p.unitId) : null })),
       weakTopics: weak.map((w) => ({ skill: w.skill, topic: w.topic, score: Math.round(w.score), status: w.status })),
       progress: attempts.map((a) => ({ id: String(a._id), name: tests.get(String(a.testId)) ?? "-", kind: a.kind, score: a.scoreEst, at: a.finishedAt })),
       last: last ? { id: String(last._id), name: tests.get(String(last.testId)) ?? "-", score: last.scoreEst, delta: attempts.length > 1 ? (last.scoreEst ?? 0) - (attempts[attempts.length - 2].scoreEst ?? 0) : null, sections: last.sectionScores } : null,

@@ -15,7 +15,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const it = await PlanItem.findOne({ _id: params.id, userId: me._id });
     if (!it) throw new HttpError(404, "Item tidak ditemukan");
     if (it.status === "resolved" || it.status === "expired") throw new HttpError(409, "Item ini sudah tidak aktif");
-    it.status = done ? "done" : "active"; it.doneAt = done ? new Date() : undefined;
+    it.status = done ? "done" : (it.dueAt && it.dueAt < new Date() ? "late" : "active"); it.doneAt = done ? new Date() : undefined;
     await it.save();
     return NextResponse.json({ ok: true });
   } catch (e) {

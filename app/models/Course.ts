@@ -56,9 +56,17 @@ const learningEventSchema = new Schema(
 );
 learningEventSchema.index({ userId: 1, kind: 1, refId: 1, day: 1 }, { unique: true });
 
+// Peta remedial (MTS §6): topik lemah → unit yang memperbaikinya. Dipakai study plan untuk menautkan item ke unit.
+const remedialSchema = new Schema(
+  { skill: { type: String, required: true }, topic: { type: String, required: true }, unitId: { type: Schema.Types.ObjectId, ref: "Unit", required: true } },
+  { timestamps: true }
+);
+remedialSchema.index({ skill: 1, topic: 1, unitId: 1 }, { unique: true });
+
 export type CourseDoc = InferSchemaType<typeof courseSchema> & { _id: mongoose.Types.ObjectId };
 export type UnitDoc = InferSchemaType<typeof unitSchema> & { _id: mongoose.Types.ObjectId };
 export const Course: Model<CourseDoc> = (mongoose.models.Course as Model<CourseDoc>) || mongoose.model<CourseDoc>("Course", courseSchema);
 export const Unit: Model<UnitDoc> = (mongoose.models.Unit as Model<UnitDoc>) || mongoose.model<UnitDoc>("Unit", unitSchema);
 export const UnitProgress = (mongoose.models.UnitProgress as Model<InferSchemaType<typeof unitProgressSchema>>) || mongoose.model("UnitProgress", unitProgressSchema);
+export const RemedialMap = (mongoose.models.RemedialMap as Model<InferSchemaType<typeof remedialSchema>>) || mongoose.model("RemedialMap", remedialSchema);
 export const LearningEvent = (mongoose.models.LearningEvent as Model<InferSchemaType<typeof learningEventSchema>>) || mongoose.model("LearningEvent", learningEventSchema);

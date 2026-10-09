@@ -28,9 +28,11 @@ const planItemSchema = new Schema(
     title: { type: String, required: true },
     priority: { type: String, enum: ["high", "medium"], required: true },
     source: { type: String, enum: ["auto", "coach"], default: "auto" },
-    status: { type: String, enum: ["active", "done", "resolved", "expired"], default: "active" }, // resolved = topik membaik tanpa dicentang
+    status: { type: String, enum: ["active", "late", "done", "resolved", "expired"], default: "active" }, // late = lewat deadline tetapi masih bisa dikerjakan; resolved = topik membaik tanpa dicentang
     dueAt: Date,
     doneAt: Date,
+    remindedAt: Date, // pengingat H-2 deadline sudah dikirim
+    unitId: { type: Schema.Types.ObjectId, ref: "Unit" }, // unit remedial (remedial_map)
     analysisId: { type: Schema.Types.ObjectId, ref: "Analysis" },
   },
   { timestamps: true }

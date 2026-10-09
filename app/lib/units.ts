@@ -1,7 +1,7 @@
 import type { HydratedDocument, Types } from "mongoose";
 import { connectDB } from "./db";
 import { getParam } from "./config";
-import { Course, Unit, UnitProgress } from "@/models/Course";
+import { Course, RemedialMap, Unit, UnitProgress } from "@/models/Course";
 import type { AttemptDoc } from "@/models/Test";
 
 /** Unit selesai bila semua materi wajib selesai dan (bila ada kuis) kuisnya lulus. */
@@ -25,6 +25,18 @@ async function recompute(userId: Types.ObjectId | string, unitId: Types.ObjectId
   else if (!complete && p.status === "completed") { p.status = "in_progress"; p.completedAt = undefined; }
   await p.save();
   return p;
+}
+
+/** Unit remedial untuk topik: unit pertama di peta remedial yang courses-nya aktif dan sesuai level peserta. */
+export async function findRemedialUnit(levelId: Types.ObjectId | string | null | undefined, skill: string, topic: string) {
+  if (!levelId) return null;
+  await connectDB();
+  const maps = await RemedialMap.find({ skill, topic }).lean();
+  if (!maps.length) return null;
+  const units = await Unit.find({ _id: { $in: maps.map((m) => m.unitId) }, active: true }).lean();
+  const courses = await Course.find({ _id: { $in: units.map((u) => u.courseId) }, levelId, active: true }).select("_id").lean();
+  const ok = new Set(courses.map((c) => String(c._id)));
+  return units.find((u) => ok.has(String(u.courseId)))?._id ?? null;
 }
 
 /** Materi selesai → tandai di semua unit aktif yang mensyaratkannya (hanya course di level peserta). */

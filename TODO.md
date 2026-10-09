@@ -40,7 +40,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | F8 | Status invited → active setelah login pertama + persetujuan data UU PDP (§8) | ✅ teruji |
 | F9 | `mail_queue` + worker (retry bertahap, undangan ±100/jam), template email lengkap (§7, §18) | 🔄 antrean + retry + template ✅; batas undangan/jam & SMTP nyata belum diuji |
 | F10 | `mongo-sanitize` pada input (§20) | ⬜ |
-| F11 | Koleksi `notifications` + notifikasi dalam aplikasi (§6, §18) | 🔄 koleksi ada (dipakai pengajuan hapus); UI notifikasi ⬜ |
+| F11 | Koleksi `notifications` + notifikasi dalam aplikasi (§6, §18) | ✅ notifikasi dalam aplikasi: lonceng di semua layout + API baca/tandai; terisi dari placement, naik level, analisis siap, booking, slot berubah/batal, pengingat sesi, deadline rencana, kuota, kontrak (teruji smoke; tampilan belum dicoba di browser) |
 | F12 | Audit log akses coach & inst_admin ke data peserta (§20) | 🔄 audit akses admin & coach ke data peserta ✅; inst_admin ⬜ |
 
 ## 3. Konfigurasi, tes, placement — Fase 2+3 (P1)
@@ -83,8 +83,8 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | A3 | Koleksi `analyses` (calculated → ready) dibuat **setiap** selesai: placement, kuis, unit, sim, remedial, PDF (§13.3) | ✅ `analyses` dibuat tiap pengerjaan selesai (placement, sim, practice, kuis unit): `calculated` langsung tampil → `ready`/`failed`; remedial/PDF menyusul bersama fiturnya |
 | A4 | Claude: input tanpa PII + alias, output Zod, retry 2×, validasi topik & angka narasi, cache hash input, catat model/versi prompt/token, prompt berversi di config (§13.5) | 🔄 output Zod berbentuk §13.5, topik wajib dari daftar valid, angka dicek terhadap input, retry 2×, cache hash input, catat engine/model/versi prompt/token, batas laju per peserta & institusi, prompt berversi di Parameter Sistem — logika murni teruji unit; **panggilan Claude nyata belum diuji (menunggu kunci API)** |
 | A5 | Template narasi cadangan dikelola admin (§13.4) | ✅ template narasi cadangan dikelola admin (Parameter Sistem `narrative_template`); API gagal → template + ulang tiap jam (maks 3×); status gagal & pemakaian token tampil di dashboard admin |
-| A6 | `remedial_map` + admin | ⬜ |
-| A7 | `study_plans`: item berdeadline otomatis (7/14 hari), maks 5 aktif, `source` auto/coach, tidak menimpa item coach (§15) | 🔄 `plan_items` otomatis (priority/medium, deadline 7/14 hari, maks 5 aktif, resolved bila topik membaik, expired lewat job harian) ✅ teruji; item coach & edit coach ⬜ (Fase 6) |
+| A6 | `remedial_map` + admin | ✅ `remedial_map` (topik → unit) + halaman di Kursus & Unit; item rencana otomatis tertaut ke unit level peserta (API teruji; tautan di Beranda belum dicoba di browser) |
+| A7 | `study_plans`: item berdeadline otomatis (7/14 hari), maks 5 aktif, `source` auto/coach, tidak menimpa item coach (§15) | ✅ `plan_items` otomatis (deadline 7/14 hari, maks 5 aktif, resolved bila membaik, `late` bila lewat deadline, pengingat H-2) + item coach; teruji |
 | A8 | Adapter `lmsAdapter` / `pdfAdapter` (§14); integrasi pure-analytics bila modul tersedia (K4) | ✅ adapter: `buildEngineInput` (pintu 1/lms) dan `buildPdfEngineInput` (pintu 2/pdf) menghasilkan format masukan yang sama; pure-analytics eksternal menunggu keputusan K4 |
 
 ## 6. Coaching — Fase 6 (P3)
@@ -105,12 +105,12 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | ID | Item (MTS §) | Status |
 |---|---|---|
 | P1 | Upload PDF (GridFS `pdf`, magic bytes, 10 MB), `pdf-parse`, layar verifikasi, analisis; file tidak dikirim ke AI (§14) | ✅ upload PDF (magic bytes, ≤10 MB, GridFS `pdf`), `pdf-parse` v2, parser template ITP, layar verifikasi/koreksi, analisis dari nilai terverifikasi saja (file tidak ke AI), akses pemilik/coach se-institusi/admin (audit), hapus oleh pemilik, retensi file via job harian — teruji smoke; halaman UI belum dicoba di browser; PDF hasil scan (OCR) ⬜ |
-| P2 | Konselor AI: kuota **30 pesan/bulan** (`counselor_quota`), konteks dari `analyses` + study plan, tidak mengubah plan langsung, tinjauan admin **dan coach** (§17) | 🔄 kuota 30/bulan ✅; konteks dari `analyses` + study plan ✅ (AI hanya mengusulkan); tinjauan admin ✅; tinjauan coach ⬜ |
+| P2 | Konselor AI: kuota **30 pesan/bulan** (`counselor_quota`), konteks dari `analyses` + study plan, tidak mengubah plan langsung, tinjauan admin **dan coach** (§17) | ✅ kuota 30/bulan, konteks dari `analyses` + study plan (AI hanya mengusulkan), tinjauan admin & coach (coach hanya institusinya, akses dicatat audit) — teruji; panggilan Claude nyata belum diuji |
 | P3 | Aturan naik level otomatis + tahan/rekomendasi coach; kuota baru sesuai level, plan dibuat ulang (§12) | ✅ naik level otomatis (skor sim ≥ batas level berikutnya + remedial prioritas tinggi selesai; rekomendasi coach membebaskan syarat remedial), kuota baru, rencana dibuat ulang, email — teruji smoke + unit; status syarat tampil di Beranda & hasil |
 | P4 | Dashboard admin & institusi v2.2 (level, kuota, kehadiran, kepatuhan, analisis gagal) | ⬜ |
-| P5 | Portal institusi sesuai batas privasi §4 (tanpa isi analisis individu & catatan sesi) | 🔄 kode & tagihan dihapus; pemangkasan data individu ⬜ |
+| P5 | Portal institusi sesuai batas privasi §4 (tanpa isi analisis individu & catatan sesi) | 🔄 kode & tagihan dihapus; pemangkasan data individu pada portal institusi ⬜ |
 | P6 | Laporan PDF + Excel (§8) | 🔄 Excel ✅, PDF ⬜ |
-| P7 | Job: mail worker, reminder sesi, plan status, peringatan kuota, kontrak, pembersihan (§18) | 🔄 mail & harian ✅; reminder/plan/kuota ⬜ |
+| P7 | Job: mail worker, reminder sesi, plan status, peringatan kuota, kontrak, pembersihan (§18) | ✅ job: mail (menit), per jam (pengingat sesi, ulang narasi AI), harian (kontrak, plan late, pengingat H-2, kuota, peringatan kontrak, PDF, pembersihan) — teruji lewat /api/cron; jalan di PM2 via node-cron belum diuji |
 | P8 | Uji otomatis isolasi data **coach** & inst_admin (§20, §24) | ✅ inst_admin & coach teruji (smoke), termasuk coach institusi lain → 404 |
 | P9 | Retensi data/PDF, hak hapus lewat prosedur admin + audit (§8, §25) | 🔄 hapus data lewat admin ✅ (kini termasuk PDF & analisis); retensi PDF otomatis ✅ (`pdf_retention_days`, placeholder 180 hari); retensi data lain ⬜ menunggu keputusan |
 | P10 | Tampilan responsif terbukti di browser (Playwright, 9:16 & 16:9) | ⬜ belum dijalankan |
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 51 uji) & `scripts/smoke.mjs` v2.2 (185 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 51 uji) & `scripts/smoke.mjs` v2.2 (212 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
@@ -150,3 +150,20 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | Halaman UI baru/ditulis ulang (masuk, persetujuan, beranda, tes, hasil, profil, admin, institusi, coach) | 🔄 lolos build & lint, **belum dibuka di browser** |
 | Responsif 9:16 s.d. 16:9 | ⬜ belum diuji (Playwright ditunda atas permintaan pemilik) |
 | Timer server saat waktu habis, Docker build, email/AI/DB nyata | ⬜ menunggu kunci & URL DB |
+
+## 12. Sisa pekerjaan (dicatat saat dihentikan pemilik)
+
+Pengerjaan dihentikan atas permintaan pemilik. Keadaan terakhir: semua kode di atas sudah di-commit; `tsc` bersih; smoke 212/212; **`next build` terakhir belum dijalankan setelah penambahan notifikasi/job/remedial/tinjauan coach** (jalankan sebelum deploy).
+
+| Prioritas | Item | Status |
+|---|---|---|
+| P1 | Jalankan `next build` + lint penuh, perbaiki bila ada | ⬜ |
+| P1 | Buka seluruh UI baru di browser + uji responsif 9:16 s.d. 16:9 (Playwright) | ⬜ |
+| P2 | F10 `mongo-sanitize` pada input | ⬜ |
+| P2 | F12 audit akses inst_admin ke data peserta | ⬜ |
+| P2 | C9 impor Excel soal; C8 pemutar audio 0.75–1.25× mode latihan; C5 pengurangan waktu idle | ⬜ |
+| P2 | L4 rich text lengkap, L5 blok interaktif, L6 penulis coach/inst_admin | ⬜ |
+| P3 | P4 dashboard institusi v2.2, P5 pemangkasan portal institusi, P6 laporan PDF | ⬜ |
+| P3 | O1 uji ulang alur ITP (daftar → skor → sertifikat) di smoke v2.2 | ⬜ |
+| P3 | Uji panggilan Claude nyata, SMTP nyata, MongoDB nyata (menunggu kunci & URL DB) | ⬜ |
+| – | Keputusan pemilik: K4 pure-analytics, K5 angka resmi (level, konversi skor, retensi, kuota), K6 nama produk | ⬜ |

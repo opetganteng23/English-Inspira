@@ -3,7 +3,8 @@ import { processMailQueue } from "./mailq";
 import { expireEnrollments } from "./access";
 import { MailJob, Invitation } from "@/models/Access";
 import { Otp } from "@/models/Otp";
-import { expirePlanItems } from "./study-plan";
+import { markLatePlanItems } from "./study-plan";
+import { planDeadlineReminders, quotaWarnings, contractWarnings } from "./reminders";
 import { sendSessionReminders } from "./coaching";
 import { retryFallbackAnalyses } from "./analysis";
 import { PdfImport, pdfBucket } from "@/models/Pdf";
@@ -29,7 +30,8 @@ export async function dailyJob() {
   const mails = await MailJob.deleteMany({ status: { $in: ["sent", "failed"] }, updatedAt: { $lt: old } });
   const invs = await Invitation.deleteMany({ status: { $ne: "pending" }, updatedAt: { $lt: old } });
   await Otp.deleteMany({ expiresAt: { $lt: new Date() } }); // TTL juga membersihkan; ini cadangan
-  const planExpired = await expirePlanItems();
+  const planLate = await markLatePlanItems();
+  const reminders = { plan: await planDeadlineReminders(), quota: await quotaWarnings(), contract: await contractWarnings() };
   // Retensi PDF: file asli dihapus saat kedaluwarsa; nilai terverifikasi dan analisis tetap ada.
   let pdfPurged = 0;
   const bucket = await pdfBucket();
@@ -37,7 +39,7 @@ export async function dailyJob() {
     await bucket.delete(p.fileId!).catch(() => {});
     p.fileId = undefined; await p.save(); pdfPurged++;
   }
-  return { enrollmentsExpired: expired, planExpired, pdfPurged, mailsPurged: mails.deletedCount, invitationsPurged: invs.deletedCount };
+  return { enrollmentsExpired: expired, planLate, reminders, pdfPurged, mailsPurged: mails.deletedCount, invitationsPurged: invs.deletedCount };
 }
 
 export const JOBS = { mail: mailJob, hourly: hourlyJob, daily: dailyJob } as const;

@@ -352,6 +352,48 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   const scan = await makePdf([""]);
   r = await req(p1, "/api/analytics/pdf", { method: "POST", form: upl(scan) }); ok(r.status === 201 && Object.keys(r.data.parsed).length === 0, "PDF tanpa teks: tidak ada nilai terbaca (isi manual)", J(r.data));
 
+  console.log("\n== Notifikasi, job harian, peta remedial, tinjauan Konselor ==");
+  r = await req(p1, "/api/notifications"); ok(r.status === 200 && r.data.unread > 0 && r.data.items.some((n) => n.type === "placement_result" || n.title.includes("placement")), "notifikasi dalam aplikasi: hasil placement", J(r.data.items?.map((n) => n.title)));
+  ok(r.data.items.some((n) => /naik/i.test(n.title)) && r.data.items.some((n) => /analisis/i.test(n.title)), "notifikasi naik level & analisis siap");
+  r = await req(p1, "/api/notifications/read", { method: "POST", json: { all: true } }); ok(r.status === 200, "tandai semua dibaca");
+  r = await req(p1, "/api/notifications"); ok(r.data.unread === 0, "jumlah belum dibaca menjadi 0");
+  r = await req(null, "/api/notifications"); ok(r.status === 401, "notifikasi butuh login");
+  r = await req(coach, "/api/notifications"); ok(r.status === 200 && r.data.items.some((n) => n.type === "booking_new"), "coach diberi tahu ada booking baru");
+
+  // pengingat H-2: item coach berdeadline 1 hari → job harian mengirim satu notifikasi, sekali saja
+  await req(coach, `/api/coach/participants/${pid}`, { method: "POST", json: { action: "add_plan", title: "Latihan mendesak H-2", dueInDays: 1 } });
+  r = await req(null, "/api/cron/daily", { headers: { authorization: "Bearer testsecret" } }); ok(r.status === 200 && r.data.reminders && r.data.reminders.plan >= 1, "job harian: pengingat deadline rencana", J(r.data));
+  r = await req(p1, "/api/notifications"); ok(r.data.items.filter((n) => /deadline/i.test(n.title)).length === 1, "pengingat H-2 diterima sekali");
+  r = await req(null, "/api/cron/daily", { headers: { authorization: "Bearer testsecret" } }); r = await req(p1, "/api/notifications"); ok(r.data.items.filter((n) => /deadline/i.test(n.title)).length === 1, "job harian kedua tidak menggandakan pengingat");
+
+  // peringatan kontrak
+  await req(admin, `/api/admin/institutions/${iB}`, { method: "PATCH", json: { name: "Kampus Lain", code: "KLAIN", seats: 5, status: "active", contractEnd: new Date(Date.now() + 5 * 86400000).toISOString() } });
+  r = await req(null, "/api/cron/daily", { headers: { authorization: "Bearer testsecret" } }); ok(r.data.reminders.contract >= 1, "job harian: peringatan kontrak mendekati akhir", J(r.data.reminders));
+  r = await req(admin, "/api/notifications"); ok(r.data.items.some((n) => /Kampus Lain.*berakhir/.test(n.title)), "admin diberi notifikasi kontrak");
+  r = await req(null, "/api/cron/daily", { headers: { authorization: "Bearer testsecret" } }); r = await req(admin, "/api/notifications"); ok(r.data.items.filter((n) => /Kampus Lain.*berakhir/.test(n.title)).length === 1, "peringatan kontrak tidak berulang");
+
+  // peta remedial
+  r = await req(admin, "/api/admin/remedial-map"); ok(r.status === 200 && r.data.topics.length > 0 && r.data.units.length > 0, "peta remedial: topik & unit tersedia", J(r.data.topics?.slice(0, 2)));
+  const tp = r.data.topics[0];
+  r = await req(admin, "/api/admin/remedial-map", { method: "POST", json: { skill: tp.skill, topic: tp.topic, unitId: uid } }); ok(r.status === 201, "pemetaan topik → unit dibuat"); const rmId = r.data.id;
+  r = await req(admin, "/api/admin/remedial-map", { method: "POST", json: { skill: tp.skill, topic: tp.topic, unitId: uid } }); ok(r.status === 409, "pemetaan ganda ditolak");
+  r = await req(admin, "/api/admin/remedial-map", { method: "POST", json: { skill: "x", topic: "y", unitId: "a".repeat(24) } }); ok(r.status === 400, "unit tak ada ditolak");
+  r = await req(p1, "/api/home"); ok(Array.isArray(r.data.plan) && r.data.plan.every((i) => "late" in i && "unitId" in i), "rencana di beranda memuat penanda terlambat & tautan unit");
+  r = await req(admin, `/api/admin/remedial-map/${rmId}`, { method: "DELETE" }); ok(r.status === 200, "pemetaan dihapus");
+
+  // tinjauan Konselor oleh coach
+  r = await req(p1, "/api/counselor/threads", { method: "POST", json: { attemptId: aid } }); const th = r.data.id;
+  r = await req(p1, `/api/counselor/threads/${th}/messages`, { method: "POST", json: { content: "Bagaimana cara menaikkan skor structure?" } }); ok(r.status === 200, "peserta bertanya ke Konselor AI", J(r.data).slice(0, 100));
+  await req(p1, `/api/counselor/threads/${th}`, { method: "PATCH", json: { helpful: false } });
+  r = await req(coach, "/api/coach/counselor"); ok(r.status === 200 && r.data.threads.some((t) => t.id === th), "coach melihat percakapan yang perlu ditinjau");
+  r = await req(coachB, "/api/coach/counselor"); ok(!r.data.threads.some((t) => t.id === th), "coach institusi lain tidak melihatnya");
+  r = await req(coachB, `/api/coach/counselor/${th}`); ok(r.status === 404, "coach institusi lain: 404");
+  r = await req(ia, "/api/coach/counselor"); ok(r.status === 403, "inst_admin tidak bisa meninjau percakapan");
+  r = await req(coach, `/api/coach/counselor/${th}`); ok(r.status === 200 && r.data.messages.length >= 2, "coach membaca percakapan (tercatat di audit)");
+  r = await req(coach, `/api/coach/counselor/${th}`, { method: "PATCH", json: { reviewed: true, flagged: true, reviewNote: "Jawaban terlalu umum" } }); ok(r.status === 200, "coach menandai & meninjau");
+  r = await req(coach, "/api/coach/counselor"); ok(!r.data.threads.some((t) => t.id === th), "yang sudah ditinjau keluar dari antrean");
+  r = await req(admin, "/api/admin/counselor?filter=flagged"); ok(r.data.threads.some((t) => t.id === th), "admin melihat tanda dari coach");
+
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });
   ok(r.status === 200, "kontrak diubah ke masa lalu");

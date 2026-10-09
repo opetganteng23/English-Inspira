@@ -14,7 +14,7 @@ type Home = {
   counselor: { used: number; quota: number; remaining: number };
   step: { title: string; body: string; cta: string; href: string } | null;
   levelUp: { nextLevel: string | null; up: boolean; reasons: string[] } | null;
-  plan: { id: string; title: string; priority: "high" | "medium"; source: string; dueAt: string | null }[];
+  plan: { id: string; title: string; priority: "high" | "medium"; source: string; dueAt: string | null; late: boolean; unitId: string | null }[];
   weakTopics: { skill: string; topic: string; score: number; status: string }[];
   progress: { id: string; name: string; kind: string; score: number; at: string }[];
   last: { id: string; name: string; score: number; delta: number | null; sections: { section: string; scaled: number }[] } | null;
@@ -82,8 +82,8 @@ export default function Beranda() {
           <ul className="mt-3 flex flex-col divide-y divide-line">
             {h.plan.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <span className="min-w-0 flex-1 text-sm"><b className="text-navy">{p.title}</b><br /><span className="text-xs text-ink-soft">{p.priority === "high" ? "Prioritas tinggi" : "Prioritas sedang"}{p.dueAt ? ` · target ${tgl(p.dueAt)}` : ""}{p.source === "coach" ? " · dari coach" : ""}</span></span>
-                <button className="btn-outline !min-h-[40px]" onClick={() => done(p.id)}>Tandai selesai</button>
+                <span className="min-w-0 flex-1 text-sm"><b className="text-navy">{p.title}</b><br /><span className="text-xs text-ink-soft">{p.priority === "high" ? "Prioritas tinggi" : "Prioritas sedang"}{p.dueAt ? ` · target ${tgl(p.dueAt)}` : ""}{p.source === "coach" ? " · dari coach" : ""}{p.late && <b className="text-red-700"> · terlambat</b>}</span></span>
+                <span className="flex gap-2">{p.unitId && <Link href={`/belajar/${p.unitId}`} className="btn-solid !min-h-[40px]">Buka unit</Link>}<button className="btn-outline !min-h-[40px]" onClick={() => done(p.id)}>Tandai selesai</button></span>
               </li>
             ))}
           </ul>

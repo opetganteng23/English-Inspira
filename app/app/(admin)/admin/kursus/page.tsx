@@ -53,9 +53,40 @@ export default function Kursus() {
         );
       })}
 
+      <RemedialMapSection />
+
       {course && data && <CourseEditor init={course} levels={data.levels} onClose={() => setCourse(null)} onSaved={() => { setCourse(null); reload(); }} />}
       {unit && data && <UnitEditor init={unit} data={data} onClose={() => setUnit(null)} onSaved={() => { setUnit(null); reload(); }} />}
     </div>
+  );
+}
+
+type RM = { entries: { id: string; skill: string; topic: string; unitId: string; unit: string }[]; units: { id: string; label: string }[]; topics: { skill: string; topic: string; questions: number }[] };
+
+/** Peta remedial: topik lemah → unit. Dipakai study plan untuk menautkan item rencana ke unit perbaikan. */
+function RemedialMapSection() {
+  const { data, error, reload } = useApi<RM>("/api/admin/remedial-map");
+  const [v, setV] = useState({ key: "", unitId: "" });
+  const [err, setErr] = useState("");
+  async function add() {
+    const [skill, topic] = v.key.split("|");
+    setErr("");
+    try { await api("/api/admin/remedial-map", { json: { skill, topic, unitId: v.unitId } }); setV({ key: "", unitId: "" }); reload(); } catch (e) { setErr((e as Error).message); }
+  }
+  return (
+    <section className="card flex flex-col gap-3">
+      <div><h2 className="font-display text-lg font-extrabold text-navy">Peta remedial</h2><p className="text-sm text-ink-soft">Topik yang lemah diarahkan ke unit perbaikan. Item rencana belajar peserta otomatis menampilkan tombol “Buka unit”.</p></div>
+      <ErrorNote text={err || error} />
+      <ul className="divide-y divide-line text-sm">
+        {data?.entries.map((e) => <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2"><span><b className="text-navy">{e.topic}</b> <span className="text-xs text-ink-soft">({e.skill})</span> → {e.unit}</span><button className="font-semibold text-red-700" onClick={() => api(`/api/admin/remedial-map/${e.id}`, { method: "DELETE" }).then(reload).catch((x) => setErr(x.message))}>Hapus</button></li>)}
+        {data?.entries.length === 0 && <li className="py-2 text-ink-soft">Belum ada pemetaan.</li>}
+      </ul>
+      <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+        <select aria-label="Topik" className="field" value={v.key} onChange={(e) => setV({ ...v, key: e.target.value })}><option value="">Pilih topik (dari tag soal)</option>{data?.topics.map((t) => <option key={t.skill + t.topic} value={`${t.skill}|${t.topic}`}>{t.topic} ({t.skill}, {t.questions} soal)</option>)}</select>
+        <select aria-label="Unit" className="field" value={v.unitId} onChange={(e) => setV({ ...v, unitId: e.target.value })}><option value="">Pilih unit</option>{data?.units.map((u) => <option key={u.id} value={u.id}>{u.label}</option>)}</select>
+        <button className="btn-outline" disabled={!v.key || !v.unitId} onClick={add}>Tambah</button>
+      </div>
+    </section>
   );
 }
 

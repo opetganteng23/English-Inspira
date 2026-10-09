@@ -6,6 +6,7 @@ import { aliasFor, analysisResultSchema, checkResult, inputHash, templateResult,
 import { Attempt } from "@/models/Test";
 import { PdfImport } from "@/models/Pdf";
 import { topicStatus } from "./topic-stats";
+import { notify } from "./notify";
 import { User } from "@/models/User";
 import { ItpRegistration, ItpSession } from "@/models/Itp";
 import { CounselorThread } from "@/models/Counselor";
@@ -101,7 +102,10 @@ async function save(a: AnalysisDoc, n: Narrative, hash: string, promptVersion: s
     status: "ready", narrative: n.result, mock: n.engine === "template", engine: n.engine, model: n.model, promptVersion, tokensIn: n.tokensIn, tokensOut: n.tokensOut, inputHash: hash,
     ...(n.fallbackReason ? { fallbackReason: n.fallbackReason } : { $unset: { fallbackReason: 1 } }),
   });
-  if (a.attemptId) await Attempt.updateOne({ _id: a.attemptId }, { aiAnalysis: { status: "ready", ...toLegacy(n.result, n.engine), generatedAt: new Date() } });
+  if (a.attemptId) {
+    await Attempt.updateOne({ _id: a.attemptId }, { aiAnalysis: { status: "ready", ...toLegacy(n.result, n.engine), generatedAt: new Date() } });
+    await notify(a.userId, "analysis_ready", { title: "Analisis hasilmu sudah siap", href: `/hasil/${a.attemptId}` }, String(a.attemptId));
+  }
 }
 
 /** Jalankan analisis (async setelah selesai mengerjakan): `calculated` → `ready`. Klaim atomik: satu panggilan AI per hasil. */
@@ -166,7 +170,7 @@ export async function buildCounselorContext(userId: Types.ObjectId | string): Pr
     Attempt.find({ userId, status: "submitted" }).sort({ finishedAt: -1 }).limit(5).lean(),
     CounselorThread.find({ userId }).select("actionPlan").lean(),
     ItpRegistration.findOne({ userId, status: { $in: ["submitted", "confirmed"] } }).sort({ createdAt: -1 }).lean(),
-    PlanItem.find({ userId, status: "active" }).sort({ priority: 1, dueAt: 1 }).limit(8).lean(),
+    PlanItem.find({ userId, status: { $in: ["active", "late"] } }).sort({ priority: 1, dueAt: 1 }).limit(8).lean(),
     TopicStat.find({ userId, status: { $in: ["weak", "priority"] } }).sort({ score: 1 }).limit(6).lean(),
   ]);
   const session = reg ? await ItpSession.findById(reg.sessionId).select("date").lean() : null;

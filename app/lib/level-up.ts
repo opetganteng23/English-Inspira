@@ -2,6 +2,7 @@ import type { HydratedDocument, Types } from "mongoose";
 import { connectDB } from "./db";
 import { getLevels, getParam } from "./config";
 import { audit } from "./audit";
+import { notify } from "./notify";
 import { enqueueMail } from "./mailq";
 import { refreshStudyPlan } from "./study-plan";
 import { User } from "@/models/User";
@@ -31,7 +32,7 @@ async function gather(userId: Types.ObjectId | string, score: number | null) {
   const cur = levels.find((l) => String(l._id) === String(user.currentLevelId));
   const next = cur ? levels.find((l) => l.order === cur.order + 1) : undefined;
   const [pending, rec] = await Promise.all([
-    PlanItem.countDocuments({ userId, status: "active", priority: "high", source: "auto" }),
+    PlanItem.countDocuments({ userId, status: { $in: ["active", "late"] }, priority: "high", source: "auto" }),
     SessionNote.exists({ userId, recommendLevelUp: true, updatedAt: { $gte: new Date(Date.now() - 60 * 86_400_000) } }),
   ]);
   const decision = levelUpDecision({ score, nextMin: next?.scoreMin ?? null, remedialPending: pending, coachRecommends: !!rec, rules });
@@ -66,10 +67,11 @@ export async function evaluateLevelUp(attempt: HydratedDocument<AttemptDoc>) {
       await CoachingQuota.updateMany({ userId: g.user._id, active: true }, { active: false });
       if (g.user.institutionId) await CoachingQuota.create({ userId: g.user._id, institutionId: g.user.institutionId, levelId: g.next._id, total: g.next.coachingQuota });
       // Rencana lama milik level sebelumnya ditutup; rencana baru dari topik yang masih lemah.
-      await PlanItem.updateMany({ userId: g.user._id, status: "active", source: "auto" }, { status: "resolved", doneAt: new Date() });
+      await PlanItem.updateMany({ userId: g.user._id, status: { $in: ["active", "late"] }, source: "auto" }, { status: "resolved", doneAt: new Date() });
       const topics = await TopicStat.find({ userId: g.user._id }).lean();
       await refreshStudyPlan(g.user._id, g.user.institutionId ?? undefined, topics.map((t) => ({ skill: t.skill, topic: t.topic, score: t.score, status: t.status })));
       await enqueueMail(g.user.email, "level_up", { level: g.next.name, quota: g.next.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/beranda` });
+      await notify(g.user._id, "level_up", { title: `Selamat, naik ke level ${g.next.name}`, body: `Kuota coaching baru ${g.next.coachingQuota} sesi.`, href: "/beranda" }, String(attempt._id));
       await audit(g.user._id, "level.up", String(attempt._id), { from: g.cur.key, to: g.next.key, score: attempt.scoreEst });
       result = { up: true, reasons: [], level: g.next.name };
     }

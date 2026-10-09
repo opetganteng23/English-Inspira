@@ -11,6 +11,7 @@ const institutionSchema = new Schema(
     contactEmail: String,
     batch: String,
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    contractWarned: [Number], // ambang peringatan kontrak (30/14/7 hari) yang sudah dikirim
     configOverrides: Schema.Types.Mixed, // disiapkan, TIDAK dipakai di v2 (MTS §5)
   },
   { timestamps: true }

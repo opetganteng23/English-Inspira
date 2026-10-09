@@ -3,6 +3,7 @@ import { connectDB } from "./db";
 import { HttpError } from "./rbac";
 import { getParam } from "./config";
 import { audit } from "./audit";
+import { notify } from "./notify";
 import { enqueueMail } from "./mailq";
 import { bookableLeft, canCancel, canMarkAttendance, canRegister, chargesQuota, overlaps, type AttendanceStatus } from "./coaching-rules";
 import { Booking, CoachSlot, type SlotDoc } from "@/models/Coaching";
@@ -74,7 +75,7 @@ export async function updateSlot(actor: Actor, id: string, i: SlotInput) {
   if (changed && s.booked > 0) {
     const bs = await Booking.find({ slotId: s._id, status: "booked" }).lean();
     const users = await User.find({ _id: { $in: bs.map((b) => b.userId) } }).select("email").lean();
-    for (const u of users) await enqueueMail(u.email, "slot_changed", { startsAt: s.startsAt, link: `${APP()}/coaching` });
+    for (const u of users) { await enqueueMail(u.email, "slot_changed", { startsAt: s.startsAt, link: `${APP()}/coaching` }); await notify(u._id, "slot_changed", { title: "Jadwal coaching berubah", body: s.startsAt.toLocaleString("id-ID"), href: "/coaching" }); }
   }
   await audit(actor._id, "slot.update", id, { notified: changed && s.booked > 0 });
   return s;
@@ -94,7 +95,7 @@ export async function cancelSlot(actor: Actor, id: string, reason: string) {
   }
   s.status = "cancelled"; s.cancelReason = reason; s.booked = 0; await s.save();
   const users = await User.find({ _id: { $in: bs.map((b) => b.userId) } }).select("email").lean();
-  for (const u of users) await enqueueMail(u.email, "slot_cancelled", { startsAt: s.startsAt, link: `${APP()}/coaching` });
+  for (const u of users) { await enqueueMail(u.email, "slot_cancelled", { startsAt: s.startsAt, link: `${APP()}/coaching` }); await notify(u._id, "slot_cancelled", { title: "Sesi coaching dibatalkan coach", body: "Kuotamu tidak berkurang. Pilih slot pengganti.", href: "/coaching" }); }
   await audit(actor._id, "slot.cancel", id, { reason, bookings: bs.length });
   return s;
 }
@@ -131,6 +132,8 @@ export async function bookSlot(user: Actor & { currentLevelId?: Types.ObjectId |
     const coach = await User.findById(s.coachId).select("name").lean();
     const me = await User.findById(user._id).select("email").lean();
     if (me) await enqueueMail(me.email, "booking_confirmed", { coach: coach?.name ?? "Coach", ...mailBase(s) });
+    await notify(user._id, "booking_confirmed", { title: "Booking coaching terkonfirmasi", body: s.startsAt.toLocaleString("id-ID"), href: "/coaching" });
+    await notify(s.coachId, "booking_new", { title: "Ada peserta memesan slotmu", body: s.startsAt.toLocaleString("id-ID"), href: "/coach/sesi" });
     await audit(user._id, "booking.create", String(b._id));
     return b;
   } catch (e) {
@@ -192,7 +195,7 @@ export async function sendSessionReminders() {
     if (!claimed.modifiedCount) continue;
     const bs = await Booking.find({ slotId: s._id, status: "booked" }).lean();
     const users = await User.find({ _id: { $in: bs.map((b) => b.userId) } }).select("email").lean();
-    for (const u of users) { await enqueueMail(u.email, "session_reminder", mailBase(s)); sent++; }
+    for (const u of users) { await enqueueMail(u.email, "session_reminder", mailBase(s)); await notify(u._id, "session_reminder", { title: "Pengingat: sesi coaching besok", body: s.startsAt.toLocaleString("id-ID"), href: "/coaching" }); sent++; }
   }
   return { slots: slots.length, emails: sent };
 }

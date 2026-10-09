@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 
 export type NavGroup = { label?: string; items: { href: string; label: string }[] };
 const ROLE: Record<string, string> = { participant: "Peserta", admin: "Admin", inst_admin: "Admin institusi", coach: "Coach" };
@@ -40,7 +41,7 @@ export function ShellNav({
 
   const account = (
     <div className="mt-auto border-t border-navy-700 pt-4">
-      <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+      <div className="mb-2 flex items-center justify-between"><p className="truncate text-sm font-semibold text-white">{user.name}</p><NotificationBell /></div>
       <p className="truncate text-xs text-[#8FA6C8]">{ROLE[user.role] ?? user.role}</p>
       <button
         className="mt-3 w-full rounded-lg border border-[#8FA6C8]/40 px-3 py-2 text-sm font-semibold text-mist hover:bg-navy-700"
@@ -61,10 +62,11 @@ export function ShellNav({
       {/* Mobile / portrait top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between bg-navy px-4 py-3 md:hidden">
         <Logo />
+        <span className="flex items-center gap-1"><NotificationBell light />
         <button aria-label="Buka menu" aria-expanded={open} onClick={() => setOpen(true)}
           className="flex h-11 w-11 items-center justify-center rounded-lg text-white hover:bg-navy-700">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-        </button>
+        </button></span>
       </header>
 
       {open && (
