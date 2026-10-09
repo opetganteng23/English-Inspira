@@ -30,7 +30,8 @@ else
   echo "==> npm ci"
   npm ci --no-audit --no-fund
   echo "==> next build"
-  NODE_OPTIONS=--max-old-space-size=2048 npm run build
+  # Server dipakai banyak aplikasi: batasi memori build dan turunkan prioritasnya.
+  NODE_OPTIONS=--max-old-space-size=1536 nice -n 10 npm run build
 fi
 
 echo "==> pm2 restart"
