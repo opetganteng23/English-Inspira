@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { Material, MaterialProgress } from "@/models/Material";
 import { markMaterialDone } from "@/lib/units";
+import { visibleTo } from "@/lib/material-authz";
 import { mongoSanitize } from "@/lib/mongo-sanitize";
 import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 
@@ -21,7 +22,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     const b = schema.parse(await req.json());
     if (JSON.stringify(b.answers ?? null).length > 20_000) throw new HttpError(413, "Data jawaban terlalu besar");
     await connectDB();
-    const m = await Material.findOne({ slug: params.slug, status: "published" }).select("access").lean();
+    const m = await Material.findOne({ slug: params.slug, status: "published", ...visibleTo(user) }).select("access").lean();
     if (!m) throw new HttpError(404, "Materi tidak ditemukan");
     const p = await MaterialProgress.findOneAndUpdate(
       { userId: user._id, materialId: m._id },

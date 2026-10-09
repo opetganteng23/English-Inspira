@@ -14,6 +14,7 @@ const materialSchema = new Schema(
     access: { type: String, enum: ["free", "paid"], default: "paid" },
     status: { type: String, enum: ["draft", "review", "published"], default: "draft", index: true }, // HTML wajib lewat review (MTS §10.3)
     version: { type: Number, default: 0 },
+    institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true }, // kosong = materi global (admin); terisi = hanya untuk institusi itu (materi coach/inst_admin)
     authorId: { type: Schema.Types.ObjectId, ref: "User" },
     editorId: { type: Schema.Types.ObjectId, ref: "User" }, // penyunting terakhir
     reviewerId: { type: Schema.Types.ObjectId, ref: "User" },
@@ -41,6 +42,10 @@ const progressSchema = new Schema(
   { timestamps: true }
 );
 progressSchema.index({ userId: 1, materialId: 1 }, { unique: true });
+
+// Lampiran PDF materi (GridFS bucket `pdf`). Berkas ajar, bukan data pribadi.
+const fileSchema = new Schema({ fileId: { type: Schema.Types.ObjectId, required: true }, filename: String, size: Number, uploaderId: { type: Schema.Types.ObjectId, ref: "User" } }, { timestamps: true });
+export const MaterialFile = (mongoose.models.MaterialFile as Model<InferSchemaType<typeof fileSchema>>) || mongoose.model("MaterialFile", fileSchema);
 
 const leadSchema = new Schema({ email: { type: String, required: true, unique: true, lowercase: true }, source: String }, { timestamps: true });
 

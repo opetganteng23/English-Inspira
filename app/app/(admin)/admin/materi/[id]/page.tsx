@@ -8,6 +8,7 @@ import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { PRESETS } from "@/lib/material-presets";
 import { MaterialFrame } from "@/components/MaterialFrame";
+import { useMaterialBase } from "@/lib/use-material-base";
 import { Loading, ErrorNote } from "@/components/Charts";
 import type { HtmlDoc } from "@/lib/material-doc";
 
@@ -21,6 +22,7 @@ const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
 export default function MateriEditor({ params }: { params: { id: string } }) {
   const isNew = params.id === "baru";
+  const { base, isAdmin } = useMaterialBase();
   const router = useRouter();
   const { data: loaded, error, loading } = useApi<Mat>(isNew ? null : `/api/admin/materials/${params.id}`);
   const audios = useApi<{ audio: Audio[] }>("/api/admin/audio");
@@ -61,7 +63,7 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
       else if (review) { await api(`/api/admin/materials/${id}/publish`, { json: { action: "submit_review" } }); text = "Diajukan untuk review. Materi HTML baru tayang setelah disetujui penyunting lain."; }
       else if (publish) { await api(`/api/admin/materials/${id}/publish`, { json: { action: "publish" } }); text = "Disimpan dan diterbitkan (versi baru)."; }
       setMsg({ ok: true, text });
-      if (isNew) router.replace(`/admin/materi/${id}`); else versions.reload();
+      if (isNew) router.replace(`${base}/${id}`); else versions.reload();
     } catch (e) { setMsg({ ok: false, text: (e as Error).message }); } finally { setBusy(false); }
   }
   async function rollback(v: number) {
@@ -81,7 +83,7 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href="/admin/materi" className="text-sm font-semibold text-brand">← Semua materi</Link>
+      <Link href={base} className="text-sm font-semibold text-brand">← Semua materi</Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="page-title">{isNew ? "Materi baru" : "Edit materi"}</h1>
         <div className="flex flex-col gap-2 sm:flex-row"><button className="btn-outline" disabled={busy || !f.title.trim()} onClick={() => save(false)}>Simpan draf</button>{f.kind === "html" && loaded?.status !== "review" && !isNew && <button className="btn-solid" disabled={busy || !f.title.trim()} onClick={() => save(false, true)}>Simpan & ajukan review</button>}{f.kind === "html" && loaded?.status === "review" && <button className="btn-solid" disabled={busy} onClick={() => save(true)}>Setujui & terbitkan</button>}{f.kind === "rich" && <button className="btn-solid" disabled={busy || !f.title.trim()} onClick={() => save(true)}>Simpan & terbitkan</button>}</div>
@@ -93,7 +95,7 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
       <section className="card grid gap-4 sm:grid-cols-2">
         <label className={`${label} sm:col-span-2`}>Judul<input className="field font-normal" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
         <label className={`${label} sm:col-span-2`}>Ringkasan (tampil di daftar materi)<input className="field font-normal" maxLength={400} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
-        <label className={label}>Jenis materi<select className="field font-normal" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value as "rich" | "html" })} disabled={!isNew && !!loaded && loaded.status === "published" && false}><option value="rich">Rich text (bacaan)</option><option value="html">HTML halaman penuh (interaktif)</option></select></label>
+        <label className={label}>Jenis materi<select className="field font-normal" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value as "rich" | "html" })} disabled={!isNew && !!loaded && loaded.status === "published" && false}><option value="rich">Rich text (bacaan)</option>{isAdmin && <option value="html">HTML halaman penuh (interaktif)</option>}</select></label>
         <label className={`${label} sm:col-span-2`}>Tag (pisah koma)<input className="field font-normal" value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} placeholder="structure, grammar" /></label>
       </section>
 

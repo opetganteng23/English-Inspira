@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { handleError, HttpError } from "@/lib/rbac";
+import { assertCanWrite, requireAuthor } from "@/lib/material-authz";
 import { audit } from "@/lib/audit";
 import { Material, MaterialVersion } from "@/models/Material";
 import { User } from "@/models/User";
@@ -16,12 +17,13 @@ const snap = (m: InstanceType<typeof Material>) => ({ title: m.title, summary: m
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireAuthor();
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Materi tidak ditemukan");
     const b = z.object({ action: z.enum(["submit_review", "reject", "publish", "unpublish", "rollback"]), version: z.number().int().optional(), note: z.string().trim().max(500).optional() }).parse(await req.json());
     await connectDB();
     const m = await Material.findById(params.id);
     if (!m) throw new HttpError(404, "Materi tidak ditemukan");
+    assertCanWrite(admin, m);
 
     if (b.action === "submit_review") {
       if (m.status !== "draft") throw new HttpError(409, "Hanya draf yang bisa diajukan untuk review");
@@ -59,9 +61,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    const me = await requireAuthor();
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Materi tidak ditemukan");
     await connectDB();
+    const own = await Material.findById(params.id).select("institutionId kind");
+    if (!own) throw new HttpError(404, "Materi tidak ditemukan");
+    assertCanWrite(me, own);
     const vs = await MaterialVersion.find({ materialId: params.id }).select("version createdAt").sort({ version: -1 }).lean();
     return NextResponse.json({ versions: vs.map((v) => ({ version: v.version, at: v.createdAt })) });
   } catch (e) {

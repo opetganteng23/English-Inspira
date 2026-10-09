@@ -39,6 +39,7 @@
     "@tiptap/starter-kit": "^3.31.4",
     "@uiw/react-codemirror": "^4.25.12",
     "bcryptjs": "^3.0.3",
+    "dompurify": "^3.4.16",
     "exceljs": "^4.4.0",
     "jose": "^6.2.12",
     "midtrans-client": "^1.4.3",

@@ -22,7 +22,7 @@ export function topicStatus(score: number, items: number, th: { weak: number; pr
 type Scored = { skill: string; topic: string; correct: number; total: number; score: number };
 
 /** Gabungkan skor satu pengerjaan ke statistik akumulatif peserta; kembalikan status sebelum/sesudah per topik. */
-export async function updateTopicStats(userId: Types.ObjectId | string, institutionId: Types.ObjectId | string | undefined, attemptId: Types.ObjectId | string, scores: Scored[]) {
+export async function updateTopicStats(userId: Types.ObjectId | string, institutionId: Types.ObjectId | string | undefined, attemptId: Types.ObjectId | string | null, scores: Scored[]) {
   await connectDB();
   const [alpha, th] = await Promise.all([getParam("alpha"), getParam("weakness")]);
   const out: { skill: string; topic: string; score: number; items: number; status: TopicStatus; before: TopicStatus | null }[] = [];
@@ -34,7 +34,7 @@ export async function updateTopicStats(userId: Types.ObjectId | string, institut
     const status = topicStatus(score, items, th);
     await TopicStat.updateOne(
       { userId, skill: s.skill, topic: s.topic },
-      { $set: { score, items, status, lastAttemptId: attemptId, ...(institutionId ? { institutionId } : {}) } },
+      { $set: { score, items, status, ...(attemptId ? { lastAttemptId: attemptId } : {}), ...(institutionId ? { institutionId } : {}) } },
       { upsert: true }
     );
     out.push({ skill: s.skill, topic: s.topic, score, items, status, before: (cur?.status as TopicStatus | undefined) ?? null });

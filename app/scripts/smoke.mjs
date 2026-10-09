@@ -444,6 +444,47 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(null, "/api/certificates/verify/EPTA-ITP-2026-9999"); ok(r.status === 404, "nomor palsu 404");
   r = await req(admin, `/api/admin/itp-sessions/${sess}/export.xlsx`); const xx = Buffer.from(await r.res.arrayBuffer()); ok(r.status === 200 && xx.subarray(0, 2).toString() === "PK", "ekspor roster .xlsx");
 
+  console.log("\n== Rich text: blok interaktif & lampiran ==");
+  const quizCfg = JSON.stringify({ items: [{ q: "Pilih yang benar", options: ["is", "are"], answer: 1 }, { q: "Pilih lagi", options: ["a", "b"], answer: 0 }] });
+  const richHtml = `<p>Materi blok</p><div data-ei-block="quiz" data-config='${quizCfg}' data-topic="structure:blok uji" data-bid="blk1">x</div><div data-ei-block="quiz" data-config='{"items":[]}' data-topic="structure:x">salah</div><audio data-audio-id="${"a".repeat(24)}" data-transcript="1" controls></audio>`;
+  r = await req(admin, "/api/admin/materials", { method: "POST", json: { title: "Materi Blok Uji", kind: "rich", contentHtml: richHtml } }); ok(r.status === 201, "materi rich dengan blok dibuat"); const bm = r.data.id, bSlug = r.data.slug;
+  r = await req(admin, `/api/admin/materials/${bm}`); ok(r.data.contentHtml.includes('data-ei-block="quiz"') && (r.data.contentHtml.match(/data-ei-block/g) ?? []).length === 1, "blok sah tersimpan, blok tidak sah dibuang", r.data.contentHtml.slice(0, 160));
+  await req(admin, `/api/admin/materials/${bm}/publish`, { method: "POST", json: { action: "publish" } });
+  const ev1 = { materialId: bm, blockId: "blk1", itemId: "q0", topic: "structure:blok uji", correct: true };
+  r = await req(p1, "/api/events/block", { method: "POST", json: ev1 }); ok(r.status === 200 && r.data.counted === true, "hasil butir blok tercatat");
+  r = await req(p1, "/api/events/block", { method: "POST", json: ev1 }); ok(r.status === 200 && r.data.counted === false, "butir yang sama di hari yang sama tidak dihitung ulang");
+  r = await req(p1, "/api/events/block", { method: "POST", json: { ...ev1, itemId: "q1", correct: false } }); ok(r.data.counted === true, "butir lain dihitung");
+  r = await req(p1, "/api/events/block", { method: "POST", json: { ...ev1, itemId: "q9", topic: "structure:topik karangan" } }); ok(r.status === 404, "topik yang tidak dideklarasikan materi ditolak");
+  r = await req(p1, "/api/events/block", { method: "POST", json: { ...ev1, materialId: "b".repeat(24) } }); ok(r.status === 404, "materi tak ada ditolak");
+  r = await req(admin, "/api/events/block", { method: "POST", json: ev1 }); ok(r.status === 403, "hanya peserta yang mengirim hasil blok");
+  r = await req(p1, "/api/study-plan"); const bt = r.data.topics.find((t) => t.topic === "blok uji"); ok(bt && bt.items === 2, "hasil blok memperbarui topic_stats", J(bt));
+  r = await req(p1, `/api/materials/${bSlug}`); ok(r.status === 200 && r.data.contentHtml.includes("data-ei-block"), "peserta menerima materi dengan blok");
+
+  const pdfAtt = await makePdf(["Lampiran materi"]);
+  const attach = (buf) => { const f = new FormData(); f.append("file", new Blob([buf], { type: "application/pdf" }), "lampiran.pdf"); return f; };
+  r = await req(p1, "/api/material-files", { method: "POST", form: attach(pdfAtt) }); ok(r.status === 403, "peserta tidak bisa melampirkan PDF materi");
+  r = await req(coach, "/api/material-files", { method: "POST", form: attach(Buffer.from("bukan pdf")) }); ok(r.status === 415, "lampiran non-PDF ditolak");
+  r = await req(coach, "/api/material-files", { method: "POST", form: attach(pdfAtt) }); ok(r.status === 201 && r.data.url, "coach melampirkan PDF materi", J(r.data)); const fileUrl = r.data.url;
+  r = await req(p1, fileUrl); ok(r.status === 200 && r.headers.get("content-type") === "application/pdf", "peserta mengunduh lampiran");
+  r = await req(null, fileUrl); ok(r.status === 401, "lampiran butuh login");
+
+  console.log("\n== Materi oleh coach / admin institusi ==");
+  r = await req(coach, "/api/admin/materials", { method: "POST", json: { title: "Materi Khusus Kampus", kind: "rich", contentHtml: "<p>Khusus peserta kampus ini</p>" } }); ok(r.status === 201, "coach membuat materi rich untuk institusinya"); const cm = r.data.id, cmSlug = r.data.slug;
+  r = await req(coach, "/api/admin/materials", { method: "POST", json: { title: "HTML Coach", kind: "html", htmlDoc: { html: "<b>x</b>" } } }); ok(r.status === 403, "coach tidak boleh membuat materi HTML");
+  r = await req(coach, `/api/admin/materials/${cm}/publish`, { method: "POST", json: { action: "publish" } }); ok(r.status === 200, "coach menerbitkan materi institusinya");
+  r = await req(coach, "/api/admin/materials"); ok(r.data.materials.every((m) => ["Materi Khusus Kampus"].includes(m.title)), "coach hanya melihat materinya sendiri (bukan materi global)", J(r.data.materials.map((m) => m.title)));
+  r = await req(coachB, `/api/admin/materials/${cm}`); ok(r.status === 404, "coach institusi lain tidak bisa membuka/mengubah");
+  r = await req(coachB, `/api/admin/materials/${cm}`, { method: "DELETE" }); ok(r.status === 404, "coach institusi lain tidak bisa menghapus");
+  r = await req(ia, `/api/admin/materials/${cm}`); ok(r.status === 200, "admin institusi sekampus dapat membuka materi institusinya");
+  r = await req(coach, `/api/admin/materials/${bm}`); ok(r.status === 404, "coach tidak bisa membuka materi global milik admin");
+  r = await req(coach, `/api/admin/materials/${cm}`, { method: "PATCH", json: { title: "Materi Khusus Kampus", kind: "html", htmlDoc: { html: "<b>x</b>" } } }); ok(r.status === 403, "coach tidak bisa mengubah jenis menjadi HTML");
+  r = await req(p1, "/api/materials"); ok(r.data.materials.some((m) => m.slug === cmSlug), "peserta institusi yang sama melihat materi itu");
+  await req(admin, `/api/admin/institutions/${iB}/invites`, { method: "POST", json: { emails: ["pb@test.local"] } }); await sleep(1500);
+  const pbJar = await login("pb@test.local", { invite: inviteTokenFor("pb@test.local") }); await req(pbJar, "/api/me/consent", { method: "POST", json: { consent: true, name: "Peserta B" } });
+  r = await req(pbJar, "/api/materials"); ok(r.status === 200 && !r.data.materials.some((m) => m.slug === cmSlug) && r.data.materials.some((m) => m.slug === bSlug), "peserta institusi lain tidak melihatnya; materi global tetap terlihat");
+  r = await req(pbJar, `/api/materials/${cmSlug}`); ok(r.status === 404, "peserta institusi lain: 404 saat membuka langsung");
+  r = await req(admin, "/api/admin/materials"); ok(r.data.materials.some((m) => m.title === "Materi Khusus Kampus"), "admin melihat semua materi");
+
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });
   ok(r.status === 200, "kontrak diubah ke masa lalu");

@@ -5,6 +5,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { getParam } from "@/lib/config";
 import { Course, Unit, UnitProgress } from "@/models/Course";
 import { Material, MaterialProgress } from "@/models/Material";
+import { visibleTo } from "@/lib/material-authz";
 import { Attempt, Test } from "@/models/Test";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (!unit || !course) throw new HttpError(404, "Unit tidak ditemukan");
 
     const [mats, prog, mprog, quiz, running, pass] = await Promise.all([
-      Material.find({ _id: { $in: unit.materialIds }, status: "published" }).select("title slug kind summary").lean(),
+      Material.find({ _id: { $in: unit.materialIds }, status: "published", ...visibleTo(me) }).select("title slug kind summary").lean(),
       UnitProgress.findOne({ userId: me._id, unitId: unit._id }).lean(),
       MaterialProgress.find({ userId: me._id, materialId: { $in: unit.materialIds } }).lean(),
       unit.quizTestId ? Test.findOne({ _id: unit.quizTestId, active: true }).select("name sections").lean() : null,

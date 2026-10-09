@@ -11,6 +11,7 @@ import { analysisResultSchema, checkResult, templateResult, numbersIn, aliasFor,
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { validBlock } from "@/lib/blocks";
 import { mapQuestionRows, parseTags } from "@/lib/import-questions";
 import { mongoSanitize } from "@/lib/mongo-sanitize";
 import { parseItpScores, verifyScores, isPdf } from "@/lib/pdf-import";
@@ -325,4 +326,35 @@ describe("impor soal (Bank Soal)", () => {
   });
   it("kolom wajib hilang dilaporkan sekali", () => { const r = mapQuestionRows([["foo", "bar"], ["1", "2"]]); expect(r).toHaveLength(1); expect(r[0].ok).toBe(false); });
   it("tag tanpa titik dua memakai section sebagai skill", () => expect(parseTags("modal verbs", "structure")).toEqual([{ skill: "structure", topic: "modal verbs" }]));
+});
+
+describe("blok interaktif rich text (MTS §10.2)", () => {
+  const quiz = JSON.stringify({ items: [{ q: "Pilih", options: ["a", "b"], answer: 1 }] });
+  it("validBlock: topik wajib untuk blok bernilai, konfigurasi harus sah", () => {
+    expect(validBlock("quiz", quiz, "structure:subject-verb")).toBe(true);
+    expect(validBlock("quiz", quiz, "")).toBe(false); // tanpa topik
+    expect(validBlock("quiz", quiz, "tanpa-titik-dua")).toBe(false);
+    expect(validBlock("quiz", JSON.stringify({ items: [{ q: "x", options: ["a"], answer: 0 }] }), "a:b")).toBe(false);
+    expect(validBlock("quiz", JSON.stringify({ items: [{ q: "x", options: ["a", "b"], answer: 5 }] }), "a:b")).toBe(false);
+    expect(validBlock("quiz", "{bukan json", "a:b")).toBe(false);
+    expect(validBlock("hacker", "{}", "a:b")).toBe(false);
+    expect(validBlock("timer", JSON.stringify({ minutes: 5 }), "")).toBe(true);
+    expect(validBlock("timer", JSON.stringify({ minutes: 500 }), "")).toBe(false);
+    expect(validBlock("fill", JSON.stringify({ items: [{ text: "tanpa isian", answers: ["x"] }] }), "a:b")).toBe(false);
+  });
+  it("sanitizeRich mempertahankan blok sah dan membuang blok tidak sah", () => {
+    const ok = sanitizeRich(`<div data-ei-block="quiz" data-config='${quiz}' data-topic="structure:sv" data-bid="abc123">x</div>`);
+    expect(ok).toContain('data-ei-block="quiz"');
+    expect(ok).toContain("data-topic");
+    const bad = sanitizeRich(`<p>teks</p><div data-ei-block="quiz" data-config='{"items":[]}' data-topic="structure:sv" onclick="x()">x</div><div data-ei-block="note" data-config='{"kind":"x"}'>y</div>`);
+    expect(bad).not.toContain("data-ei-block");
+    expect(bad).toContain("teks");
+    expect(bad).not.toContain("onclick");
+  });
+  it("div biasa tidak boleh membawa data-config; style font dibatasi; transkrip audio ditandai", () => {
+    expect(sanitizeRich('<div data-config="x" data-topic="a:b">ok</div>')).not.toContain("data-config");
+    const f = sanitizeRich('<span style="font-size:18px;font-family:Georgia, serif;position:fixed">t</span>');
+    expect(f).toContain("font-size:18px"); expect(f).toContain("font-family"); expect(f).not.toContain("position");
+    expect(sanitizeRich('<audio data-audio-id="aaaaaaaaaaaaaaaaaaaaaaaa" data-transcript="1"></audio>')).toContain('data-transcript="1"');
+  });
 });

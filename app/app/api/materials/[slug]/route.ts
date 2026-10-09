@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { visibleTo } from "@/lib/material-authz";
 import { injectAudio } from "@/lib/materials";
 import { sanitizeRich } from "@/lib/sanitize";
 import { Material, MaterialProgress } from "@/models/Material";
@@ -11,7 +12,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   try {
     const user = await requireRole(["participant", "admin"]);
     await connectDB();
-    const m = await Material.findOne({ slug: params.slug, ...(user.role === "admin" ? {} : { status: "published" }) }).lean();
+    const m = await Material.findOne({ slug: params.slug, ...(user.role === "admin" ? {} : { status: "published", ...visibleTo(user) }) }).lean();
     if (!m) throw new HttpError(404, "Materi tidak ditemukan");
 
     const id = String(m._id);

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { handleError } from "@/lib/rbac";
+import { requireAuthor } from "@/lib/material-authz";
 import { Audio } from "@/models/Audio";
 import { QuestionGroup } from "@/models/Question";
 
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireAuthor(); // penulis materi perlu daftar audio untuk menyisipkan pemutar
     await connectDB();
     const list = await Audio.find().select("title durationSec size transcript createdAt").sort({ createdAt: -1 }).limit(200).lean();
     const used = new Set((await QuestionGroup.find({ audioId: { $in: list.map((a) => a._id) } }).select("audioId").lean()).map((g) => String(g.audioId)));

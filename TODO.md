@@ -65,9 +65,9 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | L1 | Level → Course → Unit; `unit_progress`; syarat lulus (`unit_pass_score`, kuis dari bank soal) (§10.1) | ✅ Level → Course → Unit, `unit_progress`, lulus = materi wajib selesai + kuis ≥ `unit_pass_score` (teruji smoke: kuis gagal → lulus → unit selesai) |
 | L2 | Admin: kelola course/unit/`requiredItems`; peserta hanya melihat course sesuai level | ✅ admin: halaman Kursus & Unit (course/unit/materi wajib/kuis); peserta hanya melihat course levelnya — UI belum dicoba di browser |
 | L3 | Rich text (TipTap) — fitur dasar, gambar→assets, YouTube, audio | ✅ (belum diuji di browser) |
-| L4 | Rich text lengkap: ukuran/jenis font, audio dengan transkrip, lampiran PDF, layar penuh, pratinjau ponsel, DOMPurify klien (§10.2) | ⬜ |
-| L5 | Blok interaktif bawaan di rich text (kuis/flashcard/isian/pencocokan/timer) bertag topik → `learning_events` | ⬜ |
-| L6 | Penulis rich text: admin, coach, inst_admin (sekarang admin saja) | ⬜ |
+| L4 | Rich text lengkap: ukuran/jenis font, audio dengan transkrip, lampiran PDF, layar penuh, pratinjau ponsel, DOMPurify klien (§10.2) | ✅ font (jenis/ukuran), warna, highlight, rata, sub/superskrip, daftar, checklist, tabel (tambah/hapus/gabung/pisah sel), kutipan, kode, garis, tautan, gambar→assets, YouTube, audio + transkrip, lampiran PDF, penghitung kata, layar penuh, pratinjau ponsel, DOMPurify klien + sanitize-html server — sanitizer diuji unit/smoke; **editor belum dicoba di browser** |
+| L5 | Blok interaktif bawaan di rich text (kuis/flashcard/isian/pencocokan/timer) bertag topik → `learning_events` | ✅ blok kuis, flashcard, isian, pencocokan, timer, catatan/tips; konfigurasi JSON divalidasi server; tiap butir wajib bertopik dan mengirim hasil ke `topic_stats` (sekali per butir per hari) — API teruji; komponen & dialog belum dicoba di browser; ubah blok = hapus lalu buat ulang |
+| L6 | Penulis rich text: admin, coach, inst_admin (sekarang admin saja) | ✅ coach & inst_admin menulis rich text untuk institusinya (materi ber-`institutionId`, hanya terlihat peserta institusi itu); HTML tetap hanya admin — teruji |
 | L7 | HTML sandbox: **hanya** `allow-scripts allow-forms`; CSP baseline ketat tanpa host eksternal (§10.3) | ✅ sandbox hanya `allow-scripts allow-forms`; CSP baseline tanpa host eksternal (diuji unit); isolasi di browser nyata belum diuji |
 | L8 | Jembatan: pesan ber-versi + **nonce** + tipe `report`/`complete` + Zod + batas frekuensi; hapus global `EI` umum (§10.3) | ✅ pesan ber-versi + nonce (jembatan menghapus dirinya dari DOM) + Zod + batas frekuensi; `EI` dibekukan; `report`/`complete` (diuji unit) |
 | L9 | Status materi draft → **review** → published, audit penulis/reviewer/publish/rollback (§10.3) | ✅ draft → review → published, HTML wajib review, penerbit ≠ penyunting bila >1 admin, ubah isi HTML terbit → draf; audit tiap langkah (teruji smoke) |
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 57 uji) & `scripts/smoke.mjs` v2.2 (245 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (273 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
@@ -153,12 +153,11 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 ## 12. Sisa pekerjaan
 
-Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 57 uji; smoke 245/245 (semua API alur v2.2 termasuk ITP).
+Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 60 uji; smoke 273/273 (semua API alur v2.2 termasuk ITP).
 
 | Prioritas | Item | Status |
 |---|---|---|
 | P1 | Buka seluruh UI baru di browser + uji responsif 9:16 s.d. 16:9 (Playwright) | ⬜ (belum dijalankan; ditunda atas permintaan pemilik) |
-| P2 | L4 rich text lengkap, L5 blok interaktif, L6 penulis coach/inst_admin | ⬜ |
 | P2 | L10 uji keamanan iframe di browser (akses parent/storage/cookie, jaringan, navigasi, popup) | ⬜ |
 | P3 | Uji panggilan Claude nyata, SMTP nyata, MongoDB nyata, node-cron di PM2, build Docker (menunggu kunci & URL DB) | ⬜ |
 | P3 | OCR untuk PDF hasil scan | ⬜ |

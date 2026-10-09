@@ -6,6 +6,7 @@ const nav: NavGroup[] = [
     { href: "/institusi/peserta", label: "Peserta & undangan" },
     { href: "/institusi/jadwal", label: "Jadwal tes rombongan" },
     { href: "/institusi/laporan", label: "Laporan" },
+    { href: "/institusi/materi", label: "Materi institusi" },
   ] },
 ];
 
