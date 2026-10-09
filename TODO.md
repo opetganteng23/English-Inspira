@@ -191,6 +191,7 @@ Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 300/3
 | A4 | Lupa password: tautan 30 menit, sekali pakai; reset juga membuktikan email | ✅ teruji |
 | A5 | Ganti/set password di profil (password lama wajib bila sudah ada) | ✅ teruji |
 | A6 | Kode institusi tampil di dasbor admin institusi dan daftar institusi admin | ✅ |
-| A7 | Akun demo `davdchndra@gmail.com` (password diset, riwayat placement 473 lalu simulasi 497 dan 523, analisis, study plan, Konselor AI) | 🔄 `scripts/seed-demo-participant.ts` |
+| A7 | Akun demo `davdchndra@gmail.com` (password diset, riwayat placement 473 lalu simulasi 497 dan 523, analisis, study plan, Konselor AI) | ✅ dibuat di produksi lewat `scripts/seed-demo-participant.ts` (email tidak dikirim) |
+| A10 | Bug: jawaban JSON Claude sering rusak (tanda kutip) sehingga analisis jatuh ke template | ✅ analisis & Konselor AI memakai tool use (keluaran terstruktur), diuji ke API nyata |
 | A8 | Hapus otomatis pendaftar yang tidak pernah memverifikasi email | ⬜ belum (tidak memakan kursi, hanya data) |
 | A9 | Login password untuk coach/admin institusi/admin: memakai Lupa password untuk membuat password pertama (profil hanya untuk peserta) | ⏭️ cukup lewat Lupa password |

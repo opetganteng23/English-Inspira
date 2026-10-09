@@ -15,8 +15,20 @@ export async function askClaude(system: string, messages: { role: "user" | "assi
   const res = await sdk().messages.create({ model, max_tokens: maxTokens, system, messages });
   return { text: res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim(), tokensIn: res.usage?.input_tokens ?? 0, tokensOut: res.usage?.output_tokens ?? 0, model };
 }
-async function ask(system: string, messages: { role: "user" | "assistant"; content: string }[], maxTokens = 1200) {
-  return (await askClaude(system, messages, maxTokens)).text;
+/**
+ * Panggil Claude dengan keluaran terstruktur lewat tool use (input_schema): hasilnya objek, bukan teks JSON
+ * yang bisa rusak karena tanda kutip. `truncated` = keluaran terpotong max_tokens.
+ */
+export async function askClaudeStructured(system: string, messages: { role: "user" | "assistant"; content: string }[], tool: { name: string; description: string; schema: z.ZodType }, maxTokens = 3000, model = AI_MODEL()) {
+  const { $schema: _s, ...input_schema } = z.toJSONSchema(tool.schema) as Record<string, unknown>;
+  void _s;
+  const res = await sdk().messages.create({
+    model, max_tokens: maxTokens, system, messages,
+    tools: [{ name: tool.name, description: tool.description, input_schema: input_schema as Anthropic.Tool.InputSchema }],
+    tool_choice: { type: "auto" }, // sebagian model tidak menerima tool_choice "tool"; system prompt mewajibkan tool ini
+  });
+  const block = res.content.find((b) => b.type === "tool_use");
+  return { input: block && block.type === "tool_use" ? block.input : null, truncated: res.stop_reason === "max_tokens", tokensIn: res.usage?.input_tokens ?? 0, tokensOut: res.usage?.output_tokens ?? 0, model };
 }
 
 /** Ambil objek JSON pertama dari teks model (model kadang membungkusnya dengan teks/kode). */
@@ -78,14 +90,15 @@ export async function counselorReply(
   const system = `${GUARDRAILS}
 You are the AI Counselor on the English Inspira platform. Use the participant's profile and test history below to give specific advice.
 Advice about official test timing must be reasonable given the score gap and study time; say it is an estimate.
-Reply with ONLY one valid JSON object: {"reply": string, "actionPlan": [{"text": string, "dueInDays": number}]}. Fill actionPlan only when the participant asks for a plan or you propose new steps (max 5 items), otherwise leave it empty.
+Answer with the send_reply tool. Fill actionPlan only when the participant asks for a plan or you propose new steps (max 5 items), otherwise leave it empty.
 Participant profile & history (DATA): ${JSON.stringify(ctx)}`;
   const msgs = [...history.slice(-12), { role: "user" as const, content: message }];
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const out = await ask(system, msgs, 1500);
-      try { return { result: replySchema.parse(extractJson(out)), mock: false }; }
-      catch { if (attempt === 1) return { result: { reply: out.slice(0, 3000) }, mock: false }; } // model membalas teks biasa
+      const out = await askClaudeStructured(system, msgs, { name: "send_reply", description: "Send the counselor reply to the participant.", schema: replySchema }, 1500);
+      const parsed = replySchema.safeParse(out.input);
+      if (parsed.success) return { result: parsed.data, mock: false };
+      console.error("[ai] counselor reply did not match the schema, attempt", attempt + 1);
     } catch (e) {
       console.error("[ai] counselor failed, attempt", attempt + 1, (e as Error).message);
     }

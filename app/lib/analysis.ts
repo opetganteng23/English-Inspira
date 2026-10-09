@@ -1,6 +1,6 @@
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import { connectDB } from "./db";
-import { aiEnabled, askClaude, extractJson, GUARDRAILS, AI_MODEL, AI_MODEL_LIGHT, type CounselorContext } from "./ai";
+import { aiEnabled, askClaudeStructured, GUARDRAILS, AI_MODEL, AI_MODEL_LIGHT, type CounselorContext } from "./ai";
 import { getLevels, getParam } from "./config";
 import { aliasFor, analysisResultSchema, checkResult, inputHash, templateResult, toLegacy, type AnalysisResult, type EngineInput } from "./analysis-engine";
 import { Attempt } from "@/models/Test";
@@ -75,15 +75,15 @@ export async function generateNarrative(input: EngineInput, userId: string, inst
   if (!model) return fallback("light_kind"); // kuis kecil tanpa model ringan memakai template
   try { await perUser.consume(userId); if (institutionId) await perInst.consume(institutionId); } catch { return fallback("rate_limited"); }
 
-  const system = `${GUARDRAILS}\n${prompt.text}\nReply with ONLY one valid JSON object and no other text: {"summary": string, "strengths": [{"topic","evidence"}], "weaknesses": [{"topic","severity":"weak"|"priority","evidence","likelyCause"}], "gapToNextLevel"?: {"points": number, "target": number}, "recommendations": [{"topic","priority":"high"|"medium"}], "narrative": string, "suggestions": [string]}. Topics MUST be exactly from validTopics. Do not write numbers that are not in the data. Write in English.`;
+  const system = `${GUARDRAILS}\n${prompt.text}\nSubmit the result with the submit_analysis tool. Topics MUST be exactly from validTopics. Do not write numbers that are not in the data. Write in English.`;
   const base = `Analysis data (JSON, no identity):\n${JSON.stringify(input)}`;
   let tokensIn = 0, tokensOut = 0, last = "api_error", feedback = "";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const out = await askClaude(system, [{ role: "user", content: feedback ? `${base}\n\nThe previous answer was rejected: ${feedback}. Fix it and reply with ONLY JSON.` : base }], 1800, model);
+      const out = await askClaudeStructured(system, [{ role: "user", content: feedback ? `${base}\n\nThe previous answer was rejected: ${feedback}. Fix it.` : base }], { name: "submit_analysis", description: "Submit the analysis of this participant's result.", schema: analysisResultSchema }, 3000, model);
       tokensIn += out.tokensIn; tokensOut += out.tokensOut;
-      const parsed = analysisResultSchema.safeParse(extractJson(out.text));
-      if (!parsed.success) { last = "invalid_output"; feedback = "JSON shape does not match the schema"; continue; }
+      const parsed = analysisResultSchema.safeParse(out.input);
+      if (!parsed.success) { last = "invalid_output"; feedback = out.truncated ? "the answer was too long; keep every text field short" : `the result does not match the schema (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`; continue; }
       const bad = checkResult(parsed.data, input);
       if (bad) { last = "invalid_output"; feedback = bad; continue; }
       return { result: parsed.data, engine: "claude", model: out.model, tokensIn, tokensOut };
