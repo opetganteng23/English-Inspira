@@ -72,7 +72,7 @@ Hal khusus untuk PM2/Nginx:
 - **Nginx wajib menimpa `X-Forwarded-For` dengan `$remote_addr`** (sudah di contoh), karena rate limit memakai header itu, dan meneruskan `Host`/`X-Forwarded-Host` karena pengecekan Origin (anti-CSRF) membandingkannya.
 - `client_max_body_size 20m` untuk unggahan audio (maks 15 MB). Audio dan gambar tersimpan di MongoDB (GridFS/base64), jadi tidak ada folder upload yang perlu dibackup terpisah.
 - **MongoDB:** pakai Atlas, atau pasang MongoDB di VM yang sama (hanya `127.0.0.1`, aktifkan autentikasi). Backup harian `mongodump` ke luar VM.
-- Firewall: buka hanya 22, 80, 443. Port 3000 dan 27017 jangan terbuka ke publik.
+- Firewall: buka hanya 22, 80, 443. Port 4001 dan 27017 jangan terbuka ke publik.
 
 Deploy memakai VPS + PM2 + Nginx (tanpa Docker).
 
