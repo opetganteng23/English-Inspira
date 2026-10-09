@@ -68,7 +68,7 @@ function useCooldown() {
 }
 
 // ---------- Masuk ----------
-function SignInForm() {
+function SignInForm({ admin = false }: { admin?: boolean }) {
   const sp = useSearchParams();
   const next = safeNext(sp.get("next"));
   const invite = sp.get("invite") ?? sp.get("token") ?? "";
@@ -91,11 +91,11 @@ function SignInForm() {
       .catch((x) => setErr((x as Error).message));
   }, [invite]);
 
-  const go = (d: { role: string; needsConsent: boolean }) => { window.location.href = d.needsConsent ? "/consent" : next ?? homeOf(d.role, false); };
+  const go = (d: { role: string; needsConsent: boolean }) => { window.location.href = admin ? "/admin" : d.needsConsent ? "/consent" : next ?? homeOf(d.role, false); };
 
   async function loginPassword(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/login", { json: { email, password } })); }
+    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/login", { json: { email, password, ...(admin ? { adminOnly: true } : {}) } })); }
     catch (x) { setErr((x as Error).message); setBusy(false); }
   }
   async function requestOtp(e?: React.FormEvent) {
@@ -108,7 +108,7 @@ function SignInForm() {
   }
   async function verify(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/verify-otp", { json: { email, code: otp, invite: invite || undefined } })); }
+    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/verify-otp", { json: { email, code: otp, invite: invite || undefined, ...(admin ? { adminOnly: true } : {}) } })); }
     catch (x) { setErr((x as Error).message); setBusy(false); }
   }
 
@@ -118,7 +118,7 @@ function SignInForm() {
   );
 
   return (
-    <Shell heading={institution ? `Welcome to the ${institution} program.` : "Welcome back."} text="Sign in with your password, or get a 6-digit code by email. New here? Create an account with the code from your institution.">
+    <Shell heading={admin ? "Admin sign-in." : institution ? `Welcome to the ${institution} program.` : "Welcome back."} text={admin ? "For English Inspira administrators. This page stays available during maintenance." : "Sign in with your password, or get a 6-digit code by email. New here? Create an account with the code from your institution."}>
       {step === "otp" ? (
         <form onSubmit={verify} className="flex flex-col gap-5">
           <Title t="Enter the code" s={<>A 6-digit code was sent to <b>{email}</b>. It is in the email subject and valid for 5 minutes. If you requested several codes, use the latest one.</>} />
@@ -132,7 +132,7 @@ function SignInForm() {
         </form>
       ) : (
         <form onSubmit={mode === "password" ? loginPassword : requestOtp} className="flex flex-col gap-5">
-          <Title t="Sign in" />
+          <Title t={admin ? "Admin sign-in" : "Sign in"} />
           <div role="tablist" className="flex gap-1 rounded-xl bg-canvas p-1">{tab("password", "Password")}{tab("code", "Email code")}</div>
           <Field label="Email" type="email" required autoComplete="email" placeholder="name@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           {mode === "password" && (
@@ -143,7 +143,7 @@ function SignInForm() {
           )}
           <Err e={err} />
           <button className="btn-primary" disabled={busy}>{busy ? (mode === "password" ? "Signing in…" : "Sending…") : mode === "password" ? "Sign in" : "Send code"}</button>
-          <p className="text-center text-sm text-ink-soft">Don&apos;t have an account? <Link href="/register" className="font-semibold text-brand">Create an account</Link></p>
+          {!admin && <p className="text-center text-sm text-ink-soft">Don&apos;t have an account? <Link href="/register" className="font-semibold text-brand">Create an account</Link></p>}
         </form>
       )}
     </Shell>
@@ -280,6 +280,7 @@ function ResetForm() {
 }
 
 export function OtpAuth() { return <Suspense><SignInForm /></Suspense>; }
+export function AdminSignIn() { return <Suspense><SignInForm admin /></Suspense>; }
 export function RegisterPage() { return <Suspense><RegisterForm /></Suspense>; }
 export function ForgotPasswordPage() { return <Suspense><ForgotForm /></Suspense>; }
 export function ResetPasswordPage() { return <Suspense><ResetForm /></Suspense>; }

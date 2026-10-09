@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useApi } from "@/lib/useApi";
 import { tgl } from "@/lib/client";
 import { HBars, Stat, Loading, ErrorNote } from "@/components/Charts";
+import { MaintenanceToggle } from "@/components/MaintenanceToggle";
 
 type D = {
   days: number;
@@ -29,6 +30,7 @@ export default function AdminHome() {
         <div><h1 className="page-title">Overview</h1><p className="text-sm text-ink-soft">Activity in the last {days} days</p></div>
         <div className="flex gap-1 rounded-lg bg-white p-1 text-sm" role="tablist" aria-label="Time range">{[7, 30, 90].map((n) => <button key={n} role="tab" aria-selected={days === n} onClick={() => setDays(n)} className={`rounded-md px-3 py-1.5 font-semibold ${days === n ? "bg-navy text-white" : "text-ink-soft"}`}>{n} days</button>)}</div>
       </div>
+      <MaintenanceToggle />
       <ErrorNote text={error} />
       {loading && !d ? <Loading /> : d && k && (
         <>

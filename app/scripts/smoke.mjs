@@ -580,6 +580,26 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
     r = await req(null, "/masuk?invite=abc"); ok(r.status === 308 && (r.headers.get("location") ?? "").endsWith("/sign-in?invite=abc"), "URL lama /masuk dialihkan ke /sign-in");
   }
 
+  console.log("\n== Mode pemeliharaan ==");
+  {
+    const pj = { c: "" };
+    await req(pj, "/api/auth/login", { method: "POST", json: { email: "daftar@test.local", password: "reset12345" } });
+    r = await req(pj, "/api/admin/maintenance", { method: "PUT", json: { on: true, message: "Back at 10:00" } }); ok(r.status === 403, "peserta tidak bisa menyalakan pemeliharaan");
+    r = await req(admin, "/api/admin/maintenance", { method: "PUT", json: { on: true, message: "Back at 10:00" } }); ok(r.status === 200 && r.data.on === true, "admin menyalakan pemeliharaan");
+    r = await req(null, "/api/maintenance"); ok(r.data.on === true && r.data.message === "Back at 10:00", "status pemeliharaan publik");
+    r = await req(pj, "/api/me"); ok(r.status === 503 && r.data.maintenance === true, "API peserta: 503 saat pemeliharaan", J(r.data));
+    r = await fetch(U + "/home", { headers: { cookie: pj.c }, redirect: "manual" }); const html = await r.text();
+    ok(html.includes("We are doing some maintenance") && html.includes("Back at 10:00"), "halaman peserta menampilkan pemeliharaan");
+    r = await fetch(U + "/"); ok((await r.text()).includes("We are doing some maintenance"), "landing menampilkan pemeliharaan");
+    r = await req(null, "/admin/login"); ok(r.status === 200, "/admin/login tetap terbuka");
+    r = await req(null, "/api/auth/login", { method: "POST", json: { email: "daftar@test.local", password: "reset12345", adminOnly: true } }); ok(r.status === 403, "login admin menolak akun bukan admin");
+    r = await req(admin, "/api/admin/dashboard"); ok(r.status === 200, "admin tetap bisa memakai aplikasi");
+    r = await req(admin, "/api/admin/maintenance", { method: "PUT", json: { on: false } }); ok(r.status === 200 && r.data.on === false, "admin mematikan pemeliharaan");
+    r = await req(pj, "/api/me"); ok(r.status === 200, "setelah dimatikan peserta bisa lagi");
+    r = await req(null, "/maintenance"); ok(r.status === 307 || r.status === 308, "/maintenance dialihkan saat tidak pemeliharaan");
+    r = await req(null, "/admin"); ok((r.headers.get("location") ?? "").endsWith("/admin/login"), "/admin tanpa login diarahkan ke /admin/login");
+  }
+
   console.log(`\n== HASIL: ${pass} lulus, ${fail} gagal ==`);
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.error("ERROR", e); process.exit(2); });

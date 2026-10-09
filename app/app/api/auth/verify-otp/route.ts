@@ -10,7 +10,7 @@ import { limit, clientIp } from "@/lib/ratelimit";
 import { handleError, HttpError } from "@/lib/rbac";
 import { sha256 } from "@/lib/participants";
 
-const schema = z.object({ email: z.email().max(200), code: z.string().regex(/^\d{6}$/), invite: z.string().max(100).optional() });
+const schema = z.object({ email: z.email().max(200), code: z.string().regex(/^\d{6}$/), invite: z.string().max(100).optional(), adminOnly: z.boolean().optional() });
 const adminEmails = () => (process.env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 export async function POST(req: Request) {
@@ -28,6 +28,7 @@ export async function POST(req: Request) {
       if (!adminEmails().includes(email)) throw new HttpError(400, BAD);
       user = await User.create({ email, role: "admin", status: "active", consentAt: new Date() });
     }
+    if (body.adminOnly && user.role !== "admin") throw new HttpError(403, "This sign-in page is for admins only. Use the regular sign-in page.");
     if (user.status === "disabled") throw new HttpError(403, "Account deactivated");
     if (user.role !== "admin" && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Your access has ended. Contact your institution.");
 

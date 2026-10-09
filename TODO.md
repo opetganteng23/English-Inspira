@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, `/api/health` | ✅ (deploy: Biznet Gio + PM2, **tanpa Docker**) |
-| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (300 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (313 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
@@ -153,7 +153,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 ## 12. Sisa pekerjaan
 
-Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 300/300 (alur v2.2 termasuk ITP, daftar, password, reset).
+Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 313/313 (alur v2.2 termasuk ITP, daftar, password, reset).
 
 | Prioritas | Item | Status |
 |---|---|---|
@@ -195,3 +195,13 @@ Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 300/3
 | A10 | Bug: jawaban JSON Claude sering rusak (tanda kutip) sehingga analisis jatuh ke template | ✅ analisis & Konselor AI memakai tool use (keluaran terstruktur), diuji ke API nyata |
 | A8 | Hapus otomatis pendaftar yang tidak pernah memverifikasi email | ⬜ belum (tidak memakan kursi, hanya data) |
 | A9 | Login password untuk coach/admin institusi/admin: memakai Lupa password untuk membuat password pertama (profil hanya untuk peserta) | ⏭️ cukup lewat Lupa password |
+
+## 15. Mode pemeliharaan (permintaan pemilik 2026-10-09)
+
+| ID | Item | Status |
+|---|---|---|
+| M1 | Saklar on/off + pesan di dasbor admin (`/admin`), tercatat di audit log | ✅ |
+| M2 | Saat aktif: semua halaman non-admin menampilkan halaman pemeliharaan, API 503; admin tetap bisa semua; cron tetap jalan | ✅ teruji smoke |
+| M3 | `/admin/login`: login khusus admin (password atau kode email), menolak akun bukan admin, tetap terbuka saat pemeliharaan | ✅ teruji |
+| M4 | Status dibaca middleware dengan cache 10 detik di produksi (`INTERNAL_URL` untuk cek lewat localhost) | ✅ perubahan berlaku paling lambat 10 detik |
+| M5 | Halaman error memuat ulang sekali bila chunk build lama hilang setelah deploy | ✅ |
