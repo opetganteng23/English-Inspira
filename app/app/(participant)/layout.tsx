@@ -4,6 +4,7 @@ const nav: NavGroup[] = [
   { items: [
     { href: "/beranda", label: "Beranda" },
     { href: "/belajar", label: "Belajar" },
+    { href: "/coaching", label: "Coaching" },
     { href: "/tes", label: "Tes Saya" },
     { href: "/hasil", label: "Hasil Tes" },
     { href: "/materi", label: "Materi" },

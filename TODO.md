@@ -41,7 +41,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | F9 | `mail_queue` + worker (retry bertahap, undangan ±100/jam), template email lengkap (§7, §18) | 🔄 antrean + retry + template ✅; batas undangan/jam & SMTP nyata belum diuji |
 | F10 | `mongo-sanitize` pada input (§20) | ⬜ |
 | F11 | Koleksi `notifications` + notifikasi dalam aplikasi (§6, §18) | 🔄 koleksi ada (dipakai pengajuan hapus); UI notifikasi ⬜ |
-| F12 | Audit log akses coach & inst_admin ke data peserta (§20) | 🔄 audit aksi admin ✅; akses coach/inst_admin ke data peserta ⬜ |
+| F12 | Audit log akses coach & inst_admin ke data peserta (§20) | 🔄 audit akses admin & coach ke data peserta ✅; inst_admin ⬜ |
 
 ## 3. Konfigurasi, tes, placement — Fase 2+3 (P1)
 
@@ -91,14 +91,14 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 | ID | Item (MTS §) | Status |
 |---|---|---|
-| H1 | `classes`, `coach_slots`, `bookings`, `attendance`, `coaching_quotas`, `session_notes` (§6) | ⬜ |
-| H2 | Coach membuat/menerbitkan/mengubah/membatalkan slot; cek bentrok; hanya coach pemilik/admin (§16.1) | ⬜ |
-| H3 | Peserta memilih slot published sesuai institusi + level; booking **atomik**; batas 12 jam/24 jam (§16.2) | ⬜ |
-| H4 | Kehadiran & kuota idempoten sesuai tabel §16.3 | ⬜ |
-| H5 | Laporan pra-sesi, catatan sesi, ubah study plan, rekomendasi naik level (§16.4) | ⬜ |
-| H6 | Dashboard coach (peserta, slot, sesi, catatan) | ⬜ |
-| H7 | Notifikasi & email: booking, perubahan/pembatalan slot, pengingat H-1 | ⬜ |
-| H8 | Pantauan admin: kuota tak mungkin habis sebelum kontrak, kehadiran coach, kepatuhan | ⬜ |
+| H1 | `classes`, `coach_slots`, `bookings`, `attendance`, `coaching_quotas`, `session_notes` (§6) | ✅ `coach_slots` (kapasitas >1 = kelas kecil), `bookings`, `session_notes`, `coaching_quotas`; kehadiran tersimpan di booking. Entitas `classes` terpisah tidak dibuat (diganti kapasitas slot) |
+| H2 | Coach membuat/menerbitkan/mengubah/membatalkan slot; cek bentrok; hanya coach pemilik/admin (§16.1) | ✅ coach buat/terbit/ubah/batal slot, bentrok ditolak, hanya pemilik/admin (teruji smoke) |
+| H3 | Peserta memilih slot published sesuai institusi + level; booking **atomik**; batas 12 jam/24 jam (§16.2) | ✅ peserta memesan slot se-institusi & level; booking atomik (kapasitas bersyarat); daftar ≥12 jam, batal mandiri ≥24 jam (teruji) |
+| H4 | Kehadiran & kuota idempoten sesuai tabel §16.3 | ✅ kehadiran → kuota menurut `quota_rules`, idempoten walau diklik paralel, koreksi mengembalikan kuota (teruji); batal oleh coach tidak memotong kuota |
+| H5 | Laporan pra-sesi, catatan sesi, ubah study plan, rekomendasi naik level (§16.4) | ✅ laporan pra-sesi, catatan privat/dibagikan, item rencana coach, izin ulang placement oleh coach, rekomendasi naik level (tersimpan; aturan naik level otomatis = P3) |
+| H6 | Dashboard coach (peserta, slot, sesi, catatan) | ✅ dashboard coach: Peserta saya (+laporan), Sesi & kehadiran, Jadwal slot — UI belum dicoba di browser |
+| H7 | Notifikasi & email: booking, perubahan/pembatalan slot, pengingat H-1 | ✅ email: booking, slot berubah, slot batal, pengingat H-1 (job per jam, sekali per slot); notifikasi dalam aplikasi ⬜ |
+| H8 | Pantauan admin: kuota tak mungkin habis sebelum kontrak, kehadiran coach, kepatuhan | ✅ halaman Pantauan Coaching: kuota vs kursi terbuka sebelum kontrak berakhir, kehadiran, peringatan |
 
 ## 7. PDF, Konselor, level-up, laporan, hardening — Fase 7+8 (P4)
 
@@ -111,7 +111,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | P5 | Portal institusi sesuai batas privasi §4 (tanpa isi analisis individu & catatan sesi) | 🔄 kode & tagihan dihapus; pemangkasan data individu ⬜ |
 | P6 | Laporan PDF + Excel (§8) | 🔄 Excel ✅, PDF ⬜ |
 | P7 | Job: mail worker, reminder sesi, plan status, peringatan kuota, kontrak, pembersihan (§18) | 🔄 mail & harian ✅; reminder/plan/kuota ⬜ |
-| P8 | Uji otomatis isolasi data **coach** & inst_admin (§20, §24) | ✅ inst_admin & coach teruji (smoke) |
+| P8 | Uji otomatis isolasi data **coach** & inst_admin (§20, §24) | ✅ inst_admin & coach teruji (smoke), termasuk coach institusi lain → 404 |
 | P9 | Retensi data/PDF, hak hapus lewat prosedur admin + audit (§8, §25) | 🔄 hapus akun ✅; retensi ⬜ |
 | P10 | Tampilan responsif terbukti di browser (Playwright, 9:16 & 16:9) | ⬜ belum dijalankan |
 
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 29 uji) & `scripts/smoke.mjs` v2.2 (116 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 34 uji) & `scripts/smoke.mjs` v2.2 (159 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)

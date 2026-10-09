@@ -16,6 +16,7 @@ const nav: NavGroup[] = [
     { href: "/admin/proctoring", label: "Review Proctoring" },
   ] },
   { label: "Operasional", items: [
+    { href: "/admin/coaching", label: "Pantauan Coaching" },
     { href: "/admin/jadwal-itp", label: "Jadwal ITP & Skor" },
     { href: "/admin/parameter", label: "Parameter Sistem" },
     { href: "/admin/pengaturan", label: "Pengaturan" },

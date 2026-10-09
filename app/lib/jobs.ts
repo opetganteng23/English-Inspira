@@ -4,6 +4,7 @@ import { expireEnrollments } from "./access";
 import { MailJob, Invitation } from "@/models/Access";
 import { Otp } from "@/models/Otp";
 import { expirePlanItems } from "./study-plan";
+import { sendSessionReminders } from "./coaching";
 
 // Job terjadwal (MTS §18). Dipanggil oleh instrumentation.ts (node-cron, PM2) atau /api/cron/[job] (cron sistem/Vercel).
 // Job berikutnya (reminder sesi, status plan, peringatan kuota) ditambahkan di sini pada Fase 5–6.
@@ -13,9 +14,9 @@ export async function mailJob() {
   return processMailQueue(50);
 }
 
-/** Per jam: pengingat sesi H-1 (Fase 6). */
+/** Per jam: pengingat sesi coaching H-1. */
 export async function hourlyJob() {
-  return {};
+  return sendSessionReminders();
 }
 
 /** Harian: akhiri enrollment yang kontraknya habis, bersihkan undangan/email lama. */

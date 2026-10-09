@@ -1,5 +1,5 @@
 // Uji asap end-to-end MTS v2.2. Server dev harus jalan di :3100 dengan DB in-memory (MONGODB_URI kosong) dan ADMIN_EMAILS=admin@test.local.
-// Pakai: ADMIN_EMAILS=admin@test.local npx next dev -p 3100 > dev.log 2>&1 &   lalu: LOG=dev.log node scripts/smoke.mjs
+// Pakai: ADMIN_EMAILS=admin@test.local CRON_SECRET=testsecret npx next dev -p 3100 > dev.log 2>&1 &   lalu: LOG=dev.log node scripts/smoke.mjs
 import fs from "node:fs";
 const U = "http://localhost:3100", LOG = process.env.LOG;
 let pass = 0, fail = 0;
@@ -220,6 +220,74 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(p1, "/api/events", { method: "POST", json: { ...ev, activeSec: 500 } }); ok(r.status === 400, "heartbeat berlebihan ditolak");
   r = await req(admin, "/api/events", { method: "POST", json: ev }); ok(r.status === 403, "heartbeat hanya untuk peserta");
   r = await req(ia, "/api/courses"); ok(r.status === 403, "inst_admin tidak memakai API belajar");
+
+  console.log("\n== Coaching: slot, booking, kehadiran, kuota ==");
+  const iso = (hoursAhead) => new Date(Date.now() + hoursAhead * 3600000).toISOString();
+  const slotBody = (h, extra = {}) => ({ title: "Sesi Uji", startsAt: iso(h), endsAt: iso(h + 1), mode: "online", meetingUrl: "https://meet.example/abc", capacity: 1, ...extra });
+  r = await req(coach, "/api/coach/slots", { method: "POST", json: slotBody(48) }); ok(r.status === 201, "coach membuat slot"); const s1 = r.data.id;
+  r = await req(coach, "/api/coach/slots", { method: "POST", json: slotBody(48.5) }); ok(r.status === 409, "slot bentrok ditolak");
+  r = await req(coach, "/api/coach/slots", { method: "POST", json: { ...slotBody(60), endsAt: iso(59) } }); ok(r.status === 400, "selesai sebelum mulai ditolak");
+  r = await req(coach, "/api/coach/slots", { method: "POST", json: slotBody(-2) }); ok(r.status === 400, "slot di masa lalu ditolak");
+  r = await req(ia, "/api/coach/slots"); ok(r.status === 403, "inst_admin tidak punya akses coach");
+  r = await req(p1, "/api/coaching"); ok(r.status === 200 && r.data.quota?.total > 0 && !r.data.open.some((o) => o.id === s1), "slot draf tidak terlihat peserta", J(r.data.quota));
+  const quotaTotal = r.data.quota.total;
+  r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: s1 } }); ok(r.status === 409, "slot draf tidak bisa dipesan");
+  r = await req(coach, `/api/coach/slots/${s1}`, { method: "POST", json: { action: "publish" } }); ok(r.status === 200, "coach menerbitkan slot");
+  r = await req(p1, "/api/coaching"); ok(r.data.open.some((o) => o.id === s1), "slot terbit terlihat peserta se-institusi");
+  await req(admin, "/api/admin/users", { method: "POST", json: { email: "coachb@test.local", name: "Coach B", role: "coach", institutionId: iB } });
+  await sleep(1500);
+  const coachB = await login("coachb@test.local", { invite: inviteTokenFor("coachb@test.local") });
+  await req(coachB, "/api/me/consent", { method: "POST", json: { consent: true, name: "Coach B" } });
+  r = await req(coachB, `/api/coach/slots/${s1}`, { method: "POST", json: { action: "cancel", reason: "bukan milikku" } }); ok(r.status === 403, "coach lain tidak bisa mengubah slot");
+  r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: s1 } }); ok(r.status === 201, "peserta memesan slot"); const bk1 = r.data.id;
+  r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: s1 } }); ok(r.status === 409, "pesan ganda ditolak");
+  r = await req(p1, "/api/coaching"); ok(r.data.quota.bookable === quotaTotal - 1 && r.data.bookings.find((b) => b.id === bk1).canCancel === true, "kuota yang bisa dipesan berkurang; bisa dibatalkan (>24 jam)");
+  r = await req(coach, `/api/coach/slots/${s1}`, { method: "PUT", json: slotBody(48, { capacity: 1, room: "Ruang 2", mode: "offline" }) }); ok(r.status === 200, "coach mengubah slot yang sudah dipesan", J(r.data));
+  r = await req(p1, `/api/coaching/bookings/${bk1}/cancel`, { method: "POST", json: {} }); ok(r.status === 200, "peserta membatalkan tepat waktu");
+  r = await req(p1, "/api/coaching"); ok(r.data.quota.used === 0 && r.data.quota.bookable === quotaTotal && r.data.open.some((o) => o.id === s1), "pembatalan tepat waktu: kuota utuh, slot kembali terbuka");
+  r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: s1 } }); ok(r.status === 201, "boleh memesan ulang slot yang sama setelah batal"); const bk1b = r.data.id;
+  r = await req(coach, "/api/coach/slots", { method: "POST", json: slotBody(20) }); const sLate = r.data.id;
+  await req(coach, `/api/coach/slots/${sLate}`, { method: "POST", json: { action: "publish" } });
+  r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: sLate } }); ok(r.status === 201, "daftar 20 jam sebelum sesi masih boleh (batas 12 jam)"); const bkLate = r.data.id;
+  r = await req(p1, `/api/coaching/bookings/${bkLate}/cancel`, { method: "POST", json: {} }); ok(r.status === 409, "batal kurang dari 24 jam sebelum sesi ditolak (hubungi coach)");
+  r = await req(coach, "/api/coach/slots", { method: "POST", json: slotBody(8) }); const sSoon = r.data.id;
+  await req(coach, `/api/coach/slots/${sSoon}`, { method: "POST", json: { action: "publish" } });
+  r = await req(p1, "/api/coaching"); ok(!r.data.open.some((o) => o.id === sSoon), "slot kurang dari 12 jam tidak ditawarkan");
+  r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: sSoon } }); ok(r.status === 409, "daftar kurang dari 12 jam sebelum sesi ditolak");
+
+  console.log("\n== Coaching: kehadiran idempoten & catatan ==");
+  r = await req(coach, `/api/coach/bookings/${bkLate}`, { method: "POST", json: { status: "present" } }); ok(r.status === 409, "kehadiran sebelum sesi mulai ditolak");
+  await req(coach, "/api/dev/slot-shift", { method: "POST", json: { slotId: sLate, startedMinutesAgo: 30 } });
+  r = await req(coachB, `/api/coach/bookings/${bkLate}`, { method: "POST", json: { status: "present" } }); ok(r.status === 403 || r.status === 404, "coach lain tidak bisa mencatat kehadiran");
+  const used = async () => (await req(p1, "/api/coaching")).data.quota.used;
+  r = await req(coach, `/api/coach/bookings/${bkLate}`, { method: "POST", json: { status: "present" } }); ok(r.status === 200 && r.data.charged === true, "hadir: kuota terpakai");
+  ok((await used()) === 1, "kuota used = 1");
+  await Promise.all([1, 2, 3, 4].map(() => req(coach, `/api/coach/bookings/${bkLate}`, { method: "POST", json: { status: "present" } })));
+  ok((await used()) === 1, "klik berulang/paralel tidak menggandakan potongan kuota");
+  await req(coach, `/api/coach/bookings/${bkLate}`, { method: "POST", json: { status: "excused" } });
+  ok((await used()) === 0, "dikoreksi menjadi izin: kuota dikembalikan");
+  await req(coach, `/api/coach/bookings/${bkLate}`, { method: "POST", json: { status: "absent" } });
+  ok((await used()) === 1, "dikoreksi menjadi tidak hadir: kuota terpakai");
+  r = await req(coach, `/api/coach/bookings/${bkLate}/note`, { method: "PUT", json: { private: "rahasia coach", shared: "Fokus pada subject-verb", recommendLevelUp: true } }); ok(r.status === 200, "catatan sesi disimpan");
+  r = await req(p1, "/api/coaching"); const mineLate = r.data.bookings.find((b) => b.id === bkLate);
+  ok(mineLate.note === "Fokus pada subject-verb" && !J(r.data).includes("rahasia coach"), "peserta hanya melihat catatan yang dibagikan");
+  r = await req(ia, `/api/inst/participants/${pid}`); ok(!J(r.data).includes("rahasia coach"), "inst_admin tidak melihat catatan sesi");
+  r = await req(coach, "/api/coach/sessions"); ok(r.status === 200 && r.data.sessions.some((s) => s.bookings.some((b) => b.status === "absent" && b.note?.private === "rahasia coach")), "coach melihat sesi + kehadiran + catatan privat");
+
+  console.log("\n== Coaching: laporan pra-sesi, rencana coach, pembatalan slot ==");
+  r = await req(coach, `/api/coach/participants/${pid}`); ok(r.status === 200 && r.data.profile.level && Array.isArray(r.data.topics) && r.data.attendance.absent === 1, "laporan pra-sesi lengkap", J(r.data.attendance));
+  r = await req(coachB, `/api/coach/participants/${pid}`); ok(r.status === 404, "coach institusi lain: peserta tidak ditemukan (isolasi)");
+  r = await req(coach, `/api/coach/participants/${pid}`, { method: "POST", json: { action: "add_plan", title: "Latihan 10 soal structure", dueInDays: 7 } }); ok(r.status === 200, "coach menambah item rencana");
+  r = await req(p1, "/api/study-plan"); ok(r.data.items.some((i) => i.source === "coach" && i.title.includes("structure")), "item coach muncul di rencana peserta");
+  r = await req(coach, `/api/coach/slots/${s1}`, { method: "POST", json: { action: "cancel", reason: "" } }); ok(r.status === 400, "batalkan slot tanpa alasan ditolak");
+  const before = await used();
+  r = await req(coach, `/api/coach/slots/${s1}`, { method: "POST", json: { action: "cancel", reason: "Coach berhalangan" } }); ok(r.status === 200, "coach membatalkan slot yang sudah dipesan");
+  ok((await used()) === before, "pembatalan oleh coach tidak memotong kuota");
+  r = await req(p1, "/api/coaching"); ok(!r.data.bookings.some((b) => b.id === bk1b && b.status === "booked") && !r.data.open.some((o) => o.id === s1), "slot batal hilang dari daftar peserta");
+  r = await req(admin, "/api/admin/coaching"); const ci = r.data.institutions?.find((i) => i.id === iA);
+  ok(r.status === 200 && ci && ci.coaches >= 1 && typeof ci.quotaRemaining === "number", "pantauan admin: kuota, kursi terbuka, kehadiran", J(ci));
+  r = await req(null, "/api/cron/hourly"); ok(r.status === 401, "job per jam tanpa rahasia ditolak");
+  r = await req(null, "/api/cron/hourly", { headers: { authorization: "Bearer testsecret" } }); ok(r.status === 200 && typeof r.data.emails === "number", "job pengingat sesi berjalan", J(r.data));
 
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });

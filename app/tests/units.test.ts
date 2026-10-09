@@ -10,6 +10,7 @@ import { extractJson, ruleBasedAnalysis, detectDistress, analysisSchema } from "
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { overlaps, canRegister, canCancel, chargesQuota, bookableLeft, canMarkAttendance } from "@/lib/coaching-rules";
 import { unitComplete, percentCorrect } from "@/lib/units";
 import { nextTopicScore, topicStatus } from "@/lib/topic-stats";
 import { planCandidates } from "@/lib/study-plan";
@@ -198,5 +199,33 @@ describe("unit belajar (MTS §10.1)", () => {
   it("persen benar dari skor section", () => {
     expect(percentCorrect([{ raw: 3, total: 4 }, { raw: 1, total: 4 }])).toBe(50);
     expect(percentCorrect([])).toBe(0);
+  });
+});
+
+describe("aturan coaching (MTS §16)", () => {
+  const rules = { presentUsed: true, absentUsed: true, excusedOnTimeUsed: false, coachCancelUsed: false };
+  const at = (h: number) => new Date(Date.UTC(2026, 0, 10, 0, 0, 0) + h * 3_600_000);
+  it("bentrok: hanya jika rentang waktu beririsan (menempel tidak bentrok)", () => {
+    expect(overlaps(at(1), at(2), at(2), at(3))).toBe(false);
+    expect(overlaps(at(1), at(3), at(2), at(4))).toBe(true);
+    expect(overlaps(at(1), at(5), at(2), at(3))).toBe(true);
+  });
+  it("batas daftar 12 jam dan batal 24 jam (tepat di batas masih boleh)", () => {
+    expect(canRegister(at(0), at(12), 12)).toBe(true);
+    expect(canRegister(at(0), at(11.9), 12)).toBe(false);
+    expect(canCancel(at(0), at(24), 24)).toBe(true);
+    expect(canCancel(at(0), at(23), 24)).toBe(false);
+  });
+  it("kuota terpakai menurut quota_rules", () => {
+    expect([chargesQuota("present", rules), chargesQuota("absent", rules), chargesQuota("excused", rules)]).toEqual([true, true, false]);
+    expect(chargesQuota("excused", { ...rules, excusedOnTimeUsed: true })).toBe(true);
+  });
+  it("sisa yang bisa dipesan tidak negatif dan memperhitungkan booking mendatang", () => {
+    expect(bookableLeft(8, 3, 2)).toBe(3);
+    expect(bookableLeft(2, 2, 1)).toBe(0);
+  });
+  it("kehadiran baru bisa dicatat setelah sesi mulai", () => {
+    expect(canMarkAttendance(at(1), at(2))).toBe(false);
+    expect(canMarkAttendance(at(2), at(2))).toBe(true);
   });
 });
