@@ -51,11 +51,11 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | C2 | `score_conversion` dibaca dari config (bukan file JSON); peringatan "wajib diverifikasi" (§5) | ✅ dari config (mode tabel diuji unit); label "placeholder" di UI |
 | C3 | Tag soal **dua tingkat** `{skill, topic}` wajib di Bank Soal (§6) | ✅ API teruji (published wajib tag); UI tag dibangun (belum dicoba di browser) |
 | C4 | `tests.kind`: placement / sim / practice / quiz + `levelId` (§6) | ✅ (UI perakit: kind + level) |
-| C5 | `attempts`: `firstChoice`, `changes`, waktu idle dikurangi, `topicScores` (§11) | 🔄 `topicScores` ✅, `firstChoice`/`changes` tersimpan di skema; pengurangan waktu idle ⬜ |
+| C5 | `attempts`: `firstChoice`, `changes`, waktu idle dikurangi, `topicScores` (§11) | ✅ `firstChoice` & `changes` dihitung server (teruji); waktu per soal hanya waktu aktif (tab terlihat + interaksi dalam `idle_timeout_sec`, atau audio sedang diputar) — logika klien belum dicoba di browser |
 | C6 | Placement test sekali (ulang hanya izin admin/coach) → level otomatis → `coaching_quotas` 8/4/2 → email hasil (§12) | ✅ teruji end-to-end (level, kuota, ulang atas izin) |
 | C7 | Mesin tes: timer server, autosave, proctoring ringan, audio GridFS/Range/sekali putar | ✅ (teruji; timer habis belum) |
-| C8 | Transkrip audio tampil setelah tes; pemutar penuh 0.75–1.25× di mode latihan (§11) | 🔄 transkrip setelah tes ✅ (UI belum dicoba); pemutar 0.75–1.25× ⬜ |
-| C9 | Bank Soal, perakit Tes, impor Excel soal | 🔄 CRUD & perakit ✅; impor Excel ⬜ |
+| C8 | Transkrip audio tampil setelah tes; pemutar penuh 0.75–1.25× di mode latihan (§11) | ✅ transkrip setelah tes; mode latihan: pemutar penuh 0.75–1.25× dan boleh diulang (server tidak mengunci audio untuk `practice`) — UI/pemutar belum dicoba di browser, uji API audio butuh berkas MP3 |
+| C9 | Bank Soal, perakit Tes, impor Excel soal | ✅ Bank Soal, perakit Tes, impor soal CSV/Excel (cek dulu, laporan per baris, templat) — teruji |
 | T-AUD | Unggah/pilih **audio langsung di editor soal Listening** (membuat grup otomatis) | 🔄 dibangun di editor soal (pilih/unggah → grup otomatis); API grup teruji, UI belum dicoba di browser |
 
 ## 4. Belajar & materi — Fase 4 (P2)
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 53 uji) & `scripts/smoke.mjs` v2.2 (238 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 57 uji) & `scripts/smoke.mjs` v2.2 (245 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
@@ -153,12 +153,11 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 ## 12. Sisa pekerjaan
 
-Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 53 uji; smoke 238/238 (semua API alur v2.2 termasuk ITP).
+Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 57 uji; smoke 245/245 (semua API alur v2.2 termasuk ITP).
 
 | Prioritas | Item | Status |
 |---|---|---|
 | P1 | Buka seluruh UI baru di browser + uji responsif 9:16 s.d. 16:9 (Playwright) | ⬜ (belum dijalankan; ditunda atas permintaan pemilik) |
-| P2 | C9 impor Excel soal; C8 pemutar audio 0.75–1.25× mode latihan; C5 pengurangan waktu idle | ⬜ |
 | P2 | L4 rich text lengkap, L5 blok interaktif, L6 penulis coach/inst_admin | ⬜ |
 | P2 | L10 uji keamanan iframe di browser (akses parent/storage/cookie, jaringan, navigasi, popup) | ⬜ |
 | P3 | Uji panggilan Claude nyata, SMTP nyata, MongoDB nyata, node-cron di PM2, build Docker (menunggu kunci & URL DB) | ⬜ |

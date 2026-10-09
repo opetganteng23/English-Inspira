@@ -11,6 +11,7 @@ import { analysisResultSchema, checkResult, templateResult, numbersIn, aliasFor,
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { mapQuestionRows, parseTags } from "@/lib/import-questions";
 import { mongoSanitize } from "@/lib/mongo-sanitize";
 import { parseItpScores, verifyScores, isPdf } from "@/lib/pdf-import";
 import { levelUpDecision } from "@/lib/level-up";
@@ -306,4 +307,22 @@ describe("mongo-sanitize (MTS §20)", () => {
     let deep: unknown = 1; for (let i = 0; i < 20; i++) deep = { a: deep };
     expect(JSON.stringify(mongoSanitize(deep))).toContain("null");
   });
+});
+
+describe("impor soal (Bank Soal)", () => {
+  const head = ["section", "type", "stem", "A", "B", "C", "D", "answer", "explanation", "difficulty", "tags", "status"];
+  it("memetakan baris valid, kunci huruf, kesulitan Indonesia, dan tag skill:topic", () => {
+    const [r] = mapQuestionRows([head, ["structure", "sv", "Soal ___ ?", "a1", "b1", "c1", "d1", "b", "Benar B", "sulit", "structure:sv agreement; tense", "published"]]);
+    expect(r.ok).toBe(true);
+    if (r.ok) { expect(r.data.answerKey).toBe(1); expect(r.data.difficulty).toBe("hard"); expect(r.data.tags).toEqual([{ skill: "structure", topic: "sv agreement" }, { skill: "structure", topic: "tense" }]); }
+  });
+  it("melaporkan alasan per baris, bukan menggagalkan semua", () => {
+    const rows = mapQuestionRows([head, ["xx", "t", "s", "a", "b", "", "", "A", "", "", "", ""], ["reading", "t", "s", "a", "b", "", "", "Z", "", "", "", ""], ["reading", "t", "s", "a", "b", "", "", "A", "", "", "", "published"], ["reading", "t", "s", "a", "b", "", "", "A", "", "", "", "draft"]]);
+    expect(rows.map((r) => r.ok)).toEqual([false, false, false, true]);
+    expect(!rows[0].ok && rows[0].error).toMatch(/Section/);
+    expect(!rows[1].ok && rows[1].error).toMatch(/Kunci/);
+    expect(!rows[2].ok && rows[2].error).toMatch(/tag/i); // published tanpa tag
+  });
+  it("kolom wajib hilang dilaporkan sekali", () => { const r = mapQuestionRows([["foo", "bar"], ["1", "2"]]); expect(r).toHaveLength(1); expect(r[0].ok).toBe(false); });
+  it("tag tanpa titik dua memakai section sebagai skill", () => expect(parseTags("modal verbs", "structure")).toEqual([{ skill: "structure", topic: "modal verbs" }]));
 });

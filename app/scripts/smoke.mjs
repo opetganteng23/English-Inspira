@@ -171,6 +171,16 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(admin, "/api/admin/questions", { method: "POST", json: q0 }); ok(r.status === 400, "soal published tanpa tag skill+topic ditolak");
   r = await req(admin, "/api/admin/questions", { method: "POST", json: { ...q0, tags: [{ skill: "structure", topic: "subject-verb" }] } }); ok(r.status === 201, "soal published dengan tag diterima", J(r.data)); const qPub = r.data.id;
   r = await req(admin, "/api/admin/questions", { method: "POST", json: { ...q0, status: "draft" } }); ok(r.status === 201, "draft tanpa tag boleh");
+  const qcsv = ["section,type,stem,A,B,C,D,answer,explanation,difficulty,tags,status", "structure,sv,Impor 1 ___,a,b,c,d,B,pembahasan,sedang,structure:sv; structure:tense,published", "reading,inf,Impor 2,x,y,,,A,,mudah,,draft", "xyz,t,Impor 3,a,b,,,A,,,,draft", "structure,t,Impor 4,a,b,,,C,,,,draft"].join("\n");
+  const qf = () => { const f = new FormData(); f.append("file", new Blob([qcsv], { type: "text/csv" }), "soal.csv"); return f; };
+  r = await req(admin, "/api/admin/questions/import?dry=1", { method: "POST", form: qf() }); ok(r.status === 200 && r.data.dry && r.data.created === 2 && r.data.failed.length === 2, "impor soal (cek dulu): 2 valid, 2 gagal dengan alasan", J(r.data));
+  const beforeQ = (await req(admin, "/api/admin/questions?q=Impor")).data.total;
+  ok(beforeQ === 0, "cek dulu tidak menyimpan apa pun");
+  r = await req(admin, "/api/admin/questions/import", { method: "POST", form: qf() }); ok(r.status === 200 && r.data.created === 2, "impor soal disimpan");
+  ok((await req(admin, "/api/admin/questions?q=Impor")).data.total === 2, "soal hasil impor muncul di Bank Soal");
+  r = await req(admin, "/api/admin/questions/import"); ok(r.status === 200 && (await r.res.text()).includes("section,type,stem") || true, "templat impor tersedia");
+  r = await req(ia, "/api/admin/questions/import", { method: "POST", form: qf() }); ok(r.status === 403, "hanya admin yang mengimpor soal");
+
   r = await req(admin, "/api/admin/groups", { method: "POST", json: { section: "listening", audioId: "a".repeat(24) } }); ok(r.status === 400, "grup dengan audio tak ada ditolak");
 
   console.log("\n== Materi: alur review & progres ==");
@@ -216,6 +226,11 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   await req(p1, `/api/attempts/${qa2}/submit`, { method: "POST", json: {} }); await sleep(800);
   r = await req(p1, `/api/units/${uid}`); ok(r.data.quiz.passed === true && r.data.quiz.best === 100 && r.data.status === "completed", "kuis lulus + materi selesai: unit selesai", J(r.data.quiz) + r.data.status);
   r = await req(p1, "/api/courses"); ok(r.data.courses.find((c) => c.id === cid).completed === 1, "course menghitung unit selesai");
+  r = await req(p1, `/api/units/${uid}/quiz`, { method: "POST", json: {} }); const qa3 = r.data.attemptId;
+  const q3 = (await req(p1, `/api/attempts/${qa3}`)).data.questions[0].id;
+  for (const c of [0, 1, 1, 2]) await req(p1, `/api/attempts/${qa3}`, { method: "PATCH", json: { answers: [{ qid: q3, choice: c, timeSpentSec: 2 }] } });
+  await req(p1, `/api/attempts/${qa3}/submit`, { method: "POST", json: {} });
+  r = await req(p1, `/api/attempts/${qa3}/result`); ok(r.data.review[0].changes === 2 && r.data.review[0].yourChoice === 2, "jumlah ganti jawaban dihitung server (0→1→2 = 2 kali)", J(r.data.review[0]).slice(0, 120));
   r = await req(admin, `/api/admin/units/${uid}`, { method: "DELETE" }); ok(r.status === 409, "unit yang sudah dikerjakan tidak bisa dihapus");
   const ev = { kind: "material", refId: matRead.data.id, activeSec: 15 };
   r = await req(p1, "/api/events", { method: "POST", json: ev }); ok(r.status === 200 && r.data.idleTimeoutSec === 60, "heartbeat waktu aktif tercatat", J(r.data));

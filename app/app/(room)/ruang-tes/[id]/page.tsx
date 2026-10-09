@@ -9,7 +9,7 @@ type G = { id: string; instruction?: string; passageTitle?: string; passageHtml?
 type State = {
   status: "in_progress" | "submitted"; testName: string;
   section: { index: number; total: number; name: string };
-  remainingSec: number; groups: G[]; questions: Q[]; answers: { qid: string; choice: number | null; flagged: boolean; timeSpentSec?: number }[];
+  kind?: string; idleTimeoutSec?: number; remainingSec: number; groups: G[]; questions: Q[]; answers: { qid: string; choice: number | null; flagged: boolean; timeSpentSec?: number }[];
 };
 
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & Written Expression", reading: "Reading" };
@@ -37,15 +37,29 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const spent = useRef<Record<string, number>>({});
   const viewSince = useRef<{ qid: string; at: number } | null>(null);
 
-  const stopView = useCallback(() => {
-    const v = viewSince.current;
-    if (v) { spent.current[v.qid] = (spent.current[v.qid] ?? 0) + (Date.now() - v.at) / 1000; viewSince.current = null; }
+  // Waktu aktif saja (MTS §13.1): detik dihitung per 1 dtk hanya bila tab terlihat dan ada interaksi dalam `idleTimeoutSec`
+  // terakhir, atau audio sedang diputar. Waktu diam tidak dihitung ke soal.
+  const lastInput = useRef(Date.now());
+  const idleSec = useRef(60);
+  const stopView = useCallback(() => { viewSince.current = null; }, []);
+  useEffect(() => {
+    const touch = () => { lastInput.current = Date.now(); };
+    const evs = ["pointerdown", "keydown", "scroll", "touchstart", "mousemove"];
+    evs.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    const tick = setInterval(() => {
+      const v = viewSince.current;
+      if (!v || document.visibilityState !== "visible") return;
+      const audioOn = Array.from(document.querySelectorAll("audio")).some((a) => !a.paused && !a.ended);
+      if (audioOn || Date.now() - lastInput.current <= idleSec.current * 1000) spent.current[v.qid] = (spent.current[v.qid] ?? 0) + 1;
+    }, 1000);
+    return () => { clearInterval(tick); evs.forEach((e) => window.removeEventListener(e, touch)); };
   }, []);
 
   const load = useCallback(async () => {
     try {
       const d: State = await api(`/api/attempts/${params.id}`);
       if (d.status === "submitted") return router.replace(`/hasil/${params.id}`);
+      if (typeof d.idleTimeoutSec === "number") idleSec.current = d.idleTimeoutSec;
       setSt(d); setCur(0); setLeft(d.remainingSec); setConfirm(false); spent.current = {};
       for (const a of d.answers) if (a.timeSpentSec) spent.current[a.qid] = a.timeSpentSec;
       setAns(Object.fromEntries(d.answers.filter((a) => a.choice != null).map((a) => [a.qid, a.choice as number])));
@@ -168,7 +182,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
       <div className="mx-auto grid w-full max-w-6xl flex-1 gap-5 p-4 sm:p-6 lg:grid-cols-[1fr_280px]">
         <main className="flex min-w-0 flex-col gap-4">
-          {group?.audio && <AudioBox attemptId={params.id} audioId={group.audio.id} finished={group.audio.finished} instruction={group.instruction} />}
+          {group?.audio && (st.kind === "practice" ? <PracticeAudio key={group.audio.id} attemptId={params.id} audioId={group.audio.id} instruction={group.instruction} /> : <AudioBox attemptId={params.id} audioId={group.audio.id} finished={group.audio.finished} instruction={group.instruction} />)}
           {group?.passageHtml && (
             <article className="card max-h-[45vh] overflow-y-auto lg:max-h-none">
               <h3 className="mb-2 font-display font-extrabold text-navy">{group.passageTitle}</h3>
@@ -285,6 +299,28 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
       {phase === "done" && <p className="mt-3 text-sm text-ink-soft">Audio sudah diputar.</p>}
       {phase === "error" && <button onClick={start} className="btn-outline mt-3">Muat ulang audio</button>}
       {msg && <p role="alert" className="mt-2 text-sm text-red-700">{msg}</p>}
+    </div>
+  );
+}
+
+/** Mode latihan: pemutar penuh (jeda, ulang, geser) dengan kecepatan 0.75×–1.25×. Tidak berlaku di placement/simulasi/kuis. */
+function PracticeAudio({ attemptId, audioId, instruction }: { attemptId: string; audioId: string; instruction?: string }) {
+  const el = useRef<HTMLAudioElement>(null);
+  const [src, setSrc] = useState("");
+  const [rate, setRate] = useState(1);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    api(`/api/attempts/${attemptId}/audio/${audioId}`, { json: {} }).then((d) => setSrc(d.url)).catch((e) => setErr((e as Error).message));
+  }, [attemptId, audioId]);
+  useEffect(() => { if (el.current) el.current.playbackRate = rate; }, [rate, src]);
+  return (
+    <div className="card">
+      <p className="text-sm font-semibold text-navy">{instruction ?? "Dengarkan audio"} <span className="font-normal text-ink-soft">(mode latihan: boleh diulang)</span></p>
+      {err && <p role="alert" className="mt-2 text-sm text-red-700">{err}</p>}
+      <audio ref={el} src={src || undefined} controls preload="auto" controlsList="nodownload" className="mt-3 w-full" />
+      <label className="mt-2 flex items-center gap-2 text-sm text-ink-soft">Kecepatan
+        <select aria-label="Kecepatan audio" className="field !min-h-[36px] w-auto" value={rate} onChange={(e) => setRate(Number(e.target.value))}>{[0.75, 1, 1.25].map((r) => <option key={r} value={r}>{r}×</option>)}</select>
+      </label>
     </div>
   );
 }

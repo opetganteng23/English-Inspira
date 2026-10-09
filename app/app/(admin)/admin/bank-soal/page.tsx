@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { uploadImage } from "@/lib/compress-image";
 
 type Row = { _id: string; section: string; type: string; stem: string; status: string; difficulty: string };
@@ -32,6 +32,7 @@ export default function BankSoal() {
   const [err, setErr] = useState("");
   const [form, setForm] = useState<Form | null>(null);
   const [groupDlg, setGroupDlg] = useState(false);
+  const [importDlg, setImportDlg] = useState(false);
 
   const load = useCallback(async () => {
     const sp = new URLSearchParams({ page: String(page) });
@@ -60,6 +61,7 @@ export default function BankSoal() {
           <p className="text-sm text-ink-soft">{total} soal · dipakai untuk Placement, Simulasi, Latihan, dan Kuis unit. Soal published wajib bertag skill + topic.</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setImportDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Impor Excel/CSV</button>
           <button onClick={() => setGroupDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">+ Grup audio/passage</button>
           <button onClick={() => setForm(empty(f.section || "structure"))} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ Soal baru</button>
         </div>
@@ -103,6 +105,7 @@ export default function BankSoal() {
 
       {form && <Editor form={form} onClose={() => setForm(null)} onSaved={() => { setForm(null); load(); }} onNewGroup={() => setGroupDlg(true)} />}
       {groupDlg && <GroupDialog onClose={() => setGroupDlg(false)} />}
+      {importDlg && <ImportDialog onClose={() => { setImportDlg(false); load(); }} />}
     </div>
   );
 }
@@ -210,6 +213,41 @@ function Editor({ form, onClose, onSaved, onNewGroup }: { form: Form; onClose: (
           <button onClick={onClose} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">Batal</button>
           <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy ? "Menyimpan…" : "Simpan"}</button>
         </div>
+      </div>
+    </Modal>
+  );
+}
+
+function ImportDialog({ onClose }: { onClose: () => void }) {
+  const file = useRef<HTMLInputElement>(null);
+  const [res, setRes] = useState<{ dry: boolean; created: number; failed: { row: number; reason: string }[] } | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function run(dry: boolean) {
+    const f = file.current?.files?.[0];
+    if (!f) return setErr("Pilih file CSV atau Excel dulu");
+    setBusy(true); setErr(""); setRes(null);
+    try {
+      const fd = new FormData(); fd.append("file", f);
+      const r = await fetch(`/api/admin/questions/import${dry ? "?dry=1" : ""}`, { method: "POST", body: fd });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error ?? "Gagal mengimpor");
+      setRes(d);
+    } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+  return (
+    <Modal title="Impor soal dari Excel/CSV" onClose={onClose}>
+      <div className="flex flex-col gap-4 text-sm">
+        <p className="text-ink-soft">Kolom: section, type, stem, A–F (pilihan), answer (A–F), explanation, difficulty (mudah/sedang/sulit), tags (<code>skill:topic; skill:topic</code>), status. Maks 500 baris. Soal berstatus <b>published</b> wajib bertag. Audio dan passage ditautkan manual setelah impor. <a className="font-semibold text-brand" href="/api/admin/questions/import">Unduh templat</a></p>
+        <input ref={file} type="file" aria-label="File soal" accept=".csv,.xlsx" className="field" />
+        {err && <p role="alert" className="text-red-700">{err}</p>}
+        <div className="flex flex-wrap gap-2"><button className="rounded-lg border border-line-strong px-4 py-2 font-semibold" disabled={busy} onClick={() => run(true)}>Cek dulu (tanpa menyimpan)</button><button className="rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-60" disabled={busy} onClick={() => run(false)}>Impor</button></div>
+        {res && (
+          <div role="status" className="rounded-xl bg-canvas p-3">
+            <p><b>{res.created}</b> baris {res.dry ? "valid (belum disimpan)" : "diimpor"} · <b className={res.failed.length ? "text-red-700" : ""}>{res.failed.length}</b> gagal</p>
+            {res.failed.length > 0 && <ul className="mt-2 list-disc pl-5 text-red-700">{res.failed.slice(0, 30).map((f) => <li key={f.row}>Baris {f.row}: {f.reason}</li>)}</ul>}
+          </div>
+        )}
       </div>
     </Modal>
   );

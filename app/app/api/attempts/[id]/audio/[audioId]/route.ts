@@ -26,7 +26,8 @@ export async function POST(_req: Request, { params }: { params: { id: string; au
   try {
     const attempt = await guard(params.id, params.audioId);
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
-    if (rec?.done) throw new HttpError(403, "Audio ini sudah diputar dan tidak bisa diulang");
+    // Mode latihan (practice): pemutar penuh, boleh diulang. Tes lain: sekali putar (MTS §11).
+    if (rec?.done && attempt.kind !== "practice") throw new HttpError(403, "Audio ini sudah diputar dan tidak bisa diulang");
     if (!rec) attempt.audioPlays.push({ audioId: params.audioId, playedAt: new Date(), lastPosSec: 0, done: false } as never);
     await attempt.save();
     const token = await signAudioToken(params.audioId, params.id);
@@ -48,7 +49,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; au
     const b = progress.parse(await req.json());
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
     if (!rec) throw new HttpError(409, "Audio belum dimulai");
-    if (!rec.done) {
+    if (!rec.done && attempt.kind !== "practice") {
       rec.lastPosSec = Math.max(rec.lastPosSec ?? 0, b.posSec); // posisi tidak boleh mundur
       if (b.done) rec.done = true;
       await attempt.save();

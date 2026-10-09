@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { getParam } from "@/lib/config";
 import { loadAttempt, sectionDeadline } from "@/lib/attempts";
 import { Question, QuestionGroup } from "@/models/Question";
 
@@ -28,6 +29,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       status: "in_progress",
       testName: test.name,
       section: { index: attempt.sectionIdx, total: test.sections.length, name: section.name },
+      kind: attempt.kind,
+      idleTimeoutSec: await getParam("idle_timeout_sec"),
       remainingSec: Math.max(0, Math.round((sectionDeadline(attempt, test) - Date.now()) / 1000)),
       groups: groups.map((g) => ({
         id: String(g._id), instruction: g.instruction, passageTitle: g.passageTitle, passageHtml: g.passageHtml,
@@ -64,7 +67,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     for (const a of body.answers ?? []) {
       if (!allowed.has(a.qid)) continue; // soal section lain diabaikan
       const cur = attempt.answers.find((x) => String(x.qid) === a.qid);
-      const next = { qid: a.qid, choice: a.choice ?? undefined, timeSpentSec: a.timeSpentSec ?? cur?.timeSpentSec, flagged: a.flagged ?? cur?.flagged };
+      const choice = a.choice ?? undefined;
+      // firstChoice & changes dihitung SERVER (tidak dipercaya dari klien): indikator ragu-ragu untuk analisis (MTS §11).
+      const firstChoice = cur?.firstChoice ?? choice;
+      const changed = cur?.choice != null && choice != null && cur.choice !== choice;
+      const next = { qid: a.qid, choice, firstChoice, changes: (cur?.changes ?? 0) + (changed ? 1 : 0), timeSpentSec: a.timeSpentSec ?? cur?.timeSpentSec, flagged: a.flagged ?? cur?.flagged };
       if (cur) Object.assign(cur, next);
       else attempt.answers.push(next as never);
     }

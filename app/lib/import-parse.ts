@@ -11,8 +11,8 @@ const ALIASES: Record<string, string[]> = {
 };
 const pick = (head: Map<string, number>, k: keyof typeof ALIASES) => ALIASES[k].map((a) => head.get(a)).find((x) => x !== undefined);
 
-/** Baca CSV atau .xlsx (kolom: email wajib; nama, telepon opsional). Maks 2 MB dan 2.000 baris. */
-export async function parseMembersFile(file: File): Promise<ImportRow[]> {
+/** Baca CSV atau .xlsx menjadi tabel string (baris pertama = judul kolom). Maks 2 MB dan `maxRows` baris data. */
+export async function readTable(file: File, maxRows = 2000): Promise<string[][]> {
   if (file.size > 2 * 1024 * 1024) throw new HttpError(413, "Maksimal 2 MB");
   const name = file.name.toLowerCase();
   let table: string[][];
@@ -32,9 +32,14 @@ export async function parseMembersFile(file: File): Promise<ImportRow[]> {
       table.push(cells);
     });
   } else throw new HttpError(415, "Gunakan file .csv atau .xlsx");
-
   if (table.length < 2) throw new HttpError(400, "File kosong atau hanya berisi judul kolom");
-  if (table.length > 2001) throw new HttpError(413, "Maksimal 2.000 baris per impor");
+  if (table.length > maxRows + 1) throw new HttpError(413, `Maksimal ${maxRows.toLocaleString("id-ID")} baris per impor`);
+  return table;
+}
+
+/** Baca CSV atau .xlsx (kolom: email wajib; nama, telepon opsional). Maks 2 MB dan 2.000 baris. */
+export async function parseMembersFile(file: File): Promise<ImportRow[]> {
+  const table = await readTable(file);
   const head = new Map(table[0].map((h, i) => [h.toLowerCase().trim(), i] as const));
   const ie = pick(head, "email");
   if (ie === undefined) throw new HttpError(400, 'Kolom "email" tidak ditemukan');
