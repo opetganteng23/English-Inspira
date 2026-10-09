@@ -167,7 +167,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   console.log("\n== Bank Soal: tag wajib & audio ==");
   const q0 = { section: "structure", type: "t", stem: "Pilih yang benar", options: ["a", "b", "c", "d"], answerKey: 1, status: "published", tags: [] };
   r = await req(admin, "/api/admin/questions", { method: "POST", json: q0 }); ok(r.status === 400, "soal published tanpa tag skill+topic ditolak");
-  r = await req(admin, "/api/admin/questions", { method: "POST", json: { ...q0, tags: [{ skill: "structure", topic: "subject-verb" }] } }); ok(r.status === 201, "soal published dengan tag diterima", J(r.data));
+  r = await req(admin, "/api/admin/questions", { method: "POST", json: { ...q0, tags: [{ skill: "structure", topic: "subject-verb" }] } }); ok(r.status === 201, "soal published dengan tag diterima", J(r.data)); const qPub = r.data.id;
   r = await req(admin, "/api/admin/questions", { method: "POST", json: { ...q0, status: "draft" } }); ok(r.status === 201, "draft tanpa tag boleh");
   r = await req(admin, "/api/admin/groups", { method: "POST", json: { section: "listening", audioId: "a".repeat(24) } }); ok(r.status === 400, "grup dengan audio tak ada ditolak");
 
@@ -187,6 +187,39 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(p1, `/api/materials/${mhSlug}`); ok(r.status === 404, "materi yang diubah tidak tampil sebelum ditinjau ulang");
   r = await req(admin, "/api/admin/materials", { method: "POST", json: { title: "Bacaan Uji", kind: "rich", contentHtml: "<p>Halo</p>" } }); const mr = r.data.id;
   r = await req(admin, `/api/admin/materials/${mr}/publish`, { method: "POST", json: { action: "publish" } }); ok(r.status === 200, "rich text boleh langsung terbit");
+
+  console.log("\n== Kursus, unit, kuis ==");
+  const lvlId = (await req(admin, "/api/admin/levels")).data.levels.find((l) => l.name === lvlName).id;
+  r = await req(admin, "/api/admin/courses", { method: "POST", json: { levelId: lvlId, title: "Course Uji", order: 1 } }); ok(r.status === 201, "course dibuat"); const cid = r.data.id;
+  r = await req(admin, "/api/admin/courses", { method: "POST", json: { levelId: lvlId, title: "" } }); ok(r.status === 400, "course tanpa judul ditolak");
+  const matRead = await req(admin, "/api/admin/materials", { method: "POST", json: { title: "Bacaan Unit", kind: "rich", contentHtml: "<p>isi</p>" } });
+  await req(admin, `/api/admin/materials/${matRead.data.id}/publish`, { method: "POST", json: { action: "publish" } });
+  r = await req(admin, "/api/admin/tests", { method: "POST", json: { name: "Kuis Unit Uji", kind: "quiz", sections: [{ name: "structure", durationSec: 300, questionIds: [qPub] }] } }); ok(r.status === 201, "kuis unit dirakit", J(r.data)); const quizId = r.data.id;
+  r = await req(admin, "/api/admin/units", { method: "POST", json: { courseId: cid, title: "Unit Uji", materialIds: [matRead.data.id], quizTestId: placement.id } }); ok(r.status === 400, "kuis harus berjenis quiz");
+  r = await req(admin, "/api/admin/units", { method: "POST", json: { courseId: cid, title: "Unit Uji", materialIds: [matRead.data.id, matRead.data.id] } }); ok(r.status === 400, "materi dobel ditolak");
+  r = await req(admin, "/api/admin/units", { method: "POST", json: { courseId: cid, title: "Unit Uji", materialIds: [matRead.data.id], quizTestId: quizId } }); ok(r.status === 201, "unit dibuat dengan materi + kuis", J(r.data)); const uid = r.data.id;
+  r = await req(admin, "/api/admin/units", { method: "POST", json: { courseId: cid, title: "Unit Lain", quizTestId: quizId } }); ok(r.status === 409, "satu kuis hanya untuk satu unit");
+  r = await req(p1, "/api/courses"); const cu = r.data.courses?.find((c) => c.id === cid);
+  ok(r.status === 200 && cu?.units.length === 1 && cu.units[0].status === "not_started" && cu.units[0].total === 2, "peserta melihat course levelnya + progres", J(r.data).slice(0, 200));
+  r = await req(p1, `/api/tests/${quizId}/start`, { method: "POST", json: {} }); ok(r.status === 409, "kuis tidak bisa dimulai di luar unit");
+  r = await req(p1, `/api/units/${uid}/quiz`, { method: "POST", json: {} }); ok(r.status === 201, "kuis dimulai dari unit"); const qa = r.data.attemptId;
+  const qs = await req(p1, `/api/attempts/${qa}`);
+  await req(p1, `/api/attempts/${qa}`, { method: "PATCH", json: { answers: [{ qid: qs.data.questions[0].id, choice: 0, timeSpentSec: 3 }] } });
+  await req(p1, `/api/attempts/${qa}/submit`, { method: "POST", json: {} }); await sleep(800);
+  r = await req(p1, `/api/units/${uid}`); ok(r.data.quiz.best === 0 && r.data.quiz.passed === false && r.data.status === "in_progress", "kuis gagal: skor 0 persen, belum lulus", J(r.data.quiz));
+  r = await req(p1, `/api/materials/bacaan-unit/progress`, { method: "POST", json: { score: 100, final: true } }); ok(r.status === 200, "bacaan ditandai dipelajari");
+  r = await req(p1, `/api/units/${uid}`); ok(r.data.materials[0].done === true && r.data.status !== "completed", "materi selesai tetapi unit belum (kuis belum lulus)");
+  r = await req(p1, `/api/units/${uid}/quiz`, { method: "POST", json: {} }); const qa2 = r.data.attemptId;
+  await req(p1, `/api/attempts/${qa2}`, { method: "PATCH", json: { answers: [{ qid: qs.data.questions[0].id, choice: 1, timeSpentSec: 3 }] } });
+  await req(p1, `/api/attempts/${qa2}/submit`, { method: "POST", json: {} }); await sleep(800);
+  r = await req(p1, `/api/units/${uid}`); ok(r.data.quiz.passed === true && r.data.quiz.best === 100 && r.data.status === "completed", "kuis lulus + materi selesai: unit selesai", J(r.data.quiz) + r.data.status);
+  r = await req(p1, "/api/courses"); ok(r.data.courses.find((c) => c.id === cid).completed === 1, "course menghitung unit selesai");
+  r = await req(admin, `/api/admin/units/${uid}`, { method: "DELETE" }); ok(r.status === 409, "unit yang sudah dikerjakan tidak bisa dihapus");
+  const ev = { kind: "material", refId: matRead.data.id, activeSec: 15 };
+  r = await req(p1, "/api/events", { method: "POST", json: ev }); ok(r.status === 200 && r.data.idleTimeoutSec === 60, "heartbeat waktu aktif tercatat", J(r.data));
+  r = await req(p1, "/api/events", { method: "POST", json: { ...ev, activeSec: 500 } }); ok(r.status === 400, "heartbeat berlebihan ditolak");
+  r = await req(admin, "/api/events", { method: "POST", json: ev }); ok(r.status === 403, "heartbeat hanya untuk peserta");
+  r = await req(ia, "/api/courses"); ok(r.status === 403, "inst_admin tidak memakai API belajar");
 
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
   r = await req(admin, `/api/admin/institutions/${iA}`, { method: "PATCH", json: { name: "Kampus Uji", code: "KUJI", seats: 3, status: "active", contractStart: new Date(Date.now() - 20 * 86400000).toISOString(), contractEnd: new Date(Date.now() - 86400000).toISOString() } });

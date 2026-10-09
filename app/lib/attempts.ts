@@ -8,6 +8,7 @@ import { applyPlacement } from "./placement";
 import { User } from "@/models/User";
 import { runAnalysis } from "./analysis";
 import { processAttemptLearning } from "./learning-pipeline";
+import { recordQuizResult } from "./units";
 import { ensureSimReport } from "./certificates";
 import { Attempt, Test, type AttemptDoc } from "@/models/Test";
 import { Question, type Section } from "@/models/Question";
@@ -80,6 +81,7 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
       if (attempt.kind === "placement") await applyPlacement(attempt);
       else if (attempt.kind === "sim" && attempt.scoreEst != null) await User.updateOne({ _id: attempt.userId }, { currentScoreEst: attempt.scoreEst });
       if (attempt.kind === "sim") await ensureSimReport(attempt._id);
+      if (attempt.kind === "quiz") await recordQuizResult(attempt);
     } catch (e) { console.error("[finalize] efek samping gagal", e); }
     try { await processAttemptLearning(attempt); } catch (e) { console.error("[finalize] pipeline belajar gagal", e); }
     void runAnalysis(attempt._id);

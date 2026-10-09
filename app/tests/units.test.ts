@@ -10,6 +10,7 @@ import { extractJson, ruleBasedAnalysis, detectDistress, analysisSchema } from "
 import { isMp3, sniffImage } from "@/lib/files";
 import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
+import { unitComplete, percentCorrect } from "@/lib/units";
 import { nextTopicScore, topicStatus } from "@/lib/topic-stats";
 import { planCandidates } from "@/lib/study-plan";
 import { stuckFrom, median } from "@/lib/stuck";
@@ -183,5 +184,19 @@ describe("study plan (MTS §15)", () => {
     expect(planCandidates(topics, new Set(), 3).map((x) => x.topic)).toEqual(["c", "b", "a"]);
     expect(planCandidates(topics, new Set(["structure|c"]), 2).map((x) => x.topic)).toEqual(["b", "a"]);
     expect(planCandidates(topics, new Set(), 0)).toEqual([]);
+  });
+});
+
+describe("unit belajar (MTS §10.1)", () => {
+  it("selesai hanya bila semua materi wajib selesai dan kuis (bila ada) lulus", () => {
+    expect(unitComplete(["a", "b"], new Set(["a", "b"]), false, false)).toBe(true);
+    expect(unitComplete(["a", "b"], new Set(["a"]), false, false)).toBe(false);
+    expect(unitComplete(["a"], new Set(["a"]), true, false)).toBe(false);
+    expect(unitComplete(["a"], new Set(["a"]), true, true)).toBe(true);
+    expect(unitComplete([], new Set(), true, true)).toBe(true);
+  });
+  it("persen benar dari skor section", () => {
+    expect(percentCorrect([{ raw: 3, total: 4 }, { raw: 1, total: 4 }])).toBe(50);
+    expect(percentCorrect([])).toBe(0);
   });
 });

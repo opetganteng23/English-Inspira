@@ -6,12 +6,14 @@ import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { MaterialFrame } from "@/components/MaterialFrame";
+import { useActiveTime } from "@/lib/use-active-time";
 
 type Mat = { id: string; title: string; summary?: string; kind: "rich" | "html"; tags: string[]; contentHtml?: string; htmlDoc?: { html: string; css: string; js: string }; progress: { score: number | null; completed: boolean; attempts: number } | null };
 
 export default function MateriViewer({ params }: { params: { slug: string } }) {
   const { data, loading, error } = useApi<Mat>(`/api/materials/${params.slug}`);
   const [toast, setToast] = useState("");
+  useActiveTime("material", data?.id ?? null);
   // Skor dari materi diteruskan induk ke API; materi sendiri tidak pernah memanggil API.
   const onProgress = useCallback(async (score: number, answers: unknown, final: boolean) => {
     try { await api(`/api/materials/${params.slug}/progress`, { json: { score, answers, final } }); if (final) setToast(`Skor ${Math.round(score)} tersimpan.`); }
@@ -32,7 +34,10 @@ export default function MateriViewer({ params }: { params: { slug: string } }) {
       {toast && <p role="status" className="rounded-lg bg-success-tint p-3 text-sm text-success">{toast}</p>}
       {data.kind === "html" && data.htmlDoc
         ? <MaterialFrame doc={data.htmlDoc} onProgress={onProgress} />
-        : <article className="card prose-ei" dangerouslySetInnerHTML={{ __html: data.contentHtml ?? "" }} />}
+        : <>
+            <article className="card prose-ei" dangerouslySetInnerHTML={{ __html: data.contentHtml ?? "" }} />
+            <button className="btn-solid self-start" onClick={() => onProgress(100, null, true)}>{data.progress?.completed ? "Tandai selesai lagi" : "Tandai sudah dipelajari"}</button>
+          </>}
     </div>
   );
 }

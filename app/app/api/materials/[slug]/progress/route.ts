@@ -3,6 +3,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { Material, MaterialProgress } from "@/models/Material";
+import { markMaterialDone } from "@/lib/units";
 import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 
 const limiter = new RateLimiterMemory({ points: 20, duration: 60 });
@@ -27,6 +28,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
       b.final ? { $set: { score: b.score, answers: b.answers ?? null, completedAt: new Date() }, $inc: { attempts: 1 } } : { $set: { score: b.score, answers: b.answers ?? null }, $setOnInsert: { attempts: 0 } },
       { upsert: true, new: true }
     );
+    if (b.final && user.role === "participant") await markMaterialDone(user, m._id); // memajukan unit yang mensyaratkan materi ini
     return NextResponse.json({ ok: true, attempts: p.attempts });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: "Data progres tidak valid" }, { status: 400 });

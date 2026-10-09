@@ -10,6 +10,7 @@ const nav: NavGroup[] = [
   { label: "Tes & Materi", items: [
     { href: "/admin/bank-soal", label: "Bank Soal" },
     { href: "/admin/tes", label: "Tes" },
+    { href: "/admin/kursus", label: "Kursus & Unit" },
     { href: "/admin/materi", label: "Materi" },
     { href: "/admin/konselor-ai", label: "Konselor AI" },
     { href: "/admin/proctoring", label: "Review Proctoring" },

@@ -62,8 +62,8 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 | ID | Item (MTS §) | Status |
 |---|---|---|
-| L1 | Level → Course → Unit; `unit_progress`; syarat lulus (`unit_pass_score`, kuis dari bank soal) (§10.1) | ⬜ |
-| L2 | Admin: kelola course/unit/`requiredItems`; peserta hanya melihat course sesuai level | ⬜ |
+| L1 | Level → Course → Unit; `unit_progress`; syarat lulus (`unit_pass_score`, kuis dari bank soal) (§10.1) | ✅ Level → Course → Unit, `unit_progress`, lulus = materi wajib selesai + kuis ≥ `unit_pass_score` (teruji smoke: kuis gagal → lulus → unit selesai) |
+| L2 | Admin: kelola course/unit/`requiredItems`; peserta hanya melihat course sesuai level | ✅ admin: halaman Kursus & Unit (course/unit/materi wajib/kuis); peserta hanya melihat course levelnya — UI belum dicoba di browser |
 | L3 | Rich text (TipTap) — fitur dasar, gambar→assets, YouTube, audio | ✅ (belum diuji di browser) |
 | L4 | Rich text lengkap: ukuran/jenis font, audio dengan transkrip, lampiran PDF, layar penuh, pratinjau ponsel, DOMPurify klien (§10.2) | ⬜ |
 | L5 | Blok interaktif bawaan di rich text (kuis/flashcard/isian/pencocokan/timer) bertag topik → `learning_events` | ⬜ |
@@ -72,7 +72,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 | L8 | Jembatan: pesan ber-versi + **nonce** + tipe `report`/`complete` + Zod + batas frekuensi; hapus global `EI` umum (§10.3) | ✅ pesan ber-versi + nonce (jembatan menghapus dirinya dari DOM) + Zod + batas frekuensi; `EI` dibekukan; `report`/`complete` (diuji unit) |
 | L9 | Status materi draft → **review** → published, audit penulis/reviewer/publish/rollback (§10.3) | ✅ draft → review → published, HTML wajib review, penerbit ≠ penyunting bila >1 admin, ubah isi HTML terbit → draf; audit tiap langkah (teruji smoke) |
 | L10 | Uji keamanan iframe: akses parent/storage/cookie, jaringan, navigasi, popup, pesan palsu, nonce salah, iframe lama (§20, §24) | 🔄 validasi pesan/nonce/CSP diuji unit; pengujian di browser (akses parent/storage/cookie, jaringan, navigasi, popup) ⬜ |
-| L11 | `learning_events` + heartbeat `POST /api/events` (waktu aktif saja, `idle_timeout_sec`) (§13.1) | ⬜ |
+| L11 | `learning_events` + heartbeat `POST /api/events` (waktu aktif saja, `idle_timeout_sec`) (§13.1) | ✅ `learning_events` + `POST /api/events` (maks 30 dtk/detak, batas frekuensi, hanya peserta); klien mengirim hanya saat tab terlihat & aktif dalam `idle_timeout_sec` — hook klien belum diuji di browser |
 
 ## 5. Analitik & study plan — Fase 5 (P2)
 
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, Docker, `/api/health` | ✅ (Docker belum diuji build) |
-| Uji unit (vitest, 27 uji) & `scripts/smoke.mjs` v2.2 (96 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 29 uji) & `scripts/smoke.mjs` v2.2 (116 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
