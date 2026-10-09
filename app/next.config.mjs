@@ -9,6 +9,8 @@ const nextConfig = {
   poweredByHeader: false,
   // Paket server-only yang tidak boleh di-bundle webpack.
   experimental: {
+    // Wajib di Next 14 agar instrumentation.ts (penjadwal dalam-proses untuk PM2) dijalankan.
+    instrumentationHook: true,
     // Font bawaan pdfkit dibaca lewat fs saat runtime.
     outputFileTracingIncludes: { "/api/**/*": ["./node_modules/pdfkit/js/data/**/*"] },
     serverComponentsExternalPackages: ["mongodb-memory-server", "mongoose", "pdfkit", "exceljs", "qrcode", "music-metadata", "pdf-parse"],

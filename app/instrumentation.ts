@@ -1,4 +1,4 @@
-// Penjadwal dalam-proses untuk VPS/PM2 (SATU instance). Di Vercel pakai Vercel Cron (vercel.json) atau cron sistem
+// Penjadwal dalam-proses untuk VPS/PM2 (SATU instance). Alternatifnya cron sistem
 // yang memanggil /api/cron/{mail|hourly|daily} dengan CRON_SECRET.
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs" || process.env.ENABLE_INPROCESS_CRON !== "true") return;
