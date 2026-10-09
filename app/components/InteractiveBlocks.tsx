@@ -116,7 +116,7 @@ function TimerBlock({ cfg }: { cfg: z.infer<typeof blockSchemas.timer> }) {
       {cfg.prompt && <p className="mb-2 text-ink-soft">{cfg.prompt}</p>}
       <p className="font-display text-4xl font-extrabold text-navy" role="timer" aria-live="off">{mm}:{ss}</p>
       {left === 0 && <p className="text-success" role="status">Time is up</p>}
-      <div className="mt-2 flex justify-center gap-2"><button className="btn-solid !min-h-[40px]" onClick={() => setRun(!run)} disabled={left === 0}>{run ? "Jeda" : "Start"}</button><button className="btn-outline !min-h-[40px]" onClick={() => { setRun(false); setLeft(total); }}>Reset</button></div>
+      <div className="mt-2 flex justify-center gap-2"><button className="btn-solid !min-h-[40px]" onClick={() => setRun(!run)} disabled={left === 0}>{run ? "Pause" : "Start"}</button><button className="btn-outline !min-h-[40px]" onClick={() => { setRun(false); setLeft(total); }}>Reset</button></div>
     </div>
   );
 }

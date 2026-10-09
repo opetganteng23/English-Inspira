@@ -3,7 +3,7 @@ import { connectDB } from "./db";
 import { getParam } from "./config";
 import { CounselorThread } from "@/models/Counselor";
 
-/** Kuota Konselor AI: `counselor_quota` pesan per bulan (kalender, zona Asia/Jakarta) per peserta (MTS §5, §17). */
+/** Kuota AI Counselor: `counselor_quota` pesan per bulan (kalender, zona Asia/Jakarta) per peserta (MTS §5, §17). */
 export async function counselorAccess(userId: Types.ObjectId | string) {
   await connectDB();
   const quota = await getParam("counselor_quota");

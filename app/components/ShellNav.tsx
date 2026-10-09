@@ -24,7 +24,7 @@ export function ShellNav({
   const best = all.filter((i) => path === i.href || path.startsWith(i.href + "/")).sort((a, b) => b.href.length - a.href.length)[0];
 
   const links = (
-    <nav aria-label="Menu utama" className="flex flex-col gap-4">
+    <nav aria-label="Main menu" className="flex flex-col gap-4">
       {nav.map((g, gi) => (
         <div key={gi} className="flex flex-col gap-1">
           {g.label && <p className="px-3 text-[11px] font-semibold tracking-wider text-[#8FA6C8]">{g.label.toUpperCase()}</p>}
@@ -45,7 +45,7 @@ export function ShellNav({
       <p className="truncate text-xs text-[#8FA6C8]">{ROLE[user.role] ?? user.role}</p>
       <button
         className="mt-3 w-full rounded-lg border border-[#8FA6C8]/40 px-3 py-2 text-sm font-semibold text-mist hover:bg-navy-700"
-        onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/masuk"; }}
+        onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/"; }}
       >Sign out</button>
     </div>
   );

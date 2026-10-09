@@ -6,8 +6,8 @@ import { api, tgl } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 
 type A = { id: string; user: string; test: string; kind: string; finishedAt: string; scoreEst: number; flags: number; counts: Record<string, number>; review: { status: string; note?: string } | null };
-const FLAG: Record<string, string> = { tab_hidden: "Pindah tab", fullscreen_exit: "Exit fullscreen", paste: "Paste", multi_tab: "Multi-tab" };
-const RV: Record<string, [string, string]> = { clean: ["Bersih", "badge-ok"], suspicious: ["Mencurigakan", "badge-warn"], invalid: ["Invalid", "badge-bad"] };
+const FLAG: Record<string, string> = { tab_hidden: "Tab switch", fullscreen_exit: "Exit fullscreen", paste: "Paste", multi_tab: "Multi-tab" };
+const RV: Record<string, [string, string]> = { clean: ["Clean", "badge-ok"], suspicious: ["Suspicious", "badge-warn"], invalid: ["Invalid", "badge-bad"] };
 
 export default function Proctoring() {
   const [filter, setFilter] = useState("pending");

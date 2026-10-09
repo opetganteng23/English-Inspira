@@ -18,7 +18,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const d = (c.data ?? {}) as { name?: string; testName?: string; scores?: { listening?: number; structure?: number; reading?: number; total?: number } };
     const origin = process.env.APP_URL ?? new URL(req.url).origin;
     const pdf = await certificatePdf({
-      type: c.type, number: c.number, issuedAt: c.issuedAt, name: d.name ?? owner?.name ?? owner?.email ?? "-", verifyUrl: `${origin}/verifikasi/${c.number}`,
+      type: c.type, number: c.number, issuedAt: c.issuedAt, name: d.name ?? owner?.name ?? owner?.email ?? "-", verifyUrl: `${origin}/verify/${c.number}`,
       scores: d.scores ?? {}, title: d.testName,
     });
     return new Response(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${c.number}.pdf"`, "Cache-Control": "private, no-store" } });

@@ -70,8 +70,8 @@ export async function evaluateLevelUp(attempt: HydratedDocument<AttemptDoc>) {
       await PlanItem.updateMany({ userId: g.user._id, status: { $in: ["active", "late"] }, source: "auto" }, { status: "resolved", doneAt: new Date() });
       const topics = await TopicStat.find({ userId: g.user._id }).lean();
       await refreshStudyPlan(g.user._id, g.user.institutionId ?? undefined, topics.map((t) => ({ skill: t.skill, topic: t.topic, score: t.score, status: t.status })));
-      await enqueueMail(g.user.email, "level_up", { level: g.next.name, quota: g.next.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/beranda` });
-      await notify(g.user._id, "level_up", { title: `Congratulations, you are now at the ${g.next.name} level`, body: `New coaching quota: ${g.next.coachingQuota} sessions.`, href: "/beranda" }, String(attempt._id));
+      await enqueueMail(g.user.email, "level_up", { level: g.next.name, quota: g.next.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/home` });
+      await notify(g.user._id, "level_up", { title: `Congratulations, you are now at the ${g.next.name} level`, body: `New coaching quota: ${g.next.coachingQuota} sessions.`, href: "/home" }, String(attempt._id));
       await audit(g.user._id, "level.up", String(attempt._id), { from: g.cur.key, to: g.next.key, score: attempt.scoreEst });
       result = { up: true, reasons: [], level: g.next.name };
     }

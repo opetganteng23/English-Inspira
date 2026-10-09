@@ -8,7 +8,7 @@ import { Loading, ErrorNote, Empty } from "@/components/Charts";
 type Open = { id: string; title: string; coach: string; startsAt: string; endsAt: string; mode: "online" | "offline"; room: string; left: number };
 type Bk = { id: string; status: string; startsAt: string | null; endsAt: string | null; mode: string; meetingUrl: string; room: string; coach: string; quotaCharged: boolean; note: string; canCancel: boolean };
 type D = { quota: { total: number; used: number; bookable: number } | null; rules: { registerBeforeHours: number; cancelBeforeHours: number }; open: Open[]; bookings: Bk[] };
-const ST: Record<string, [string, string]> = { booked: ["Terjadwal", "badge-ok"], present: ["Present", "badge-ok"], absent: ["Absent", "badge-bad"], excused: ["Excused", "badge-muted"], cancelled: ["Cancelled", "badge-muted"] };
+const ST: Record<string, [string, string]> = { booked: ["Scheduled", "badge-ok"], present: ["Present", "badge-ok"], absent: ["Absent", "badge-bad"], excused: ["Excused", "badge-muted"], cancelled: ["Cancelled", "badge-muted"] };
 
 export default function Coaching() {
   const { data, loading, error, reload } = useApi<D>("/api/coaching");

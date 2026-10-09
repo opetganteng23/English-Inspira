@@ -133,7 +133,7 @@ export async function bookSlot(user: Actor & { currentLevelId?: Types.ObjectId |
     const me = await User.findById(user._id).select("email").lean();
     if (me) await enqueueMail(me.email, "booking_confirmed", { coach: coach?.name ?? "Coach", ...mailBase(s) });
     await notify(user._id, "booking_confirmed", { title: "Coaching booking confirmed", body: s.startsAt.toLocaleString("en-GB"), href: "/coaching" });
-    await notify(s.coachId, "booking_new", { title: "A participant booked your slot", body: s.startsAt.toLocaleString("en-GB"), href: "/coach/sesi" });
+    await notify(s.coachId, "booking_new", { title: "A participant booked your slot", body: s.startsAt.toLocaleString("en-GB"), href: "/coach/sessions" });
     await audit(user._id, "booking.create", String(b._id));
     return b;
   } catch (e) {

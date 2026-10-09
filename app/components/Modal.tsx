@@ -18,7 +18,7 @@ export function Modal({ title, onClose, wide, children }: { title: string; onClo
         className={`flex max-h-[94vh] w-full flex-col rounded-t-2xl bg-white sm:my-6 sm:max-h-none sm:rounded-2xl ${wide ? "sm:max-w-3xl" : "sm:max-w-xl"}`}>
         <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-6">
           <h2 className="font-display text-lg font-extrabold text-navy sm:text-xl">{title}</h2>
-          <button onClick={onClose} aria-label="Tutup" className="flex h-10 w-10 items-center justify-center text-2xl leading-none text-ink-soft">×</button>
+          <button onClick={onClose} aria-label="Close" className="flex h-10 w-10 items-center justify-center text-2xl leading-none text-ink-soft">×</button>
         </div>
         <div className="overflow-y-auto p-4 sm:overflow-visible sm:p-6">{children}</div>
       </div>

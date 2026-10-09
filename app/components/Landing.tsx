@@ -41,11 +41,11 @@ const AUDIENCE = [
 
 const FAQ = [
   ["Is this the same as the official TOEFL ITP?", "Our tests follow the TOEFL ITP format (Listening, Structure & Written Expression, Reading) and give an estimated score. Official scores only come from the official TOEFL ITP, which you can register for here when your institution's program includes it."],
-  ["How do I get access?", "Access is provided through partner institutions. Your institution invites you by email, and you sign in with a one-time code sent to that email. There is no password to remember."],
+  ["How do I get access?", "Access is provided through partner institutions. Create an account with the institution code you received, or use the invitation email from your institution. You can sign in with your password or with a one-time code sent to your email."],
   ["What can I ask the AI Counselor?", "Anything about your results: why a section score is low, what to do this week, how long until you reach your target, or whether you are ready for the official test."],
   ["What device do I need?", "A laptop or PC with headphones and a stable connection. The test room runs in fullscreen, and leaving the test tab is recorded."],
   ["Is my data safe?", "Your data is used only for your learning and your institution's reports. The AI receives scores and answers without your name or contact details. You can download your data or request deletion from your profile."],
-  ["My sign-in code does not work. What should I do?", "Use the code from the newest email. The code is shown in the email subject and is valid for 5 minutes. If it expires, request a new one."],
+  ["I forgot my password. What should I do?", "Use Forgot password on the sign-in page and we will email you a link to set a new one. You can also sign in with a one-time email code: use the code from the newest email, shown in the email subject and valid for 5 minutes."],
   ["My institution wants to join. How?", "Contact us using the details at the bottom of this page. We will set up your institution, participant seats, and test schedules."],
 ];
 
@@ -63,7 +63,10 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
             <a href="#institutions" className="text-ink hover:text-brand">For institutions</a>
             <a href="#faq" className="text-ink hover:text-brand">FAQ</a>
           </nav>
-          <Link href="/masuk" className="btn-solid !min-h-[44px] !px-5">Sign in</Link>
+          <div className="flex items-center gap-2">
+            <Link href="/sign-in" className="hidden min-h-[44px] items-center px-3 text-[15px] font-semibold text-navy hover:text-brand sm:inline-flex">Sign in</Link>
+            <Link href="/register" className="btn-solid !min-h-[44px] !px-5">Create account</Link>
+          </div>
         </div>
       </header>
 
@@ -78,11 +81,12 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
               <h1 className="font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-navy sm:text-5xl lg:text-[58px]">Know your TOEFL ITP score. Know what to do next.</h1>
               <p className="max-w-xl text-lg leading-relaxed text-[#3B4A60] sm:text-[19px]">ITP-format tests, AI analysis for every section, and an AI Counselor that plans your next steps, until you are ready to register for the official TOEFL ITP.</p>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Link href="/masuk" className="inline-flex h-14 items-center justify-center rounded-xl bg-brand px-7 text-[17px] font-semibold text-white hover:bg-brand-dark">Sign in</Link>
+                <Link href="/register" className="inline-flex h-14 items-center justify-center rounded-xl bg-brand px-7 text-[17px] font-semibold text-white hover:bg-brand-dark">Create account</Link>
+                <Link href="/sign-in" className="inline-flex h-14 items-center justify-center rounded-xl border-[1.5px] border-line-strong bg-white px-7 text-[17px] font-semibold text-navy hover:border-brand">Sign in</Link>
                 <a href="#institutions" className="inline-flex h-14 items-center justify-center rounded-xl border-[1.5px] border-line-strong bg-white px-7 text-[17px] font-semibold text-navy hover:border-brand">For institutions</a>
               </div>
               <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-soft">
-                <span>Access through your institution</span><span className="text-line-strong" aria-hidden>|</span><span>Sign in with an email code</span><span className="text-line-strong" aria-hidden>|</span><span>Official ITP registration</span>
+                <span>Register with your institution code</span><span className="text-line-strong" aria-hidden>|</span><span>Password or email code</span><span className="text-line-strong" aria-hidden>|</span><span>Official ITP registration</span>
               </div>
             </div>
             <div className="flex w-full max-w-[520px] shrink-0 flex-col gap-4 rounded-[20px] bg-navy p-6 text-white shadow-[0_30px_60px_-30px_rgba(15,47,94,0.55)]" aria-label="Example result and counseling">
@@ -139,7 +143,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
           </div>
         </section>
 
-        {/* Konselor AI */}
+        {/* AI Counselor */}
         <section id="counselor" className="scroll-mt-20 bg-white">
           <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 px-4 py-20 sm:px-6 lg:flex-row lg:gap-[72px] lg:px-10 lg:py-28">
             <div className="flex flex-1 flex-col gap-6">
@@ -181,8 +185,8 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
               </div>
             ))}
             <div className="flex min-h-[196px] flex-col justify-between gap-4 rounded-2xl bg-navy p-6">
-              <span className="font-display text-[22px] font-extrabold leading-snug text-white">Already invited by your institution?</span>
-              <Link href="/masuk" className="inline-flex h-11 items-center self-start rounded-[10px] bg-accent px-4 text-[15px] font-semibold text-navy hover:bg-[#F59A38]">Sign in</Link>
+              <span className="font-display text-[22px] font-extrabold leading-snug text-white">Have a code from your institution?</span>
+              <Link href="/register" className="inline-flex h-11 items-center self-start rounded-[10px] bg-accent px-4 text-[15px] font-semibold text-navy hover:bg-[#F59A38]">Create account</Link>
             </div>
           </div>
         </section>
@@ -253,7 +257,10 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
               <h2 className="font-display text-3xl font-extrabold leading-tight sm:text-[38px]">Learning English should not be guesswork.</h2>
               <p className="text-lg text-[#DCE7F7]">Start by knowing your score today.</p>
             </div>
-            <Link href="/masuk" className="inline-flex h-14 shrink-0 items-center rounded-xl bg-white px-8 text-[17px] font-semibold text-brand hover:bg-brand-tint">Sign in</Link>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+              <Link href="/register" className="inline-flex h-14 items-center justify-center rounded-xl bg-white px-8 text-[17px] font-semibold text-brand hover:bg-brand-tint">Create account</Link>
+              <Link href="/sign-in" className="inline-flex h-14 items-center justify-center rounded-xl border-[1.5px] border-white/60 px-8 text-[17px] font-semibold text-white hover:bg-white/10">Sign in</Link>
+            </div>
           </div>
         </section>
       </main>

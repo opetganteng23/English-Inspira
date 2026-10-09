@@ -38,5 +38,5 @@ export function scopeByInstitution<T = UserDoc>(
 export function handleError(e: unknown) {
   if (e instanceof HttpError) return NextResponse.json({ error: e.message, ...(e.code ? { code: e.code } : {}) }, { status: e.status });
   console.error(e);
-  return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 });
+  return NextResponse.json({ error: "Server error" }, { status: 500 });
 }

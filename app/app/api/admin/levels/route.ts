@@ -18,7 +18,7 @@ export async function GET() {
 }
 
 const level = z.object({
-  key: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{2,30}$/, "Key: huruf kecil/angka"),
+  key: z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{2,30}$/, "Key: lowercase letters/numbers"),
   name: z.string().trim().min(1).max(40),
   order: z.number().int().min(1).max(20),
   scoreMin: z.number().int().min(310).max(677),
@@ -35,7 +35,7 @@ export async function PUT(req: Request) {
     const admin = await requireRole(["admin"]);
     const { levels } = z.object({ levels: z.array(level).min(1).max(10) }).parse(await req.json());
     const sorted = [...levels].sort((a, b) => a.order - b.order);
-    for (const l of sorted) if (l.scoreMin > l.scoreMax) throw new HttpError(400, `${l.name}: batas bawah melebihi batas atas`);
+    for (const l of sorted) if (l.scoreMin > l.scoreMax) throw new HttpError(400, `${l.name}: the lower bound is above the upper bound`);
     for (let i = 1; i < sorted.length; i++) if (sorted[i].scoreMin <= sorted[i - 1].scoreMax) throw new HttpError(400, `The ranges of ${sorted[i - 1].name} and ${sorted[i].name} overlap`);
     if (new Set(levels.map((l) => l.key)).size !== levels.length || new Set(levels.map((l) => l.order)).size !== levels.length) throw new HttpError(400, "Level keys and order must be unique");
     await connectDB();

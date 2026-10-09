@@ -45,5 +45,8 @@ async function patch(model: mongoose.Model<any>, fields: string[], arrays: strin
     }
     console.log(`${coll}:`, n);
   }
+  // Nilai tujuan peserta (enum) ke bahasa Inggris.
+  for (const [o, n] of [["kelulusan", "graduation"], ["beasiswa", "scholarship"], ["pekerjaan", "career"], ["lainnya", "other"]])
+    console.log(`goal ${o}:`, (await db.collection("users").updateMany({ goal: o }, { $set: { goal: n } })).modifiedCount);
   await mongoose.disconnect();
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -90,7 +90,7 @@ export async function generateNarrative(input: EngineInput, userId: string, inst
     } catch (e) {
       last = (e as Error).name === "SyntaxError" ? "invalid_output" : "api_error";
       feedback = last === "invalid_output" ? "not valid JSON" : "";
-      console.error("[analysis] percobaan", attempt + 1, "failed:", (e as Error).message);
+      console.error("[analysis] attempt", attempt + 1, "failed:", (e as Error).message);
       if (last === "api_error") break; // gangguan API: jangan menghabiskan percobaan; job per jam yang mengulang
     }
   }
@@ -104,7 +104,7 @@ async function save(a: AnalysisDoc, n: Narrative, hash: string, promptVersion: s
   });
   if (a.attemptId) {
     await Attempt.updateOne({ _id: a.attemptId }, { aiAnalysis: { status: "ready", ...toLegacy(n.result, n.engine), generatedAt: new Date() } });
-    await notify(a.userId, "analysis_ready", { title: "Your result analysis is ready", href: `/hasil/${a.attemptId}` }, String(a.attemptId));
+    await notify(a.userId, "analysis_ready", { title: "Your result analysis is ready", href: `/results/${a.attemptId}` }, String(a.attemptId));
   }
 }
 

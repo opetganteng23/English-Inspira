@@ -28,7 +28,7 @@ export async function issueInvitation(user: { _id: Types.ObjectId; email: string
   const token = randomBytes(24).toString("hex");
   const expiresAt = new Date(Date.now() + INVITE_DAYS * 86_400_000);
   await Invitation.create({ email: user.email, userId: user._id, institutionId: institution._id, tokenHash: sha256(token), expiresAt, invitedBy });
-  const link = `${process.env.APP_URL ?? "http://localhost:3000"}/masuk?invite=${token}`;
+  const link = `${process.env.APP_URL ?? "http://localhost:3000"}/sign-in?invite=${token}`;
   await enqueueMail(user.email, "invitation", { institution: institution.name, name: user.name, link, expiresAt });
 }
 

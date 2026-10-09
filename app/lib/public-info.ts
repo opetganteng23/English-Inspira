@@ -9,7 +9,7 @@ export async function publicInfo() {
   const g = await getSetting("general", GENERAL_DEFAULTS);
   return {
     ...g,
-    organizerText: g.itpOrganizer || "mitra penyelenggara resmi",
+    organizerText: g.itpOrganizer || "official partner organizer",
     rescheduleText: g.refundPolicy || `Schedule changes can be made up to ${g.rescheduleDays} days before the test from the Official ITP Test menu. Full terms will be announced by the admin.`,
   };
 }

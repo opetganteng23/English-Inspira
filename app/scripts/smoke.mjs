@@ -86,7 +86,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   console.log("\n== Undangan → login → persetujuan ==");
   await sleep(1500);
   const tok = inviteTokenFor("p1@test.local");
-  ok(!!tok, "email undangan berisi tautan /masuk?invite=<token>");
+  ok(!!tok, "email undangan berisi tautan /sign-in?invite=<token>");
   r = await req(null, `/api/auth/invite?token=${tok}`); ok(r.status === 200 && r.data.email === "p1@test.local" && r.data.institution === "Kampus Uji", "token undangan mengisi email & institusi", J(r.data));
   r = await req(null, `/api/auth/invite?token=${"0".repeat(48)}`); ok(r.status === 404, "token salah 404 generik");
   const p1 = await login("p1@test.local", { invite: tok });
@@ -125,7 +125,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   const lvlName = r.data.level.name;
   r = await req(p1, "/api/home");
   ok(r.status === 200 && r.data.level?.name === lvlName && r.data.quota?.total > 0 && r.data.quota.used === 0 && r.data.scoreEst, "beranda: level, skor, kuota coaching", J(r.data).slice(0, 300));
-  ok(r.data.step.href === "/tes" && !/placement/i.test(r.data.step.cta), "langkah berikutnya bergeser setelah placement", J(r.data.step));
+  ok(r.data.step.href === "/tests" && !/placement/i.test(r.data.step.cta), "langkah berikutnya bergeser setelah placement", J(r.data.step));
   await sleep(800); // pipeline belajar berjalan async setelah submit
   let ana; for (let i = 0; i < 12; i++) { ana = (await req(p1, `/api/attempts/${aid}/result`)).data.analysis; if (ana?.status === "ready") break; await sleep(500); }
   ok(ana?.status === "ready" && ana.narrative && ana.mock === true && ana.engine === "template" && Array.isArray(ana.weaknesses) && Array.isArray(ana.nextSteps), "analisis: angka dulu, lalu narasi (template karena tanpa kunci AI)", J(ana).slice(0, 200));
@@ -508,10 +508,77 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   console.log("\n== Keamanan umum & cron ==");
   r = await req(admin, "/api/admin/params", { method: "PUT", json: { key: "counselor_quota", value: 30 }, headers: { origin: "https://evil.example" } }); ok(r.status === 403, "CSRF: Origin asing ditolak");
   r = await req(null, "/api/cron/mail"); ok(r.status === 401, "cron tanpa rahasia ditolak");
-  r = await req(null, "/masuk"); ok(r.headers.get("x-frame-options") === "DENY" && r.headers.get("x-content-type-options") === "nosniff", "header keamanan terpasang");
+  r = await req(null, "/sign-in"); ok(r.headers.get("x-frame-options") === "DENY" && r.headers.get("x-content-type-options") === "nosniff", "header keamanan terpasang");
   r = await req(null, "/admin"); ok(r.status === 307, "halaman admin tanpa login dialihkan");
   r = await req(null, "/daftar"); ok(r.status === 404, "tidak ada halaman pendaftaran publik");
   r = await req(null, "/api/health"); ok(r.status === 200, "health check");
+
+  console.log("\n== Daftar dengan kode institusi, password, lupa password ==");
+  {
+    const mailCode = async (email, kind) => {
+      for (let i = 0; i < 25; i++) {
+        await sleep(300);
+        const all = [...logText().matchAll(new RegExp(`to=(\\S+)\\nsubject=(\\d{6}) is your English Inspira ${kind} code`, "g"))].filter((m) => m[1] === email);
+        if (all.length) return all[all.length - 1][2];
+      }
+      return null;
+    };
+    const resetToken = async (email) => {
+      for (let i = 0; i < 25; i++) {
+        await sleep(300);
+        const log = logText(); const at = log.lastIndexOf(`to=${email}\nsubject=Reset your English Inspira password`);
+        const m = at >= 0 ? log.slice(at, at + 2000).match(/reset-password\?token=([0-9a-f]{64})/) : null;
+        if (m) return m[1];
+      }
+      return null;
+    };
+    r = await req(admin, "/api/admin/institutions", { method: "POST", json: { name: "Kampus Daftar", code: "KDAFTAR", seats: 1, contractStart: new Date().toISOString(), contractEnd: new Date(Date.now() + 365 * 86400000).toISOString() } });
+    ok(r.status === 201, "institusi untuk daftar mandiri dibuat", J(r.data));
+    const em = "daftar@test.local";
+    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Peserta Daftar", email: em, password: "rahasia123", code: "SALAH99" } });
+    ok(r.status === 400, "daftar dengan kode institusi salah ditolak");
+    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Peserta Daftar", email: em, password: "pendek", code: "kdaftar" } });
+    ok(r.status === 400, "password < 8 karakter ditolak");
+    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Peserta Daftar", email: em, password: "rahasia123", code: "kdaftar" } });
+    ok(r.status === 200, "daftar: kode verifikasi dikirim", J(r.data));
+    r = await req(null, "/api/auth/login", { method: "POST", json: { email: em, password: "rahasia123" } });
+    ok(r.status === 400, "belum verifikasi email: login password ditolak");
+    const vcode = await mailCode(em, "verification");
+    ok(!!vcode, "email verifikasi berisi kode di judul");
+    const jarR = { c: "" };
+    r = await req(jarR, "/api/auth/register/verify", { method: "POST", json: { email: em, code: vcode } });
+    ok(r.status === 200 && r.data.needsConsent === true && !!jarR.c, "verifikasi: akun aktif, masuk, lanjut ke persetujuan data", J(r.data));
+    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Orang Lain", email: "lain@test.local", password: "rahasia123", code: "KDAFTAR" } });
+    ok(r.status === 409, "kursi institusi penuh: daftar ditolak");
+    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Penyerang", email: em, password: "bukanmilik1", code: "KUJI" } });
+    ok(r.status === 200 || r.status === 409, "daftar ulang email yang sudah ada: tidak membocorkan / tidak mengubah akun");
+    r = await req(null, "/api/auth/login", { method: "POST", json: { email: em, password: "bukanmilik1" } });
+    ok(r.status === 400, "password dari pendaftaran ulang tidak berlaku");
+    const jarL = { c: "" };
+    r = await req(jarL, "/api/auth/login", { method: "POST", json: { email: em, password: "rahasia123" } });
+    ok(r.status === 200 && !!jarL.c, "login dengan password", J(r.data));
+    r = await req(null, "/api/auth/login", { method: "POST", json: { email: em, password: "salah12345" } });
+    ok(r.status === 400, "password salah ditolak");
+    r = await req(jarL, "/api/me"); ok(r.data.hasPassword === true, "profil: hasPassword");
+    r = await req(jarL, "/api/me/password", { method: "POST", json: { current: "keliru123", password: "baru12345" } });
+    ok(r.status === 400, "ganti password: password lama salah ditolak");
+    r = await req(jarL, "/api/me/password", { method: "POST", json: { current: "rahasia123", password: "baru12345" } });
+    ok(r.status === 200, "ganti password");
+    r = await req(null, "/api/auth/forgot-password", { method: "POST", json: { email: "tidakada@test.local" } });
+    await sleep(600);
+    ok(r.status === 200 && !logText().includes("to=tidakada@test.local"), "lupa password email tak dikenal: respons sama, tanpa email");
+    r = await req(null, "/api/auth/forgot-password", { method: "POST", json: { email: em } });
+    const tok = await resetToken(em);
+    ok(r.status === 200 && !!tok, "lupa password: tautan reset terkirim");
+    r = await req(null, "/api/auth/reset-password", { method: "POST", json: { token: tok, password: "reset12345" } });
+    ok(r.status === 200, "reset password dengan tautan");
+    r = await req(null, "/api/auth/reset-password", { method: "POST", json: { token: tok, password: "lagi123456" } });
+    ok(r.status === 400, "tautan reset hanya sekali pakai");
+    r = await req(null, "/api/auth/login", { method: "POST", json: { email: em, password: "baru12345" } }); ok(r.status === 400, "password lama tidak berlaku setelah reset");
+    r = await req(null, "/api/auth/login", { method: "POST", json: { email: em, password: "reset12345" } }); ok(r.status === 200, "login dengan password baru");
+    for (const p of ["/register", "/forgot-password", "/reset-password", "/sign-in", "/"]) { r = await req(null, p); ok(r.status === 200, `halaman ${p} terbuka`); }
+    r = await req(null, "/masuk?invite=abc"); ok(r.status === 308 && (r.headers.get("location") ?? "").endsWith("/sign-in?invite=abc"), "URL lama /masuk dialihkan ke /sign-in");
+  }
 
   console.log(`\n== HASIL: ${pass} lulus, ${fail} gagal ==`);
   process.exit(fail ? 1 : 0);

@@ -9,7 +9,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 | # | Keputusan | Status |
 |---|---|---|
-| K1 | **MTS v2.2 adalah acuan resmi.** Model v1 (jual paket, Midtrans, voucher, free trial, daftar publik) dibuang | ✅ dikonfirmasi |
+| K1 | **MTS v2.2 adalah acuan resmi.** Model v1 (jual paket, Midtrans, voucher, free trial, daftar publik) dibuang | ✅ dikonfirmasi. Perubahan 2026-10-09 atas permintaan pemilik: daftar mandiri **wajib kode institusi** + login password (lihat §14) |
 | K2 | Soal Listening boleh membawa audio (via grup soal; MP3 di GridFS) | ✅ sudah didukung; unggah audio langsung di editor soal = T-AUD |
 | K3 | Deploy: Biznet Gio Cloud + PM2 (satu instance) + Nginx | ✅ dokumen siap (README, `ecosystem.config.cjs`, `deploy/`) |
 | K4 | Bentuk **pure-analytics** (library/service) | ⬜ menunggu modul/kontrak. Sementara: perhitungan angka di kode sendiri (adapter §14) |
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, `/api/health` | ✅ (deploy: Biznet Gio + PM2, **tanpa Docker**) |
-| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (273 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (300 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
@@ -153,7 +153,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 ## 12. Sisa pekerjaan
 
-Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 60 uji; smoke 273/273 (semua API alur v2.2 termasuk ITP).
+Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 300/300 (alur v2.2 termasuk ITP, daftar, password, reset).
 
 | Prioritas | Item | Status |
 |---|---|---|
@@ -173,5 +173,24 @@ Keadaan terakhir: `tsc`, `next build` (59 halaman) dan lint bersih; vitest 60 uj
 | E4 | Semua font Poppins (web, email, PDF, iframe materi) | ✅ PDF memakai TTF (WOFF2 membuat fontkit gagal: laporan PDF 500, kini diperbaiki) |
 | E5 | Landing page bahasa Inggris mengikuti `English Inspira — Redesign Website.html` | ✅ hero, mitra, cara kerja, Konselor AI, journey 7 tahap, untuk institusi, untuk siapa, FAQ, CTA; tanpa harga/daftar/free trial; dicek di 1440 px dan 500 px |
 | E6 | Logo Inspira (dari pemilik) di header, footer, favicon, PDF | ✅ `public/brand/logo-{white,navy}.png`, `app/icon.png` |
-| E7 | Data contoh lama di Atlas (nama tes "(contoh)", pembahasan soal) | 🔄 `scripts/migrate-en.ts` (hanya mengganti teks yang persis sama dengan seed lama) |
-| E8 | Ganti URL rute berbahasa Indonesia (/beranda, /masuk, …) ke bahasa Inggris | ⏭️ belum diminta; perlu konfirmasi karena mengubah tautan email yang sudah terkirim |
+| E7 | Data contoh lama di Atlas (nama tes "(contoh)", pembahasan soal) | ✅ `scripts/migrate-en.ts` dijalankan di produksi (39 soal, 3 tes); nilai `goal` peserta ikut dikonversi |
+| E8 | URL rute berbahasa Inggris (/home, /sign-in, /tests, /results, /admin/question-bank, /institution, …) | ✅ 37 rute dipindah; URL lama dialihkan permanen (308) termasuk query (tautan email lama tetap jalan) |
+| E9 | Sapuan kedua: kosakata teks lama vs teks sekarang (±100 sisa: admin, coach, institusi, ITP, editor, pesan error) | ✅ |
+| E10 | Nilai enum `goal` (kelulusan/beasiswa/…) jadi graduation/scholarship/career/other; label pendidikan & jenis kelamin dalam bahasa Inggris | ✅ |
+| E11 | Favicon hanya logo (tanpa latar) | ✅ |
+| E12 | Tombol "Back to home" di halaman masuk; logout kembali ke landing page | ✅ |
+| E13 | Sengaja tidak diterjemahkan: komentar kode, label uji smoke, alias kolom impor berbahasa Indonesia (tetap diterima agar file Excel lama bisa diimpor), kode enum internal (`sma/d3/s1/s2`, `L/P`) | ⏭️ tidak tampil ke pengguna |
+
+## 14. Akun: daftar, password, lupa password (permintaan pemilik 2026-10-09)
+
+| ID | Item | Status |
+|---|---|---|
+| A1 | Login email + password; OTP email tetap sebagai pilihan kedua | ✅ teruji smoke |
+| A2 | Daftar mandiri dengan **kode institusi**: verifikasi email 6 digit, kursi diambil saat verifikasi (spam tidak menghabiskan kursi) | ✅ teruji (kode salah, kursi penuh, belum verifikasi) |
+| A3 | Email yang sudah punya akun: respons sama + email "akun sudah ada" (tidak membocorkan, password penyerang tidak berlaku) | ✅ teruji |
+| A4 | Lupa password: tautan 30 menit, sekali pakai; reset juga membuktikan email | ✅ teruji |
+| A5 | Ganti/set password di profil (password lama wajib bila sudah ada) | ✅ teruji |
+| A6 | Kode institusi tampil di dasbor admin institusi dan daftar institusi admin | ✅ |
+| A7 | Akun demo `davdchndra@gmail.com` (password diset, riwayat placement 473 lalu simulasi 497 dan 523, analisis, study plan, Konselor AI) | 🔄 `scripts/seed-demo-participant.ts` |
+| A8 | Hapus otomatis pendaftar yang tidak pernah memverifikasi email | ⬜ belum (tidak memakan kursi, hanya data) |
+| A9 | Login password untuk coach/admin institusi/admin: memakai Lupa password untuk membuat password pertama (profil hanya untuk peserta) | ⏭️ cukup lewat Lupa password |

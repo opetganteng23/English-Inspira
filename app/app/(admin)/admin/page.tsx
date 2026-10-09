@@ -17,7 +17,7 @@ type D = {
   expiring: { name: string; contractEnd: string }[];
   upcoming: { id: string; title: string; date: string; place: string; registered: number; quota: number }[];
 };
-const KIND: Record<string, string> = { placement: "Placement", sim: "Simulasi", practice: "Practice", quiz: "Unit quiz" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", practice: "Practice", quiz: "Unit quiz" };
 
 export default function AdminHome() {
   const [days, setDays] = useState(30);
@@ -50,7 +50,7 @@ export default function AdminHome() {
               <ul className="mt-3 flex flex-col divide-y divide-line">{d.actions.map((a) => <li key={a.label} className="flex items-center justify-between gap-3 py-3"><span className="text-sm">{a.label}</span><span className="flex items-center gap-3"><span className={a.n ? "badge-warn" : "badge-ok"}>{a.n}</span><Link href={a.href} className="text-sm font-semibold text-brand">Open</Link></span></li>)}</ul>
               <p className="mt-2 text-xs text-ink-soft">Email queue: {d.mail.queued} waiting, {d.mail.failed} failed.</p>
               <p className="text-xs text-ink-soft">Analyses in {d.days} days: {d.ai.claude} by Claude, {d.ai.template} template narratives, {d.ai.failed} failed · tokens {d.ai.tokensIn.toLocaleString("en-GB")} in / {d.ai.tokensOut.toLocaleString("en-GB")} out.</p></section>
-            <section className="card"><div className="flex items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Upcoming ITP sessions</h2><Link href="/admin/jadwal-itp" className="text-sm font-semibold text-brand">Manage schedule</Link></div>
+            <section className="card"><div className="flex items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Upcoming ITP sessions</h2><Link href="/admin/itp-schedule" className="text-sm font-semibold text-brand">Manage schedule</Link></div>
               {d.upcoming.length ? <ul className="mt-3 flex flex-col gap-3">{d.upcoming.map((s) => <li key={s.id}><div className="flex justify-between gap-3 text-sm"><span className="font-medium text-navy">{s.title} · {tgl(s.date)}</span><span>{s.registered}/{s.quota}</span></div><div className="mt-1 h-2 rounded-full bg-canvas"><div className="h-2 rounded-full bg-brand" style={{ width: `${Math.min(100, (s.registered / Math.max(1, s.quota)) * 100)}%` }} /></div></li>)}</ul> : <p className="mt-3 text-sm text-ink-soft">No upcoming sessions.</p>}
               {d.expiring.length > 0 && <div className="mt-4 border-t border-line pt-3"><p className="text-sm font-semibold text-navy">Contracts ending soon</p><ul className="mt-1 text-sm text-ink-soft">{d.expiring.map((i) => <li key={i.name}>{i.name} · {tgl(i.contractEnd)}</li>)}</ul></div>}</section>
           </div>

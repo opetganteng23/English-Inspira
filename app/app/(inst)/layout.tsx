@@ -2,11 +2,11 @@ import { AppShell, type NavGroup } from "@/components/AppShell";
 
 const nav: NavGroup[] = [
   { items: [
-    { href: "/institusi", label: "Overview" },
-    { href: "/institusi/peserta", label: "Participants & invitations" },
-    { href: "/institusi/jadwal", label: "Group test schedule" },
-    { href: "/institusi/laporan", label: "Reports" },
-    { href: "/institusi/materi", label: "Institution materials" },
+    { href: "/institution", label: "Overview" },
+    { href: "/institution/participants", label: "Participants & invitations" },
+    { href: "/institution/schedule", label: "Group test schedule" },
+    { href: "/institution/reports", label: "Reports" },
+    { href: "/institution/materials", label: "Institution materials" },
   ] },
 ];
 

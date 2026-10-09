@@ -20,7 +20,7 @@ export async function GET() {
       unread,
       items: list.map((n) => {
         const p = (n.payload ?? {}) as { title?: string; body?: string; href?: string; email?: string };
-        return { id: String(n._id), type: n.type, title: p.title ?? (n.type === "erase_request" ? "Data deletion request" : "Notifikasi"), body: p.body ?? (p.email ?? ""), href: p.href ?? (n.type === "erase_request" ? "/admin/peserta" : ""), read: !!n.readAt, at: n.createdAt };
+        return { id: String(n._id), type: n.type, title: p.title ?? (n.type === "erase_request" ? "Data deletion request" : "Notification"), body: p.body ?? (p.email ?? ""), href: p.href ?? (n.type === "erase_request" ? "/admin/participants" : ""), read: !!n.readAt, at: n.createdAt };
       }),
     });
   } catch (e) {

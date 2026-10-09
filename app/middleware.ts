@@ -3,11 +3,11 @@ import { jwtVerify } from "jose";
 
 // Gerbang kasar berbasis token (Edge). Pengecekan peran/status final tetap di handler via requireRole().
 const COOKIE = "epta_session";
-const PARTICIPANT = ["/beranda", "/belajar", "/coaching", "/unggah-hasil", "/tes", "/ruang-tes", "/hasil", "/materi", "/konselor", "/itp", "/sertifikat", "/profil", "/bantuan"];
+const PARTICIPANT = ["/home", "/learn", "/coaching", "/upload-result", "/tests", "/test-room", "/results", "/materials", "/counselor", "/itp", "/certificates", "/profile", "/help"];
 // Cron dipanggil server lain tanpa Origin browser; keamanannya lewat CRON_SECRET.
 const NO_ORIGIN_CHECK = ["/api/cron/"];
 
-const home = (role: string) => (role === "admin" ? "/admin" : role === "inst_admin" ? "/institusi" : role === "coach" ? "/coach" : "/beranda");
+const home = (role: string) => (role === "admin" ? "/admin" : role === "inst_admin" ? "/institution" : role === "coach" ? "/coach" : "/home");
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -34,18 +34,18 @@ export async function middleware(req: NextRequest) {
     } catch {}
   }
 
-  if (pathname === "/masuk" && role) return NextResponse.redirect(new URL(home(role), req.url));
+  if ((pathname === "/sign-in" || pathname === "/register") && role) return NextResponse.redirect(new URL(home(role), req.url));
 
   const need =
     pathname.startsWith("/admin") ? ["admin"] :
-    pathname.startsWith("/institusi") ? ["inst_admin", "admin"] :
+    pathname.startsWith("/institution") ? ["inst_admin", "admin"] :
     pathname === "/coach" || pathname.startsWith("/coach/") ? ["coach", "admin"] :
-    pathname === "/persetujuan" ? ["participant", "coach", "inst_admin", "admin"] :
+    pathname === "/consent" ? ["participant", "coach", "inst_admin", "admin"] :
     PARTICIPANT.some((p) => pathname === p || pathname.startsWith(p + "/")) ? ["participant", "admin"] :
     null;
 
   if (need) {
-    if (!role) return NextResponse.redirect(new URL(`/masuk?next=${encodeURIComponent(pathname)}`, req.url));
+    if (!role) return NextResponse.redirect(new URL(`/sign-in?next=${encodeURIComponent(pathname)}`, req.url));
     if (!need.includes(role)) return NextResponse.redirect(new URL(home(role), req.url));
   }
   return NextResponse.next();

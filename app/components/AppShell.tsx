@@ -11,9 +11,9 @@ export async function AppShell({
   roles, nav, title, children,
 }: { roles: Role[]; nav: NavGroup[]; title?: string; children: React.ReactNode }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/masuk");
-  if (user.status === "invited") redirect("/persetujuan");
-  if (!roles.includes(user.role)) redirect("/masuk");
+  if (!user) redirect("/sign-in");
+  if (user.status === "invited") redirect("/consent");
+  if (!roles.includes(user.role)) redirect("/sign-in");
 
   return (
     <ShellNav nav={nav} title={title} user={{ name: user.name ?? user.email, email: user.email, role: user.role }}>

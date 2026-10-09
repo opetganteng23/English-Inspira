@@ -6,6 +6,11 @@ const limiters = {
   otpEmail: new RateLimiterMemory({ points: 3, duration: 600 }),
   otpIp: new RateLimiterMemory({ points: 10, duration: 3600 }),
   verifyIp: new RateLimiterMemory({ points: 30, duration: 600 }),
+  loginIp: new RateLimiterMemory({ points: 30, duration: 600 }),
+  loginEmail: new RateLimiterMemory({ points: 10, duration: 900 }),
+  registerIp: new RateLimiterMemory({ points: 10, duration: 3600 }),
+  resetIp: new RateLimiterMemory({ points: 10, duration: 3600 }),
+  resetEmail: new RateLimiterMemory({ points: 3, duration: 900 }),
 };
 
 export async function limit(name: keyof typeof limiters, key: string) {

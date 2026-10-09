@@ -10,7 +10,7 @@ import { CoachingQuota } from "@/models/Config";
  * Ringkasan kelompok untuk admin institusi (MTS §4, §8). HANYA agregat dan indikator perhatian:
  * tanpa isi analisis individu, narasi AI, percakapan Konselor, atau catatan sesi coach.
  */
-export async function buildInstSummary(inst: { _id: Types.ObjectId; name: string; batch?: string | null; contractEnd?: Date | null; seats: number }, scoped: (f?: Record<string, unknown>) => Record<string, unknown>) {
+export async function buildInstSummary(inst: { _id: Types.ObjectId; name: string; code?: string; batch?: string | null; contractEnd?: Date | null; seats: number }, scoped: (f?: Record<string, unknown>) => Record<string, unknown>) {
   const [members, levels] = await Promise.all([
     User.find(scoped({ role: "participant", status: { $ne: "disabled" } })).select("name email targetScore status currentLevelId currentScoreEst placementAttemptId lastLoginAt createdAt").lean(),
     getLevels(),
@@ -48,7 +48,7 @@ export async function buildInstSummary(inst: { _id: Types.ObjectId; name: string
   const qTotal = quotas.reduce((a, q) => a + q.total, 0), qUsed = quotas.reduce((a, q) => a + q.used, 0);
 
   return {
-    institution: { name: inst.name, batch: inst.batch ?? null, contractEnd: inst.contractEnd ?? null, seats: inst.seats },
+    institution: { name: inst.name, code: inst.code ?? "", batch: inst.batch ?? null, contractEnd: inst.contractEnd ?? null, seats: inst.seats },
     registered: members.length, seats: inst.seats, seatsLeft: Math.max(0, inst.seats - members.length), active: active.length, invited: members.length - active.length,
     placementDone: placed.length, placementPct: members.length ? Math.round((placed.length / members.length) * 100) : null,
     levels: dist, avgEstimate: aL, avgDelta: aL != null && aF != null ? aL - aF : null,

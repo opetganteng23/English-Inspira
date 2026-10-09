@@ -33,7 +33,7 @@ export async function injectAudio(html: string, materialId: string) {
   if (wanted.length) {
     const tr = new Map((await Audio.find({ _id: { $in: wanted.map((m) => m[1]) } }).select("transcript").lean()).map((a) => [String(a._id), a.transcript ?? ""]));
     const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    for (const m of wanted) { const t = tr.get(m[1]); if (t) out = out.replace(m[0], `${m[0]}<details><summary>Transkrip audio</summary><p>${esc(t)}</p></details>`); }
+    for (const m of wanted) { const t = tr.get(m[1]); if (t) out = out.replace(m[0], `${m[0]}<details><summary>Audio transcript</summary><p>${esc(t)}</p></details>`); }
   }
   return out;
 }

@@ -24,8 +24,8 @@ export async function planDeadlineReminders() {
     const claimed = [];
     for (const i of list) if ((await PlanItem.updateOne({ _id: i._id, remindedAt: { $exists: false } }, { remindedAt: new Date() })).modifiedCount) claimed.push(i);
     if (!claimed.length) continue;
-    await enqueueMail(u.email, "plan_deadline", { items: claimed.map((i) => i.title), link: `${APP()}/beranda` });
-    await notify(u._id, "plan_deadline", { title: "Study plan deadline approaching", body: claimed.map((i) => i.title).join("; ").slice(0, 200), href: "/beranda" });
+    await enqueueMail(u.email, "plan_deadline", { items: claimed.map((i) => i.title), link: `${APP()}/home` });
+    await notify(u._id, "plan_deadline", { title: "Study plan deadline approaching", body: claimed.map((i) => i.title).join("; ").slice(0, 200), href: "/home" });
     sent++;
   }
   return sent;
@@ -69,7 +69,7 @@ export async function contractWarnings() {
     const claimed = await Institution.updateOne({ _id: inst._id, contractWarned: { $ne: t } }, { $addToSet: { contractWarned: t } });
     if (!claimed.modifiedCount) continue;
     if (inst.contactEmail) await enqueueMail(inst.contactEmail, "contract_expiring", { name: inst.name, days, date: inst.contractEnd });
-    await notifyAdmins("contract_expiring", { title: `${inst.name} contract ends in ${days} days`, href: "/admin/institusi" }, `${inst._id}:${t}`);
+    await notifyAdmins("contract_expiring", { title: `${inst.name} contract ends in ${days} days`, href: "/admin/institutions" }, `${inst._id}:${t}`);
     n++;
   }
   return n;

@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Roster");
     ws.columns = [
-      { header: "registrationId", key: "id", width: 26 }, { header: "Name (as on ID)", key: "name", width: 30 }, { header: "NIK/Paspor", key: "nik", width: 22 },
+      { header: "registrationId", key: "id", width: 26 }, { header: "Name (as on ID)", key: "name", width: 30 }, { header: "NIK/Passport", key: "nik", width: 22 },
       { header: "Date of birth", key: "dob", width: 14 }, { header: "Gender", key: "g", width: 8 }, { header: "Email", key: "email", width: 28 }, { header: "WhatsApp", key: "phone", width: 16 },
       { header: "Documents", key: "doc", width: 12 }, { header: "listening", key: "l", width: 10 }, { header: "structure", key: "s", width: 10 }, { header: "reading", key: "r", width: 10 },
     ];

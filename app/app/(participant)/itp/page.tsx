@@ -11,7 +11,7 @@ type Session = { id: string; title: string; date: string; place: string; organiz
 type Reg = { id: string; status: string; docStatus: string; docNote: string | null; fullName: string; nikLast4: string; session: { title: string; date: string; place: string } | null; score: { listening: number; structure: number; reading: number; total: number } | null; certificateId: string | null; canCancel: boolean };
 type Data = { itpRemaining: number; organizer: string; rescheduleDays: number; advice: { weeks: number; minDate: string; basis: string } | null; sessions: Session[]; registrations: Reg[] };
 
-const STATUS: Record<string, [string, string]> = { submitted: ["Awaiting verification", "badge-warn"], confirmed: ["Terkonfirmasi", "badge-ok"], done: ["Done", "badge-ok"], cancelled: ["Cancelled", "badge-muted"] };
+const STATUS: Record<string, [string, string]> = { submitted: ["Awaiting verification", "badge-warn"], confirmed: ["Confirmed", "badge-ok"], done: ["Done", "badge-ok"], cancelled: ["Cancelled", "badge-muted"] };
 const DOC: Record<string, [string, string]> = { pending: ["Documents under review", "badge-warn"], valid: ["Documents valid", "badge-ok"], rejected: ["Documents rejected", "badge-bad"] };
 
 export default function Itp() {
@@ -67,7 +67,7 @@ export default function Itp() {
           {r.docStatus === "rejected" && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">Documents rejected: {r.docNote}. Contact the admin to fix it.</p>}
           {r.score && <div className="grid grid-cols-4 gap-2 text-center text-sm">{[["Listening", r.score.listening], ["Structure", r.score.structure], ["Reading", r.score.reading], ["Total", r.score.total]].map(([k, v]) => <div key={k} className="rounded-xl bg-canvas p-2"><p className="text-xs text-ink-soft">{k}</p><p className="font-display text-xl font-extrabold text-navy">{v}</p></div>)}</div>}
           <div className="flex flex-col gap-2 sm:flex-row">
-            {r.certificateId && <Link href="/sertifikat" className="btn-solid">View certificate</Link>}
+            {r.certificateId && <Link href="/certificates" className="btn-solid">View certificate</Link>}
             {r.canCancel && <button className="btn-outline" onClick={() => cancel(r.id)}>Change schedule / cancel</button>}
           </div>
           {!r.canCancel && ["submitted", "confirmed"].includes(r.status) && <p className="text-xs text-ink-soft">Schedule changes are only possible up to {data.rescheduleDays} days before the test.</p>}
@@ -105,7 +105,7 @@ export default function Itp() {
               <label className={label}>NIK / passport number<input className="field font-normal" inputMode="numeric" value={f.nik} onChange={(e) => setF({ ...f, nik: e.target.value })} autoComplete="off" /><span className="text-xs font-normal text-ink-soft">16-digit national ID number or passport number. Stored encrypted.</span></label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className={label}>Date of birth<input className="field font-normal" type="date" value={f.birthDate} onChange={(e) => setF({ ...f, birthDate: e.target.value })} /></label>
-                <label className={label}>Gender<select className="field font-normal" value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value })}><option value="">Choose</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></label>
+                <label className={label}>Gender<select className="field font-normal" value={f.gender} onChange={(e) => setF({ ...f, gender: e.target.value })}><option value="">Choose</option><option value="L">Male</option><option value="P">Female</option></select></label>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {([["idPhoto", "Upload ID card/passport photo"], ["facePhoto", "Upload passport photo"]] as const).map(([k, t]) => (
@@ -124,7 +124,7 @@ export default function Itp() {
             <div className="mt-4 flex flex-col gap-4">
               <dl className="grid gap-2 rounded-xl bg-canvas p-4 text-sm sm:grid-cols-2">
                 <div><dt className="text-ink-soft">Schedule</dt><dd className="font-semibold text-navy">{sel.title}<br />{tgl(sel.date, true)} · {sel.place}</dd></div>
-                <div><dt className="text-ink-soft">Participant</dt><dd className="font-semibold text-navy">{f.fullName}<br />NIK •••• {f.nik.slice(-4)} · {f.gender === "L" ? "Laki-laki" : "Perempuan"} · {f.birthDate}</dd></div>
+                <div><dt className="text-ink-soft">Participant</dt><dd className="font-semibold text-navy">{f.fullName}<br />NIK •••• {f.nik.slice(-4)} · {f.gender === "L" ? "Male" : "Female"} · {f.birthDate}</dd></div>
               </dl>
               <div className="rounded-xl border border-line p-4 text-sm"><p className="font-semibold text-navy">Test-day rules</p><ul className="mt-1 text-ink-soft"><li>• Arrive 30 minutes before the start</li><li>• Bring the original ID card/passport that matches your data</li><li>• Bring a 2B pencil and eraser (paper-based test)</li><li>• Phones and bags are stored outside</li></ul></div>
               <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={f.agree} onChange={(e) => setF({ ...f, agree: e.target.checked })} /><span>My details are correct and match my ID.</span></label>

@@ -15,6 +15,13 @@ const userSchema = new Schema(
     status: { type: String, enum: USER_STATUS, default: "invited", index: true },
     consentAt: Date,
     lastLoginAt: Date,
+    // Login password (opsional; OTP email tetap tersedia). Hash tidak pernah ikut terbaca kecuali diminta (+field).
+    passwordHash: { type: String, select: false },
+    pendingPasswordHash: { type: String, select: false }, // password saat daftar, dipakai setelah email terverifikasi
+    emailVerifiedAt: Date, // bukti kepemilikan email: OTP, kode daftar, atau tautan reset
+    selfRegistered: Boolean, // daftar sendiri dengan kode institusi
+    resetTokenHash: { type: String, select: false, index: { sparse: true } },
+    resetExpiresAt: Date,
     // Level & placement (MTS §12)
     currentLevelId: { type: Schema.Types.ObjectId, ref: "Level" },
     currentScoreEst: Number,
@@ -26,7 +33,7 @@ const userSchema = new Schema(
     birthDate: Date,
     gender: { type: String, enum: ["L", "P"] },
     targetScore: Number,
-    goal: { type: String, enum: ["kelulusan", "beasiswa", "pekerjaan", "lainnya"] },
+    goal: { type: String, enum: ["graduation", "scholarship", "career", "other"] },
     education: { type: String, enum: ["sma", "d3", "s1", "s2"] },
     deletedAt: Date,
   },

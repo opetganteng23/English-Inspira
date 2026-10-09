@@ -38,11 +38,11 @@ export function ImportPanel({ base, query = "", onDone }: { base: string; query?
           <p className="text-sm font-semibold text-navy">Import a file</p>
           <p className="text-xs text-ink-soft">CSV/Excel with columns <b>email</b> (required), <b>name</b>, <b>phone</b>.</p>
           <input ref={fileRef} type="file" aria-label="Participant file" accept=".csv,.xlsx" className="field" />
-          <button className="btn-solid self-start" disabled={busy} onClick={upload}>{busy ? "Memproses…" : "Import & send invitations"}</button>
+          <button className="btn-solid self-start" disabled={busy} onClick={upload}>{busy ? "Processing…" : "Import & send invitations"}</button>
         </div>
         <div className="flex flex-col gap-2">
           <p className="text-sm font-semibold text-navy">Invite by email</p>
-          <textarea aria-label="Email list" className="field h-24" placeholder="budi@kampus.ac.id, sari@kampus.ac.id" value={emails} onChange={(e) => setEmails(e.target.value)} />
+          <textarea aria-label="Email list" className="field h-24" placeholder="budi@campus.ac.id, sari@campus.ac.id" value={emails} onChange={(e) => setEmails(e.target.value)} />
           <button className="btn-outline self-start" disabled={busy || !emails.trim()} onClick={invite}>Send invitations</button>
         </div>
       </div>

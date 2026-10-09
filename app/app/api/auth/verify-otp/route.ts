@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
-import { Otp } from "@/models/Otp";
+import { consumeCode, CODE_BAD as BAD } from "@/lib/otp-code";
 import { User } from "@/models/User";
 import { Invitation } from "@/models/Access";
 import { createSession } from "@/lib/auth";
@@ -11,10 +10,8 @@ import { limit, clientIp } from "@/lib/ratelimit";
 import { handleError, HttpError } from "@/lib/rbac";
 import { sha256 } from "@/lib/participants";
 
-const MAX_ATTEMPTS = 5;
 const schema = z.object({ email: z.email().max(200), code: z.string().regex(/^\d{6}$/), invite: z.string().max(100).optional() });
 const adminEmails = () => (process.env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-const BAD = "The code has expired or is locked. Request a new code.";
 
 export async function POST(req: Request) {
   try {
@@ -23,18 +20,7 @@ export async function POST(req: Request) {
     await limit("verifyIp", clientIp(req));
     await connectDB();
 
-    // Naikkan percobaan secara atomik sebelum membandingkan, agar tidak bisa dibalap paralel.
-    const otp = await Otp.findOneAndUpdate(
-      { email, expiresAt: { $gt: new Date() }, attempts: { $lt: MAX_ATTEMPTS } },
-      { $inc: { attempts: 1 } },
-      { new: true }
-    );
-    if (!otp) throw new HttpError(400, BAD);
-    if (!(await bcrypt.compare(body.code, otp.codeHash))) {
-      const left = MAX_ATTEMPTS - otp.attempts;
-      throw new HttpError(400, left > 0 ? `Wrong code. Attempts left: ${left}. Make sure you use the code from the latest email.` : "The code is locked. Request a new code.");
-    }
-    await Otp.deleteMany({ email }); // sekali pakai
+    await consumeCode(email, body.code);
 
     let user = await User.findOne({ email });
     if (!user) {
@@ -47,7 +33,10 @@ export async function POST(req: Request) {
 
     if (body.invite) await Invitation.updateOne({ tokenHash: sha256(body.invite), userId: user._id, status: "pending" }, { status: "used" });
     user.lastLoginAt = new Date();
+    user.emailVerifiedAt ??= new Date();
     await user.save();
+    // Password yang diisi saat daftar tetapi belum diverifikasi bisa jadi dibuat orang lain: dibuang.
+    await User.updateOne({ _id: user._id }, { $unset: { pendingPasswordHash: 1 } });
 
     await createSession(String(user._id), user.role);
     return NextResponse.json({ ok: true, role: user.role, needsConsent: user.status === "invited" });

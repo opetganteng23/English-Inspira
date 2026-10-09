@@ -18,7 +18,7 @@ export async function GET() {
     return NextResponse.json({
       access: await counselorAccess(user._id),
       threads: threads.map((t) => ({
-        id: String(t._id), title: t.title ?? "Percakapan", attemptId: t.attemptId ? String(t.attemptId) : null, updatedAt: t.updatedAt,
+        id: String(t._id), title: t.title ?? "Conversation", attemptId: t.attemptId ? String(t.attemptId) : null, updatedAt: t.updatedAt,
         last: t.messages[t.messages.length - 1]?.content?.slice(0, 80) ?? "", open: t.actionPlan.filter((p) => !p.done).length,
       })),
     });

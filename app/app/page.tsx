@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function Root() {
   const u = await getCurrentUser();
   if (u) {
-    if (u.status === "invited") redirect("/persetujuan");
-    redirect(u.role === "admin" ? "/admin" : u.role === "inst_admin" ? "/institusi" : u.role === "coach" ? "/coach" : "/beranda");
+    if (u.status === "invited") redirect("/consent");
+    redirect(u.role === "admin" ? "/admin" : u.role === "inst_admin" ? "/institution" : u.role === "coach" ? "/coach" : "/home");
   }
   const info = await publicInfo();
   return <Landing email={info.supportEmail || undefined} whatsapp={info.supportWhatsapp || undefined} />;

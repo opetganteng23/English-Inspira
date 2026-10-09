@@ -2,20 +2,20 @@ import { AppShell, type NavGroup } from "@/components/AppShell";
 
 const nav: NavGroup[] = [
   { items: [
-    { href: "/beranda", label: "Home" },
-    { href: "/belajar", label: "Learn" },
+    { href: "/home", label: "Home" },
+    { href: "/learn", label: "Learn" },
     { href: "/coaching", label: "Coaching" },
-    { href: "/tes", label: "My Tests" },
-    { href: "/hasil", label: "Test Results" },
-    { href: "/unggah-hasil", label: "Upload External Results" },
-    { href: "/materi", label: "Materials" },
-    { href: "/konselor", label: "Konselor AI" },
+    { href: "/tests", label: "My Tests" },
+    { href: "/results", label: "Test Results" },
+    { href: "/upload-result", label: "Upload External Results" },
+    { href: "/materials", label: "Materials" },
+    { href: "/counselor", label: "AI Counselor" },
     { href: "/itp", label: "Official ITP Test" },
-    { href: "/sertifikat", label: "Certificates" },
+    { href: "/certificates", label: "Certificates" },
   ] },
   { label: "Account", items: [
-    { href: "/profil", label: "Profile" },
-    { href: "/bantuan", label: "Help" },
+    { href: "/profile", label: "Profile" },
+    { href: "/help", label: "Help" },
   ] },
 ];
 

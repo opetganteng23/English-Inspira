@@ -131,18 +131,18 @@ function Toolbar({ editor: e, onImage, onPdf, onLink, onYoutube, onAudio, onBloc
   const sel = "h-9 rounded-md border border-line-strong bg-white px-2 text-sm";
   const inTable = e.isActive("table");
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-t-xl border border-b-0 border-line-strong bg-canvas p-2" role="toolbar" aria-label="Format teks">
+    <div className="flex flex-wrap items-center gap-1 rounded-t-xl border border-b-0 border-line-strong bg-canvas p-2" role="toolbar" aria-label="Text format">
       <select aria-label="Paragraph style" className={sel} value={e.isActive("heading", { level: 2 }) ? "2" : e.isActive("heading", { level: 3 }) ? "3" : "p"} onChange={(ev) => { const v = ev.target.value; if (v === "p") e.chain().focus().setParagraph().run(); else e.chain().focus().toggleHeading({ level: Number(v) as 2 | 3 }).run(); }}><option value="p">Paragraph</option><option value="2">Title</option><option value="3">Subheading</option></select>
       <select aria-label="Font family" className={sel} value={(e.getAttributes("textStyle").fontFamily as string) ?? ""} onChange={(ev) => (ev.target.value ? e.chain().focus().setFontFamily(ev.target.value).run() : e.chain().focus().unsetFontFamily().run())}>{FONTS.map(([v, l]) => <option key={l} value={v}>{l}</option>)}</select>
       <select aria-label="Font size" className={sel} value={(e.getAttributes("textStyle").fontSize as string) ?? ""} onChange={(ev) => (ev.target.value ? e.chain().focus().setFontSize(ev.target.value).run() : e.chain().focus().unsetFontSize().run())}>{SIZES.map((s) => <option key={s} value={s}>{s || "Size"}</option>)}</select>
       <B label="Bold" active={e.isActive("bold")} on={() => e.chain().focus().toggleBold().run()}><b>B</b></B>
       <B label="Italic" active={e.isActive("italic")} on={() => e.chain().focus().toggleItalic().run()}><i>I</i></B>
       <B label="Underline" active={e.isActive("underline")} on={() => e.chain().focus().toggleUnderline().run()}><u>U</u></B>
-      <B label="Coret" active={e.isActive("strike")} on={() => e.chain().focus().toggleStrike().run()}><s>S</s></B>
+      <B label="Strikethrough" active={e.isActive("strike")} on={() => e.chain().focus().toggleStrike().run()}><s>S</s></B>
       <B label="Highlight" active={e.isActive("highlight")} on={() => e.chain().focus().toggleHighlight().run()}>▮</B>
       <input aria-label="Text color" type="color" className="h-9 w-9 cursor-pointer rounded-md border border-line-strong bg-white p-1" onChange={(ev) => e.chain().focus().setColor(ev.target.value).run()} />
-      <B label="Subskrip" active={e.isActive("subscript")} on={() => e.chain().focus().toggleSubscript().run()}>x₂</B>
-      <B label="Superskrip" active={e.isActive("superscript")} on={() => e.chain().focus().toggleSuperscript().run()}>x²</B>
+      <B label="Subscript" active={e.isActive("subscript")} on={() => e.chain().focus().toggleSubscript().run()}>x₂</B>
+      <B label="Superscript" active={e.isActive("superscript")} on={() => e.chain().focus().toggleSuperscript().run()}>x²</B>
       {sep}
       <B label="Bulleted list" active={e.isActive("bulletList")} on={() => e.chain().focus().toggleBulletList().run()}>•≡</B>
       <B label="Numbered list" active={e.isActive("orderedList")} on={() => e.chain().focus().toggleOrderedList().run()}>1.</B>
@@ -167,8 +167,8 @@ function Toolbar({ editor: e, onImage, onPdf, onLink, onYoutube, onAudio, onBloc
           <B label="Add row" on={() => e.chain().focus().addRowAfter().run()}>+bar</B>
           <B label="Delete column" on={() => e.chain().focus().deleteColumn().run()}>−kol</B>
           <B label="Delete row" on={() => e.chain().focus().deleteRow().run()}>−bar</B>
-          <B label="Gabung sel" on={() => e.chain().focus().mergeCells().run()}>⊞</B>
-          <B label="Pisah sel" on={() => e.chain().focus().splitCell().run()}>⊟</B>
+          <B label="Merge cells" on={() => e.chain().focus().mergeCells().run()}>⊞</B>
+          <B label="Split cells" on={() => e.chain().focus().splitCell().run()}>⊟</B>
           <B label="Delete table" on={() => e.chain().focus().deleteTable().run()}>🗑</B>
         </>
       )}
@@ -229,7 +229,7 @@ function BlockDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (a:
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Interactive block">
       <div className="my-6 w-full max-w-xl rounded-2xl bg-white p-5">
-        <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">Interactive block</h2><button aria-label="Tutup" onClick={onClose} className="text-2xl leading-none text-ink-soft">×</button></div>
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">Interactive block</h2><button aria-label="Close" onClick={onClose} className="text-2xl leading-none text-ink-soft">×</button></div>
         <div className="flex flex-col gap-3 text-sm">
           <label className="flex flex-col gap-1.5 font-semibold text-navy">Block type<select className="field font-normal" value={type} onChange={(e) => { setType(e.target.value as BlockType); setText(""); setErr(""); }}>{BLOCK_TYPES.map((t) => <option key={t} value={t}>{LABEL[t]}</option>)}</select></label>
           {scored && <label className="flex flex-col gap-1.5 font-semibold text-navy">Topic tag (required) <input className="field font-normal" placeholder="structure:subject-verb agreement" value={topic} onChange={(e) => setTopic(e.target.value)} /><span className="text-xs font-normal text-ink-soft">Each item’s result goes into the participant’s topic statistics.</span></label>}

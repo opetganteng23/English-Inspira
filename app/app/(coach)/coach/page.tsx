@@ -20,7 +20,7 @@ export default function CoachHome() {
         <div className="table-wrap"><table>
           <thead><tr><th>Participant</th><th>Level</th><th>Score</th><th>Quota</th><th>Last test</th></tr></thead>
           <tbody>{data?.participants.map((p) => (
-            <tr key={p.id}><td className="font-semibold text-navy"><Link className="text-brand" href={`/coach/peserta/${p.id}`}>{p.name ?? "(no name yet)"}</Link><br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td>
+            <tr key={p.id}><td className="font-semibold text-navy"><Link className="text-brand" href={`/coach/participants/${p.id}`}>{p.name ?? "(no name yet)"}</Link><br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td>
               <td>{p.level ?? "-"}</td><td>{p.scoreEst ?? "-"}</td><td>{p.quota ? `${p.quota.total - p.quota.used} / ${p.quota.total}` : "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td></tr>
           ))}</tbody>
         </table></div>

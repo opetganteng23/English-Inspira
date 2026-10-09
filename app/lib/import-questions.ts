@@ -17,7 +17,7 @@ const DIFF: Record<string, "easy" | "medium" | "hard"> = { easy: "easy", mudah: 
 const SECT: Record<string, (typeof SECTIONS)[number]> = { listening: "listening", structure: "structure", "structure & written expression": "structure", "written expression": "structure", reading: "reading" };
 
 export const QUESTION_TEMPLATE_HEADER = ["section", "type", "stem", "A", "B", "C", "D", "answer", "explanation", "difficulty", "tags", "status"];
-export const QUESTION_TEMPLATE_EXAMPLE = ["structure", "subject-verb", "The results of the study ___ clear.", "is", "are", "was", "be", "B", "Subjek 'results' jamak.", "sedang", "structure:subject-verb agreement", "draft"];
+export const QUESTION_TEMPLATE_EXAMPLE = ["structure", "subject-verb", "The results of the study ___ clear.", "is", "are", "was", "be", "B", "The plural subject 'results' takes 'are'.", "medium", "structure:subject-verb agreement", "draft"];
 
 export type QuestionRowResult = { row: number; ok: true; data: ReturnType<typeof questionSchema.parse> } | { row: number; ok: false; error: string };
 

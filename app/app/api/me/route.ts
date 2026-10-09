@@ -19,11 +19,12 @@ export async function GET() {
       u.currentLevelId ? Level.findById(u.currentLevelId).select("name").lean() : null,
     ]);
     const nameLocked = !!(await ItpRegistration.exists({ userId: u._id, status: { $ne: "cancelled" } }));
+    const hasPassword = !!(await User.exists({ _id: u._id, passwordHash: { $exists: true } }));
     return NextResponse.json({
       id: String(u._id), email: u.email, name: u.name ?? null, role: u.role, status: u.status, phone: u.phone ?? null,
       education: u.education ?? null, targetScore: u.targetScore ?? null, goal: u.goal ?? null,
       institutionId: u.institutionId ? String(u.institutionId) : null, institution: inst ? { name: inst.name, contractEnd: inst.contractEnd ?? null } : null,
-      consentAt: u.consentAt ?? null, createdAt: u.createdAt, nameLocked,
+      consentAt: u.consentAt ?? null, createdAt: u.createdAt, nameLocked, hasPassword,
       needsConsent: u.status === "invited",
       level: level ? { id: String(level._id), name: level.name } : null, scoreEst: u.currentScoreEst ?? null,
       needsPlacement: u.role === "participant" && !u.placementAttemptId,
@@ -38,7 +39,7 @@ const patch = z.object({
   phone: z.string().trim().regex(/^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional(),
   education: z.enum(["sma", "d3", "s1", "s2"]).optional(),
   targetScore: z.union([z.literal(450), z.literal(500), z.literal(550), z.literal(600)]).optional(),
-  goal: z.enum(["kelulusan", "beasiswa", "pekerjaan", "lainnya"]).optional(),
+  goal: z.enum(["graduation", "scholarship", "career", "other"]).optional(),
 });
 
 /** Ubah profil sendiri. Level/skor/status/institusi tidak bisa diubah dari sini. */

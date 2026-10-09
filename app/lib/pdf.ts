@@ -82,9 +82,9 @@ export function institutionReportPdf(d: ReportData) {
     row("Placement completed", d.placementPct != null ? `${d.placementDone} (${d.placementPct}%)` : "-");
     head("Results");
     row("Average estimated score", d.avgEstimate != null ? String(d.avgEstimate) : "-"); row("Change since the first test", d.avgDelta != null ? `${d.avgDelta >= 0 ? "+" : ""}${d.avgDelta}` : "-");
-    row("Mencapai target", d.reachedPct != null ? `${d.reachedPct}% (${d.reached} of ${d.withScore})` : "-");
+    row("Reached target", d.reachedPct != null ? `${d.reachedPct}% (${d.reached} of ${d.withScore})` : "-");
     for (const l of d.levels) row(`Level ${l.label}`, `${l.n} participants`);
-    head("Coaching & kepatuhan");
+    head("Coaching & compliance");
     row("Sessions recorded · absent", `${d.coaching.sessionsMarked} · ${d.coaching.absent}`); row("Attendance rate", d.coaching.presentPct != null ? `${d.coaching.presentPct}%` : "-");
     row("Quota used", d.coaching.quotaUsedPct != null ? `${d.coaching.quotaUsedPct}%` : "-"); row("Participants with overdue plans", String(d.planLate));
     head("Most common weak topics");

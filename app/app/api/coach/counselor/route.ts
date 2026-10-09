@@ -6,7 +6,7 @@ import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";
 
-/** Percakapan Konselor AI milik peserta di institusi coach, untuk ditinjau (MTS §17). filter: review (default) | flagged | all. */
+/** Percakapan AI Counselor milik peserta di institusi coach, untuk ditinjau (MTS §17). filter: review (default) | flagged | all. */
 export async function GET(req: Request) {
   try {
     const coach = await requireRole(["coach"]);
