@@ -15,8 +15,9 @@ DAFTAR ISI
   8. Course, Modul, Unit, dan Materi
   9. Institusi, Program Cycle, dan Peserta
  10. Hasil PURE/OCE, Kelompok, dan Kelas
- 11. Hal yang perlu diingat
- 12. Jika ada masalah
+ 11. "Your journey" peserta: tiap tahap diisi dari mana
+ 12. Hal yang perlu diingat
+ 13. Jika ada masalah
 
 
 -------------------------------------------------------------------------------
@@ -309,7 +310,45 @@ E. Score equivalents (tombol di halaman PURE / OCE Results)
 
 
 -------------------------------------------------------------------------------
-11. HAL YANG PERLU DIINGAT
+11. "YOUR JOURNEY" PESERTA: TIAP TAHAP DIISI DARI MANA
+-------------------------------------------------------------------------------
+Kotak "Your journey" di dasbor peserta (7 tahap) TIDAK diisi langsung. Setiap
+tahap otomatis terisi dari data yang dibuat admin:
+
+  1 Discover   (Placement)    Buat tes berjenis Placement      > menu Tests
+  2 Learn      (Courses)      Course, modul, unit, materi      > Courses & Units,
+                                                                 Materials
+  3 Analyze    (AI analysis)  Otomatis setelah peserta selesai tes
+  4 Improve    (Study plan)   Otomatis dari topik lemah. Isi Remedial map
+                              (bawah halaman Courses & Units) agar rencana
+                              menautkan ke unit perbaikan
+  5 Experience (Simulation)   Buat tes berjenis Simulation     > menu Tests
+  6 Measure    (Progress)     Otomatis setelah ada minimal 2 hasil tes
+  7 Certify    (Official ITP) Jadwal ITP resmi                 > ITP Schedule
+                                                                 & Scores
+
+Kategori soal ada di Question Bank (tab Listening, Structure & WE, Reading).
+Jenis per kategori diatur lewat tombol "Manage types":
+  Listening       Short conversations (Part A), Longer conversations
+                  (Part B), Talks (Part C)
+  Structure & WE  Sentence completion, Error identification, dan jenis tata
+                  bahasa (tense, passive, conditional, dst.)
+  Reading         Main idea, Detail, Inference, Vocabulary in context,
+                  Reference
+
+Urutan agar tahap 1 (Placement) bisa dikerjakan peserta:
+  1. Audio Library: unggah audio Listening.
+  2. Question Bank: buat "+ Audio/passage group" untuk Listening dan Reading,
+     lalu buat soalnya. Isi tag skill + topic dan ubah status ke Published.
+  3. Tests > + New test: jenis Placement, tambahkan bagian Listening,
+     Structure, Reading beserta durasinya, pilih soal Published (manual atau
+     otomatis berdasarkan jenis/kesulitan/topik), simpan dan aktifkan.
+  4. Tahap Discover di journey peserta langsung berisi tes tersebut.
+Ulangi langkah 3 dengan jenis Simulation untuk tahap 5.
+
+
+-------------------------------------------------------------------------------
+12. HAL YANG PERLU DIINGAT
 -------------------------------------------------------------------------------
 - Semua teks yang dilihat peserta berbahasa Inggris. Tulis soal, materi,
   dan pengumuman dalam bahasa Inggris.
@@ -323,7 +362,7 @@ E. Score equivalents (tombol di halaman PURE / OCE Results)
 
 
 -------------------------------------------------------------------------------
-12. JIKA ADA MASALAH
+13. JIKA ADA MASALAH
 -------------------------------------------------------------------------------
 - Pesan galat merah di layar biasanya menjelaskan penyebabnya (misalnya
   kolom wajib kosong atau data masih dipakai). Perbaiki lalu simpan lagi.
