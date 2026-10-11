@@ -13,7 +13,7 @@ export function InteractiveBlock({ type, config, report }: Props) {
   if (!parsed?.success) return null;
   const c = parsed.data as never;
   return (
-    <div className="not-prose my-4 rounded-xl border border-line bg-white p-4 text-sm text-ink">
+    <div className="not-prose my-4 rounded-xl border border-line bg-surface p-4 text-sm text-ink">
       {type === "quiz" && <Quiz cfg={c} report={report} />}
       {type === "flashcard" && <Flashcards cfg={c} report={report} />}
       {type === "fill" && <Fill cfg={c} report={report} />}

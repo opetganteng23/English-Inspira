@@ -158,7 +158,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
       <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-6">
         {st.questions.map((x, i) => (
           <button key={x.id} onClick={() => { setCur(i); setNavOpen(false); }} aria-label={`Question ${i + 1}${ans[x.id] != null ? ", answered" : ""}${flagged[x.id] ? ", flagged" : ""}`} aria-current={i === cur}
-            className={`h-10 rounded-lg text-sm font-semibold ${i === cur ? "ring-2 ring-brand " : ""}${flagged[x.id] ? "bg-accent-tint text-accent-dark" : ans[x.id] != null ? "bg-brand text-white" : "bg-canvas text-ink-soft"}`}>{i + 1}</button>
+            className={`h-10 rounded-lg text-sm font-semibold ${i === cur ? "ring-2 ring-brand " : ""}${flagged[x.id] ? "bg-accent-tint text-accent-dark" : ans[x.id] != null ? "bg-brand text-on-primary" : "bg-canvas text-ink-soft"}`}>{i + 1}</button>
         ))}
       </div>
       <p className="mt-3 text-xs text-ink-soft">{answered} of {st.questions.length} answered · blue = answered, orange = flagged</p>
@@ -167,7 +167,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex min-h-screen flex-col pb-24 lg:pb-0">
-      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-on-primary sm:px-6">
         <div className="min-w-0">
           <p className="truncate font-display text-sm font-extrabold sm:text-base">{st.testName}</p>
           <p className="truncate text-xs text-mist">Section {st.section.index + 1}/{st.section.total} · {LABEL[st.section.name]}</p>
@@ -213,14 +213,14 @@ export default function Ruang({ params }: { params: { id: string } }) {
           <p className="text-xs text-ink-soft">After finishing a section, you cannot return to it.</p>
         </main>
 
-        <aside className="hidden h-fit rounded-2xl border border-line bg-white p-5 lg:block">
+        <aside className="hidden h-fit rounded-2xl border border-line bg-surface p-5 lg:block">
           <h3 className="mb-3 font-display font-extrabold text-navy">Question navigator</h3>
           {navigator}
         </aside>
       </div>
 
       {/* Mobile/tablet: navigator lipat + bilah navigasi tetap di bawah */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface lg:hidden">
         {navOpen && <div className="max-h-[45vh] overflow-y-auto border-b border-line p-4">{navigator}<button className="btn-outline mt-3 w-full" onClick={() => { setNavOpen(false); setConfirm(true); }}>{finishLabel}</button></div>}
         <div className="flex items-center gap-2 p-3">
           <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => setCur(cur - 1)} aria-label="Previous question">Previous</button>
@@ -237,7 +237,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-          <div role="dialog" aria-modal="true" aria-label="Confirm" className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
+          <div role="dialog" aria-modal="true" aria-label="Confirm" className="w-full max-w-md rounded-t-2xl bg-surface p-6 sm:rounded-2xl">
             <h3 className="font-display text-xl font-extrabold text-navy">{last ? "Submit the test?" : "Finish this section?"}</h3>
             <p className="mt-2 text-sm text-ink-soft">
               {st.questions.length - answered > 0 ? `${st.questions.length - answered} questions unanswered. ` : "All questions answered. "}

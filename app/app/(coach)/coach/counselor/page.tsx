@@ -16,7 +16,7 @@ export default function KonselorCoach() {
   return (
     <div className="flex flex-col gap-5">
       <div><h1 className="page-title">AI Counselor review</h1><p className="text-sm text-ink-soft">Your institution’s participants’ conversations with the AI Counselor. Flag bad answers so the admin can improve them. Opening a conversation is recorded.</p></div>
-      <div className="flex gap-1 self-start rounded-lg bg-white p-1 text-sm" role="tablist">{[["review", "Needs review"], ["flagged", "Flagged"], ["all", "All"]].map(([k, l]) => <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === k ? "bg-navy text-white" : "text-ink-soft"}`}>{l}</button>)}</div>
+      <div className="flex gap-1 self-start rounded-lg bg-surface p-1 text-sm" role="tablist">{[["review", "Needs review"], ["flagged", "Flagged"], ["all", "All"]].map(([k, l]) => <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === k ? "bg-navy text-on-primary" : "text-ink-soft"}`}>{l}</button>)}</div>
       <ErrorNote text={error} />
       {loading && !data ? <Loading /> : data?.threads.length === 0 ? <Empty>No conversations for this filter.</Empty> : (
         <div className="table-wrap"><table>

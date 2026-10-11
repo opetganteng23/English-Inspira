@@ -107,17 +107,17 @@ function Chat() {
         <button className="btn-outline" onClick={newThread}>+ New conversation</button>
       </div>
 
-      <div className="flex gap-1 rounded-lg bg-white p-1 text-sm lg:hidden" role="tablist">
-        {([["chat", "Conversation"], ["side", "Plan & info"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex-1 rounded-md px-3 py-2 font-semibold ${tab === k ? "bg-navy text-white" : "text-ink-soft"}`}>{l}</button>)}
+      <div className="flex gap-1 rounded-lg bg-surface p-1 text-sm lg:hidden" role="tablist">
+        {([["chat", "Conversation"], ["side", "Plan & info"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex-1 rounded-md px-3 py-2 font-semibold ${tab === k ? "bg-navy text-on-primary" : "text-ink-soft"}`}>{l}</button>)}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[220px_1fr_300px]">
         <nav aria-label="Conversation list" className="hidden flex-col gap-1 lg:flex">
-          {list.map((i) => <button key={i.id} onClick={() => router.replace(`/counselor?thread=${i.id}`)} className={`rounded-xl border p-3 text-left text-sm ${t?.id === i.id ? "border-brand bg-brand-tint" : "border-line bg-white hover:border-brand"}`}><b className="block truncate text-navy">{i.title}</b><span className="block truncate text-xs text-ink-soft">{i.last || "No messages yet"}</span></button>)}
+          {list.map((i) => <button key={i.id} onClick={() => router.replace(`/counselor?thread=${i.id}`)} className={`rounded-xl border p-3 text-left text-sm ${t?.id === i.id ? "border-brand bg-brand-tint" : "border-line bg-surface hover:border-brand"}`}><b className="block truncate text-navy">{i.title}</b><span className="block truncate text-xs text-ink-soft">{i.last || "No messages yet"}</span></button>)}
           {list.length === 0 && <p className="text-sm text-ink-soft">No conversations yet.</p>}
         </nav>
 
-        <section className={`${tab === "chat" ? "flex" : "hidden"} min-h-[60vh] flex-col rounded-2xl border border-line bg-white lg:flex`}>
+        <section className={`${tab === "chat" ? "flex" : "hidden"} min-h-[60vh] flex-col rounded-2xl border border-line bg-surface lg:flex`}>
           {list.length > 1 && <select aria-label="Choose a conversation" className="field m-3 !h-10 lg:hidden" value={t?.id ?? ""} onChange={(e) => router.replace(`/counselor?thread=${e.target.value}`)}>{list.map((i) => <option key={i.id} value={i.id}>{i.title}</option>)}</select>}
           <div className="flex max-h-[62vh] flex-1 flex-col gap-3 overflow-y-auto p-4" aria-live="polite">
             {(!t || t.messages.length === 0) && (
@@ -127,7 +127,7 @@ function Chat() {
               </div>
             )}
             {t?.messages.map((m, i) => (
-              <div key={i} className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[80%] ${m.role === "user" ? "self-end bg-brand text-white" : "self-start border border-line bg-canvas text-ink"}`}>
+              <div key={i} className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[80%] ${m.role === "user" ? "self-end bg-brand text-on-primary" : "self-start border border-line bg-canvas text-ink"}`}>
                 {m.role === "assistant" && <b className="mb-1 block text-xs text-brand">AI</b>}{m.content}
               </div>
             ))}

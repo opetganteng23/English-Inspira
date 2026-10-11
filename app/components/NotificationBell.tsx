@@ -7,7 +7,7 @@ import { tgl } from "@/lib/client";
 type N = { id: string; title: string; body: string; href: string; read: boolean; at: string };
 
 /** Lonceng notifikasi dalam aplikasi. Memuat saat dibuka halaman dan tiap 60 detik selama tab terlihat. */
-export function NotificationBell({ light = false }: { light?: boolean }) {
+export function NotificationBell({ up = false }: { up?: boolean; light?: boolean }) {
   const [items, setItems] = useState<N[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -43,12 +43,12 @@ export function NotificationBell({ light = false }: { light?: boolean }) {
   return (
     <div ref={box} className="relative">
       <button aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} aria-expanded={open} onClick={() => setOpen((o) => !o)}
-        className={`relative flex h-11 w-11 items-center justify-center rounded-lg ${light ? "text-white hover:bg-navy-700" : "text-mist hover:bg-navy-700 hover:text-white"}`}>
+        className="relative flex h-11 w-11 items-center justify-center rounded-lg text-ink-soft hover:bg-surface-2 hover:text-ink">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>
-        {unread > 0 && <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-white">{unread > 9 ? "9+" : unread}</span>}
+        {unread > 0 && <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-gold px-1 text-[11px] font-semibold text-[#14223B]">{unread > 9 ? "9+" : unread}</span>}
       </button>
       {open && (
-        <div role="dialog" aria-label="Notifications" className="absolute right-0 z-50 mt-2 w-[min(92vw,360px)] rounded-xl border border-line bg-white p-2 text-ink shadow-lg md:left-0 md:right-auto">
+        <div role="dialog" aria-label="Notifications" className={`absolute z-50 w-[min(92vw,360px)] rounded-xl border border-line bg-surface p-2 text-ink shadow-lg ${up ? "bottom-full left-0 mb-2" : "right-0 mt-2"}`}>
           <div className="flex items-center justify-between px-2 py-1.5"><b className="text-navy">Notifications</b>{unread > 0 && <button className="text-xs font-semibold text-brand" onClick={markAll}>Mark all as read</button>}</div>
           <ul className="max-h-[60vh] overflow-y-auto">
             {items.map((n) => {

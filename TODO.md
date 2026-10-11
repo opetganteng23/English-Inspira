@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, `/api/health` | ✅ (deploy: Biznet Gio + PM2, **tanpa Docker**) |
-| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (310 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (316 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
@@ -153,7 +153,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 ## 12. Sisa pekerjaan
 
-Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 310/310 (alur v2.2 termasuk ITP, daftar, password, reset).
+Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 316/316 (alur v2.2 termasuk ITP, daftar, password, reset).
 
 | Prioritas | Item | Status |
 |---|---|---|
@@ -213,7 +213,7 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | Tahap | Isi | Status |
 |---|---|---|
 | 0 | Konten hanya admin: materi, lampiran, audio, soal, tes, course (coach & admin institusi dicabut; menu materi mereka dihapus) | ✅ teruji smoke (310/310) |
-| 1 | Design token v2.4 (CSS variable + Tailwind), mode gelap, logo baru, Poppins 400/500/600, `uiPrefs` + `GET/PATCH /api/me/ui-prefs`, pengaturan tampilan di Profil, shell peserta menu atas | ⬜ |
+| 1 | Design token v2.4 (CSS variable + Tailwind), mode gelap, logo baru, Poppins 400/500/600, `uiPrefs` + `GET/PATCH /api/me/ui-prefs`, pengaturan tampilan di Profil, shell peserta menu atas | ✅ token dipetakan ke nama warna lama (semua halaman ikut), mode gelap ikut sistem/dipaksa, halaman publik selalu terang (`.theme-light`), logo "ei" + favicon + PDF, menu atas peserta (+More), sidebar terang untuk coach/admin, Comfort settings di Profil (simpan otomatis), `ui_comfort` di Parameter Sistem; smoke 316/316 |
 | 2 | Halaman persiapan ("no pass or fail", struktur tes, 3 soal contoh tak dinilai) dan ruang tes (mode fokus, timer bisa disembunyikan, muncul di 5 dan 1 menit, tanda flag, navigator, keyboard) | ⬜ |
 | 3 | Layar hasil (ringkasan, going well, focus next ≤ 3, banding diri sendiri, See details) dan aturan narasi AI (kata terlarang, langkah hari ini) | ⬜ |
 | 4 | Beranda "Today" (≤ 3 item + durasi), learning days, past due tanpa merah, microcopy | ⬜ |

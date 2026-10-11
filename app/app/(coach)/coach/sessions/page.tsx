@@ -32,7 +32,7 @@ export default function Sesi() {
               <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                 <span className="min-w-0"><Link className="font-semibold text-brand" href={`/coach/participants/${b.userId}`}>{b.name}</Link> <span className={ST[b.status]?.[1] ?? "badge-muted"}>{ST[b.status]?.[0] ?? b.status}</span>{b.note?.recommendLevelUp && <span className="badge-ok ml-1">level-up recommended</span>}</span>
                 <span className="flex flex-wrap gap-2">
-                  {(["present", "absent", "excused"] as const).map((st) => <button key={st} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${b.status === st ? "border-navy bg-navy text-white" : "border-line-strong text-navy"}`} onClick={() => mark(b.id, st)}>{ST[st][0]}</button>)}
+                  {(["present", "absent", "excused"] as const).map((st) => <button key={st} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${b.status === st ? "border-navy bg-navy text-on-primary" : "border-line-strong text-navy"}`} onClick={() => mark(b.id, st)}>{ST[st][0]}</button>)}
                   <button className="rounded-lg border border-line-strong px-3 py-2 text-xs font-semibold text-brand" onClick={() => setNoteFor(b)}>{b.note ? "Edit note" : "Note"}</button>
                 </span>
               </li>

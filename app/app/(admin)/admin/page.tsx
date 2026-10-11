@@ -28,7 +28,7 @@ export default function AdminHome() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><h1 className="page-title">Overview</h1><p className="text-sm text-ink-soft">Activity in the last {days} days</p></div>
-        <div className="flex gap-1 rounded-lg bg-white p-1 text-sm" role="tablist" aria-label="Time range">{[7, 30, 90].map((n) => <button key={n} role="tab" aria-selected={days === n} onClick={() => setDays(n)} className={`rounded-md px-3 py-1.5 font-semibold ${days === n ? "bg-navy text-white" : "text-ink-soft"}`}>{n} days</button>)}</div>
+        <div className="flex gap-1 rounded-lg bg-surface p-1 text-sm" role="tablist" aria-label="Time range">{[7, 30, 90].map((n) => <button key={n} role="tab" aria-selected={days === n} onClick={() => setDays(n)} className={`rounded-md px-3 py-1.5 font-semibold ${days === n ? "bg-navy text-on-primary" : "text-ink-soft"}`}>{n} days</button>)}</div>
       </div>
       <MaintenanceToggle />
       <ErrorNote text={error} />
@@ -44,7 +44,7 @@ export default function AdminHome() {
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Participant level distribution</h2><div className="mt-4"><HBars rows={d.levels.map((l) => ({ label: l.name, value: l.n, sub: "participants" }))} /></div></section>
             <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Completed tests ({d.days} days)</h2>
-              <div className="mt-4">{d.tests.length ? <HBars color="#F08A1C" rows={d.tests.map((t) => ({ label: KIND[t.kind] ?? t.kind, value: t.n, sub: "tests" }))} /> : <p className="text-sm text-ink-soft">No completed tests yet.</p>}</div></section>
+              <div className="mt-4">{d.tests.length ? <HBars color="var(--gold)" rows={d.tests.map((t) => ({ label: KIND[t.kind] ?? t.kind, value: t.n, sub: "tests" }))} /> : <p className="text-sm text-ink-soft">No completed tests yet.</p>}</div></section>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">

@@ -21,7 +21,7 @@ export default function Proctoring() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Review Proctoring</h1><p className="text-sm text-ink-soft">Light monitoring: tab switches, leaving fullscreen, paste. No camera or microphone recording.</p></div>
-        <div className="flex gap-1 rounded-lg bg-white p-1 text-sm" role="tablist">{([["pending", "Not reviewed"], ["all", "All"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === k ? "bg-navy text-white" : "text-ink-soft"}`}>{l}</button>)}</div></div>
+        <div className="flex gap-1 rounded-lg bg-surface p-1 text-sm" role="tablist">{([["pending", "Not reviewed"], ["all", "All"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === k ? "bg-navy text-on-primary" : "text-ink-soft"}`}>{l}</button>)}</div></div>
       <ErrorNote text={error || err} />
       {loading && !data ? <Loading /> : (
         <div className="flex flex-col gap-3">

@@ -63,7 +63,7 @@ export default function BankSoal() {
         <div className="flex gap-2">
           <button onClick={() => setImportDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Import Excel/CSV</button>
           <button onClick={() => setGroupDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">+ Audio/passage group</button>
-          <button onClick={() => setForm(empty(f.section || "structure"))} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ New question</button>
+          <button onClick={() => setForm(empty(f.section || "structure"))} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-on-primary">+ New question</button>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ export default function BankSoal() {
 
       {err && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</p>}
 
-      <div className="overflow-x-auto rounded-2xl border border-line bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
         <table className="w-full text-left text-sm">
           <thead className="bg-canvas text-xs uppercase text-ink-soft"><tr><th className="p-3">Section</th><th>Type</th><th>Question</th><th>Status</th><th /></tr></thead>
           <tbody>
@@ -113,7 +113,7 @@ export default function BankSoal() {
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-20 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
-      <div role="dialog" aria-modal className="my-6 w-full max-w-2xl rounded-2xl bg-white p-6">
+      <div role="dialog" aria-modal className="my-6 w-full max-w-2xl rounded-2xl bg-surface p-6">
         <div className="mb-4 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">{title}</h2><button onClick={onClose} aria-label="Close" className="text-2xl leading-none text-ink-soft">×</button></div>
         {children}
       </div>
@@ -202,7 +202,7 @@ function Editor({ form, onClose, onSaved, onNewGroup }: { form: Form; onClose: (
               <span key={id} className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`/api/assets/${id}`} alt="Question attachment" className="h-16 rounded-lg border border-line" />
-                <button type="button" aria-label="Remove image" onClick={() => set("assetIds", v.assetIds.filter((x) => x !== id))} className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-red-600 text-xs text-white">×</button>
+                <button type="button" aria-label="Remove image" onClick={() => set("assetIds", v.assetIds.filter((x) => x !== id))} className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-red-600 text-xs text-on-primary">×</button>
               </span>
             ))}
             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => attach(e.target.files?.[0])} className="text-sm" />
@@ -211,7 +211,7 @@ function Editor({ form, onClose, onSaved, onNewGroup }: { form: Form; onClose: (
         {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
         <div className="flex justify-end gap-3">
           <button onClick={onClose} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">Cancel</button>
-          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy ? "Saving…" : "Save"}</button>
+          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-on-primary disabled:opacity-60">{busy ? "Saving…" : "Save"}</button>
         </div>
       </div>
     </Modal>
@@ -241,7 +241,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
         <p className="text-ink-soft">Columns: section, type, stem, A-F (options), answer (A-F), explanation, difficulty (easy/medium/hard), tags (<code>skill:topic; skill:topic</code>), status. Maximum 500 rows. Questions with status <b>published</b> must be tagged. Audio and passages are linked manually after import. <a className="font-semibold text-brand" href="/api/admin/questions/import">Download template</a></p>
         <input ref={file} type="file" aria-label="Question file" accept=".csv,.xlsx" className="field" />
         {err && <p role="alert" className="text-red-700">{err}</p>}
-        <div className="flex flex-wrap gap-2"><button className="rounded-lg border border-line-strong px-4 py-2 font-semibold" disabled={busy} onClick={() => run(true)}>Check first (without saving)</button><button className="rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-60" disabled={busy} onClick={() => run(false)}>Import</button></div>
+        <div className="flex flex-wrap gap-2"><button className="rounded-lg border border-line-strong px-4 py-2 font-semibold" disabled={busy} onClick={() => run(true)}>Check first (without saving)</button><button className="rounded-lg bg-brand px-4 py-2 font-semibold text-on-primary disabled:opacity-60" disabled={busy} onClick={() => run(false)}>Import</button></div>
         {res && (
           <div role="status" className="rounded-xl bg-canvas p-3">
             <p><b>{res.created}</b> rows {res.dry ? "valid (not saved yet)" : "imported"} · <b className={res.failed.length ? "text-red-700" : ""}>{res.failed.length}</b> failed</p>
@@ -370,7 +370,7 @@ function GroupDialog({ onClose }: { onClose: () => void }) {
         {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
         <div className="flex justify-end gap-3">
           <button onClick={onClose} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">Cancel</button>
-          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">Save group</button>
+          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-on-primary disabled:opacity-60">Save group</button>
         </div>
       </div>
     </Modal>

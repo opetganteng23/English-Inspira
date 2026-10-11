@@ -52,7 +52,7 @@ const FAQ = [
 export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string }) {
   const contact = email ? `mailto:${email}?subject=${encodeURIComponent("English Inspira for our institution")}` : whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}` : "https://inspiratekno.com";
   return (
-    <div className="bg-canvas text-ink">
+    <div className="theme-light bg-canvas text-ink">
       <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-10">
           <Logo dark />
@@ -103,7 +103,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
                   <div key={l} className={`flex flex-col gap-0.5 rounded-[10px] p-2.5 ${bg}`}><span className={`text-xs ${fg}`}>{l}</span><span className="text-xl font-semibold">{v}</span></div>
                 ))}
               </div>
-              <div className="max-w-[360px] self-end rounded-[14px_4px_14px_14px] bg-brand px-3.5 py-3 text-sm leading-normal">What should I do to reach 550?</div>
+              <div className="max-w-[360px] self-end rounded-[14px_4px_14px_14px] bg-blue px-3.5 py-3 text-sm leading-normal">What should I do to reach 550?</div>
               <div className="flex gap-2.5">
                 <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-success-tint text-[11px] font-semibold text-success">AI</span>
                 <div className="rounded-[4px_14px_14px_14px] bg-white px-3.5 py-3 text-sm leading-relaxed text-ink">You are about 53 points short. The fastest gains are in Structure: 5 of your 7 mistakes were subject-verb agreement. Practice 20 questions a day, then retest in 2 weeks.</div>

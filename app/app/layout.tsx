@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { PREFS_BOOT } from "@/components/UiPrefs";
 
 // Poppins di-host sendiri (file di app/fonts, lisensi OFL): satu-satunya font aplikasi, termasuk judul.
 const poppins = localFont({
@@ -18,11 +19,12 @@ export const metadata: Metadata = {
   title: "English Inspira | TOEFL ITP Preparation",
   description: "TOEFL ITP preparation: simulation tests, AI analysis, and an AI Counselor.",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0F2F5E" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F5F8FD" }, { media: "(prefers-color-scheme: dark)", color: "#0C1424" }] };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: PREFS_BOOT }} /></head>
       <body className={`${poppins.variable}`}>{children}</body>
     </html>
   );

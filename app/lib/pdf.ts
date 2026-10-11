@@ -21,8 +21,7 @@ function render(build: (doc: PDFKit.PDFDocument) => void | Promise<void>, opts: 
 }
 
 function brand(doc: PDFKit.PDFDocument) {
-  doc.roundedRect(48, 44, 34, 34, 7).fill(NAVY);
-  doc.image(path.join(process.cwd(), "public", "brand", "logo-white.png"), 52, 54, { width: 26 });
+  doc.image(path.join(process.cwd(), "public", "brand", "ei-mark.png"), 48, 44, { width: 35 });
   doc.fillColor(NAVY).font("Bold").fontSize(15).text("ENGLISH INSPIRA", 92, 53);
   doc.fillColor(GRAY).font("Regular").fontSize(8).text("by Inspira Teknologi", 92, 71);
 }

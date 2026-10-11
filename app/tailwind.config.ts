@@ -1,24 +1,34 @@
 import type { Config } from "tailwindcss";
 
-// Token diambil dari desain "English Inspira — Redesign Website".
+// Warna = token CSS MTS v2.4 §27.3 (app/globals.css), sehingga mode gelap dan tema dapat diganti tanpa mengubah komponen.
+// Nama lama (navy, brand, accent, success, ink, line, canvas) dipertahankan dan dipetakan ke token baru.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        navy: { DEFAULT: "#0F2F5E", 700: "#173E73", 800: "#123F7C" },
-        brand: { DEFAULT: "#1B5FB8", dark: "#123F7C", tint: "#E9F0FA" },
-        accent: { DEFAULT: "#F08A1C", dark: "#B85A00", tint: "#FDEBD6" },
-        success: { DEFAULT: "#1D6B3F", tint: "#E6F4EC" },
-        ink: { DEFAULT: "#1C2B44", soft: "#4B5A70" },
-        line: { DEFAULT: "#DCE3ED", strong: "#C5D2E4" },
-        canvas: "#F5F7FA",
+        navy: { DEFAULT: "var(--primary)", 700: "var(--primary-hover)", 800: "var(--primary-hover)" },
+        brand: { DEFAULT: "var(--primary)", dark: "var(--primary-hover)", tint: "var(--primary-soft)" },
+        accent: { DEFAULT: "var(--gold)", dark: "var(--attention)", tint: "var(--attention-soft)" },
+        success: { DEFAULT: "var(--calm)", tint: "var(--calm-soft)" },
+        ink: { DEFAULT: "var(--text)", soft: "var(--text-muted)" },
+        line: { DEFAULT: "var(--line)", strong: "var(--line-strong)" },
+        canvas: "var(--bg)",
+        surface: { DEFAULT: "var(--surface)", 2: "var(--surface-2)" },
+        "on-primary": "var(--on-primary)",
+        blue: { DEFAULT: "var(--blue)", soft: "var(--blue-soft)" },
+        gold: { DEFAULT: "var(--gold)", soft: "var(--gold-soft)" },
+        attention: { DEFAULT: "var(--attention)", soft: "var(--attention-soft)" },
+        calm: { DEFAULT: "var(--calm)", soft: "var(--calm-soft)" },
+        critical: { DEFAULT: "var(--critical)", soft: "var(--critical-soft)" },
         mist: "#D3DEEE",
       },
       fontFamily: {
         sans: ["var(--font-poppins)", "system-ui", "sans-serif"],
         display: ["var(--font-poppins)", "system-ui", "sans-serif"], // judul juga Poppins
       },
+      maxWidth: { measure: "68ch" },
+      transitionDuration: { DEFAULT: "var(--dur)" },
     },
   },
   plugins: [],
