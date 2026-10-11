@@ -73,7 +73,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
       <main>
         {/* Hero */}
         <section className="bg-white">
-          <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 px-4 py-14 sm:px-6 md:py-20 lg:flex-row lg:gap-16 lg:px-10 lg:py-24">
+          <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 px-4 py-10 sm:px-6 md:py-14 lg:flex-row lg:gap-14 lg:px-10 lg:py-16">
             <div className="flex flex-1 flex-col gap-7">
               <span className="inline-flex items-center gap-2 self-start rounded-full bg-brand-tint px-3.5 py-2 text-[13px] font-semibold text-brand-dark">
                 <span className="h-2 w-2 rounded-full bg-accent" />TOEFL ITP Preparation Program 2026
@@ -92,14 +92,14 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
             <div className="flex w-full max-w-[520px] shrink-0 flex-col gap-4 rounded-[20px] bg-navy p-6 text-white shadow-[0_30px_60px_-30px_rgba(15,47,94,0.55)]" aria-label="Example result and counseling">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[13px] font-semibold tracking-wider text-[#B9CBE6]">EXAMPLE RESULT &amp; COUNSELING</span>
-                <span className="rounded-full bg-[#1E4A86] px-2.5 py-1 text-xs text-[#DCE7F7]">Target 550</span>
+                <span className="rounded-full bg-[#1B4585] px-2.5 py-1 text-xs text-[#DCE7F7]">Target 550</span>
               </div>
               <div className="flex items-end gap-3.5">
                 <span className="font-display text-[56px] font-extrabold leading-none">497</span>
                 <span className="pb-1.5 text-sm text-[#B9CBE6]">Estimated ITP score · scale 310-677</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                {[["Listening", "49", "bg-navy-700", "text-[#B9CBE6]"], ["Structure", "51", "bg-[#5A3A12]", "text-[#FFD9AE]"], ["Reading", "49", "bg-navy-700", "text-[#B9CBE6]"]].map(([l, v, bg, fg]) => (
+                {[["Listening", "49", "bg-navy-700", "text-[#B9CBE6]"], ["Structure", "51", "bg-[#5C4310]", "text-[#F6DFA8]"], ["Reading", "49", "bg-navy-700", "text-[#B9CBE6]"]].map(([l, v, bg, fg]) => (
                   <div key={l} className={`flex flex-col gap-0.5 rounded-[10px] p-2.5 ${bg}`}><span className={`text-xs ${fg}`}>{l}</span><span className="text-xl font-semibold">{v}</span></div>
                 ))}
               </div>
@@ -124,7 +124,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
         </section>
 
         {/* Cara kerja */}
-        <section id="how" className="mx-auto flex max-w-7xl scroll-mt-20 flex-col gap-12 px-4 py-20 sm:px-6 lg:px-10 lg:py-28">
+        <section id="how" className="mx-auto flex max-w-7xl scroll-mt-20 flex-col gap-12 px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end lg:gap-10">
             <div className="flex max-w-3xl flex-col gap-4">
               <Eyebrow>HOW IT WORKS</Eyebrow>
@@ -145,7 +145,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
 
         {/* AI Counselor */}
         <section id="counselor" className="scroll-mt-20 bg-white">
-          <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 px-4 py-20 sm:px-6 lg:flex-row lg:gap-[72px] lg:px-10 lg:py-28">
+          <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-4 py-12 sm:px-6 lg:flex-row lg:gap-[64px] lg:px-10 lg:py-16">
             <div className="flex flex-1 flex-col gap-6">
               <Eyebrow className="text-success">AI COUNSELOR</Eyebrow>
               <h2 className="font-display text-3xl font-extrabold leading-tight text-navy sm:text-[42px]">More than a score. Someone to explain it and guide you.</h2>
@@ -164,7 +164,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
         </section>
 
         {/* Journey */}
-        <section id="journey" className="mx-auto flex max-w-7xl scroll-mt-20 flex-col gap-12 px-4 py-20 sm:px-6 lg:px-10 lg:py-28">
+        <section id="journey" className="mx-auto flex max-w-7xl scroll-mt-20 flex-col gap-12 px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end lg:gap-10">
             <div className="flex max-w-3xl flex-col gap-4">
               <Eyebrow>ENGLISH INTELLIGENCE JOURNEY</Eyebrow>
@@ -186,16 +186,16 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
             ))}
             <div className="flex min-h-[196px] flex-col justify-between gap-4 rounded-2xl bg-navy p-6">
               <span className="font-display text-[22px] font-extrabold leading-snug text-white">Have a code from your institution?</span>
-              <Link href="/register" className="inline-flex h-11 items-center self-start rounded-[10px] bg-accent px-4 text-[15px] font-semibold text-navy hover:bg-[#F59A38]">Create account</Link>
+              <Link href="/register" className="inline-flex h-11 items-center self-start rounded-[10px] bg-accent px-4 text-[15px] font-semibold text-navy hover:bg-[#E8B04A]">Create account</Link>
             </div>
           </div>
         </section>
 
         {/* Institusi */}
         <section id="institutions" className="scroll-mt-20 bg-navy text-white">
-          <div className="mx-auto flex max-w-7xl flex-col gap-12 px-4 py-20 sm:px-6 lg:flex-row lg:gap-16 lg:px-10 lg:py-24">
+          <div className="mx-auto flex max-w-7xl flex-col gap-12 px-4 py-12 sm:px-6 lg:flex-row lg:gap-16 lg:px-10 lg:py-16">
             <div className="flex flex-1 flex-col gap-6">
-              <Eyebrow className="text-[#FFC78A]">FOR INSTITUTIONS</Eyebrow>
+              <Eyebrow className="text-[#F3D68A]">FOR INSTITUTIONS</Eyebrow>
               <h2 className="font-display text-3xl font-extrabold leading-tight sm:text-[42px]">Campuses, agencies &amp; companies.</h2>
               <p className="max-w-xl text-[17px] leading-relaxed text-mist">English Inspira is provided through partner institutions. You run the program for your participants; we provide the tests, the analysis, and the learning path.</p>
               <div className="max-w-xl overflow-hidden rounded-[14px] border border-[#2A5591]">
@@ -209,7 +209,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
             <div className="flex w-full max-w-[480px] flex-col gap-5 self-center rounded-[20px] bg-white p-8 text-ink">
               <span className="font-display text-[22px] font-extrabold text-navy">What your institution gets</span>
               <ul className="flex flex-col gap-3.5 text-base">
-                {["Bulk participant invites by email or Excel import", "A dashboard of group results and progress", "PDF and Excel reports per participant and per group", "Coaches and coaching session quotas", "Group schedules for the official ITP"].map((t) => <li key={t} className="flex gap-3"><Check color="#1B5FB8" /><span>{t}</span></li>)}
+                {["Bulk participant invites by email or Excel import", "A dashboard of group results and progress", "PDF and Excel reports per participant and per group", "Coaches and coaching session quotas", "Group schedules for the official ITP"].map((t) => <li key={t} className="flex gap-3"><Check color="#0B4FA6" /><span>{t}</span></li>)}
               </ul>
               <a href={contact} className="inline-flex h-12 items-center justify-center rounded-xl bg-brand px-6 font-semibold text-white hover:bg-brand-dark">Contact us</a>
             </div>
@@ -217,7 +217,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
         </section>
 
         {/* Untuk siapa */}
-        <section className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-20 sm:px-6 lg:px-10 lg:py-28">
+        <section className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
           <div className="flex flex-col gap-4">
             <Eyebrow>WHO IT IS FOR</Eyebrow>
             <h2 className="font-display text-3xl font-extrabold leading-tight text-navy sm:text-[42px]">Designed for every learner.</h2>
@@ -231,7 +231,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
 
         {/* FAQ */}
         <section id="faq" className="scroll-mt-20 bg-white">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[360px_1fr] lg:gap-16 lg:px-10 lg:py-28">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[360px_1fr] lg:gap-16 lg:px-10 lg:py-16">
             <div className="flex flex-col gap-4">
               <Eyebrow>FAQ</Eyebrow>
               <h2 className="font-display text-3xl font-extrabold leading-tight text-navy sm:text-[42px]">Frequently asked questions</h2>
@@ -252,7 +252,7 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
 
         {/* CTA akhir */}
         <section className="bg-brand">
-          <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-16 text-white sm:px-6 lg:flex-row lg:items-center lg:px-10">
+          <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-10 text-white sm:px-6 lg:flex-row lg:items-center lg:px-10">
             <div className="flex flex-col gap-3">
               <h2 className="font-display text-3xl font-extrabold leading-tight sm:text-[38px]">Learning English should not be guesswork.</h2>
               <p className="text-lg text-[#DCE7F7]">Start by knowing your score today.</p>

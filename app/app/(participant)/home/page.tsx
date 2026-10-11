@@ -88,7 +88,7 @@ export default function Beranda() {
             ))}
           </ul>
         ) : <p className="mt-3 text-sm text-ink-soft">{h.weakTopics.length ? "No active items yet." : "No weak topics detected yet. Your plan appears once there is enough data from your tests."}</p>}
-        {h.weakTopics.length > 0 && <p className="mt-3 text-xs text-ink-soft">Topik terlemah: {h.weakTopics.map((w) => `${w.topic} (${w.score}%)`).join(", ")}</p>}
+        {h.weakTopics.length > 0 && <p className="mt-3 text-xs text-ink-soft">Weakest topics: {h.weakTopics.map((w) => `${w.topic} (${w.score}%)`).join(", ")}</p>}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">

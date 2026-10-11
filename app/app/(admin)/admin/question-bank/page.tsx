@@ -60,7 +60,7 @@ export default function BankSoal() {
           <h1 className="font-display text-3xl font-extrabold text-navy">Question Bank</h1>
           <p className="text-sm text-ink-soft">{total} questions · used for Placement, Simulation, Practice, and Unit quizzes. Published questions must have a skill + topic tag.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setImportDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Import Excel/CSV</button>
           <button onClick={() => setGroupDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">+ Audio/passage group</button>
           <button onClick={() => setForm(empty(f.section || "structure"))} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ New question</button>

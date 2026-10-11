@@ -51,16 +51,16 @@ export function ShellNav({
   );
 
   return (
-    <div className="min-h-screen md:flex">
+    <div className="relative flex h-dvh flex-col overflow-hidden md:flex-row">
       {/* Desktop / tablet landscape */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 overflow-y-auto bg-navy p-5 md:flex">
+      <aside className="hidden h-full w-64 shrink-0 flex-col gap-5 overflow-y-auto bg-navy p-4 md:flex lg:w-[264px] lg:p-5">
         <Logo />
         {links}
         {account}
       </aside>
 
       {/* Mobile / portrait top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between bg-navy px-4 py-3 md:hidden">
+      <header className="z-30 flex shrink-0 items-center justify-between bg-navy px-3 py-2 md:hidden">
         <Logo />
         <span className="flex items-center gap-1"><NotificationBell light />
         <button aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}
@@ -83,9 +83,9 @@ export function ShellNav({
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {title && <div className="hidden border-b border-line bg-white px-6 py-3 text-sm text-ink-soft md:block">{title}</div>}
-        <main className="mx-auto w-full max-w-[1280px] flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+        {title && <div className="sticky top-0 z-20 hidden border-b border-line bg-white px-6 py-2.5 text-sm text-ink-soft md:block">{title}</div>}
+        <main className="mx-auto w-full max-w-[1280px] flex-1 p-4 sm:p-5 lg:p-6 xl:p-8">{children}</main>
       </div>
     </div>
   );

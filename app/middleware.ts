@@ -3,7 +3,7 @@ import { jwtVerify } from "jose";
 
 // Gerbang kasar berbasis token (Edge). Pengecekan peran/status final tetap di handler via requireRole().
 const COOKIE = "epta_session";
-const PARTICIPANT = ["/home", "/learn", "/coaching", "/upload-result", "/tests", "/test-room", "/results", "/materials", "/counselor", "/itp", "/certificates", "/profile", "/help"];
+const PARTICIPANT = ["/home", "/journey", "/learn", "/coaching", "/upload-result", "/tests", "/test-room", "/results", "/materials", "/counselor", "/itp", "/certificates", "/profile", "/help"];
 // Cron dipanggil server lain tanpa Origin browser; keamanannya lewat CRON_SECRET.
 const NO_ORIGIN_CHECK = ["/api/cron/"];
 

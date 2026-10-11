@@ -7,6 +7,9 @@ import { Audio } from "@/models/Audio";
 import { Level } from "@/models/Config";
 import { User } from "@/models/User";
 import { Analysis } from "@/models/Learning";
+import { recommendCourses } from "@/lib/units";
+import { Attempt, Test } from "@/models/Test";
+import { Certificate } from "@/models/Itp";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +47,20 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const level = attempt.kind === "placement" && u?.currentLevelId ? await Level.findById(u.currentLevelId).select("name coachingQuota scoreMin scoreMax").lean() : null;
 
     const calc = (await Analysis.findOne({ attemptId: attempt._id }).select("calculated").lean())?.calculated as { levelUp?: { up: boolean; reasons: string[]; level?: string }; stuck?: string[] } | undefined;
+    // Tes sebelumnya (selesai) milik peserta yang sama, untuk selisih skor; laporan PDF bila sudah dibuat.
+    const prev = await Attempt.findOne({ userId: attempt.userId, status: "submitted", kind: { $ne: "trial" }, finishedAt: { $lt: attempt.finishedAt }, _id: { $ne: attempt._id } })
+      .sort({ finishedAt: -1 }).select("testId scoreEst sectionScores topicScores").lean();
+    const prevTest = prev ? await Test.findById(prev.testId).select("name").lean() : null;
+    const report = await Certificate.findOne({ attemptId: attempt._id, type: "sim_report" }).select("_id").lean();
+    // Topik terlemah (cukup data, di bawah 70%) -> unit remedial yang disarankan untuk dipelajari.
+    const weak = (attempt.topicScores ?? [])
+      .map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", score: Math.round(t.score ?? 0), correct: t.correct ?? 0, total: t.total ?? 0 }))
+      .filter((t) => t.skill && t.topic && t.total >= 2 && t.score < 70).sort((x, y) => x.score - y.score).slice(0, 5);
+    const recommendations = await recommendCourses(attempt.userId, u?.currentLevelId, weak);
     return NextResponse.json({
+      recommendations,
+      previous: prev ? { name: prevTest?.name ?? "Previous test", scoreEst: prev.scoreEst, sectionScores: prev.sectionScores, topicScores: prev.topicScores } : null,
+      reportId: report ? String(report._id) : null,
       levelUp: calc?.levelUp ?? null, stuck: (calc?.stuck ?? []).map((k) => k.split("|")[1] ?? k),
       kind: attempt.kind, testName: test.name, finishedAt: attempt.finishedAt,
       durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,

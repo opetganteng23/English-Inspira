@@ -72,3 +72,18 @@ export async function recordQuizResult(attempt: HydratedDocument<AttemptDoc>) {
   );
   return { percent: pct, passed: pct >= pass, unit: await recompute(attempt.userId, unit._id) };
 }
+
+/** Rekomendasi course untuk topik lemah: unit remedial + course-nya (level peserta) dan status belajar peserta. */
+export async function recommendCourses(userId: Types.ObjectId | string, levelId: Types.ObjectId | string | null | undefined, topics: { skill: string; topic: string; score: number; correct: number; total: number }[]) {
+  const out: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] = [];
+  for (const t of topics) {
+    const unitId = await findRemedialUnit(levelId, t.skill, t.topic);
+    if (!unitId) continue;
+    const unit = await Unit.findById(unitId).select("title courseId").lean();
+    const course = unit ? await Course.findById(unit.courseId).select("title").lean() : null;
+    if (!unit || !course) continue;
+    const p = await UnitProgress.findOne({ userId, unitId }).select("status").lean();
+    out.push({ ...t, unit: { id: String(unitId), title: unit.title, status: p?.status ?? "new" }, course: { id: String(course._id), title: course.title } });
+  }
+  return out;
+}

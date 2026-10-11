@@ -166,8 +166,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
   );
 
   return (
-    <div className="flex min-h-screen flex-col pb-24 lg:pb-0">
-      <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
+    <div className="relative flex h-dvh flex-col overflow-hidden">
+      <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
         <div className="min-w-0">
           <p className="truncate font-display text-sm font-extrabold sm:text-base">{st.testName}</p>
           <p className="truncate text-xs text-mist">Section {st.section.index + 1}/{st.section.total} · {LABEL[st.section.name]}</p>
@@ -180,11 +180,11 @@ export default function Ruang({ params }: { params: { id: string } }) {
         {saved === "fail" && <p className="basis-full text-xs text-orange-300 sm:hidden">Save failed, retrying…</p>}
       </header>
 
-      <div className="mx-auto grid w-full max-w-6xl flex-1 gap-5 p-4 sm:p-6 lg:grid-cols-[1fr_280px]">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain"><div className="mx-auto grid w-full max-w-6xl gap-4 p-3 sm:p-5 lg:grid-cols-[1fr_280px] lg:items-start">
         <main className="flex min-w-0 flex-col gap-4">
           {group?.audio && (st.kind === "practice" ? <PracticeAudio key={group.audio.id} attemptId={params.id} audioId={group.audio.id} instruction={group.instruction} /> : <AudioBox attemptId={params.id} audioId={group.audio.id} finished={group.audio.finished} instruction={group.instruction} />)}
           {group?.passageHtml && (
-            <article className="card max-h-[45vh] overflow-y-auto lg:max-h-none">
+            <article className="card max-h-[40dvh] overflow-y-auto lg:max-h-[60dvh]">
               <h3 className="mb-2 font-display font-extrabold text-navy">{group.passageTitle}</h3>
               {/* passageHtml disanitasi di server saat disimpan */}
               <div className="prose-ei" dangerouslySetInnerHTML={{ __html: group.passageHtml }} />
@@ -213,14 +213,14 @@ export default function Ruang({ params }: { params: { id: string } }) {
           <p className="text-xs text-ink-soft">After finishing a section, you cannot return to it.</p>
         </main>
 
-        <aside className="hidden h-fit rounded-2xl border border-line bg-white p-5 lg:block">
+        <aside className="sticky top-3 hidden max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-2xl border border-line bg-white p-4 lg:block">
           <h3 className="mb-3 font-display font-extrabold text-navy">Question navigator</h3>
           {navigator}
         </aside>
-      </div>
+      </div></div>
 
       {/* Mobile/tablet: navigator lipat + bilah navigasi tetap di bawah */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white lg:hidden">
+      <div className="z-20 shrink-0 border-t border-line bg-white lg:hidden">
         {navOpen && <div className="max-h-[45vh] overflow-y-auto border-b border-line p-4">{navigator}<button className="btn-outline mt-3 w-full" onClick={() => { setNavOpen(false); setConfirm(true); }}>{finishLabel}</button></div>}
         <div className="flex items-center gap-2 p-3">
           <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => setCur(cur - 1)} aria-label="Previous question">Previous</button>
@@ -230,7 +230,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
             : <button className="btn-accent !px-4" onClick={() => setConfirm(true)}>Done</button>}
         </div>
       </div>
-      <div className="mx-auto hidden w-full max-w-6xl items-center justify-between px-6 pb-6 lg:flex">
+      <div className="mx-auto hidden w-full max-w-6xl shrink-0 items-center justify-between border-t border-line bg-white px-6 py-3 lg:flex">
         <button className="btn-outline" disabled={cur === 0} onClick={() => setCur(cur - 1)}>Previous</button>
         {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => setCur(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => setConfirm(true)}>{finishLabel}</button>}
       </div>
@@ -254,7 +254,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
   );
 }
 
-const Center = ({ children }: { children: React.ReactNode }) => <div className="flex min-h-screen items-center justify-center p-6 text-ink-soft">{children}</div>;
+const Center = ({ children }: { children: React.ReactNode }) => <div className="flex min-h-dvh items-center justify-center p-6 text-ink-soft">{children}</div>;
 
 /** Mode tes: sekali putar, tanpa seek/jeda. Progres dilaporkan agar refresh melanjutkan, bukan mengulang. */
 function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: string; audioId: string; finished: boolean; instruction?: string }) {
@@ -319,7 +319,7 @@ function PracticeAudio({ attemptId, audioId, instruction }: { attemptId: string;
       {err && <p role="alert" className="mt-2 text-sm text-red-700">{err}</p>}
       <audio ref={el} src={src || undefined} controls preload="auto" controlsList="nodownload" className="mt-3 w-full" />
       <label className="mt-2 flex items-center gap-2 text-sm text-ink-soft">Kecepatan
-        <select aria-label="Kecepatan audio" className="field !min-h-[36px] w-auto" value={rate} onChange={(e) => setRate(Number(e.target.value))}>{[0.75, 1, 1.25].map((r) => <option key={r} value={r}>{r}×</option>)}</select>
+        <select aria-label="Audio speed" className="field !min-h-[36px] w-auto" value={rate} onChange={(e) => setRate(Number(e.target.value))}>{[0.75, 1, 1.25].map((r) => <option key={r} value={r}>{r}×</option>)}</select>
       </label>
     </div>
   );

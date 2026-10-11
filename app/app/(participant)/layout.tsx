@@ -3,6 +3,7 @@ import { AppShell, type NavGroup } from "@/components/AppShell";
 const nav: NavGroup[] = [
   { items: [
     { href: "/home", label: "Home" },
+    { href: "/journey", label: "My Journey" },
     { href: "/learn", label: "Learn" },
     { href: "/coaching", label: "Coaching" },
     { href: "/tests", label: "My Tests" },
