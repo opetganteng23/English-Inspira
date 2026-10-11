@@ -11,7 +11,7 @@ import { processAttemptLearning } from "./learning-pipeline";
 import { recordQuizResult } from "./units";
 import { evaluateLevelUp } from "./level-up";
 import { ensureSimReport } from "./certificates";
-import { Attempt, Test, type AttemptDoc } from "@/models/Test";
+import { Attempt, Test, type AttemptDoc, AttemptSnapshot } from "@/models/Test";
 import { Question, type Section } from "@/models/Question";
 import type { UserDoc } from "@/models/User";
 
@@ -62,7 +62,7 @@ export async function advance(attempt: AttemptHydrated, test: Parameters<typeof 
 export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof syncTimer>[1], at = new Date()) {
   if (attempt.status === "submitted") return;
   const ids = test.sections.flatMap((s) => s.questionIds.map(String));
-  const qs = await Question.find({ _id: { $in: ids } }).select("answerKey tags").lean();
+  const qs = await Question.find({ _id: { $in: ids } }).select("section type groupId stem options answerKey explanation tags").lean();
   const keys = new Map<string, number>(qs.map((q) => [String(q._id), q.answerKey]));
   const answers = new Map<string, number | undefined>(attempt.answers.map((a) => [String(a.qid), a.choice ?? undefined]));
   const conv = await getParam("score_conversion"); // tabel konversi dari config_params, bukan hard-code
@@ -75,6 +75,15 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
   const topicScores = computeTopicScores(qs, answers, keys);
   attempt.set({ ...graded, topicScores, status: "submitted", finishedAt: at });
   await attempt.save();
+  // Snapshot soal sesuai urutan tes (tidak boleh menggagalkan submit).
+  try {
+    const byId = new Map(qs.map((q) => [String(q._id), q]));
+    const items = ids.map((id) => byId.get(id)).filter((q): q is NonNullable<typeof q> => !!q).map((q) => ({
+      qid: q._id, section: q.section, type: q.type, groupId: q.groupId, stem: q.stem, options: q.options, answerKey: q.answerKey, explanation: q.explanation,
+      tags: (q.tags ?? []).map((t) => ({ skill: t.skill, topic: t.topic })),
+    }));
+    await AttemptSnapshot.updateOne({ attemptId: attempt._id }, { $set: { items } }, { upsert: true });
+  } catch (e) { console.error("[finalize] snapshot failed", e); }
 
   // Efek samping setelah submit: tidak boleh menggagalkan submit, dan tidak memblokir respons.
   void (async () => {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { LineChart, Loading, ErrorNote } from "@/components/Charts";
+import { JourneyStrip } from "@/components/JourneyStrip";
 
 type Home = {
   name: string | null; institution: { name: string; contractEnd: string | null } | null;
@@ -47,6 +48,8 @@ export default function Beranda() {
         </section>
       )}
 
+      <JourneyStrip />
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">LEVEL</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.level?.name ?? "-"}</p><p className="text-xs text-ink-soft">{h.level ? `Range ${h.level.scoreMin}-${h.level.scoreMax}` : "Set by the placement test"}</p></div>
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">ESTIMATED SCORE</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.scoreEst ?? "-"}</p><p className="text-xs text-ink-soft">{h.nextLevel && h.gapToNext != null ? (h.gapToNext > 0 ? `${h.gapToNext} points to ${h.nextLevel.name}` : `Already at the ${h.nextLevel.name} threshold`) : "Scale 310-677"}</p></div>
@@ -54,7 +57,7 @@ export default function Beranda() {
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">AI COUNSELOR</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.counselor.remaining}<span className="text-base text-ink-soft"> / {h.counselor.quota}</span></p><p className="text-xs text-ink-soft">questions this month</p></div>
       </div>
 
-      <section className="card">
+      <section id="progress" className="card scroll-mt-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Score progress</h2>{h.last && <Link href={`/results/${h.last.id}`} className="text-sm font-semibold text-brand">View full report</Link>}</div>
         <LineChart points={h.progress.map((p) => ({ label: p.name, value: p.score }))} />
         {h.last && (

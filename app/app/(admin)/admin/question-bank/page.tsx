@@ -4,17 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { QuestionTypesDialog, type QType } from "@/components/QuestionTypesDialog";
 import { uploadImage } from "@/lib/compress-image";
 
-type Row = { _id: string; section: string; type: string; stem: string; status: string; difficulty: string };
+type Row = { _id: string; section: string; type: string; stem: string; status: string; difficulty: string; issues?: string[] };
 type Group = { id: string; section: string; instruction?: string; passageTitle?: string; audioId: string | null; questions: number };
 const SKILLS = ["listening", "structure", "reading"];
 type AudioRow = { id: string; title: string; durationSec: number; inUse: boolean };
 type Form = {
   id?: string; section: string; type: string; groupId: string; stem: string; options: string[]; answerKey: number;
-  explanation: string; tags: { skill: string; topic: string }[]; difficulty: string; status: string; assetIds: string[];
+  explanation: string; tags: { skill: string; topic: string }[]; difficulty: string; status: string; assetIds: string[]; source: string;
 };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
-const empty = (section = "structure"): Form => ({ section, type: "", groupId: "", stem: "", options: ["", "", "", ""], answerKey: 0, explanation: "", tags: [], difficulty: "medium", status: "draft", assetIds: [] });
+const empty = (section = "structure"): Form => ({ section, type: "", groupId: "", stem: "", options: ["", "", "", ""], answerKey: 0, explanation: "", tags: [], difficulty: "medium", status: "draft", assetIds: [], source: "" });
 const json = (body: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 async function api(url: string, init?: RequestInit) {
@@ -53,8 +53,11 @@ export default function BankSoal() {
   async function edit(id: string) {
     try {
       const q = await api(`/api/admin/questions/${id}`);
-      setForm({ id, section: q.section, type: q.type, groupId: q.groupId ?? "", stem: q.stem, options: q.options, answerKey: q.answerKey, explanation: q.explanation ?? "", tags: (q.tags ?? []).map((t: { skill: string; topic: string }) => ({ skill: t.skill, topic: t.topic })), difficulty: q.difficulty, status: q.status, assetIds: q.assetIds ?? [] });
+      setForm({ id, section: q.section, type: q.type, groupId: q.groupId ?? "", stem: q.stem, options: q.options, answerKey: q.answerKey, explanation: q.explanation ?? "", tags: (q.tags ?? []).map((t: { skill: string; topic: string }) => ({ skill: t.skill, topic: t.topic })), difficulty: q.difficulty, status: q.status, source: q.source ?? "", assetIds: q.assetIds ?? [] });
     } catch (e) { setErr((e as Error).message); }
+  }
+  async function duplicate(id: string) {
+    try { const d = await api(`/api/admin/questions/${id}/duplicate`, { method: "POST" }); await load(); await edit(d.id); } catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
     if (!confirm("Delete this question?")) return;
@@ -69,6 +72,7 @@ export default function BankSoal() {
           <p className="text-sm text-ink-soft">{total} questions · used for Placement, Simulation, Practice, and Unit quizzes. Published questions must have a skill + topic tag.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <a href={`/api/admin/questions/export?${new URLSearchParams(Object.entries(f).filter(([k, v]) => v && k !== "q") as [string, string][])}`} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Export CSV</a>
           <button onClick={() => setTypesDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Manage types</button>
           <button onClick={() => setImportDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Import Excel/CSV</button>
           <button onClick={() => setGroupDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">+ Audio/passage group</button>
@@ -92,7 +96,7 @@ export default function BankSoal() {
           {types.filter((t) => !f.section || t.section === f.section).map((t) => <option key={t.id} value={t.name}>{f.section ? t.name : `${SECTION[t.section]}: ${t.name}`} ({t.count})</option>)}
         </select>
         <select className="field w-auto" value={f.status} onChange={(e) => { setPage(1); setF({ ...f, status: e.target.value }); }}>
-          <option value="">All statuses</option><option value="draft">Draft</option><option value="review">Review</option><option value="published">Published</option>
+          <option value="">All statuses</option><option value="draft">Draft</option><option value="review">Review</option><option value="published">Published</option><option value="archived">Archived</option>
         </select>
       </div>
 
@@ -105,9 +109,9 @@ export default function BankSoal() {
             {rows.map((r) => (
               <tr key={r._id} className="border-t border-line">
                 <td className="p-3 font-semibold text-navy">{SECTION[r.section]}</td><td>{r.type}</td>
-                <td className="max-w-md truncate">{r.stem}</td>
-                <td><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${r.status === "published" ? "bg-success-tint text-success" : "bg-accent-tint text-accent-dark"}`}>{r.status}</span></td>
-                <td className="whitespace-nowrap p-3 text-right"><button className="mr-3 font-semibold text-brand" onClick={() => edit(r._id)}>Edit</button><button className="font-semibold text-red-700" onClick={() => remove(r._id)}>Delete</button></td>
+                <td className="max-w-md"><p className="truncate">{r.stem}</p>{!!r.issues?.length && <p className="mt-0.5 flex flex-wrap gap-1">{r.issues.map((x) => <span key={x} className="rounded-full bg-accent-tint px-2 py-0.5 text-[11px] font-semibold text-accent-dark">{x}</span>)}</p>}</td>
+                <td><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${r.status === "published" ? "bg-success-tint text-success" : r.status === "archived" ? "bg-canvas text-ink-soft" : "bg-accent-tint text-accent-dark"}`}>{r.status}</span></td>
+                <td className="whitespace-nowrap p-3 text-right"><button className="mr-3 font-semibold text-brand" onClick={() => edit(r._id)}>Edit</button><button className="mr-3 font-semibold text-brand" onClick={() => duplicate(r._id)}>Duplicate</button><button className="font-semibold text-red-700" onClick={() => remove(r._id)}>Delete</button></td>
               </tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-soft">No questions yet. Click “New question”.</td></tr>}
@@ -156,7 +160,7 @@ function Editor({ form, types, onTypesChanged, onClose, onSaved, onNewGroup }: {
     try {
       const body = {
         section: v.section, type: v.type, groupId: v.groupId || null, stem: v.stem, options: v.options, answerKey: v.answerKey,
-        explanation: v.explanation || undefined, tags: v.tags.filter((t) => t.skill.trim() && t.topic.trim()), difficulty: v.difficulty, status: v.status, assetIds: v.assetIds,
+        explanation: v.explanation || undefined, tags: v.tags.filter((t) => t.skill.trim() && t.topic.trim()), difficulty: v.difficulty, status: v.status, assetIds: v.assetIds, source: v.source || undefined,
       };
       const d = await api(v.id ? `/api/admin/questions/${v.id}` : "/api/admin/questions", { method: v.id ? "PATCH" : "POST", ...json(body) });
       if (d.usedInTest) alert("This question is used by a test. Changing the key or options affects future test scores; saved results are not recalculated.");
@@ -197,10 +201,11 @@ function Editor({ form, types, onTypesChanged, onClose, onSaved, onNewGroup }: {
           ))}
           {v.options.length < 6 && <button type="button" className="self-start text-sm font-semibold text-brand" onClick={() => set("options", [...v.options, ""])}>+ Add option</button>}
         </fieldset>
+        <Label t="Source / usage rights (optional)"><input className="field font-normal" maxLength={200} placeholder="e.g. written in-house, adapted from ..." value={v.source} onChange={(e) => set("source", e.target.value)} /></Label>
         <Label t="Explanation"><textarea className="field h-20 py-2 font-normal" value={v.explanation} onChange={(e) => set("explanation", e.target.value)} /></Label>
         <div className="grid gap-4 sm:grid-cols-2">
           <Label t="Difficulty"><select className="field" value={v.difficulty} onChange={(e) => set("difficulty", e.target.value)}><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></Label>
-          <Label t="Status"><select className="field" value={v.status} onChange={(e) => set("status", e.target.value)}><option value="draft">Draft</option><option value="review">Review</option><option value="published">Published</option></select></Label>
+          <Label t="Status"><select className="field" value={v.status} onChange={(e) => set("status", e.target.value)}><option value="draft">Draft</option><option value="review">Review</option><option value="published">Published</option><option value="archived">Archived</option></select></Label>
         </div>
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-sm font-semibold text-navy">Tag skill + topic {v.status === "published" && <span className="font-normal text-red-700">(at least one required for published)</span>}</legend>

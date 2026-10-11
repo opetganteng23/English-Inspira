@@ -230,7 +230,7 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | U4 | Halaman hasil sesuai desain: kartu skor + penanda target, kartu per section, selisih vs tes sebelumnya, Unduh PDF, rincian per tipe, **Konselor AI di dalam halaman** | ✅ uji klik: kirim pesan dan balasan |
 | U5 | Ringkasan analisis menunjuk bagian lemah + "Courses to take next" (peta remedial → unit) | ✅ dengan 1 pemetaan uji; bergantung isi peta remedial admin |
 | U6 | Learn: course sebagai kartu yang bisa dipilih; unit sebagai kartu | ✅ uji klik |
-| U7 | Journey 7 tahap (`/journey`) dari data nyata, tanpa pembelian | ✅ uji klik (Discover selesai setelah placement) |
+| U7 | Journey 7 tahap dari data nyata, tanpa pembelian. **Diubah 2026-10-11 (temuan QC):** halaman `/journey` dan menu My Journey dihapus, digabung sebagai strip "Your journey" di dasbor; `/journey` dialihkan ke `/home`; tahap tidak lagi memutar balik ke dasbor | ✅ uji klik 8/8 (desktop + ponsel) |
 | U8 | Nama dipisah **given name** + **surname** (daftar, persetujuan, Profil); `name` = gabungan untuk tampilan; akun lama dipisah heuristik di Profil | ✅ uji klik persetujuan + smoke diperbarui; impor CSV masih satu kolom `name` |
 | U9 | Tombol "Start placement" langsung ke halaman persiapan | ✅ uji klik |
 | U10 | Perbaikan: label sr-only membuat halaman bisa digulung; grid melebar karena tabel; header ikut tergulung (`overflow-clip`); teks Indonesia tersisa; narasi analisis dobel; lint `/api/me` yang menggagalkan build | ✅ |
@@ -258,3 +258,5 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | M5 | Audio Library (`/admin/audio`): unggah (jenis, deskripsi, sumber, transkrip), daftar + cari + filter jenis, pemutar + kecepatan, ubah, ganti berkas tanpa memutus tautan, hapus (ditolak bila dipakai grup soal atau materi, dengan daftar pemakai) | ✅ API 24 lulus + uji klik |
 | M6 | Jenis soal dikelola per kategori (Listening, Structure, Reading): daftar bawaan ITP, tambah, ganti nama (soal ikut berubah), nonaktifkan, hapus (soal dipindah), jenis baru dari soal/impor terdaftar otomatis; bank soal punya tab kategori + filter jenis + pilih jenis di form | ✅ API 16 lulus + uji klik |
 | M7 | Sisa dari `Spesifikasi_Modul_LMS_TOEFL_ITP.md`: lihat bagian 19 | ⬜ |
+| M8 | Snapshot soal saat tes selesai (`AttemptSnapshot`): pembahasan dan skor tetap konsisten walau kunci/pilihan soal diubah atau soal dihapus kemudian (prinsip §11 spesifikasi) | ✅ uji: kunci 40 soal diubah setelah tes, pembahasan tetap; bug skema (`type` sebagai kata kunci Mongoose) ditemukan dan diperbaiki |
+| M9 | Bank soal: duplikat, status Archived, kolom sumber/lisensi, ekspor CSV (kolom sama dengan templat impor), penanda kualitas (tanpa tag, tanpa pembahasan, Listening tanpa audio, Reading tanpa passage) | ✅ API teruji (86/86 CRUD) |

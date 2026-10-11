@@ -3,7 +3,7 @@ import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
-import { Question } from "@/models/Question";
+import { Question, QuestionGroup } from "@/models/Question";
 import { registerQuestionType } from "@/lib/question-types";
 import { questionSchema } from "@/lib/admin-schemas";
 import { AuditLog } from "@/models/AuditLog";
@@ -32,10 +32,23 @@ export async function GET(req: Request) {
     const page = Math.max(1, Number(sp.get("page")) || 1);
     const size = 20;
     const [items, total] = await Promise.all([
-      Question.find(filter).select("section type stem status difficulty groupId tags updatedAt").sort({ updatedAt: -1 }).skip((page - 1) * size).limit(size).lean(),
+      Question.find(filter).select("section type stem status difficulty groupId tags explanation updatedAt").sort({ updatedAt: -1 }).skip((page - 1) * size).limit(size).lean(),
       Question.countDocuments(filter),
     ]);
-    return NextResponse.json({ items, total, page, pages: Math.ceil(total / size) });
+    // Validasi kualitas: soal yang perlu dilengkapi (tanpa tag, tanpa pembahasan, Listening tanpa grup audio/passage).
+    const gids = Array.from(new Set(items.map((i) => i.groupId).filter(Boolean).map(String)));
+    const groups = gids.length ? await QuestionGroup.find({ _id: { $in: gids } }).select("audioId passageHtml").lean() : [];
+    const gmap = new Map(groups.map((g) => [String(g._id), g]));
+    const withIssues = items.map((i) => {
+      const issues: string[] = [];
+      if (!i.tags?.length) issues.push("No skill/topic tag");
+      if (!i.explanation) issues.push("No explanation");
+      const g = i.groupId ? gmap.get(String(i.groupId)) : null;
+      if (i.section === "listening" && !(g && g.audioId)) issues.push("No audio group");
+      if (i.section === "reading" && !(g && g.passageHtml)) issues.push("No passage group");
+      return { ...i, explanation: undefined, issues };
+    });
+    return NextResponse.json({ items: withIssues, total, page, pages: Math.ceil(total / size) });
   } catch (e) {
     return handleError(e);
   }

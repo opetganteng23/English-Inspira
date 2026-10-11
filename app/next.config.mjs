@@ -18,6 +18,8 @@ const nextConfig = {
   // URL lama berbahasa Indonesia (tautan di email/notifikasi lama) dialihkan permanen ke URL bahasa Inggris.
   async redirects() {
     return [
+      // My Journey digabung ke dasbor (strip "Your journey").
+      {source: "/journey", destination: "/home", permanent: false},
       {source: "/admin/materi/baru", destination: "/admin/materials/new", permanent: true},
       // v2.4: materi hanya dikelola admin; menu materi coach/admin institusi dihapus.
       {source: "/coach/materials/:path*", destination: "/coach", permanent: false},

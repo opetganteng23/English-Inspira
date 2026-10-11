@@ -58,3 +58,19 @@ export const Test: Model<TestDoc> =
   (mongoose.models.Test as Model<TestDoc>) || mongoose.model<TestDoc>("Test", testSchema);
 export const Attempt: Model<AttemptDoc> =
   (mongoose.models.Attempt as Model<AttemptDoc>) || mongoose.model<AttemptDoc>("Attempt", attemptSchema);
+
+// Snapshot soal saat tes diselesaikan: pembahasan dan hasil tetap konsisten walau soal di bank diubah atau dihapus kemudian.
+const snapshotSchema = new Schema(
+  {
+    attemptId: { type: Schema.Types.ObjectId, ref: "Attempt", required: true, unique: true },
+    items: [{
+      _id: false, qid: Schema.Types.ObjectId, section: String, type: { type: String }, groupId: Schema.Types.ObjectId,
+      stem: String, options: [String], answerKey: Number, explanation: String,
+      tags: [{ _id: false, skill: String, topic: String }],
+    }],
+  },
+  { timestamps: true }
+);
+export type AttemptSnapshotDoc = InferSchemaType<typeof snapshotSchema> & { _id: mongoose.Types.ObjectId };
+export const AttemptSnapshot: Model<AttemptSnapshotDoc> =
+  (mongoose.models.AttemptSnapshot as Model<AttemptSnapshotDoc>) || mongoose.model<AttemptSnapshotDoc>("AttemptSnapshot", snapshotSchema);

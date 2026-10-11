@@ -13,7 +13,8 @@ export const questionSchema = z
     tags: z.array(z.object({ skill: z.string().trim().min(1).max(40), topic: z.string().trim().min(1).max(60) })).max(10).default([]),
     assetIds: z.array(z.string().regex(/^[0-9a-f]{24}$/)).max(5).default([]),
     difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
-    status: z.enum(["draft", "review", "published"]).default("draft"),
+    status: z.enum(["draft", "review", "published", "archived"]).default("draft"),
+    source: z.string().trim().max(200).optional(),
   })
   .refine((q) => q.answerKey < q.options.length, { message: "The answer key is outside the options", path: ["answerKey"] })
   .refine((q) => q.status !== "published" || q.tags.length >= 1, { message: "Published questions must have a skill + topic tag", path: ["tags"] });

@@ -16,7 +16,8 @@ const questionSchema = new Schema(
     tags: [{ _id: false, skill: { type: String, required: true, trim: true }, topic: { type: String, required: true, trim: true } }],
     assetIds: [{ type: Schema.Types.ObjectId, ref: "Asset" }],
     difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "medium" },
-    status: { type: String, enum: ["draft", "review", "published"], default: "draft", index: true },
+    status: { type: String, enum: ["draft", "review", "published", "archived"], default: "draft", index: true },
+    source: { type: String, trim: true, maxlength: 200 }, // sumber dan status izin penggunaan
   },
   { timestamps: true }
 );

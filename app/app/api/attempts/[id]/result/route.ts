@@ -8,10 +8,12 @@ import { Level } from "@/models/Config";
 import { User } from "@/models/User";
 import { Analysis } from "@/models/Learning";
 import { recommendCourses } from "@/lib/units";
-import { Attempt, Test } from "@/models/Test";
+import { Attempt, Test, AttemptSnapshot } from "@/models/Test";
 import { Certificate } from "@/models/Itp";
 
 export const dynamic = "force-dynamic";
+
+type SnapItem = { qid: import("mongoose").Types.ObjectId; section: string; type: string; groupId?: import("mongoose").Types.ObjectId; stem: string; options: string[]; answerKey: number; explanation?: string; tags: { skill: string; topic: string }[] };
 
 /** Hasil tes yang sudah selesai: skor, pembahasan semua soal, topik, transkrip audio (hanya setelah tes selesai). */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -22,13 +24,19 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     await connectDB();
 
     const ids = test.sections.flatMap((s) => s.questionIds);
-    const qs = await Question.find({ _id: { $in: ids } }).select("section type groupId stem options answerKey explanation tags").lean();
+    // Pembahasan memakai snapshot saat tes diselesaikan (konsisten dengan skor walau soal diubah/dihapus kemudian);
+    // tes lama tanpa snapshot memakai soal yang ada sekarang.
+    const snap = await AttemptSnapshot.findOne({ attemptId: attempt._id }).lean();
+    const qs = snap
+      ? (snap.items as unknown as SnapItem[]).map((i) => ({ _id: i.qid, section: i.section, type: i.type, groupId: i.groupId, stem: i.stem, options: i.options, answerKey: i.answerKey, explanation: i.explanation, tags: i.tags }))
+      : await Question.find({ _id: { $in: ids } }).select("section type groupId stem options answerKey explanation tags").lean();
     const byId = new Map(qs.map((q) => [String(q._id), q]));
     const mine = new Map(attempt.answers.map((a) => [String(a.qid), a]));
 
     const review = ids.map((id, i) => {
-      const q = byId.get(String(id))!;
+      const q = byId.get(String(id));
       const a = mine.get(String(id));
+      if (!q) return { no: i + 1, section: "listening", type: "-", tags: [], groupId: null, correct: false, answered: a?.choice != null, changes: 0, timeSpentSec: a?.timeSpentSec ?? null, stem: "This question is no longer available.", options: [] as string[], yourChoice: a?.choice ?? null, answerKey: -1, explanation: "" };
       return {
         no: i + 1, section: q.section, type: q.type, tags: q.tags, groupId: q.groupId ? String(q.groupId) : null,
         correct: a?.choice === q.answerKey, answered: a?.choice != null, changes: a?.changes ?? 0, timeSpentSec: a?.timeSpentSec ?? null,
