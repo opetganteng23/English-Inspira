@@ -1,6 +1,6 @@
-# English Inspira LMS — Master Technical Specification v2.4 (MTS)
+# English Inspira LMS — Master Technical Specification v2.5 (MTS)
 
-Versi 2.4 · Pembaruan dari MTS v2.3 · LMS persiapan TOEFL ITP berbasis level, kerja sama institusi mitra, tanpa jalur komersial · Status implementasi: produksi di english.edulyfe.id
+Versi 2.5 · Pembaruan dari MTS v2.4 · LMS persiapan TOEFL ITP berbasis level, kerja sama institusi mitra, tanpa jalur komersial · Status implementasi: produksi di english.edulyfe.id
 
 ## 0. Riwayat Perubahan
 
@@ -11,6 +11,7 @@ Versi 2.4 · Pembaruan dari MTS v2.3 · LMS persiapan TOEFL ITP berbasis level, 
 | 2.2 | Perubahan keamanan materi HTML: JavaScript materi tidak lagi dijalankan di origin/hak aplikasi utama. Materi interaktif dijalankan dalam iframe sandbox terisolasi dengan CSP ketat dan jembatan analitik terbatas. |
 | 2.3 | Diselaraskan dengan implementasi (Oktober 2026): seluruh antarmuka dan URL berbahasa Inggris; nama produk **English Inspira** dengan logo Inspira dan font Poppins; landing page publik; login **password atau OTP**; **daftar mandiri wajib kode institusi** + verifikasi email; lupa/reset password; **mode pemeliharaan** dengan login khusus admin `/admin/login`; keluaran Claude terstruktur lewat tool use; deploy **PM2 tanpa Docker**. Lihat bagian 0.2. |
 | 2.4 | **Kenyamanan belajar dan psikologi UI** (bagian 27): prinsip berbasis teori (beban kognitif, motivasi, kecemasan tes, umpan balik), design token tenang, mode fokus, ruang tes yang menurunkan kecemasan, penyajian hasil yang tidak menghakimi, panduan microcopy, notifikasi dengan jam tenang, aksesibilitas, parameter `ui_comfort`, metrik kenyamanan, dan kriteria penerimaan tambahan. Tidak mengubah aturan skor, keamanan, atau RBAC. |
+| 2.5 | **Scoring Profile Manager** (Oktober 2026): `score_conversion` tunggal diganti koleksi `scoring_profiles` (mode linear atau tabel per section, versi, status terverifikasi dengan sumber, default, arsip). Tes memilih profil; attempt menyimpan `scoringProfileId`, `scoringVersion`, dan `scoreBasis` (`verified` atau `provisional`). Mengubah aturan konversi menaikkan versi dan mencabut verifikasi; hasil lama tidak dihitung ulang. Profil linear tidak dapat diverifikasi. Tidak mengubah RBAC atau keamanan. |
 
 ## 0.1 Perubahan dari v1
 
@@ -123,7 +124,7 @@ Semua angka di bawah **tidak ditulis mati di kode**. Disimpan di `levels` dan `c
 
 | Key | Nilai bawaan | Keterangan |
 | --- | --- | --- |
-| `score_conversion` | Tabel raw → 310-677 per section | **Wajib diverifikasi ke sumber resmi sebelum produksi** |
+| `score_conversion` | Hanya sumber awal profil bawaan "Default (linear estimate)"; konversi aktif kini dikelola di `scoring_profiles` | Estimasi linear berlabel **provisional**; tabel resmi wajib diverifikasi (dengan sumber) sebelum hasil berlabel **verified** |
 | `weakness` | lemah < 60, prioritas tinggi < 40, minimum 5 butir | Ambang kelemahan per topik |
 | `unit_pass_score` | 70 | Syarat lulus kuis unit (dari bank soal) |
 | `level_up` | Estimasi skor simulasi terakhir ≥ batas bawah level berikutnya **dan** semua remedial prioritas tinggi selesai | Coach dapat merekomendasikan atau menahan |
@@ -201,12 +202,13 @@ assets   { ownerId, mime, size, width, height, dataBase64, sha256(unique sparse)
 mail_queue { to, template, data, status, tries, nextTryAt }
 notifications { userId, type, payload, readAt }
 audit_logs { actorId, action, target, meta, at }
+scoring_profiles { name(unique), description, version, mode(linear|table), scaledMin, scaledMax, tables{listening,structure,reading: raw→scaled}, verified, source, verifiedBy, verifiedAt, isDefault, status(active|archived) }
 ```
 
 **Aturan sistem**
 
 - Akses selalu dicek dari `enrollments` (status dan `expiresAt`), bukan dari asumsi lain. Kerja sama berakhir → enrollment ikut berakhir.
-- Skor estimasi dihitung **server-side** dari `score_conversion`.
+- Skor estimasi dihitung **server-side** dari `scoring_profiles` (profil yang dipilih tes, atau profil default). Attempt menyimpan profil, versi, dan `scoreBasis`; profil yang sudah dipakai menilai attempt tidak dapat dihapus (hanya diarsipkan).
 - Pembaruan `coaching_quotas.used` dan `coach_slots.bookedCount` memakai **operasi atomik** (`$inc` dengan syarat), supaya dua peserta tidak merebut kursi terakhir.
 - Jumlah peserta aktif per institusi tidak boleh melebihi `seats`.
 
@@ -357,7 +359,7 @@ Materi di dalam iframe dapat mengirim pesan melalui bridge terbatas yang disedia
 - **Mulai tes**: server membuat `attempt` dan menetapkan `startedAt`. Timer **dipegang server**, klien hanya menampilkan.
 - **Autosave** tiap perubahan (debounce 2 detik) ke `PATCH /api/attempts/:id`. Tangguh terhadap refresh dan koneksi putus, sisa waktu tidak berubah.
 - **Pencatatan per soal**: `firstChoice`, `choice`, `changes` (berapa kali jawaban diganti), `timeSpentSec` (waktu idle dikurangi memakai `idle_timeout_sec`).
-- **Submit atau waktu habis** → server menghitung skor raw → estimasi skala 310-677 per section dan total (`score_conversion`) → skor per topik dari tag soal → menulis `learning_events` dan memperbarui `topic_stats` → memicu analisis (bagian 13).
+- **Submit atau waktu habis** → server menghitung skor raw → estimasi skala 310-677 per section dan total (profil konversi tes, `scoring_profiles`) → skor per topik dari tag soal → menulis `learning_events` dan memperbarui `topic_stats` → memicu analisis (bagian 13).
 - **Proctoring ringan** untuk `placement` dan `sim`: catat `visibilitychange`, keluar fullscreen, paste, dan multi-tab sebagai `proctorFlags`. Admin meninjau di modul Review Proctoring.
 
 ### Audio listening (GridFS)
