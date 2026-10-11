@@ -1,3 +1,5 @@
+import { upcomingEnrollment, startDate } from "@/lib/access";
+import { enqueueMail } from "@/lib/mailq";
 import { NextResponse } from "next/server";
 import { isCentralStaff } from "@/lib/role-home";
 import { z } from "zod";
@@ -29,6 +31,11 @@ export async function POST(req: Request) {
       : adminBootstrap().includes(email); // admin pertama dari ADMIN_EMAILS
 
     if (eligible) await issueCode(email, "otp");
+    else if (user && user.status !== "disabled") {
+      // Akses belum dimulai: beri tahu tanggalnya lewat email (bukan lewat respons, agar daftar peserta tetap tidak bisa ditebak).
+      const up = await upcomingEnrollment(user._id);
+      if (up?.startsAt) await enqueueMail(email, "access_not_started", { startsAt: startDate(up.startsAt), link: `${process.env.APP_URL ?? new URL(req.url).origin}/sign-in` }, { priority: 1 });
+    }
     return NextResponse.json({ ok: true, expiresInSec: 300 });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid email" }, { status: 400 });

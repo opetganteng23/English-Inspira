@@ -1,0 +1,74 @@
+===============================================================================
+  LAPORAN KESIAPAN SISTEM REGISTRASI PESERTA
+  English Inspira (english.edulyfe.id)
+  Tanggal: 11 Oktober 2026
+===============================================================================
+
+1. RINGKASAN
+-------------------------------------------------------------------------------
+Sistem dapat menerima registrasi 1.381 peserta, tetapi tidak dalam satu hari
+dengan konfigurasi saat ini. Penghambat utamanya ada pada layanan pengiriman
+email, bukan pada server atau database. Dengan konfigurasi sekarang,
+registrasi perlu dilakukan bertahap selama 3-4 hari.
+
+
+2. KAPASITAS DENGAN KONFIGURASI SAAT INI
+-------------------------------------------------------------------------------
+- Per hari, seluruh peserta: sekitar 400-450 orang.
+  Email dikirim melalui akun Gmail biasa yang dibatasi sekitar 500 email per
+  hari. Setiap registrasi membutuhkan minimal satu email kode verifikasi,
+  sebagian peserta akan meminta kirim ulang kode, dan sebagian kuota terpakai
+  untuk email lain (kode login admin, pemberitahuan).
+
+- Per jam dari satu jaringan yang sama (misalnya Wi-Fi kampus): 150 orang.
+  Sistem membatasi jumlah registrasi per alamat IP untuk keamanan.
+
+- Per jam dari jaringan berbeda (data seluler masing-masing): tidak dibatasi
+  per IP, tetapi tetap mengikuti batas harian email.
+
+- Server dan database: bukan penghambat pada jumlah di atas.
+
+
+3. RISIKO BILA BATAS HARIAN TERLAMPAUI
+-------------------------------------------------------------------------------
+- Peserta di atas batas tidak menerima kode verifikasi pada hari itu dan harus
+  mencoba kembali keesokan harinya.
+- Gmail dapat memblokir pengiriman dari akun tersebut hingga sekitar 24 jam.
+  Selama pemblokiran, kode login lewat email juga tidak terkirim, termasuk
+  untuk admin dan peserta yang sudah terdaftar. Admin tetap dapat masuk
+  menggunakan password.
+
+
+4. REKOMENDASI
+-------------------------------------------------------------------------------
+Opsi A - Tanpa perubahan sistem
+- Registrasi dibagi bertahap, maksimal sekitar 350 peserta per hari agar
+  aman, sehingga 1.381 peserta selesai dalam 4 hari.
+- Bila peserta mendaftar dari jaringan kampus yang sama, jadwal dibagi per
+  sesi atau per kelas dengan maksimal 150 peserta per jam.
+
+Opsi B - Perubahan kecil (disarankan bila registrasi harus serentak)
+- Mengganti pengiriman email ke layanan email transaksional (misalnya Brevo,
+  Mailgun, atau Amazon SES) dengan kapasitas ribuan email per hari.
+  Perubahan hanya pada pengaturan server, tanpa perubahan aplikasi.
+- Menaikkan batas registrasi per jaringan menjadi 1.500 per jam.
+  Perlindungan keamanan per email tetap berlaku.
+- Dengan dua perubahan ini, 1.381 peserta dapat mendaftar dalam satu hari.
+
+
+5. PERSIAPAN YANG TETAP DIPERLUKAN SEBELUM REGISTRASI DIBUKA
+-------------------------------------------------------------------------------
+- Admin membuat data institusi dengan kuota kursi minimal 1.381, lalu
+  membagikan kode institusi kepada peserta.
+- Bila memilih Opsi B: pembuatan akun layanan email, pemasangan di server,
+  dan uji coba kirim sebelum hari registrasi.
+
+
+6. CATATAN
+-------------------------------------------------------------------------------
+Angka batas Gmail di atas adalah batas umum yang diketahui. Google tidak
+mengumumkan angka pasti untuk pengiriman melalui aplikasi, dan batas
+sebenarnya bisa lebih rendah. Karena itu target aman yang disarankan adalah
+350 registrasi per hari.
+
+===============================================================================

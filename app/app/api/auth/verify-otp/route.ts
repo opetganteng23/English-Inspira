@@ -6,7 +6,7 @@ import { consumeCode, CODE_BAD as BAD } from "@/lib/otp-code";
 import { User } from "@/models/User";
 import { Invitation } from "@/models/Access";
 import { createSession } from "@/lib/auth";
-import { hasActiveEnrollment } from "@/lib/access";
+import { hasActiveEnrollment, accessDeniedMessage } from "@/lib/access";
 import { limit, clientIp } from "@/lib/ratelimit";
 import { handleError, HttpError } from "@/lib/rbac";
 import { sha256 } from "@/lib/participants";
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
     if (body.adminOnly && !isCentralStaff(user.role)) throw new HttpError(403, "This sign-in page is for admins only. Use the regular sign-in page.");
     if (user.status === "disabled") throw new HttpError(403, "Account deactivated");
-    if (!isCentralStaff(user.role) && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Your access has ended. Contact your institution.");
+    if (!isCentralStaff(user.role) && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, await accessDeniedMessage(user._id));
 
     if (body.invite) await Invitation.updateOne({ tokenHash: sha256(body.invite), userId: user._id, status: "pending" }, { status: "used" });
     user.lastLoginAt = new Date();

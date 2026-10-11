@@ -21,10 +21,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (b.code !== i.code && (await Institution.exists({ code: b.code }))) throw new HttpError(409, "Institution code already in use");
     if (b.seats < i.seatsUsed) throw new HttpError(409, `Seats cannot be lower than those already used (${i.seatsUsed})`);
     const endChanged = String(b.contractEnd ?? "") !== String(i.contractEnd ?? "");
+    const startChanged = String(b.contractStart ?? "") !== String(i.contractStart ?? "");
     i.set({ ...b, contractStart: b.contractStart ?? undefined, contractEnd: b.contractEnd ?? undefined, contactEmail: b.contactEmail || undefined });
     await i.save();
     // Kontrak diperpanjang/dipersingkat → seluruh enrollment aktif ikut berubah (akses dicek dari enrollment).
     if (endChanged) await Enrollment.updateMany({ institutionId: i._id, status: { $in: ["active", "expired"] } }, { expiresAt: b.contractEnd ?? undefined, status: !b.contractEnd || b.contractEnd > new Date() ? "active" : "expired" });
+    // Tanggal mulai kontrak berubah → akses peserta yang sudah ada mulai pada tanggal baru (atau sekarang bila tanggalnya sudah lewat/kosong).
+    if (startChanged) await Enrollment.updateMany({ institutionId: i._id, status: "active" }, { startsAt: b.contractStart && b.contractStart > new Date() ? b.contractStart : new Date() });
     await audit(admin._id, "institution.update", params.id);
     return NextResponse.json({ ok: true });
   } catch (e) {
