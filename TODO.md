@@ -260,3 +260,16 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | M7 | Sisa dari `Spesifikasi_Modul_LMS_TOEFL_ITP.md`: lihat bagian 19 | ⬜ |
 | M8 | Snapshot soal saat tes selesai (`AttemptSnapshot`): pembahasan dan skor tetap konsisten walau kunci/pilihan soal diubah atau soal dihapus kemudian (prinsip §11 spesifikasi) | ✅ uji: kunci 40 soal diubah setelah tes, pembahasan tetap; bug skema (`type` sebagai kata kunci Mongoose) ditemukan dan diperbaiki |
 | M9 | Bank soal: duplikat, status Archived, kolom sumber/lisensi, ekspor CSV (kolom sama dengan templat impor), penanda kualitas (tanpa tag, tanpa pembahasan, Listening tanpa audio, Reading tanpa passage) | ✅ API teruji (86/86 CRUD) |
+
+## 19. Lanjutan dari spesifikasi LMS dan audit (2026-10-11)
+
+| ID | Item | Status |
+|---|---|---|
+| N1 | Audit Log (`/admin/audit`): filter kategori/pelaku/tanggal/pencarian, detail metadata, ekspor CSV; audit update soal memuat versi dan kolom yang berubah | ✅ API + uji klik |
+| N2 | Riwayat versi soal: versi otomatis tiap buat/ubah/duplikat/impor, baseline untuk soal lama, perbandingan sebelum/sesudah, pulihkan (menjadi versi baru), soal tanpa perubahan tidak membuat versi | ✅ 14 uji API + uji klik |
+| N3 | Preview soal seperti dilihat peserta (passage, audio, pilihan yang bisa diklik, tampilkan kunci khusus admin) | ✅ uji klik |
+| N4 | Antrean tinjauan: banner jumlah soal Review, filter, Approve dan Send back per baris | ✅ uji klik |
+| N5 | Test Builder: pilih soal otomatis berdasarkan jenis/kesulitan/topik (blok passage/audio utuh), acak urutan soal (blok tetap utuh), acak pilihan jawaban (indeks asli disimpan; menjawab benar semua lewat posisi tampil = skor penuh), batas percobaan; pengacakan pilihan terkunci setelah dikerjakan | ✅ 17 uji API |
+| N6 | Profil: foto profil (aset pribadi, tampil juga di menu), ganti email dua langkah (kode ke email baru, pemberitahuan ke email lama, ditolak bila email sudah dipakai atau ITP aktif), preferensi email opsional (Reminders, Progress; email keamanan/akun/jadwal tetap wajib) | ✅ API + uji klik desktop dan ponsel |
+| N7 | Temuan uji: Profil tidak lagi di-unmount saat muat ulang (pesan sukses hilang); foto di sidebar ikut diperbarui | ✅ |
+| N8 | Belum: Course tiga tingkat (modul/lesson/sublesson), cover, prasyarat, drip content, archive course; Scoring Profile Manager; peran editor soal/admin akademik; Media Library; waveform/timestamp/WAV; impor DOCX; AI Question Authoring | ⬜ |

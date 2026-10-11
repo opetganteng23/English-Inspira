@@ -11,6 +11,9 @@ const auditSchema = new Schema(
   { timestamps: true }
 );
 
+auditSchema.index({ at: -1 });
+auditSchema.index({ actorId: 1, at: -1 });
+
 export type AuditDoc = InferSchemaType<typeof auditSchema>;
 export const AuditLog: Model<AuditDoc> =
   (mongoose.models.AuditLog as Model<AuditDoc>) || mongoose.model<AuditDoc>("AuditLog", auditSchema);

@@ -11,6 +11,9 @@ const userSchema = new Schema(
     givenName: { type: String, trim: true },
     surname: { type: String, trim: true },
     phone: String,
+    // Preferensi email opsional (pengingat dan kabar progres). Email keamanan/akun/jadwal tetap selalu dikirim.
+    emailPrefs: { reminders: { type: Boolean, default: true }, progress: { type: Boolean, default: true } },
+    avatarAssetId: { type: Schema.Types.ObjectId, ref: "Asset" },
     role: { type: String, enum: ROLES, default: "participant", index: true },
     // Wajib untuk participant/coach/inst_admin; hanya admin tanpa institusi (ditegakkan di lib/participants.ts).
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },

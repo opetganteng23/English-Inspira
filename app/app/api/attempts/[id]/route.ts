@@ -5,6 +5,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { getParam } from "@/lib/config";
 import { loadAttempt, sectionDeadline } from "@/lib/attempts";
 import { Question, QuestionGroup } from "@/models/Question";
+import { shuffleQuestionOrder, optionPermutation } from "@/lib/shuffle";
 
 const ROLES = ["participant", "admin", "inst_admin"] as const;
 
@@ -21,6 +22,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       .select("-answerKey -explanation -tags -status").lean();
     const order = new Map(section.questionIds.map((id, i) => [String(id), i]));
     qs.sort((a, b) => order.get(String(a._id))! - order.get(String(b._id))!);
+    const sid = String(attempt._id);
+    const ordered = test.shuffleQuestions ? shuffleQuestionOrder(qs, `${sid}:q:${attempt.sectionIdx}`) : qs;
+    // Pilihan diacak per peserta: tampil pada posisi acak, tersimpan sebagai indeks asli (penilaian tidak berubah).
+    const perms = new Map<string, number[]>();
+    if (test.shuffleOptions) for (const q of qs) perms.set(String(q._id), optionPermutation(`${sid}:o:${q._id}`, q.options.length));
 
     const groups = await QuestionGroup.find({ _id: { $in: qs.map((q) => q.groupId).filter((g): g is NonNullable<typeof g> => !!g) } }).lean();
     const played = new Map(attempt.audioPlays.map((p) => [String(p.audioId), p]));
@@ -36,11 +42,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         id: String(g._id), instruction: g.instruction, passageTitle: g.passageTitle, passageHtml: g.passageHtml,
         audio: g.audioId ? { id: String(g.audioId), finished: !!played.get(String(g.audioId))?.done } : null,
       })),
-      questions: qs.map((q) => ({
-        id: String(q._id), groupId: q.groupId ? String(q.groupId) : null, stem: q.stem, options: q.options,
+      questions: ordered.map((q) => ({
+        id: String(q._id), groupId: q.groupId ? String(q.groupId) : null, stem: q.stem, options: perms.has(String(q._id)) ? perms.get(String(q._id))!.map((i) => q.options[i]) : q.options,
         assetIds: q.assetIds.map(String),
       })),
-      answers: attempt.answers.map((a) => ({ qid: String(a.qid), choice: a.choice, flagged: !!a.flagged, timeSpentSec: a.timeSpentSec ?? 0 })),
+      answers: attempt.answers.map((a) => ({ qid: String(a.qid), choice: a.choice != null && perms.has(String(a.qid)) ? perms.get(String(a.qid))!.indexOf(a.choice) : a.choice, flagged: !!a.flagged, timeSpentSec: a.timeSpentSec ?? 0 })),
     });
   } catch (e) {
     return handleError(e);
@@ -64,10 +70,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const body = patchSchema.parse(await req.json());
 
     const allowed = new Set(test.sections[attempt.sectionIdx].questionIds.map(String));
+    const optLen = new Map<string, number>();
+    if (test.shuffleOptions) for (const q of await Question.find({ _id: { $in: [...allowed] } }).select("options").lean()) optLen.set(String(q._id), q.options.length);
     for (const a of body.answers ?? []) {
       if (!allowed.has(a.qid)) continue; // soal section lain diabaikan
       const cur = attempt.answers.find((x) => String(x.qid) === a.qid);
-      const choice = a.choice ?? undefined;
+      let choice = a.choice ?? undefined;
+      if (choice != null && test.shuffleOptions) {
+        const n = optLen.get(a.qid) ?? 0;
+        if (choice >= n) continue; // indeks tampil di luar jangkauan
+        choice = optionPermutation(`${attempt._id}:o:${a.qid}`, n)[choice]; // indeks tampil -> indeks asli
+      }
       // firstChoice & changes dihitung SERVER (tidak dipercaya dari klien): indikator ragu-ragu untuk analisis (MTS §11).
       const firstChoice = cur?.firstChoice ?? choice;
       const changed = cur?.choice != null && choice != null && cur.choice !== choice;

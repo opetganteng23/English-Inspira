@@ -18,6 +18,10 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const running = await Attempt.findOne({ userId: user._id, testId: test._id, status: "in_progress" });
     if (running) return NextResponse.json({ attemptId: String(running._id), resumed: true });
 
+    if ((test.maxAttempts ?? 0) > 0) {
+      const taken = await Attempt.countDocuments({ userId: user._id, testId: test._id });
+      if (taken >= test.maxAttempts!) throw new HttpError(403, `You have used all ${test.maxAttempts} attempt${test.maxAttempts === 1 ? "" : "s"} for this test.`);
+    }
     const gate = canStartTest(user, test);
     if (!gate.ok) throw new HttpError(403, gate.reason ?? "This test cannot be taken yet");
 

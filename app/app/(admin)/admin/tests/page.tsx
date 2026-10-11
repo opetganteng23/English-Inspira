@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 type T = { id: string; name: string; kind: string; active: boolean; questions: number; durationSec: number; attempts: number };
 type QRow = { _id: string; section: string; type: string; stem: string };
 type Sec = { name: string; durationSec: number; questionIds: string[] };
-type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; sections: Sec[]; attempts: number };
+type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; sections: Sec[]; attempts: number; shuffleQuestions?: boolean; shuffleOptions?: boolean; maxAttempts?: number };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", practice: "Practice", quiz: "Unit quiz" };
@@ -27,7 +27,7 @@ export default function TesAdmin() {
   useEffect(() => { load(); }, [load]);
 
   async function open(id: string) {
-    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, levelId: t.levelId ? String(t.levelId) : "", active: t.active, attempts: t.attempts, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
+    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, levelId: t.levelId ? String(t.levelId) : "", active: t.active, attempts: t.attempts, shuffleQuestions: !!t.shuffleQuestions, shuffleOptions: !!t.shuffleOptions, maxAttempts: t.maxAttempts ?? 0, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
     catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
@@ -77,7 +77,7 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
   async function save() {
     setBusy(true); setErr("");
     try {
-      const body = { name: v.name, kind: v.kind, levelId: v.levelId || null, active: v.active, sections: v.sections.filter((s) => s.questionIds.length) };
+      const body = { name: v.name, kind: v.kind, levelId: v.levelId || null, active: v.active, shuffleQuestions: !!v.shuffleQuestions, shuffleOptions: !!v.shuffleOptions, maxAttempts: Number(v.maxAttempts) || 0, sections: v.sections.filter((s) => s.questionIds.length) };
       await api(v.id ? `/api/admin/tests/${v.id}` : "/api/admin/tests", { method: v.id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       onSaved();
     } catch (e) { setErr((e as Error).message); setBusy(false); }
@@ -94,6 +94,14 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Type<select disabled={locked} className="field" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value })}>{Object.entries(KIND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Active (shown in the test list)</label>
+        {v.kind !== "placement" && (
+          <fieldset className="mt-3 rounded-xl border border-line p-4">
+            <legend className="px-2 text-sm font-semibold text-navy">Test rules</legend>
+            <label className="flex min-h-[40px] items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-4 w-4" checked={!!v.shuffleQuestions} onChange={(e) => setV({ ...v, shuffleQuestions: e.target.checked })} /><span>Shuffle question order for each participant<br /><span className="text-xs text-ink-soft">Questions that share a passage or audio stay together, in their original order.</span></span></label>
+            <label className="flex min-h-[40px] items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-4 w-4" disabled={v.attempts > 0} checked={!!v.shuffleOptions} onChange={(e) => setV({ ...v, shuffleOptions: e.target.checked })} /><span>Shuffle answer options<br /><span className="text-xs text-ink-soft">Good for practice sets. Leave off for a simulation that must match the official format. Cannot be changed after the test has been taken.</span></span></label>
+            <label className="mt-2 flex items-center gap-2 text-sm font-semibold text-navy">Attempt limit per participant<input type="number" min={0} max={50} className="field w-24" value={v.maxAttempts ?? 0} onChange={(e) => setV({ ...v, maxAttempts: Math.max(0, Number(e.target.value) || 0) })} /><span className="text-xs font-normal text-ink-soft">0 = unlimited</span></label>
+          </fieldset>
+        )}
         <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-xs">Target level<select disabled={locked || v.kind === "placement"} className="field font-normal" value={v.kind === "placement" ? "" : v.levelId} onChange={(e) => setV({ ...v, levelId: e.target.value })}><option value="">All levels</option>{levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
         {v.kind === "placement" && <p className="mt-2 text-xs text-ink-soft">Placement is taken once per participant and determines their level, so it is not limited by level.</p>}
         {v.kind === "quiz" && <p className="mt-2 text-xs text-ink-soft">Unit quizzes do not appear in My Tests; they are taken from learning units.</p>}
@@ -115,6 +123,18 @@ function SectionBox({ s, locked, onChange }: { s: Sec; locked: boolean; onChange
   const [chosen, setChosen] = useState<QRow[]>([]);
   const [q, setQ] = useState("");
   const [pool, setPool] = useState<QRow[]>([]);
+  const [auto, setAuto] = useState({ count: 10, type: "", difficulty: "" });
+  const [autoMsg, setAutoMsg] = useState("");
+  const [typeNames, setTypeNames] = useState<string[]>([]);
+  useEffect(() => { api(`/api/admin/question-types`).then((d) => setTypeNames(d.types.filter((t: { section: string; active: boolean }) => t.section === s.name && t.active).map((t: { name: string }) => t.name))).catch(() => {}); }, [s.name]);
+  async function autoFill() {
+    setAutoMsg("");
+    try {
+      const d = await api("/api/admin/questions/pick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ section: s.name, count: auto.count, types: auto.type ? [auto.type] : undefined, difficulties: auto.difficulty ? [auto.difficulty] : undefined, excludeIds: s.questionIds }) });
+      if (d.ids.length) onChange({ ...s, questionIds: [...s.questionIds, ...d.ids] });
+      setAutoMsg(d.picked === 0 ? `No published questions match (${d.available} available).` : d.short ? `Added ${d.picked}. Only ${d.picked} fit the criteria (${d.available} matching questions, passage groups kept whole).` : `Added ${d.picked} random questions.`);
+    } catch (e) { setAutoMsg((e as Error).message); }
+  }
 
   // Muat detail soal terpilih (urutan mengikuti questionIds).
   useEffect(() => {
@@ -154,6 +174,18 @@ function SectionBox({ s, locked, onChange }: { s: Sec; locked: boolean; onChange
         })}
         {ids.length === 0 && <li className="text-sm text-ink-soft">No questions yet. Choose from the list below.</li>}
       </ol>
+      {!locked && (
+        <div className="mt-3 rounded-xl bg-brand-tint/50 p-3">
+          <p className="text-sm font-semibold text-navy">Auto-fill by criteria</p>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1 text-xs font-semibold text-navy">How many<input type="number" min={1} max={100} className="field !h-10 w-20" value={auto.count} onChange={(e) => setAuto({ ...auto, count: Math.max(1, Number(e.target.value) || 1) })} /></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-navy">Type<select className="field !h-10 w-auto" value={auto.type} onChange={(e) => setAuto({ ...auto, type: e.target.value })}><option value="">Any type</option>{typeNames.map((t) => <option key={t} value={t}>{t}</option>)}</select></label>
+            <label className="flex flex-col gap-1 text-xs font-semibold text-navy">Difficulty<select className="field !h-10 w-auto" value={auto.difficulty} onChange={(e) => setAuto({ ...auto, difficulty: e.target.value })}><option value="">Any</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+            <button type="button" className="btn-solid !min-h-[40px]" onClick={autoFill}>Add random questions</button>
+          </div>
+          {autoMsg && <p role="status" className="mt-2 text-xs text-ink-soft">{autoMsg}</p>}
+        </div>
+      )}
       {!locked && (
         <div className="mt-3">
           <input className="field mb-2" placeholder={`Search ${SECTION[s.name]} questions (published)`} value={q} onChange={(e) => setQ(e.target.value)} />

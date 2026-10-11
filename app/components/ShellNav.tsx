@@ -11,7 +11,7 @@ const ROLE: Record<string, string> = { participant: "Participant", admin: "Admin
 
 export function ShellNav({
   nav, title, user, children,
-}: { nav: NavGroup[]; title?: string; user: { name: string; email: string; role: string }; children: React.ReactNode }) {
+}: { nav: NavGroup[]; title?: string; user: { name: string; email: string; role: string; avatarId?: string | null }; children: React.ReactNode }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]); // tutup drawer saat pindah halaman
@@ -41,7 +41,16 @@ export function ShellNav({
 
   const account = (
     <div className="mt-auto border-t border-navy-700 pt-4">
-      <div className="mb-2 flex items-center justify-between"><p className="truncate text-sm font-semibold text-white">{user.name}</p><NotificationBell /></div>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy-700 text-sm font-bold text-white">
+            {user.avatarId
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={`/api/assets/${user.avatarId}`} alt="" className="h-full w-full object-cover" />
+              : (user.name || "?")[0].toUpperCase()}
+          </span>
+          <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+        </span><NotificationBell /></div>
       <p className="truncate text-xs text-[#8FA6C8]">{ROLE[user.role] ?? user.role}</p>
       <button
         className="mt-3 w-full rounded-lg border border-[#8FA6C8]/40 px-3 py-2 text-sm font-semibold text-mist hover:bg-navy-700"

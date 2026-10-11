@@ -6,8 +6,9 @@ import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { PasswordCard } from "@/components/PasswordCard";
+import { AvatarEditor, EmailChangeCard, NotificationPrefs } from "@/components/ProfileExtras";
 
-type Me = { hasPassword?: boolean; name: string | null; givenName?: string; surname?: string; email: string; phone: string | null; education: string | null; targetScore: number | null; goal: string | null; institution: { name: string; contractEnd: string | null } | null; level: { name: string } | null; scoreEst: number | null; createdAt: string; nameLocked: boolean };
+type Me = { hasPassword?: boolean; avatarAssetId?: string | null; emailPrefs?: { reminders: boolean; progress: boolean }; name: string | null; givenName?: string; surname?: string; email: string; phone: string | null; education: string | null; targetScore: number | null; goal: string | null; institution: { name: string; contractEnd: string | null } | null; level: { name: string } | null; scoreEst: number | null; createdAt: string; nameLocked: boolean };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
 export default function Profil() {
@@ -32,12 +33,12 @@ export default function Profil() {
     try { const d = await api("/api/me/delete", { json: { confirm: del } }); setDel(""); setMsg({ ok: true, text: d.message }); } catch (x) { setMsg({ ok: false, text: (x as Error).message }); }
   }
 
-  if (loading) return <Loading />;
+  if (loading && !me) return <Loading />; // muat ulang diam-diam: komponen anak (pesan sukses, langkah ganti email) tidak ter-unmount
   if (!me) return <ErrorNote text={error} />;
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex items-center gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-navy font-display text-xl font-extrabold text-white">{(me.name ?? me.email)[0].toUpperCase()}</span>
+        <AvatarEditor initial={(me.name ?? me.email)[0].toUpperCase()} avatarId={me.avatarAssetId ?? null} onChanged={() => { reload(); router.refresh(); }} />
         <div className="min-w-0"><h1 className="page-title truncate">Profile & settings</h1><p className="truncate text-sm text-ink-soft">{me.email} · joined {tgl(me.createdAt)}</p></div>
       </div>
       {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? "bg-success-tint text-success" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
@@ -62,6 +63,8 @@ export default function Profil() {
         <p className="mt-1 text-sm">{me.institution ? <>Program <b>{me.institution.name}</b>{me.institution.contractEnd ? <> · access until {tgl(me.institution.contractEnd)}</> : null}.</> : "Your account is not linked to an institution."} {me.level ? <>Level: <b>{me.level.name}</b>{me.scoreEst ? ` (estimate ${me.scoreEst})` : ""}.</> : "Your level is set after the placement test."}</p></section>
 
       <PasswordCard email={me.email} hasPassword={!!me.hasPassword} onDone={reload} />
+      <EmailChangeCard email={me.email} locked={me.nameLocked} onChanged={() => { reload(); router.refresh(); }} />
+      <NotificationPrefs prefs={me.emailPrefs ?? { reminders: true, progress: true }} onChanged={reload} />
 
       <section className="card flex flex-col gap-3"><h2 className="font-display text-lg font-extrabold text-navy">Privacy</h2>
         <p className="text-sm text-ink-soft">We never record your camera or microphone. You can download all your data or request data deletion.</p>

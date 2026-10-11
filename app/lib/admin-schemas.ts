@@ -34,6 +34,9 @@ export const testSchema = z.object({
   kind: z.enum(["placement", "sim", "practice", "quiz"]),
   levelId: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional(),
   active: z.boolean().default(true),
+  shuffleQuestions: z.boolean().default(false),
+  shuffleOptions: z.boolean().default(false),
+  maxAttempts: z.number().int().min(0).max(50).default(0),
   sections: z
     .array(
       z.object({

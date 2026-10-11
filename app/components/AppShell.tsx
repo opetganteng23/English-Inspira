@@ -16,7 +16,7 @@ export async function AppShell({
   if (!roles.includes(user.role)) redirect("/sign-in");
 
   return (
-    <ShellNav nav={nav} title={title} user={{ name: user.name ?? user.email, email: user.email, role: user.role }}>
+    <ShellNav nav={nav} title={title} user={{ name: user.name ?? user.email, email: user.email, role: user.role, avatarId: user.avatarAssetId ? String(user.avatarAssetId) : null }}>
       {children}
     </ShellNav>
   );

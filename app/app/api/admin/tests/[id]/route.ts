@@ -41,6 +41,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // Tes yang sudah dikerjakan: susunan soal dan durasi dikunci agar skor/pembahasan lama tetap valid.
     if (attempts > 0 && (t.kind !== body.kind || !sameStructure(t.sections, body.sections)))
       throw new HttpError(409, `This test has been taken ${attempts} times. The question set cannot be changed; deactivate it and create a new test.`);
+    if (attempts > 0 && !!t.shuffleOptions !== body.shuffleOptions) throw new HttpError(409, "Answer-option shuffling cannot be changed after the test has been taken.");
     if (attempts === 0) await validateTestQuestions(body.sections);
     t.set(body);
     await t.save();

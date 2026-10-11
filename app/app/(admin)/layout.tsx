@@ -20,6 +20,7 @@ const nav: NavGroup[] = [
     { href: "/admin/coaching", label: "Coaching Monitor" },
     { href: "/admin/itp-schedule", label: "ITP Schedule & Scores" },
     { href: "/admin/parameters", label: "System Parameters" },
+    { href: "/admin/audit", label: "Audit Log" },
     { href: "/admin/settings", label: "Settings" },
   ] },
 ];

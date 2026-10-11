@@ -1,4 +1,5 @@
 import { connectDB } from "./db";
+import { User } from "@/models/User";
 import { getParam } from "./config";
 import { sendMail } from "./mailer";
 import { render, type TemplateName } from "./mail-templates";
@@ -8,8 +9,16 @@ const BACKOFF_MIN = [1, 5, 15, 60, 240]; // percobaan ulang bertahap
 const MAX_TRIES = BACKOFF_MIN.length;
 
 /** Masukkan email ke antrean. OTP berprioritas tertinggi. Tidak pernah memblokir request. */
+// Template opsional mengikuti preferensi penerima; semua template lain (OTP, reset, undangan, jadwal, pendaftaran ITP) selalu dikirim.
+const OPTIONAL: Partial<Record<TemplateName, "reminders" | "progress">> = { plan_deadline: "reminders", quota_low: "reminders", session_reminder: "reminders", level_up: "progress", placement_result: "progress", analysis_ready: "progress" };
+
 export async function enqueueMail(to: string, template: TemplateName, data: Record<string, unknown> = {}, opts: { priority?: number; delayMs?: number } = {}) {
   await connectDB();
+  const pref = OPTIONAL[template];
+  if (pref) {
+    const u = await User.findOne({ email: to.toLowerCase() }).select("emailPrefs").lean();
+    if (u?.emailPrefs && u.emailPrefs[pref] === false) return;
+  }
   await MailJob.create({ to, template, data, priority: opts.priority ?? (template === "otp" ? 1 : 5), nextTryAt: new Date(Date.now() + (opts.delayMs ?? 0)) });
   kick(); // di dev/tanpa cron, langsung diproses di latar
 }

@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { Question, QuestionGroup } from "@/models/Question";
 import { registerQuestionType } from "@/lib/question-types";
+import { recordQuestionVersion } from "@/lib/question-versions";
 import { questionSchema } from "@/lib/admin-schemas";
 import { AuditLog } from "@/models/AuditLog";
 
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
     await connectDB();
     const q = await Question.create({ ...body, groupId: body.groupId ?? undefined });
     await registerQuestionType(body.section, body.type);
+    await recordQuestionVersion(q._id, q.toObject(), admin._id);
     await AuditLog.create({ actorId: admin._id, action: "question.create", target: String(q._id) });
     return NextResponse.json({ id: String(q._id) }, { status: 201 });
   } catch (e) {

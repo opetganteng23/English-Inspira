@@ -19,6 +19,10 @@ const testSchema = new Schema(
       },
     ],
     active: { type: Boolean, default: true },
+    // Aturan tes: acak urutan soal (soal satu passage/audio tetap berurutan), acak pilihan jawaban, batas percobaan (0 = tanpa batas).
+    shuffleQuestions: { type: Boolean, default: false },
+    shuffleOptions: { type: Boolean, default: false },
+    maxAttempts: { type: Number, default: 0, min: 0, max: 50 },
   },
   { timestamps: true }
 );

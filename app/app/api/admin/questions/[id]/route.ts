@@ -1,4 +1,5 @@
 import { registerQuestionType } from "@/lib/question-types";
+import { recordQuestionVersion, ensureBaseline } from "@/lib/question-versions";
 import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
@@ -35,10 +36,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const body = questionSchema.parse(await req.json());
     // Ubah kunci/pilihan pada soal yang sudah dipakai tes mengubah skor lama; dicatat di audit.
     const used = await Test.exists({ "sections.questionIds": q._id });
+    await ensureBaseline(q._id, q.toObject());
     q.set({ ...body, groupId: body.groupId ?? undefined });
     await q.save();
     await registerQuestionType(q.section, q.type);
-    await AuditLog.create({ actorId: admin._id, action: "question.update", target: String(q._id), meta: { usedInTest: !!used } });
+    const ver = await recordQuestionVersion(q._id, q.toObject(), admin._id);
+    await AuditLog.create({ actorId: admin._id, action: "question.update", target: String(q._id), meta: { usedInTest: !!used, version: ver?.version, changed: ver?.changed } });
     return NextResponse.json({ ok: true, usedInTest: !!used });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: zodMessage(e) }, { status: 400 });

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QuestionHistoryDialog } from "@/components/QuestionHistoryDialog";
+import { QuestionPreviewDialog } from "@/components/QuestionPreviewDialog";
 import { QuestionTypesDialog, type QType } from "@/components/QuestionTypesDialog";
 import { uploadImage } from "@/lib/compress-image";
 
@@ -33,6 +35,7 @@ export default function BankSoal() {
   const [types, setTypes] = useState<QType[]>([]);
   const [secCounts, setSecCounts] = useState<Record<string, number>>({});
   const [typesDlg, setTypesDlg] = useState(false);
+  const [reviewCount, setReviewCount] = useState(0);
   const [err, setErr] = useState("");
   const [form, setForm] = useState<Form | null>(null);
   const [groupDlg, setGroupDlg] = useState(false);
@@ -49,11 +52,19 @@ export default function BankSoal() {
   }, []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadTypes(); }, [loadTypes]);
+  useEffect(() => { api("/api/admin/questions?status=review&page=1").then((d) => setReviewCount(d.total ?? 0)).catch(() => {}); }, [rows]);
 
   async function edit(id: string) {
     try {
       const q = await api(`/api/admin/questions/${id}`);
       setForm({ id, section: q.section, type: q.type, groupId: q.groupId ?? "", stem: q.stem, options: q.options, answerKey: q.answerKey, explanation: q.explanation ?? "", tags: (q.tags ?? []).map((t: { skill: string; topic: string }) => ({ skill: t.skill, topic: t.topic })), difficulty: q.difficulty, status: q.status, source: q.source ?? "", assetIds: q.assetIds ?? [] });
+    } catch (e) { setErr((e as Error).message); }
+  }
+  async function setStatus(id: string, status: "published" | "draft") {
+    try {
+      const q = await api(`/api/admin/questions/${id}`);
+      await api(`/api/admin/questions/${id}`, { method: "PATCH", ...json({ section: q.section, type: q.type, groupId: q.groupId ?? null, stem: q.stem, options: q.options, answerKey: q.answerKey, explanation: q.explanation || undefined, tags: q.tags ?? [], difficulty: q.difficulty, status, assetIds: q.assetIds ?? [], source: q.source || undefined }) });
+      load();
     } catch (e) { setErr((e as Error).message); }
   }
   async function duplicate(id: string) {
@@ -89,6 +100,11 @@ export default function BankSoal() {
         ))}
       </div>
 
+      {reviewCount > 0 && f.status !== "review" && (
+        <button onClick={() => { setPage(1); setF({ ...f, status: "review" }); }} className="flex items-center justify-between gap-3 rounded-xl border border-accent bg-accent-tint px-4 py-3 text-left text-sm font-semibold text-accent-dark hover:brightness-95">
+          <span>Review queue: {reviewCount} question{reviewCount === 1 ? "" : "s"} waiting for approval</span><span>Open queue</span>
+        </button>
+      )}
       <div className="flex flex-wrap gap-3">
         <input className="field max-w-xs" placeholder="Search question text" value={f.q} onChange={(e) => { setPage(1); setF({ ...f, q: e.target.value }); }} />
         <select className="field w-auto" aria-label="Question type" value={f.type} onChange={(e) => { setPage(1); setF({ ...f, type: e.target.value }); }}>
@@ -111,7 +127,7 @@ export default function BankSoal() {
                 <td className="p-3 font-semibold text-navy">{SECTION[r.section]}</td><td>{r.type}</td>
                 <td className="max-w-md"><p className="truncate">{r.stem}</p>{!!r.issues?.length && <p className="mt-0.5 flex flex-wrap gap-1">{r.issues.map((x) => <span key={x} className="rounded-full bg-accent-tint px-2 py-0.5 text-[11px] font-semibold text-accent-dark">{x}</span>)}</p>}</td>
                 <td><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${r.status === "published" ? "bg-success-tint text-success" : r.status === "archived" ? "bg-canvas text-ink-soft" : "bg-accent-tint text-accent-dark"}`}>{r.status}</span></td>
-                <td className="whitespace-nowrap p-3 text-right"><button className="mr-3 font-semibold text-brand" onClick={() => edit(r._id)}>Edit</button><button className="mr-3 font-semibold text-brand" onClick={() => duplicate(r._id)}>Duplicate</button><button className="font-semibold text-red-700" onClick={() => remove(r._id)}>Delete</button></td>
+                <td className="whitespace-nowrap p-3 text-right"><button className="mr-3 font-semibold text-brand" onClick={() => edit(r._id)}>Edit</button>{r.status === "review" && <><button className="mr-3 font-semibold text-success" onClick={() => setStatus(r._id, "published")}>Approve</button><button className="mr-3 font-semibold text-accent-dark" onClick={() => setStatus(r._id, "draft")}>Send back</button></>}<button className="mr-3 font-semibold text-brand" onClick={() => duplicate(r._id)}>Duplicate</button><button className="font-semibold text-red-700" onClick={() => remove(r._id)}>Delete</button></td>
               </tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-soft">No questions yet. Click “New question”.</td></tr>}
@@ -152,6 +168,7 @@ function Editor({ form, types, onTypesChanged, onClose, onSaved, onNewGroup }: {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof Form>(k: K, val: Form[K]) => setV((x) => ({ ...x, [k]: val }));
+  const [sub, setSub] = useState<null | "preview" | "history">(null);
 
   useEffect(() => { api(`/api/admin/groups?section=${v.section}`).then((d) => setGroups(d.groups)).catch(() => {}); }, [v.section]);
 
@@ -234,11 +251,15 @@ function Editor({ form, types, onTypesChanged, onClose, onSaved, onNewGroup }: {
           </div>
         </div>
         {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <button type="button" onClick={() => setSub("preview")} className="mr-auto rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold text-navy">Preview</button>
+          {v.id && <button type="button" onClick={() => setSub("history")} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold text-navy">History</button>}
           <button onClick={onClose} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">Cancel</button>
           <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy ? "Saving…" : "Save"}</button>
         </div>
       </div>
+      {sub === "preview" && <QuestionPreviewDialog q={{ section: v.section, type: v.type, groupId: v.groupId, stem: v.stem, options: v.options, answerKey: v.answerKey, explanation: v.explanation, assetIds: v.assetIds }} onClose={() => setSub(null)} />}
+      {sub === "history" && v.id && <QuestionHistoryDialog questionId={v.id} onClose={() => setSub(null)} onRestored={() => { setSub(null); onSaved(); }} />}
     </Modal>
   );
 }
