@@ -1,3 +1,4 @@
+import { LIVE, assertUnitAccess } from "@/lib/course-access";
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
@@ -12,8 +13,9 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Unit not found");
     await connectDB();
     const unit = await Unit.findOne({ _id: params.id, active: true }).lean();
-    const course = unit ? await Course.findOne({ _id: unit.courseId, active: true, levelId: me.currentLevelId ?? undefined }).lean() : null;
+    const course = unit ? await Course.findOne({ _id: unit.courseId, ...LIVE, levelId: me.currentLevelId ?? undefined }).lean() : null;
     if (!unit || !course || !unit.quizTestId) throw new HttpError(404, "Quiz not found");
+    await assertUnitAccess(me._id, unit, course);
     const test = await Test.findOne({ _id: unit.quizTestId, active: true, kind: "quiz" }).lean();
     if (!test) throw new HttpError(404, "Quiz not found");
 

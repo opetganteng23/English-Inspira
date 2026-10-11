@@ -2,6 +2,7 @@ import type { HydratedDocument, Types } from "mongoose";
 import { connectDB } from "./db";
 import { getParam } from "./config";
 import { Course, RemedialMap, Unit, UnitProgress } from "@/models/Course";
+import { LIVE, unitAccess } from "./course-access";
 import type { AttemptDoc } from "@/models/Test";
 
 /** Unit selesai bila semua materi wajib selesai dan (bila ada kuis) kuisnya lulus. */
@@ -34,7 +35,7 @@ export async function findRemedialUnit(levelId: Types.ObjectId | string | null |
   const maps = await RemedialMap.find({ skill, topic }).lean();
   if (!maps.length) return null;
   const units = await Unit.find({ _id: { $in: maps.map((m) => m.unitId) }, active: true }).lean();
-  const courses = await Course.find({ _id: { $in: units.map((u) => u.courseId) }, levelId, active: true }).select("_id").lean();
+  const courses = await Course.find({ _id: { $in: units.map((u) => u.courseId) }, levelId, ...LIVE }).select("_id").lean();
   const ok = new Set(courses.map((c) => String(c._id)));
   return units.find((u) => ok.has(String(u.courseId)))?._id ?? null;
 }
@@ -43,9 +44,12 @@ export async function findRemedialUnit(levelId: Types.ObjectId | string | null |
 export async function markMaterialDone(user: { _id: Types.ObjectId; institutionId?: Types.ObjectId | null; currentLevelId?: Types.ObjectId | null }, materialId: Types.ObjectId | string) {
   await connectDB();
   if (!user.currentLevelId) return;
-  const courses = await Course.find({ levelId: user.currentLevelId, active: true }).select("_id").lean();
+  const courses = await Course.find({ levelId: user.currentLevelId, ...LIVE }).select("_id prerequisiteCourseIds").lean();
   const units = await Unit.find({ courseId: { $in: courses.map((c) => c._id) }, materialIds: materialId, active: true }).lean();
   for (const u of units) {
+    // Unit yang masih terkunci (prasyarat/drip) tidak mencatat progres.
+    const course = courses.find((c) => String(c._id) === String(u.courseId))!;
+    if (!(await unitAccess(user._id, u, course)).ok) continue;
     await UnitProgress.updateOne(
       { userId: user._id, unitId: u._id },
       { $addToSet: { materialsDone: materialId }, $setOnInsert: { courseId: u.courseId, ...(user.institutionId ? { institutionId: user.institutionId } : {}) } },

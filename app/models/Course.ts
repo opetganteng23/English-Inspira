@@ -8,6 +8,21 @@ const courseSchema = new Schema(
     description: String,
     order: { type: Number, default: 0 },
     active: { type: Boolean, default: true },
+    archived: { type: Boolean, default: false, index: true }, // diarsipkan: hilang dari peserta, progres tetap tersimpan, bisa dipulihkan
+    coverAssetId: { type: Schema.Types.ObjectId, ref: "Asset" },
+    prerequisiteCourseIds: [{ type: Schema.Types.ObjectId, ref: "Course" }], // terbuka setelah semua unit course prasyarat selesai
+  },
+  { timestamps: true }
+);
+
+// Modul: pengelompok unit di dalam course (Course > Modul > Unit/lesson > Materi/sub-lesson).
+const moduleSchema = new Schema(
+  {
+    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
+    title: { type: String, required: true },
+    description: String,
+    order: { type: Number, default: 0 },
+    active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
@@ -16,6 +31,8 @@ const courseSchema = new Schema(
 const unitSchema = new Schema(
   {
     courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true, index: true },
+    moduleId: { type: Schema.Types.ObjectId, ref: "CourseModule" },
+    unlockAfterDays: { type: Number, default: 0, min: 0 }, // drip: terbuka N hari sesudah peserta memulai course
     title: { type: String, required: true },
     description: String,
     order: { type: Number, default: 0 },
@@ -84,6 +101,7 @@ blockEventSchema.index({ userId: 1, materialId: 1, blockId: 1, itemId: 1, day: 1
 export type CourseDoc = InferSchemaType<typeof courseSchema> & { _id: mongoose.Types.ObjectId };
 export type UnitDoc = InferSchemaType<typeof unitSchema> & { _id: mongoose.Types.ObjectId };
 export const Course: Model<CourseDoc> = (mongoose.models.Course as Model<CourseDoc>) || mongoose.model<CourseDoc>("Course", courseSchema);
+export const CourseModule = (mongoose.models.CourseModule as Model<InferSchemaType<typeof moduleSchema>>) || mongoose.model("CourseModule", moduleSchema);
 export const Unit: Model<UnitDoc> = (mongoose.models.Unit as Model<UnitDoc>) || mongoose.model<UnitDoc>("Unit", unitSchema);
 export const UnitProgress = (mongoose.models.UnitProgress as Model<InferSchemaType<typeof unitProgressSchema>>) || mongoose.model("UnitProgress", unitProgressSchema);
 export const RemedialMap = (mongoose.models.RemedialMap as Model<InferSchemaType<typeof remedialSchema>>) || mongoose.model("RemedialMap", remedialSchema);

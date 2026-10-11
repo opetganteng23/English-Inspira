@@ -1,12 +1,13 @@
 import type { Types } from "mongoose";
 import { HttpError } from "./rbac";
-import { Course } from "@/models/Course";
+import { Course, CourseModule } from "@/models/Course";
 import { Material } from "@/models/Material";
 import { Test } from "@/models/Test";
 
 /** Validasi referensi unit: course ada, materi ada, kuis berjenis quiz dan tidak dipakai unit lain. */
-export async function validateUnit(b: { courseId: string; materialIds: string[]; quizTestId?: string | null }, exceptUnitId?: string) {
+export async function validateUnit(b: { courseId: string; moduleId?: string | null; materialIds: string[]; quizTestId?: string | null }, exceptUnitId?: string) {
   if (!(await Course.exists({ _id: b.courseId }))) throw new HttpError(400, "Course not found");
+  if (b.moduleId && !(await CourseModule.exists({ _id: b.moduleId, courseId: b.courseId }))) throw new HttpError(400, "The module does not belong to this course");
   if (new Set(b.materialIds).size !== b.materialIds.length) throw new HttpError(400, "Duplicate material in one unit");
   if (b.materialIds.length && (await Material.countDocuments({ _id: { $in: b.materialIds } })) !== b.materialIds.length) throw new HttpError(400, "Some materials were not found");
   if (b.quizTestId) {

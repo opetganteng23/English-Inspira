@@ -18,7 +18,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const u = await Unit.findById(params.id);
     if (!u) throw new HttpError(404, "Unit not found");
     await validateUnit(b, params.id);
-    u.set({ ...b, quizTestId: b.quizTestId ?? undefined });
+    u.set({ ...b, quizTestId: b.quizTestId ?? undefined, moduleId: b.moduleId ?? undefined });
     await u.save();
     await syncQuizOwner(u._id, b.quizTestId ?? null);
     await audit(admin._id, "unit.update", params.id);

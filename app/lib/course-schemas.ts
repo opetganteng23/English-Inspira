@@ -8,10 +8,23 @@ export const courseInput = z.object({
   description: z.string().trim().max(1000).optional(),
   order: z.number().int().min(0).max(1000).default(0),
   active: z.boolean().default(true),
+  archived: z.boolean().default(false),
+  coverAssetId: oid.nullable().optional(),
+  prerequisiteCourseIds: z.array(oid).max(10).default([]),
+});
+
+export const moduleInput = z.object({
+  courseId: oid,
+  title: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(1000).optional(),
+  order: z.number().int().min(0).max(1000).default(0),
+  active: z.boolean().default(true),
 });
 
 export const unitInput = z.object({
   courseId: oid,
+  moduleId: oid.nullable().optional(),
+  unlockAfterDays: z.number().int().min(0).max(365).default(0),
   title: z.string().trim().min(1).max(120),
   description: z.string().trim().max(1000).optional(),
   order: z.number().int().min(0).max(1000).default(0),

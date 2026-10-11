@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const b = unitInput.parse(await req.json());
     await connectDB();
     await validateUnit(b);
-    const u = await Unit.create({ ...b, quizTestId: b.quizTestId ?? undefined });
+    const u = await Unit.create({ ...b, quizTestId: b.quizTestId ?? undefined, moduleId: b.moduleId ?? undefined });
     await syncQuizOwner(u._id, b.quizTestId ?? null);
     await audit(admin._id, "unit.create", String(u._id));
     return NextResponse.json({ id: String(u._id) }, { status: 201 });
