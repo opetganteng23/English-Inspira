@@ -24,7 +24,7 @@ export async function GET() {
           return { id: String(u._id), title: u.title, description: u.description ?? "", status: p?.status === "completed" ? "completed" : done > 0 ? "in_progress" : "not_started", done, total };
         });
         return { id: String(c._id), title: c.title, description: c.description ?? "", units: us, completed: us.filter((u) => u.status === "completed").length };
-      }),
+      }).filter((c) => c.units.length > 0), // course tanpa unit tidak ditampilkan ke peserta
     });
   } catch (e) {
     return handleError(e);

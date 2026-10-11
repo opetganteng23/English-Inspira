@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     await audit(admin._id, "user.create", String(out.userId), { role: b.role, resent: out.resent });
     return NextResponse.json({ id: String(out.userId), resent: out.resent }, { status: out.resent ? 200 : 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: zodMessage(e) }, { status: 400 });
     return handleError(e);
   }
 }

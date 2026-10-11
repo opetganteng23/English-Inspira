@@ -234,8 +234,10 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | U8 | Nama dipisah **given name** + **surname** (daftar, persetujuan, Profil); `name` = gabungan untuk tampilan; akun lama dipisah heuristik di Profil | ✅ uji klik persetujuan + smoke diperbarui; impor CSV masih satu kolom `name` |
 | U9 | Tombol "Start placement" langsung ke halaman persiapan | ✅ uji klik |
 | U10 | Perbaikan: label sr-only membuat halaman bisa digulung; grid melebar karena tabel; header ikut tergulung (`overflow-clip`); teks Indonesia tersisa; narasi analisis dobel; lint `/api/me` yang menggagalkan build | ✅ |
-| U11 | Fokus keyboard terlihat (`:focus-visible`) | ⬜ ditulis, belum diuji dengan keyboard |
-| U12 | Uji klik authoring (course, unit, soal, grup audio, tes, materi) di browser | ⬜ skrip siap, belum dijalankan |
+| U11 | Fokus keyboard terlihat (`:focus-visible`); uji Tab di halaman masuk, pesan galat `role=alert`, 404 ramah | ✅ uji otomatis 5/5 |
+| U12 | Uji klik authoring (course, unit, soal + tag, dialog grup audio, perakit tes, materi) di browser, desktop dan ponsel | ✅ 28/28 di kedua ukuran; unggah file MP3 lewat UI belum diuji (API teruji smoke) |
+| U16 | Pesan galat validasi menyebut kolom dan jelas (`lib/zod-message.ts`, 37 rute) alih-alih teks Zod mentah | ✅ unit test + terlihat di dialog |
+| U17 | Dialog meluber di ponsel karena `fieldset`; course tanpa unit tidak lagi tampil ke peserta | ✅ |
 | U13 | Profil: ganti foto, ubah email (OTP email baru), pengaturan notifikasi | ⬜ belum dibuat |
 | U14 | Tabel admin di ponsel menjadi kartu | ⏭️ ditunda; saat ini digulung ke samping di dalam kotaknya |
 | U15 | Impor peserta CSV/Excel dengan kolom given name dan surname | ⬜ |

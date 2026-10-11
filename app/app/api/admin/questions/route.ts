@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     await AuditLog.create({ actorId: admin._id, action: "question.create", target: String(q._id) });
     return NextResponse.json({ id: String(q._id) }, { status: 201 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: zodMessage(e) }, { status: 400 });
     return handleError(e);
   }
 }

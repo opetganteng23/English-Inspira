@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     await issueCode(email, "verify_email");
     return NextResponse.json({ ok: true, expiresInSec: 300 });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: zodMessage(e) }, { status: 400 });
     return handleError(e);
   }
 }

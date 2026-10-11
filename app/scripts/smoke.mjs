@@ -1,4 +1,5 @@
 // Uji asap end-to-end MTS v2.2. Server dev harus jalan di :3100 dengan DB in-memory (MONGODB_URI kosong) dan ADMIN_EMAILS=admin@test.local.
+// CATATAN: jalankan terhadap server DEV (next dev): memakai /api/dev/* dan mode pemeliharaan tanpa cache; di mode produksi ~10 tes gagal karena itu.
 // Pakai: ADMIN_EMAILS=admin@test.local CRON_SECRET=testsecret npx next dev -p 3100 > dev.log 2>&1 &   lalu: LOG=dev.log node scripts/smoke.mjs
 import fs from "node:fs";
 const U = "http://localhost:3100", LOG = process.env.LOG;
@@ -428,7 +429,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(p1, "/api/itp/registrations", { method: "POST", json: { ...reg, nik: "123" } }); ok(r.status === 400, "NIK tidak valid ditolak");
   r = await req(p1, "/api/itp/registrations", { method: "POST", json: reg }); ok(r.status === 201, "pendaftaran ITP", J(r.data)); const regId = r.data.id;
   r = await req(p1, "/api/itp/registrations", { method: "POST", json: reg }); ok(r.status === 409 || r.status === 403, "daftar ganda ditolak");
-  r = await req(p1, "/api/me", { method: "PATCH", json: { name: "Nama Lain" } }); ok(r.status === 409, "nama terkunci setelah daftar ITP");
+  r = await req(p1, "/api/me", { method: "PATCH", json: { givenName: "Nama", surname: "Lain" } }); ok(r.status === 409, "nama terkunci setelah daftar ITP");
   r = await req(admin, `/api/admin/itp-sessions/${sess}/roster`); ok(r.data.roster.length === 1 && r.data.roster[0].nikLast4 === "0001" && !J(r.data).includes("3201010101010001"), "roster hanya menampilkan 4 digit NIK");
   r = await req(admin, `/api/admin/itp-registrations/${regId}`, { method: "PATCH", json: { docStatus: "rejected" } }); ok(r.status === 400, "tolak dokumen tanpa alasan ditolak");
   r = await req(admin, `/api/admin/itp-registrations/${regId}`, { method: "PATCH", json: { docStatus: "valid" } }); ok(r.data.status === "confirmed", "dokumen valid: terkonfirmasi");

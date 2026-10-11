@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodMessage } from "@/lib/zod-message";
 import { isValidObjectId } from "mongoose";
 import { NextResponse } from "next/server";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
@@ -13,7 +14,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await connectDB();
     return await handleInvites(req, params.id, admin._id);
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+    if (e instanceof z.ZodError) return NextResponse.json({ error: zodMessage(e) }, { status: 400 });
     return handleError(e);
   }
 }
