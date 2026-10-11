@@ -10,6 +10,7 @@ import { Analysis } from "@/models/Learning";
 import { recommendCourses } from "@/lib/units";
 import { Attempt, Test, AttemptSnapshot } from "@/models/Test";
 import { Certificate } from "@/models/Itp";
+import { ScoringProfile } from "@/models/Scoring";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const prev = await Attempt.findOne({ userId: attempt.userId, status: "submitted", kind: { $ne: "trial" }, finishedAt: { $lt: attempt.finishedAt }, _id: { $ne: attempt._id } })
       .sort({ finishedAt: -1 }).select("testId scoreEst sectionScores topicScores").lean();
     const prevTest = prev ? await Test.findById(prev.testId).select("name").lean() : null;
+    const sp = attempt.scoringProfileId ? await ScoringProfile.findById(attempt.scoringProfileId).select("name").lean() : null;
+    const scoringInfo = { name: sp?.name ?? null, version: attempt.scoringVersion ?? null, basis: attempt.scoreBasis ?? "provisional" };
     const report = await Certificate.findOne({ attemptId: attempt._id, type: "sim_report" }).select("_id").lean();
     // Topik terlemah (cukup data, di bawah 70%) -> unit remedial yang disarankan untuk dipelajari.
     const weak = (attempt.topicScores ?? [])
@@ -69,6 +72,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       recommendations,
       previous: prev ? { name: prevTest?.name ?? "Previous test", scoreEst: prev.scoreEst, sectionScores: prev.sectionScores, topicScores: prev.topicScores } : null,
       reportId: report ? String(report._id) : null,
+      scoring: scoringInfo,
       levelUp: calc?.levelUp ?? null, stuck: (calc?.stuck ?? []).map((k) => k.split("|")[1] ?? k),
       kind: attempt.kind, testName: test.name, finishedAt: attempt.finishedAt,
       durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,

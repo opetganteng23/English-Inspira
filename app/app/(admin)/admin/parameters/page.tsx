@@ -45,7 +45,8 @@ export default function Parameter() {
         <button className="btn-solid self-start" onClick={saveLevels}>Save levels</button>
       </section>
 
-      {data?.params.map((p) => <ParamEditor key={p.key} p={p} onSaved={(text, ok) => { setMsg({ ok, text }); if (ok) reload(); }} />)}
+      <p className="rounded-xl bg-brand-tint p-3 text-sm text-brand-dark">Score conversion now lives in <a href="/admin/scoring" className="font-semibold underline">Scoring Profiles</a>: several profiles, verification with a source, and one profile per test.</p>
+      {data?.params.filter((p) => p.key !== "score_conversion").map((p) => <ParamEditor key={p.key} p={p} onSaved={(text, ok) => { setMsg({ ok, text }); if (ok) reload(); }} />)}
     </div>
   );
 }

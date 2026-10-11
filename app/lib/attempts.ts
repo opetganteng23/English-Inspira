@@ -2,7 +2,8 @@ import { isValidObjectId, type HydratedDocument } from "mongoose";
 import { connectDB } from "./db";
 import { HttpError } from "./rbac";
 import { gradeAttempt } from "./scoring";
-import { getParam } from "./config";
+import { profileForTest, toConversion } from "./scoring-profiles";
+
 import { computeTopicScores } from "./topics";
 import { applyPlacement } from "./placement";
 import { User } from "@/models/User";
@@ -65,7 +66,8 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
   const qs = await Question.find({ _id: { $in: ids } }).select("section type groupId stem options answerKey explanation tags").lean();
   const keys = new Map<string, number>(qs.map((q) => [String(q._id), q.answerKey]));
   const answers = new Map<string, number | undefined>(attempt.answers.map((a) => [String(a.qid), a.choice ?? undefined]));
-  const conv = await getParam("score_conversion"); // tabel konversi dari config_params, bukan hard-code
+  const prof = await profileForTest(test as { scoringProfileId?: import("mongoose").Types.ObjectId | null }); // profil penilaian tes (atau bawaan)
+  const conv = toConversion(prof);
   const graded = gradeAttempt(
     conv,
     test.sections.map((s) => ({ name: s.name as Section, questionIds: s.questionIds.map(String) })),
@@ -73,7 +75,7 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
     answers
   );
   const topicScores = computeTopicScores(qs, answers, keys);
-  attempt.set({ ...graded, topicScores, status: "submitted", finishedAt: at });
+  attempt.set({ ...graded, topicScores, status: "submitted", finishedAt: at, scoringProfileId: prof._id, scoringVersion: prof.version, scoreBasis: prof.verified ? "verified" : "provisional" });
   await attempt.save();
   // Snapshot soal sesuai urutan tes (tidak boleh menggagalkan submit).
   try {

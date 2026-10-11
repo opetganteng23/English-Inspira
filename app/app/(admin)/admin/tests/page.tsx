@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 type T = { id: string; name: string; kind: string; active: boolean; questions: number; durationSec: number; attempts: number };
 type QRow = { _id: string; section: string; type: string; stem: string };
 type Sec = { name: string; durationSec: number; questionIds: string[] };
-type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; sections: Sec[]; attempts: number; shuffleQuestions?: boolean; shuffleOptions?: boolean; maxAttempts?: number };
+type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; sections: Sec[]; attempts: number; shuffleQuestions?: boolean; shuffleOptions?: boolean; maxAttempts?: number; scoringProfileId?: string };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", practice: "Practice", quiz: "Unit quiz" };
@@ -27,7 +27,7 @@ export default function TesAdmin() {
   useEffect(() => { load(); }, [load]);
 
   async function open(id: string) {
-    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, levelId: t.levelId ? String(t.levelId) : "", active: t.active, attempts: t.attempts, shuffleQuestions: !!t.shuffleQuestions, shuffleOptions: !!t.shuffleOptions, maxAttempts: t.maxAttempts ?? 0, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
+    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, levelId: t.levelId ? String(t.levelId) : "", active: t.active, attempts: t.attempts, scoringProfileId: t.scoringProfileId ? String(t.scoringProfileId) : "", shuffleQuestions: !!t.shuffleQuestions, shuffleOptions: !!t.shuffleOptions, maxAttempts: t.maxAttempts ?? 0, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
     catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
@@ -71,13 +71,15 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [levels, setLevels] = useState<{ id: string; name: string }[]>([]);
+  const [profiles, setProfiles] = useState<{ id: string; name: string; verified: boolean; isDefault: boolean; status: string }[]>([]);
+  useEffect(() => { api("/api/admin/scoring").then((d) => setProfiles(d.profiles)).catch(() => {}); }, []);
   useEffect(() => { api("/api/admin/levels").then((d) => setLevels(d.levels)).catch(() => {}); }, []);
   const locked = v.attempts > 0; // susunan dikunci bila sudah dikerjakan
 
   async function save() {
     setBusy(true); setErr("");
     try {
-      const body = { name: v.name, kind: v.kind, levelId: v.levelId || null, active: v.active, shuffleQuestions: !!v.shuffleQuestions, shuffleOptions: !!v.shuffleOptions, maxAttempts: Number(v.maxAttempts) || 0, sections: v.sections.filter((s) => s.questionIds.length) };
+      const body = { name: v.name, kind: v.kind, levelId: v.levelId || null, active: v.active, scoringProfileId: v.scoringProfileId || null, shuffleQuestions: !!v.shuffleQuestions, shuffleOptions: !!v.shuffleOptions, maxAttempts: Number(v.maxAttempts) || 0, sections: v.sections.filter((s) => s.questionIds.length) };
       await api(v.id ? `/api/admin/tests/${v.id}` : "/api/admin/tests", { method: v.id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       onSaved();
     } catch (e) { setErr((e as Error).message); setBusy(false); }
@@ -94,6 +96,7 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Type<select disabled={locked} className="field" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value })}>{Object.entries(KIND).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Active (shown in the test list)</label>
+        <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-md">Scoring profile<select className="field font-normal" value={v.scoringProfileId ?? ""} onChange={(e) => setV({ ...v, scoringProfileId: e.target.value })}><option value="">Default profile{profiles.find((p) => p.isDefault) ? ` (${profiles.find((p) => p.isDefault)!.name})` : ""}</option>{profiles.filter((p) => p.status === "active" && !p.isDefault).map((p) => <option key={p.id} value={p.id}>{p.name}{p.verified ? " · verified" : " · provisional"}</option>)}</select><span className="text-xs font-normal text-ink-soft">How raw scores become section and total scores. Manage profiles in Scoring Profiles.</span></label>
         {v.kind !== "placement" && (
           <fieldset className="mt-3 rounded-xl border border-line p-4">
             <legend className="px-2 text-sm font-semibold text-navy">Test rules</legend>

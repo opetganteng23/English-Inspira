@@ -20,6 +20,7 @@ const testSchema = new Schema(
     ],
     active: { type: Boolean, default: true },
     // Aturan tes: acak urutan soal (soal satu passage/audio tetap berurutan), acak pilihan jawaban, batas percobaan (0 = tanpa batas).
+    scoringProfileId: { type: Schema.Types.ObjectId, ref: "ScoringProfile" }, // kosong = profil bawaan
     shuffleQuestions: { type: Boolean, default: false },
     shuffleOptions: { type: Boolean, default: false },
     maxAttempts: { type: Number, default: 0, min: 0, max: 50 },
@@ -44,6 +45,10 @@ const attemptSchema = new Schema(
     answers: [{ _id: false, qid: Schema.Types.ObjectId, firstChoice: Number, choice: Number, changes: { type: Number, default: 0 }, timeSpentSec: Number, flagged: Boolean }],
     scoreRaw: Number,
     scoreEst: Number,
+    // Profil penilaian yang dipakai saat selesai (jejak audit): id, versi, dan apakah konversinya terverifikasi.
+    scoringProfileId: { type: Schema.Types.ObjectId, ref: "ScoringProfile" },
+    scoringVersion: Number,
+    scoreBasis: { type: String, enum: ["verified", "provisional"] },
     sectionScores: [{ _id: false, section: String, raw: Number, total: Number, scaled: Number }],
     topicScores: [{ _id: false, skill: String, topic: String, correct: Number, total: Number, score: Number }],
     proctorFlags: [{ _id: false, kind: String, at: Date }],
