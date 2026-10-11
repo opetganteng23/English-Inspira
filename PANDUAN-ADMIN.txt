@@ -22,8 +22,9 @@ DAFTAR ISI
 -------------------------------------------------------------------------------
 1. MASUK DAN MENGENAL TAMPILAN
 -------------------------------------------------------------------------------
-- Buka https://english.edulyfe.id/admin/login, masukkan email staf, lalu masuk
-  dengan kode OTP yang dikirim ke email (atau password bila sudah dibuat).
+- Buka https://english.edulyfe.id/admin/login, masukkan email dan password,
+  lalu isi pemeriksaan keamanan (ketik 5 karakter pada gambar). Di halaman
+  admin, kode email (OTP) masih tersedia sebagai cadangan.
 - Menu ada di sisi kiri dan dikelompokkan:
     Overview            ringkasan
     PEOPLE & CLASSES    Institutions, Participants, PURE / OCE Results,
@@ -240,6 +241,26 @@ Participants: impor dari Excel/CSV (email wajib; given name, surname,
 telepon opsional) atau undang lewat email dari halaman institusi. Peserta
 juga bisa daftar sendiri dengan kode institusi.
 
+Cara peserta masuk (tanpa kode email):
+  - Daftar sendiri: isi nama, email, password, kode institusi, dan
+    pemeriksaan keamanan. Akun langsung jadi, tanpa email verifikasi.
+    Pastikan peserta mengetik email dengan benar.
+  - Diundang/diimpor admin: peserta membuka tautan "Create my password" di
+    email undangan, membuat password, lalu langsung masuk.
+  - Berikutnya: masuk dengan email + password + pemeriksaan keamanan.
+  - Lupa password: tombol "Forgot password?" mengirim tautan reset ke email.
+
+Status "Awaiting activation" artinya peserta belum mengisi persetujuan data.
+  - Biasanya: minta peserta masuk dan menyetujui halaman persetujuan data.
+  - Admin juga bisa mengaktifkan: buka detail peserta, isi kolom Reason
+    (misalnya "persetujuan lewat formulir kertas"), lalu klik "Activate now".
+    Alasan tercatat di Audit Log sebagai dasar persetujuan.
+  - Peserta lupa password atau undangan kedaluwarsa: gunakan "Reset password"
+    atau "Resend invitation" di detail peserta.
+  - Bila institusi punya tanggal mulai kontrak di masa depan, peserta baru bisa
+    masuk mulai tanggal itu. Untuk membuka lebih awal, ubah tanggal mulai
+    kontrak di menu Institutions.
+
 
 -------------------------------------------------------------------------------
 10. HASIL PURE/OCE, KELOMPOK, DAN KELAS
@@ -306,8 +327,10 @@ E. Score equivalents (tombol di halaman PURE / OCE Results)
 -------------------------------------------------------------------------------
 - Pesan galat merah di layar biasanya menjelaskan penyebabnya (misalnya
   kolom wajib kosong atau data masih dipakai). Perbaiki lalu simpan lagi.
-- Tidak menerima kode OTP: cek folder spam, tunggu 1 menit, lalu minta
-  ulang (maksimal 3 kali per 10 menit).
+- Gambar pemeriksaan keamanan sulit dibaca: klik "New characters".
+- Peserta tidak bisa masuk: pastikan sudah membuat password (lewat tautan
+  undangan atau "Forgot password?"), akses sudah dimulai (tanggal kontrak
+  institusi), dan akun tidak dinonaktifkan.
 - Halaman tidak bisa dibuka atau tombol tidak ada: periksa peran akun Anda
   (bagian 2). Hubungi Admin untuk mengubah peran.
 - Masalah teknis lain: hubungi pengelola aplikasi dan sertakan halaman,

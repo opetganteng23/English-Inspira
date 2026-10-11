@@ -9,14 +9,17 @@ import { limit, clientIp } from "@/lib/ratelimit";
 import { handleError } from "@/lib/rbac";
 import { enqueueMail } from "@/lib/mailq";
 import { sha256 } from "@/lib/participants";
+import { verifyCaptcha } from "@/lib/captcha";
 
-const schema = z.object({ email: z.email().max(200) });
+const schema = z.object({ email: z.email().max(200), captcha: z.unknown().optional() });
 
 /** Kirim tautan reset (30 menit, sekali pakai) ke akun yang aktif. Respons selalu sama. */
 export async function POST(req: Request) {
   try {
-    const email = schema.parse(await req.json()).email.toLowerCase().trim();
+    const b = schema.parse(await req.json());
+    const email = b.email.toLowerCase().trim();
     await limit("resetIp", clientIp(req));
+    await verifyCaptcha(b.captcha, clientIp(req));
     await limit("resetEmail", email);
     await connectDB();
     const user = await User.findOne({ email }).lean();

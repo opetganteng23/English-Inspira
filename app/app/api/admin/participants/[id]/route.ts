@@ -58,6 +58,7 @@ const actions = z.discriminatedUnion("action", [
   z.object({ action: z.literal("note"), text: z.string().trim().min(1).max(1000) }),
   z.object({ action: z.literal("allow_placement_retake"), reason: z.string().trim().min(3).max(300) }),
   z.object({ action: z.literal("resend_invitation") }),
+  z.object({ action: z.literal("activate"), reason: z.string().trim().min(3).max(300) }),
   z.object({ action: z.literal("erase"), reason: z.string().trim().min(3).max(300) }),
   z.object({ action: z.literal("update_profile"), givenName: z.string().trim().min(1).max(60).optional(), surname: z.string().trim().max(60).optional(), email: z.email().max(200).optional(), phone: z.string().trim().regex(/^$|^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional() }),
   z.object({ action: z.literal("reset_link") }),
@@ -84,6 +85,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         if (!inst) throw new HttpError(409, "Institution not found");
         await issueInvitation(u, inst, admin._id); await audit(admin._id, "invitation.resend", params.id); break;
       }
+      case "activate":
+        // Aktivasi oleh admin: persetujuan data dikumpulkan di luar aplikasi (mis. formulir kertas); dasarnya wajib dicatat.
+        if (u.status !== "invited") throw new HttpError(409, "The participant is already active");
+        u.status = "active"; u.consentAt ??= new Date(); await u.save();
+        await audit(admin._id, "participant.activate", params.id, { reason: b.reason }); break;
       case "erase": await eraseUserData(u._id, admin._id, b.reason); break;
       case "update_profile": await updateAccountIdentity(u._id, { givenName: b.givenName, surname: b.surname, email: b.email, phone: b.phone }, admin._id); break;
       case "reset_link": return NextResponse.json({ ok: true, ...(await sendResetLink(u._id, process.env.APP_URL ?? new URL(req.url).origin, admin._id)) });

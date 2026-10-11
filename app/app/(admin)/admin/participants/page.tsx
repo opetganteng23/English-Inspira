@@ -73,7 +73,8 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
       {!d || !p ? <Loading text={error || "Loading…"} /> : (
         <div className="flex flex-col gap-5 text-sm">
           <div><p className="font-display text-xl font-extrabold text-navy">{p.name ?? "(no name yet)"}</p><p className="text-ink-soft">{p.email}{p.phone ? ` · ${p.phone}` : ""}{p.institution ? ` · ${p.institution}` : ""} · created {tgl(p.createdAt)}{p.lastLoginAt ? ` · last sign-in ${tgl(p.lastLoginAt)}` : ""}</p>
-            <p className="mt-1"><span className={STATUS[p.status]?.[1] ?? "badge-muted"}>{STATUS[p.status]?.[0] ?? p.status}</span> {p.level && <span className="badge-ok ml-1">{p.level}{p.scoreEst ? ` · ${p.scoreEst}` : ""}</span>} {p.consentAt && <span className="ml-1 text-xs text-ink-soft">data consent {tgl(p.consentAt)}</span>}</p></div>
+            <p className="mt-1"><span className={STATUS[p.status]?.[1] ?? "badge-muted"}>{STATUS[p.status]?.[0] ?? p.status}</span> {p.level && <span className="badge-ok ml-1">{p.level}{p.scoreEst ? ` · ${p.scoreEst}` : ""}</span>} {p.consentAt && <span className="ml-1 text-xs text-ink-soft">data consent {tgl(p.consentAt)}</span>}</p>
+            {p.status === "invited" && <p className="mt-1 text-xs text-ink-soft">The participant activates the account by signing in and accepting the data consent. You can also activate it below with a reason (for example, consent collected on a paper form).</p>}</div>
           <ErrorNote text={err} />
           {msg && <p role="status" className="rounded-lg bg-success-tint p-3 text-success">{msg}</p>}
 
@@ -94,6 +95,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               {p.status === "disabled" ? <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "enable" }, "Account activated.")}>Activate</button> : <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "disable" }, "Account deactivated.")}>Deactivate</button>}
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]"><input aria-label="Reason" className="field" placeholder="Reason (required for the actions on the right)" value={reason} onChange={(e) => setReason(e.target.value)} />
+              {p.status === "invited" && <button className="btn-outline" disabled={reason.trim().length < 3} onClick={() => run({ action: "activate", reason }, "Account activated. The reason is kept in the audit log as the basis of the data consent.")}>Activate now</button>}
               <button className="btn-outline" disabled={!p.placementDone || p.placementRetakeAllowed || reason.trim().length < 3} onClick={() => run({ action: "allow_placement_retake", reason }, "Placement may be retaken once.")}>Allow placement retake</button>
             </div>
           </section>

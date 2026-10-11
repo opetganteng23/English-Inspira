@@ -6,8 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { api } from "@/lib/client";
 import { roleHome } from "@/lib/role-home";
+import { Captcha, type CaptchaValue } from "@/components/Captcha";
 
-// Halaman autentikasi: masuk (password atau kode email), daftar dengan kode institusi, lupa & reset password.
+// Halaman autentikasi: masuk dengan password + pemeriksaan keamanan (captcha), daftar dengan kode institusi,
+// buat password dari tautan undangan, lupa & reset password. Kode email hanya tersisa di halaman masuk admin.
 
 const homeOf = (role: string, consent: boolean) =>
   consent ? "/consent" : roleHome(role);
@@ -73,31 +75,26 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
   const sp = useSearchParams();
   const next = safeNext(sp.get("next"));
   const invite = sp.get("invite") ?? sp.get("token") ?? "";
-  const [mode, setMode] = useState<"password" | "code">(invite ? "code" : "password");
+  const [mode, setMode] = useState<"password" | "code">("password");
   const [step, setStep] = useState<"form" | "otp">("form");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [institution, setInstitution] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<CaptchaValue>(null);
+  const [reload, setReload] = useState(0);
   const [otp, setOtp] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useCooldown();
   const otpRef = useRef<HTMLInputElement>(null);
 
-  // Tautan undangan: isi email otomatis agar peserta tinggal meminta kode.
-  useEffect(() => {
-    if (!invite) return;
-    api<{ email: string; institution: string | null }>(`/api/auth/invite?token=${encodeURIComponent(invite)}`)
-      .then((d) => { setEmail(d.email); setInstitution(d.institution); })
-      .catch((x) => setErr((x as Error).message));
-  }, [invite]);
-
   const go = (d: { role: string; needsConsent: boolean }) => { window.location.href = admin ? roleHome(d.role) : d.needsConsent ? "/consent" : next ?? homeOf(d.role, false); };
 
   async function loginPassword(e: React.FormEvent) {
-    e.preventDefault(); setErr(""); setBusy(true);
-    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/login", { json: { email, password, ...(admin ? { adminOnly: true } : {}) } })); }
-    catch (x) { setErr((x as Error).message); setBusy(false); }
+    e.preventDefault(); setErr("");
+    if (!captcha) { setErr("Complete the security check first"); return; }
+    setBusy(true);
+    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/login", { json: { email, password, captcha, ...(admin ? { adminOnly: true } : {}) }, silent: true })); }
+    catch (x) { setErr((x as Error).message); setBusy(false); setReload((n) => n + 1); }
   }
   async function requestOtp(e?: React.FormEvent) {
     e?.preventDefault(); setErr(""); setBusy(true);
@@ -109,9 +106,11 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
   }
   async function verify(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/verify-otp", { json: { email, code: otp, invite: invite || undefined, ...(admin ? { adminOnly: true } : {}) } })); }
+    try { go(await api<{ role: string; needsConsent: boolean }>("/api/auth/verify-otp", { json: { email, code: otp, adminOnly: true } })); }
     catch (x) { setErr((x as Error).message); setBusy(false); }
   }
+
+  if (invite && !admin) return <AcceptInvite token={invite} />;
 
   const tab = (m: "password" | "code", label: string) => (
     <button type="button" role="tab" aria-selected={mode === m} onClick={() => { setMode(m); setStep("form"); setErr(""); }}
@@ -119,7 +118,7 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
   );
 
   return (
-    <Shell heading={admin ? "Admin sign-in." : institution ? `Welcome to the ${institution} program.` : "Welcome back."} text={admin ? "For English Inspira administrators. This page stays available during maintenance." : "Sign in with your password, or get a 6-digit code by email. New here? Create an account with the code from your institution."}>
+    <Shell heading={admin ? "Admin sign-in." : "Welcome back."} text={admin ? "For English Inspira administrators. This page stays available during maintenance." : "Sign in with your email and password. Invited by your institution? Open the link in your invitation email to create your password. New here? Create an account with the code from your institution."}>
       {step === "otp" ? (
         <form onSubmit={verify} className="flex flex-col gap-5">
           <Title t="Enter the code" s={<>A 6-digit code was sent to <b>{email}</b>. It is in the email subject and valid for 5 minutes. If you requested several codes, use the latest one.</>} />
@@ -134,17 +133,60 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
       ) : (
         <form onSubmit={mode === "password" ? loginPassword : requestOtp} className="flex flex-col gap-5">
           <Title t={admin ? "Admin sign-in" : "Sign in"} />
-          <div role="tablist" className="flex gap-1 rounded-xl bg-canvas p-1">{tab("password", "Password")}{tab("code", "Email code")}</div>
+          {admin && <div role="tablist" className="flex gap-1 rounded-xl bg-canvas p-1">{tab("password", "Password")}{tab("code", "Email code")}</div>}
           <Field label="Email" type="email" required autoComplete="email" placeholder="name@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
           {mode === "password" && (
-            <div className="flex flex-col gap-1.5">
-              <Field label="Password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              <Link href="/forgot-password" className="self-end text-sm font-semibold text-brand">Forgot password?</Link>
-            </div>
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Field label="Password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Link href="/forgot-password" className="self-end text-sm font-semibold text-brand">Forgot password?</Link>
+              </div>
+              <Captcha onChange={setCaptcha} reload={reload} />
+            </>
           )}
           <Err e={err} />
-          <button className="btn-primary" disabled={busy}>{busy ? (mode === "password" ? "Signing in…" : "Sending…") : mode === "password" ? "Sign in" : "Send code"}</button>
+          <button className="btn-primary" disabled={busy || (mode === "password" && !captcha)}>{busy ? (mode === "password" ? "Signing in…" : "Sending…") : mode === "password" ? "Sign in" : "Send code"}</button>
           {!admin && <p className="text-center text-sm text-ink-soft">Don&apos;t have an account? <Link href="/register" className="font-semibold text-brand">Create an account</Link></p>}
+        </form>
+      )}
+    </Shell>
+  );
+}
+
+// ---------- Undangan: buat password ----------
+function AcceptInvite({ token }: { token: string }) {
+  const [info, setInfo] = useState<{ email: string; institution: string | null } | null>(null);
+  const [f, setF] = useState({ password: "", confirm: "" });
+  const [captcha, setCaptcha] = useState<CaptchaValue>(null);
+  const [reload, setReload] = useState(0);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    api<{ email: string; institution: string | null }>(`/api/auth/invite?token=${encodeURIComponent(token)}`).then(setInfo).catch((x) => setErr((x as Error).message));
+  }, [token]);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setErr("");
+    if (f.password !== f.confirm) { setErr("The passwords do not match"); return; }
+    if (!captcha) { setErr("Complete the security check first"); return; }
+    setBusy(true);
+    try { const d = await api<{ role: string; needsConsent: boolean }>("/api/auth/invite", { json: { token, password: f.password, captcha }, silent: true }); window.location.href = homeOf(d.role, d.needsConsent); }
+    catch (x) { setErr((x as Error).message); setBusy(false); setReload((n) => n + 1); }
+  }
+  return (
+    <Shell heading={info?.institution ? `Welcome to the ${info.institution} program.` : "Welcome."} text="Create your password to finish setting up your account. Next time, sign in with your email and this password.">
+      {!info ? (
+        <div className="flex flex-col gap-5">
+          <Title t={err ? "Invitation not valid" : "Checking your invitation…"} s={err || undefined} />
+          {err && <Link href="/sign-in" className="btn-primary text-center">Go to sign in</Link>}
+        </div>
+      ) : (
+        <form onSubmit={submit} className="flex flex-col gap-5">
+          <Title t="Create your password" s={<>For <b>{info.email}</b></>} />
+          <Field label="Password" type="password" required minLength={8} autoComplete="new-password" placeholder="At least 8 characters" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+          <Field label="Confirm password" type="password" required minLength={8} autoComplete="new-password" value={f.confirm} onChange={(e) => setF({ ...f, confirm: e.target.value })} />
+          <Captcha onChange={setCaptcha} reload={reload} />
+          <Err e={err} />
+          <button className="btn-primary" disabled={busy || !captcha}>{busy ? "Saving…" : "Create password and continue"}</button>
         </form>
       )}
     </Shell>
@@ -154,61 +196,40 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
 // ---------- Daftar ----------
 function RegisterForm() {
   const [f, setF] = useState({ givenName: "", surname: "", email: "", password: "", confirm: "", code: "" });
-  const [step, setStep] = useState<"form" | "otp">("form");
-  const [otp, setOtp] = useState("");
+  const [captcha, setCaptcha] = useState<CaptchaValue>(null);
+  const [reload, setReload] = useState(0);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [cooldown, setCooldown] = useCooldown();
-  const otpRef = useRef<HTMLInputElement>(null);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
 
-  async function submit(e?: React.FormEvent) {
-    e?.preventDefault(); setErr("");
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setErr("");
     if (f.password !== f.confirm) { setErr("The passwords do not match"); return; }
+    if (!captcha) { setErr("Complete the security check first"); return; }
     setBusy(true);
     try {
-      await api("/api/auth/register", { json: { givenName: f.givenName, surname: f.surname, email: f.email, password: f.password, code: f.code } });
-      setStep("otp"); setOtp(""); setCooldown(60);
-      setTimeout(() => otpRef.current?.focus(), 50);
-    } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
-  }
-  async function verify(e: React.FormEvent) {
-    e.preventDefault(); setErr(""); setBusy(true);
-    try {
-      const d = await api<{ role: string; needsConsent: boolean }>("/api/auth/register/verify", { json: { email: f.email, code: otp } });
+      const d = await api<{ role: string; needsConsent: boolean }>("/api/auth/register", { json: { givenName: f.givenName, surname: f.surname, email: f.email, password: f.password, code: f.code, captcha }, silent: true });
       window.location.href = homeOf(d.role, d.needsConsent);
-    } catch (x) { setErr((x as Error).message); setBusy(false); }
+    } catch (x) { setErr((x as Error).message); setBusy(false); setReload((n) => n + 1); }
   }
 
   return (
-    <Shell heading="Create your account." text="Use the institution code from your campus, agency, or company. Your account is ready right after you verify your email.">
-      {step === "otp" ? (
-        <form onSubmit={verify} className="flex flex-col gap-5">
-          <Title t="Verify your email" s={<>We sent a 6-digit code to <b>{f.email}</b>. It is in the email subject and valid for 5 minutes. If this email already has an account, we sent sign-in instructions instead.</>} />
-          <CodeInput value={otp} onChange={setOtp} inputRef={otpRef} />
-          <Err e={err} />
-          <button className="btn-primary" disabled={busy || otp.length !== 6}>{busy ? "Checking…" : "Verify and continue"}</button>
-          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <button type="button" className="font-semibold text-brand" onClick={() => { setStep("form"); setErr(""); }}>Edit details</button>
-            <button type="button" disabled={cooldown > 0 || busy} className="font-semibold text-brand disabled:text-ink-soft" onClick={() => submit()}>{cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}</button>
-          </div>
-        </form>
-      ) : (
-        <form onSubmit={submit} className="flex flex-col gap-4">
-          <Title t="Create an account" s="All fields are required." />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Given name" required autoComplete="given-name" value={f.givenName} onChange={set("givenName")} />
-            <Field label="Surname" required autoComplete="family-name" value={f.surname} onChange={set("surname")} />
-          </div>
-          <Field label="Email" type="email" required autoComplete="email" placeholder="name@email.com" value={f.email} onChange={set("email")} />
-          <Field label="Password" type="password" required minLength={8} autoComplete="new-password" placeholder="At least 8 characters" value={f.password} onChange={set("password")} />
-          <Field label="Confirm password" type="password" required minLength={8} autoComplete="new-password" value={f.confirm} onChange={set("confirm")} />
-          <Field label="Institution code" required autoCapitalize="characters" placeholder="Ask your institution" value={f.code} onChange={set("code")} />
-          <Err e={err} />
-          <button className="btn-primary" disabled={busy}>{busy ? "Sending code…" : "Create account"}</button>
-          <p className="text-center text-sm text-ink-soft">Already have an account? <Link href="/sign-in" className="font-semibold text-brand">Sign in</Link></p>
-        </form>
-      )}
+    <Shell heading="Create your account." text="Use the institution code from your campus, agency, or company. Your account is ready right away. Make sure your email is correct: password resets and reminders are sent there.">
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <Title t="Create an account" s="All fields are required." />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Given name" required autoComplete="given-name" value={f.givenName} onChange={set("givenName")} />
+          <Field label="Surname" required autoComplete="family-name" value={f.surname} onChange={set("surname")} />
+        </div>
+        <Field label="Email" type="email" required autoComplete="email" placeholder="name@email.com" value={f.email} onChange={set("email")} />
+        <Field label="Password" type="password" required minLength={8} autoComplete="new-password" placeholder="At least 8 characters" value={f.password} onChange={set("password")} />
+        <Field label="Confirm password" type="password" required minLength={8} autoComplete="new-password" value={f.confirm} onChange={set("confirm")} />
+        <Field label="Institution code" required autoCapitalize="characters" placeholder="Ask your institution" value={f.code} onChange={set("code")} />
+        <Captcha onChange={setCaptcha} reload={reload} />
+        <Err e={err} />
+        <button className="btn-primary" disabled={busy || !captcha}>{busy ? "Creating account…" : "Create account"}</button>
+        <p className="text-center text-sm text-ink-soft">Already have an account? <Link href="/sign-in" className="font-semibold text-brand">Sign in</Link></p>
+      </form>
     </Shell>
   );
 }
@@ -216,13 +237,15 @@ function RegisterForm() {
 // ---------- Lupa password ----------
 function ForgotForm() {
   const [email, setEmail] = useState("");
+  const [captcha, setCaptcha] = useState<CaptchaValue>(null);
+  const [reload, setReload] = useState(0);
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
-    try { await api("/api/auth/forgot-password", { json: { email } }); setSent(true); }
-    catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
+    try { await api("/api/auth/forgot-password", { json: { email, captcha }, silent: true }); setSent(true); }
+    catch (x) { setErr((x as Error).message); setReload((n) => n + 1); } finally { setBusy(false); }
   }
   return (
     <Shell heading="Forgot your password?" text="We will email you a link to set a new one. The link is valid for 30 minutes.">
@@ -235,8 +258,9 @@ function ForgotForm() {
         <form onSubmit={submit} className="flex flex-col gap-5">
           <Title t="Reset password" s="Enter the email you use to sign in." />
           <Field label="Email" type="email" required autoComplete="email" placeholder="name@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Captcha onChange={setCaptcha} reload={reload} />
           <Err e={err} />
-          <button className="btn-primary" disabled={busy}>{busy ? "Sending…" : "Send reset link"}</button>
+          <button className="btn-primary" disabled={busy || !captcha}>{busy ? "Sending…" : "Send reset link"}</button>
           <p className="text-center text-sm text-ink-soft">Remembered it? <Link href="/sign-in" className="font-semibold text-brand">Sign in</Link></p>
         </form>
       )}
