@@ -1,6 +1,6 @@
-# English Inspira LMS — Master Technical Specification v2.2 (MTS)
+# English Inspira LMS — Master Technical Specification v2.3 (MTS)
 
-Versi 2.2 · Pembaruan dari MTS v2.1 · LMS persiapan TOEFL ITP berbasis level, kerja sama institusi mitra, tanpa jalur komersial
+Versi 2.3 · Pembaruan dari MTS v2.2 · LMS persiapan TOEFL ITP berbasis level, kerja sama institusi mitra, tanpa jalur komersial · Status implementasi: produksi di english.edulyfe.id
 
 ## 0. Riwayat Perubahan
 
@@ -9,6 +9,7 @@ Versi 2.2 · Pembaruan dari MTS v2.1 · LMS persiapan TOEFL ITP berbasis level, 
 | 2.0 | Peralihan ke model institusi mitra, role coach, analitik berkelanjutan, dan penghapusan alur komersial. |
 | 2.1 | Penegasan bahwa coach adalah penentu jadwal dan peserta hanya memilih slot yang telah diterbitkan. |
 | 2.2 | Perubahan keamanan materi HTML: JavaScript materi tidak lagi dijalankan di origin/hak aplikasi utama. Materi interaktif dijalankan dalam iframe sandbox terisolasi dengan CSP ketat dan jembatan analitik terbatas. |
+| 2.3 | Diselaraskan dengan implementasi (Oktober 2026): seluruh antarmuka dan URL berbahasa Inggris; nama produk **English Inspira** dengan logo Inspira dan font Poppins; landing page publik; login **password atau OTP**; **daftar mandiri wajib kode institusi** + verifikasi email; lupa/reset password; **mode pemeliharaan** dengan login khusus admin `/admin/login`; keluaran Claude terstruktur lewat tool use; deploy **PM2 tanpa Docker**. Lihat bagian 0.2. |
 
 ## 0.1 Perubahan dari v1
 
@@ -27,17 +28,32 @@ Versi 2.2 · Pembaruan dari MTS v2.1 · LMS persiapan TOEFL ITP berbasis level, 
 
 **Dihapus:** koleksi `products`, `vouchers`, `orders`, `leads`; Midtrans dan webhook; free trial; layar paket, keranjang, checkout, riwayat transaksi; modul admin transaksi, paket, voucher.
 
+## 0.2 Perubahan dari v2.2 ke v2.3
+
+| Area | v2.2 | v2.3 |
+| --- | --- | --- |
+| Bahasa | Bahasa Indonesia | **Bahasa Inggris** untuk semua teks pengguna: UI, pesan error API, email, PDF, prompt dan jawaban AI, preset materi. Tanpa tanda panah dan em dash di teks tampilan (bagian 26) |
+| URL | `/masuk`, `/beranda`, `/tes`, … | **URL bahasa Inggris** (`/sign-in`, `/home`, `/tests`, …). URL lama dialihkan permanen (308) agar tautan di email lama tetap jalan (bagian 21.1) |
+| Merek | "Edulyfe EPTA" di UI | **English Inspira** "by Inspira Teknologi", logo Inspira, favicon logo saja, font **Poppins** saja (web, email, PDF, iframe materi) |
+| Halaman publik | `/` langsung ke halaman masuk | **Landing page** (bagian 26.1). Tanpa harga, pembayaran, atau free trial |
+| Login | OTP email saja | **Password atau OTP email** (bagian 7) |
+| Pendaftaran | Hanya diundang/diimpor | Diundang/diimpor, **atau daftar mandiri dengan kode institusi** + verifikasi email (bagian 8.1) |
+| Lupa password | Tidak ada | Tautan reset 30 menit, sekali pakai (bagian 7) |
+| Pemeliharaan | Tidak ada | **Mode pemeliharaan** dari dasbor admin; login admin di `/admin/login` (bagian 20.1) |
+| Keluaran AI | Teks JSON diurai | **Tool use** dengan skema (keluaran terstruktur), tidak bisa rusak karena tanda kutip (bagian 13.5, 17) |
+| Deploy | VPS Docker atau Vercel | **VPS + PM2 + Nginx, tanpa Docker**; skrip `redeploy-english` (bagian 22) |
+
 ## 1. Ringkasan Produk
 
 Alur peserta:
 
-**Login OTP → Placement test (format ITP) → Level → Kuota coaching + study plan awal → Belajar course dan kuis (hasil dan analisis muncul setiap selesai mengerjakan) → Sesi coaching → Simulasi ITP berkala → Naik level → (opsional) ITP resmi dan sertifikat**
+**Landing page → Daftar dengan kode institusi atau undangan → Login (password atau OTP) → Persetujuan data → Placement test (format ITP) → Level → Kuota coaching + study plan awal → Belajar course dan kuis (hasil dan analisis muncul setiap selesai mengerjakan) → Sesi coaching → Simulasi ITP berkala → Naik level → (opsional) ITP resmi dan sertifikat**
 
 Tiga jalur di atas satu fondasi:
 
 | Lapisan | Isi |
 | --- | --- |
-| Fondasi | Akun OTP, RBAC, institusi, enrollment, bank soal bertag, mesin tes, audio, aset, audit log |
+| Fondasi | Akun (password + OTP), RBAC, institusi, enrollment, bank soal bertag, mesin tes, audio, aset, audit log |
 | Jalur A: Tes ITP | Placement test, simulasi berkala, skor 310-677, proctoring ringan |
 | Jalur B: Belajar mandiri | Level → course → unit → materi dan kuis → syarat lulus |
 | Jalur C: Coaching | Slot coach, booking, kuota, kehadiran, catatan sesi |
@@ -54,18 +70,21 @@ Tiga jalur di atas satu fondasi:
 | AI | Claude API (Anthropic): analisis hasil belajar, narasi dan sugesti, serta Konselor AI. Kunci hanya di server |
 | Mesin analitik | **pure-analytics** (perhitungan angka dan akumulasi, bila dipakai). Analisisnya oleh Claude API, lihat bagian 13.5 dan 14 |
 | Acuan level | Skor TOEFL ITP 310-677. **Tanpa CEFR** |
-| Akses | Hanya peserta dari institusi mitra. **Tanpa pembayaran online** |
+| Akses | Hanya peserta dari institusi mitra (undangan atau kode institusi). **Tanpa pembayaran online** |
+| Bahasa | **Inggris** untuk semua teks yang dilihat pengguna. Komentar kode dan dokumen internal boleh berbahasa Indonesia |
+| Deploy | VPS (Biznet Gio) + **PM2** satu instance + Nginx. **Tanpa Docker** |
 
 ## 3. Stack
 
-- **Frontend dan backend**: Next.js 14 (App Router) + TypeScript + Tailwind, satu repo, Route Handlers. Font Montserrat dan Poppins.
-- **Auth**: OTP email 6 digit (kedaluwarsa 5 menit), lalu sesi JWT di cookie `httpOnly` (`jose`).
+- **Frontend dan backend**: Next.js 14 (App Router) + TypeScript + Tailwind, satu repo, Route Handlers. Font **Poppins** saja (berkas lokal; PDF memakai TTF karena fontkit gagal men-subset WOFF2).
+- **Auth**: password (bcrypt) **atau** OTP email 6 digit (kedaluwarsa 5 menit), lalu sesi JWT di cookie `httpOnly` (`jose`).
 - **Editor materi**: TipTap (Rich Text) + CodeMirror (mode HTML).
 - **Validasi dan pembatasan**: Zod, `rate-limiter-flexible`, `mongo-sanitize`.
 - **Job dan reminder**: `node-cron` (BullMQ + Redis opsional bila antrean besar).
 - **Keamanan materi HTML**: iframe `sandbox` dengan origin opaque, Content Security Policy (CSP), validasi payload `postMessage`, dan allowlist aset. Pemrosesan CSS untuk preview/editor boleh memakai `postcss` + `postcss-prefix-selector`, tetapi bukan sebagai batas keamanan.
 - **Impor dan ekspor**: `papaparse` (CSV), `exceljs` (Excel), generator PDF untuk laporan.
-- **PDF masuk**: `pdf-parse` (teks), OCR opsional untuk PDF hasil scan.
+- **PDF masuk**: `pdf-parse` v2 (kelas `PDFParse`), OCR opsional untuk PDF hasil scan.
+- **Penjadwal**: `node-cron` di dalam proses lewat `instrumentation.ts` (`experimental.instrumentationHook`), modul Node dipisah di `lib/scheduler.ts` agar bundel edge bersih.
 
 ## 4. Peran dan Hak Akses (RBAC)
 
@@ -111,6 +130,7 @@ Semua angka di bawah **tidak ditulis mati di kode**. Disimpan di `levels` dan `c
 | `idle_timeout_sec` | 60 | Waktu tidak aktif tidak dihitung |
 | `plan_deadline_days` | Prioritas tinggi 7, sedang 14 | Deadline otomatis study plan |
 | `counselor_quota` | 30 pesan per bulan (placeholder) | Batas Konselor AI |
+| `maintenance` | `{on: false, message: ""}` | Mode pemeliharaan, diubah lewat saklar di dasbor admin (bagian 20.1), bukan halaman Parameter |
 
 Override per institusi (`institutions.configOverrides`) disiapkan di skema tetapi **tidak dipakai di v2.0**.
 
@@ -121,7 +141,10 @@ Semua koleksi punya `_id`, `createdAt`, `updatedAt`. Koleksi bertanda (inst) men
 ```
 # Akun dan mitra
 users          { email(unique), name, phone, role, institutionId, status:'invited'|'active'|'disabled',
-                 currentLevelId, currentScoreEst, placementAttemptId, consentAt, lastLoginAt }
+                 currentLevelId, currentScoreEst, placementAttemptId, consentAt, lastLoginAt,
+                 passwordHash?(select:false), pendingPasswordHash?(select:false), emailVerifiedAt?, selfRegistered?,
+                 resetTokenHash?(select:false), resetExpiresAt?,
+                 goal?:'graduation'|'scholarship'|'career'|'other', education?, targetScore? }
 otps           { email, codeHash, expiresAt(TTL), attempts }
 institutions   { name, code(unique), seats, contractStart, contractEnd, contactEmail, status, configOverrides? }
 enrollments    { userId, institutionId, status, startsAt, expiresAt }          # sumber kebenaran akses
@@ -129,7 +152,7 @@ invitations    { email, institutionId, tokenHash, expiresAt(TTL), invitedBy, sta
 
 # Konfigurasi
 levels         { key, name, order, scoreMin, scoreMax, coachingQuota }
-config_params  { key(unique), value, updatedBy }
+config_params  { key(unique), value, updatedBy }        # termasuk key 'maintenance' {on, message, since}
 remedial_map   { topic, unitIds[], priority }
 
 # Soal dan tes
@@ -208,32 +231,54 @@ export const sendMail = (to: string, subject: string, html: string) =>
   mailer.sendMail({ from: process.env.MAIL_FROM, to, subject, html });
 ```
 
+Halaman masuk (`/sign-in`) punya dua tab: **Password** (bawaan) dan **Email code**. Keduanya menghasilkan sesi yang sama.
+
 **Alur OTP**
 
-1. `POST /api/auth/request-otp`: **hanya email yang sudah terdaftar** (status `invited` atau `active` dan enrollment berlaku) yang dikirimi kode. Respons **selalu sama** untuk email dikenal maupun tidak, supaya daftar peserta tidak bisa ditebak.
-2. Kode 6 digit dari `crypto.randomInt`, disimpan sebagai hash, kedaluwarsa 5 menit.
-3. `POST /api/auth/verify-otp`: maksimal 5 percobaan, lalu terkunci. Sukses → cookie sesi `httpOnly; Secure; SameSite=Lax`.
-4. Rate limit: 3 permintaan OTP per email per 10 menit, 10 per IP per jam.
+1. `POST /api/auth/request-otp`: **hanya email yang sudah terdaftar** (status `invited` atau `active` dan enrollment berlaku; admin tanpa enrollment) yang dikirimi kode. Respons **selalu sama** untuk email dikenal maupun tidak, supaya daftar peserta tidak bisa ditebak.
+2. Kode 6 digit dari `crypto.randomInt`, disimpan sebagai hash, kedaluwarsa 5 menit. Satu kode aktif per email.
+3. **Kode ditulis di judul email** (`123456 is your English Inspira sign-in code`). Tiap email berjudul unik sehingga Gmail tidak menumpuknya dalam satu thread; sebelumnya pengguna membaca kode lama dan mendapat "kode salah".
+4. `POST /api/auth/verify-otp`: maksimal 5 percobaan, lalu terkunci. Sukses → cookie sesi `httpOnly; Secure; SameSite=Lax`, dan `emailVerifiedAt` terisi. Password yang diisi saat daftar tetapi belum diverifikasi dibuang (bisa jadi dibuat orang lain).
+5. Rate limit: 3 permintaan OTP per email per 10 menit, 10 per IP per jam.
+6. Admin pertama dibuat otomatis dari `ADMIN_EMAILS` saat login OTP pertama.
+
+**Alur password**
+
+1. `POST /api/auth/login {email, password, adminOnly?}`: bcrypt (cost 12). Hanya akun dengan `emailVerifiedAt`. Pesan salah **selalu sama** ("Wrong email or password …") dan waktu respons disamakan dengan hash tiruan, sehingga keberadaan akun tidak bocor. `adminOnly: true` (dipakai `/admin/login`) menolak akun bukan admin.
+2. Kebijakan: minimal 8 karakter, maksimal 128. Rate limit 30 per IP per 10 menit, 10 per email per 15 menit.
+3. **Lupa password**: `POST /api/auth/forgot-password {email}` mengirim tautan `/reset-password?token=…` (token 32 byte, disimpan sebagai SHA-256, berlaku 30 menit, sekali pakai) hanya ke akun aktif. Respons selalu sama. `POST /api/auth/reset-password {token, password}` mengganti password dan membuktikan kepemilikan email.
+4. **Ganti/set password**: `POST /api/me/password {current?, password}` dari Profil. Bila sudah punya password, password lama wajib benar. Akun undangan yang belum pernah punya password memakai OTP lalu set di Profil, atau lewat Lupa password.
 
 **Antrean email.** Semua email lewat `mail_queue` dan worker cron, tidak boleh memblokir request. Percobaan ulang bertahap bila gagal.
 
 > Gmail membatasi sekitar 500 email per hari untuk akun biasa. Impor satu angkatan dengan undangan massal bisa menghabiskannya, sehingga pengiriman undangan dijadwalkan bertahap (misal 100 per jam). Bungkus pengiriman di `sendMail()` agar bisa pindah ke SMTP lain tanpa mengubah kode lain.
 
-**Template email**: OTP, undangan peserta, konfirmasi booking, pembatalan atau perubahan slot oleh coach, pengingat sesi (H-1), pengingat deadline study plan, peringatan kuota coaching hampir habis, hasil analisis siap.
+**Template email** (semua berbahasa Inggris, font Poppins): OTP (kode di judul), verifikasi email pendaftaran (kode di judul), "akun sudah ada", reset password, undangan peserta, konfirmasi booking, pembatalan atau perubahan slot oleh coach, pengingat sesi (H-1), pengingat deadline study plan, peringatan kuota coaching hampir habis, hasil analisis siap.
 
 ## 8. Onboarding Peserta Lewat Institusi Mitra
 
-Tidak ada halaman daftar publik. Cara peserta masuk:
+Tidak ada pendaftaran terbuka tanpa institusi. Cara peserta masuk:
 
 | Cara | Pelaku | Catatan |
 | --- | --- | --- |
 | Impor CSV atau Excel | `inst_admin`, `admin` | Kolom: email, nama, telepon (opsional). Validasi format dan duplikat, tolak bila melebihi `seats`, tampilkan laporan baris gagal |
 | Undangan email | `inst_admin`, `admin` | Tautan berumur 7 hari. Login pertama melengkapi profil dan **persetujuan data (UU PDP)** |
 | Input manual | `admin` | Kasus khusus |
+| **Daftar mandiri dengan kode institusi** | Peserta | `/register`. Wajib `institutions.code` yang aktif dan kursi tersisa (bagian 8.1) |
 
 - Akun baru berstatus `invited`, menjadi `active` setelah login OTP pertama dan persetujuan data.
 - Saat kontrak berakhir (`contractEnd`), enrollment kedaluwarsa dan login ditolak, data tetap tersimpan sesuai kebijakan retensi.
 - Penonaktifan peserta tidak menghapus riwayat. Hak hapus data ditangani lewat prosedur admin yang tercatat di `audit_logs`.
+
+### 8.1 Daftar mandiri dengan kode institusi
+
+1. Peserta mengisi nama, email, password, dan **kode institusi** di `/register` → `POST /api/auth/register`.
+2. Kode harus milik institusi `active` yang kontraknya belum berakhir dan masih punya kursi; bila tidak, ditolak dengan pesan jelas.
+3. Akun dibuat `invited` + `selfRegistered`, password disimpan sementara di `pendingPasswordHash`, lalu kode 6 digit dikirim (judul: `123456 is your English Inspira verification code`). **Belum ada enrollment dan kursi belum diambil**, sehingga pendaftar palsu tidak menghabiskan kursi.
+4. `POST /api/auth/register/verify {email, code}`: kursi diambil **atomik** (`$expr seatsUsed < seats`), enrollment dibuat, password diaktifkan, `emailVerifiedAt` terisi, sesi dibuat, lalu peserta diarahkan ke persetujuan data.
+5. Email yang **sudah punya akun**: respons sama seperti biasa (tidak membocorkan), dan pemilik email menerima email "You already have an account". Password dari percobaan daftar ulang tidak pernah berlaku.
+6. Kode institusi tampil di dasbor `inst_admin` dan di daftar institusi admin, untuk dibagikan ke peserta.
+7. Terbuka: pembersihan otomatis pendaftar yang tidak pernah memverifikasi email (tidak memakan kursi, hanya data).
 
 ## 9. Strategi Gambar Base64
 
@@ -398,7 +443,7 @@ Analisis hasil belajar dilakukan oleh **Claude API**, dipanggil dari server (`li
 
 **Input ke Claude** (JSON ringkas): level dan skor estimasi, `topic_stats`, butir yang salah atau lambat (topik, waktu, jumlah ganti jawaban), riwayat ringkas, ambang dari `config_params`, dan **daftar topik yang valid**. Tanpa nama, email, telepon, atau NIK. Peserta direferensikan dengan alias internal.
 
-**Output** (JSON terstruktur, divalidasi Zod, diulang maksimal 2 kali bila tidak valid):
+**Output** lewat **tool use** (`submit_analysis`, `input_schema` dibuat dari skema Zod dengan `z.toJSONSchema`), sehingga hasilnya objek terstruktur dan tidak bisa rusak karena tanda kutip di dalam teks. Hasil divalidasi Zod dan diulang maksimal 2 kali bila tidak valid atau terpotong `max_tokens` (3000). Catatan: `claude-sonnet-5-5` tidak menerima `tool_choice: tool`, jadi dipakai `tool_choice: auto` dengan perintah wajib memakai tool di system prompt.
 
 ```ts
 type AnalysisResult = {
@@ -415,7 +460,7 @@ type AnalysisResult = {
 **Aturan dan pengaman**
 
 - Topik di luar daftar valid ditolak. Angka di narasi dicek terhadap input, dan yang tidak cocok membuat hasil diulang.
-- AI tidak menjanjikan skor dan hanya membahas persiapan ITP, dalam bahasa Indonesia yang sederhana.
+- AI tidak menjanjikan skor dan hanya membahas persiapan ITP, **dalam bahasa Inggris** yang sederhana dan ramah.
 - **Dua tahap tampil**: angka langsung muncul (`calculated`), analisis menyusul (`ready`).
 - **Biaya dan beban**: hasil di-cache berdasarkan hash input, ada batas laju per pengguna dan per institusi, dan kuis kecil dapat memakai model lebih ringan atau template, sedangkan placement, simulasi, dan unit memakai analisis penuh.
 - **Cadangan**: bila API gagal atau timeout, angka tetap tampil, narasi memakai template, dan job diulang bertahap. Status `failed` terlihat di dashboard admin.
@@ -540,6 +585,7 @@ Hidup berdampingan dengan coach: AI untuk tanya jawab kapan saja, coach untuk se
 - **Guardrail**: hanya topik persiapan ITP, tidak menjanjikan skor, tidak mengubah study plan secara langsung (hanya mengusulkan, rencana resmi tetap oleh sistem atau coach), kuota pesan per bulan (`counselor_quota`).
 - Admin dan coach dapat meninjau dan menandai jawaban buruk (`reviewed`, `flag`).
 - Kunci API hanya di server, tidak pernah ke klien.
+- Jawaban lewat tool use `send_reply` (`{reply, actionPlan[]}`), sama seperti analisis; tanpa kunci API dipakai jawaban berbasis aturan (`mock`).
 
 ## 18. Notifikasi dan Job Terjadwal
 
@@ -558,7 +604,9 @@ Notifikasi dalam aplikasi (`notifications`) dan email memakai template yang sama
 ## 19. Daftar API Utama
 
 ```
-Auth        POST /api/auth/request-otp · verify-otp · logout · GET /api/me · POST /api/me/consent
+Auth        POST /api/auth/request-otp · verify-otp · login · register · register/verify · forgot-password · reset-password · logout
+            GET /api/me (termasuk hasPassword) · POST /api/me/consent · POST /api/me/password
+Pemeliharaan GET /api/maintenance (publik) · GET/PUT /api/admin/maintenance (admin)
 Onboarding  POST /api/inst/participants/import · /invites · GET /api/inst/participants
 Tes         GET /api/tests · POST /api/tests/:id/start · PATCH /api/attempts/:id
             POST /api/attempts/:id/submit · GET /api/attempts/:id/result
@@ -589,29 +637,64 @@ Semua endpoint memakai `requireRole` dan `scopeByInstitution`. Endpoint penulisa
 - **UU PDP**: persetujuan data saat login pertama, tujuan dan retensi yang jelas, hak akses dan hapus, akses coach dan `inst_admin` ke data peserta dicatat di `audit_logs`.
 - Data identitas (jika ITP resmi dipakai): enkripsi field (AES-256-GCM) untuk NIK, akses dibatasi dan dicatat.
 - Secret hanya di environment, tidak di-commit. Backup MongoDB terjadwal (snapshot Atlas atau `mongodump` harian).
+- Password: bcrypt cost 12, field hash `select:false`, pesan login seragam, token reset disimpan sebagai hash. Semua perubahan password dan pendaftaran tercatat di `audit_logs`.
+
+### 20.1 Mode pemeliharaan
+
+- **Saklar** on/off + pesan opsional di dasbor admin (`/admin`) → `PUT /api/admin/maintenance`. Disimpan di `config_params.maintenance`, tercatat di `audit_logs` (`maintenance.on/off`).
+- **Saat aktif**, middleware memeriksa setiap request:
+  - Sesi admin: semua tetap bisa diakses.
+  - Halaman lain: ditampilkan `/maintenance` ("We are doing some maintenance." + pesan admin). `/admin/*` tanpa sesi admin diarahkan ke `/admin/login`.
+  - API: `503 {maintenance: true}`.
+  - Tetap terbuka: `/admin/login`, `/api/auth/{login,request-otp,verify-otp,logout}`, `/api/maintenance`, `/api/health`, `/api/cron/*` (job terjadwal tetap jalan), aset statis.
+- **`/admin/login`**: halaman masuk khusus admin (password atau OTP, `adminOnly`), menolak akun bukan admin. `/admin` tanpa sesi juga diarahkan ke sini di luar masa pemeliharaan.
+- Status dibaca middleware dari `GET /api/maintenance` dengan cache 10 detik di produksi dan batas waktu 2 detik; perubahan berlaku paling lambat 10 detik.
+- **Wajib di server**: `INTERNAL_URL=http://127.0.0.1:<port>`. Tanpa ini middleware memanggil domain publik dari server sendiri, yang di VPS produksi butuh sekitar 7,6 detik sehingga cek gagal dan pemeliharaan tidak berlaku.
+- **Halaman error**: bila chunk JS build lama hilang setelah deploy, halaman memuat ulang sendiri sekali.
 
 ## 21. Struktur Proyek
 
 ```
-english-inspira/
+app/                                   # proyek Next.js (repo: opetganteng23/English-Inspira)
 ├─ app/
-│  ├─ (public)/ masuk
-│  ├─ (participant)/ beranda, placement, belajar, tes, hasil, rencana, coaching, konselor, profil
-│  ├─ (coach)/coach/ slot, peserta, sesi, catatan
-│  ├─ (admin)/admin/…     (inst)/institusi/…
-│  └─ api/…               (route handlers sesuai bagian 19)
-├─ lib/ db.ts, auth.ts, mailer.ts, rbac.ts, scoring.ts, levels.ts, analytics.ts (adapter),
-│        ai.ts, scheduling.ts, quota.ts, plan.ts, sanitize.ts, css-scope.ts
+│  ├─ page.tsx                         landing (tamu) / alihkan ke dasbor (sudah masuk)
+│  ├─ maintenance/                     halaman pemeliharaan
+│  ├─ (public)/ sign-in, register, forgot-password, reset-password, consent, privacy, terms, verify/[number], admin/login
+│  ├─ (participant)/ home, tests, tests/prepare/[id], results, learn, materials, coaching, counselor, itp,
+│  │                 certificates, upload-result, profile, help
+│  ├─ (room)/test-room/[id]
+│  ├─ (coach)/coach/ schedule, sessions, participants/[id], counselor, materials
+│  ├─ (admin)/admin/ institutions, participants, users, question-bank, tests, courses, materials, ai-counselor,
+│  │                 proctoring, coaching, itp-schedule, parameters, settings
+│  ├─ (inst)/institution/ participants, schedule, reports, materials
+│  └─ api/…                            (route handlers sesuai bagian 19)
+├─ lib/ db, auth, password, otp-code, maintenance, mailer, mailq, mail-templates, rbac, scoring, ai, analysis,
+│        analysis-engine, study-plan, scheduler, pdf, …
 ├─ models/ (Mongoose schema per koleksi)
-├─ components/ editor/, test-room/, material-root/, schedule/, ui/
-├─ jobs/ mail.ts, analysis.ts, reminders.ts, plan-status.ts, contracts.ts
-├─ scripts/ seed.ts
-├─ .env.example · Dockerfile · docker-compose.yml
+├─ components/ Landing, OtpAuth (sign-in/register/forgot/reset), PasswordCard, MaintenanceToggle, RichEditor, …
+├─ middleware.ts                       RBAC kasar, CSRF, mode pemeliharaan
+├─ instrumentation.ts                  menyalakan penjadwal node-cron (PM2)
+├─ public/ fonts/ (Poppins woff2 + ttf, OFL), brand/ (logo-white, logo-navy)
+├─ scripts/ seed.ts, smoke.mjs, migrate-en.ts, seed-demo-participant.ts
+├─ deploy/ redeploy-english.sh, nginx.edulyfe.conf
+└─ ecosystem.config.cjs · .env.example
 ```
+
+### 21.1 Rute halaman
+
+| Peran | URL | Pengganti URL lama |
+| --- | --- | --- |
+| Publik | `/`, `/sign-in`, `/register`, `/forgot-password`, `/reset-password`, `/consent`, `/privacy`, `/terms`, `/verify/:number`, `/admin/login`, `/maintenance` | `/masuk`, `/persetujuan`, `/privasi`, `/syarat`, `/verifikasi` |
+| Peserta | `/home`, `/tests`, `/tests/prepare/:id`, `/test-room/:id`, `/results`, `/learn`, `/materials`, `/coaching`, `/counselor`, `/itp`, `/certificates`, `/upload-result`, `/profile`, `/help` | `/beranda`, `/tes`, `/tes/persiapan`, `/ruang-tes`, `/hasil`, `/belajar`, `/materi`, `/konselor`, `/sertifikat`, `/unggah-hasil`, `/profil`, `/bantuan` |
+| Coach | `/coach`, `/coach/schedule`, `/coach/sessions`, `/coach/participants/:id`, `/coach/counselor`, `/coach/materials` | `jadwal`, `sesi`, `peserta`, `konselor`, `materi` |
+| Admin institusi | `/institution`, `/institution/participants`, `/institution/schedule`, `/institution/reports`, `/institution/materials` | `/institusi/…` |
+| Admin | `/admin`, `/admin/institutions`, `/admin/participants`, `/admin/users`, `/admin/question-bank`, `/admin/tests`, `/admin/courses`, `/admin/materials`, `/admin/ai-counselor`, `/admin/proctoring`, `/admin/coaching`, `/admin/itp-schedule`, `/admin/parameters`, `/admin/settings` | `bank-soal`, `institusi`, `jadwal-itp`, `konselor-ai`, `kursus`, `materi`, `parameter`, `pengaturan`, `pengguna`, `peserta`, `tes` |
+
+Semua URL lama dialihkan permanen (308) lewat `redirects()` di `next.config.mjs`, termasuk query string (mis. `/masuk?invite=…` → `/sign-in?invite=…`). Notifikasi lama di database yang menyimpan URL lama tetap jalan karena pengalihan ini.
 
 ## 22. Build Instructions
 
-**Prasyarat**: Node 20+, MongoDB Atlas (atau Docker), akun Gmail dengan App Password, API key Anthropic, modul pure-analytics (bentuk integrasi dikonfirmasi).
+**Prasyarat**: Node 20+, MongoDB Atlas, akun Gmail dengan App Password, API key Anthropic, modul pure-analytics (bentuk integrasi dikonfirmasi).
 
 ```bash
 # 1. Inisialisasi
@@ -629,19 +712,35 @@ npm i mongoose zod jose bcryptjs nodemailer @anthropic-ai/sdk \
 # 2. Environment (.env.local)
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=<acak 64 karakter>
-APP_URL=http://localhost:3000
+APP_URL=https://english.edulyfe.id      # dipakai di tautan email
+ADMIN_EMAILS=admin@domain.com           # admin pertama dibuat saat login OTP pertama
 MAIL_HOST=smtp.gmail.com  MAIL_PORT=465  MAIL_SECURE=true
 MAIL_USER=...  MAIL_APP_PASSWORD=...  MAIL_FROM=...
-ANTHROPIC_API_KEY=...
-PURE_ANALYTICS_URL=...      # bila berupa service
+ANTHROPIC_API_KEY=...  ANTHROPIC_MODEL=claude-sonnet-5-5  ANTHROPIC_MODEL_LIGHT=   # kosong = kuis kecil pakai template
+CRON_SECRET=<acak>                      # untuk /api/cron/* dari cron sistem
+ENABLE_INPROCESS_CRON=true              # penjadwal node-cron di dalam proses (PM2 satu instance)
+INTERNAL_URL=http://127.0.0.1:4001      # WAJIB di server: cek mode pemeliharaan lewat localhost
 FIELD_ENCRYPTION_KEY=<32 byte base64>
+PURE_ANALYTICS_URL=...                  # bila berupa service
 
 # 3. Jalankan lokal
 npm run dev
-npm run seed   # level, parameter bawaan, institusi contoh, akun admin, soal dan unit contoh
+npm run seed        # level, parameter bawaan, tes dan soal contoh (--demo: institusi/akun/jadwal/materi contoh)
+npx tsx --env-file=.env.local scripts/seed-demo-participant.ts <email> --password <pw> [--reset]
+                    # akun demo peserta: placement + 2 simulasi lewat mesin asli, analisis, study plan, Konselor AI; email tidak dikirim
+npx tsx --env-file=.env.local scripts/migrate-en.ts   # sekali jalan: teks data contoh lama ke bahasa Inggris
+node scripts/smoke.mjs   # uji asap end-to-end (dev server :3100, DB in-memory); saat ini 314 pemeriksaan
 ```
 
-**Deploy**: VPS (Docker + Nginx + HTTPS) atau Vercel. Atur semua env, pastikan job cron berjalan (VPS: proses terpisah, Vercel: Vercel Cron), dan siapkan backup database.
+**Deploy (produksi)**: VPS Biznet Gio, **PM2 + Nginx + HTTPS, tanpa Docker**.
+
+- Aplikasi di `/var/www/edulyfe-epta/app`, PM2 `edulyfe-epta` (`next start -p 4001`, satu instance fork, `ENABLE_INPROCESS_CRON=true`), Nginx meneruskan `english.edulyfe.id` ke port 4001. Env di `app/.env.local` (chmod 600).
+- `redeploy-english` (`deploy/redeploy-english.sh`, disalin ke `/usr/local/bin`):
+  1. `flock` agar tidak jalan ganda; `git fetch` + `merge --ff-only`.
+  2. `npm ci` dan `next build` (memori dibatasi `--max-old-space-size=1536`, `nice -n 10`) hanya bila ada perubahan atau `FORCE=1`.
+  3. `pm2 restart`, lalu cek kesehatan `/api/health`.
+- Satu siklus deploy sekitar 3-5 menit, kebanyakan untuk build.
+- Instance tunggal disengaja: rate limiter dan penjadwal ada di memori proses. Untuk scale-out: `ENABLE_INPROCESS_CRON=false`, jadwalkan `/api/cron/*` lewat cron sistem, pindahkan rate limiter ke penyimpanan bersama.
 
 ## 23. Fase Pengerjaan
 
@@ -678,6 +777,11 @@ npm run seed   # level, parameter bawaan, institusi contoh, akun admin, soal dan
 - Upload mp3 valid tersimpan di GridFS, file non-mp3 yang diganti ekstensi ditolak. Audio mode tes hanya bisa diputar sekali per attempt.
 - PDF yang diunggah wajib melewati layar verifikasi sebelum dianalisis, dan file PDF tidak dikirim ke AI.
 - Gambar > 300 KB terkompres otomatis, dan listing aset tidak memuat `dataBase64`.
+- Daftar dengan kode institusi salah ditolak; password < 8 karakter ditolak; akun belum terverifikasi tidak bisa login password; kursi penuh menolak daftar; daftar ulang email yang sudah ada tidak membocorkan dan tidak mengubah akun.
+- Login password salah memberi pesan yang sama dengan email tak terdaftar. Tautan reset hanya berlaku sekali dan 30 menit; password lama tidak berlaku setelah reset.
+- Mode pemeliharaan aktif: pengunjung dan peserta melihat halaman pemeliharaan, API non-admin 503, `/admin` tanpa sesi diarahkan ke `/admin/login`, admin tetap bisa semua, cron tetap jalan. Setelah dimatikan semua kembali normal.
+- Semua teks yang dilihat pengguna berbahasa Inggris; URL lama berbahasa Indonesia dialihkan 308 ke URL baru beserta query string.
+- Analisis Claude tidak jatuh ke template karena JSON rusak (keluaran lewat tool use).
 
 ## 25. Asumsi dan Keputusan yang Masih Terbuka
 
@@ -698,3 +802,23 @@ npm run seed   # level, parameter bawaan, institusi contoh, akun admin, soal dan
 | 13 | Aturan batas booking dan batal | 12 jam dan 24 jam | Pihak yang meminta |
 | 14 | Kebijakan permintaan reschedule oleh peserta | Peserta memilih slot coach lain yang tersedia; permintaan waktu bebas tidak mengubah jadwal otomatis | Pihak yang meminta |
 | 14 | Penulis materi HTML | Hanya `admin` pusat; materi dijalankan dalam iframe sandbox terisolasi | Tim keamanan/pengembang |
+| 15 | Nama produk di UI | **Diputuskan v2.3: English Inspira** (domain, DB, nama PM2 tetap `edulyfe`) | Selesai |
+| 16 | Pendaftaran mandiri | **Diputuskan v2.3: boleh, wajib kode institusi** + verifikasi email | Selesai |
+| 17 | Password minimum admin | 8 karakter untuk semua akun lewat UI; akun admin produksi dibuat manual dan **sebaiknya diganti** ke password yang lebih panjang | Pemilik |
+| 18 | Pembersihan pendaftar yang tidak memverifikasi email | Belum ada (tidak memakan kursi) | Pihak yang meminta |
+| 19 | Login password untuk coach/admin institusi | Lewat Lupa password untuk membuat password pertama (Profil hanya untuk peserta) | Pihak yang meminta |
+
+## 26. Bahasa, Halaman Publik, dan Merek
+
+- **Bahasa**: semua teks yang dilihat pengguna dalam bahasa Inggris, termasuk pesan error API, email, PDF (sertifikat/laporan), prompt dan jawaban AI, preset materi, kolom ekspor Excel, dan contoh templat impor. Format tanggal `en-GB`. Tanpa tanda panah (diganti teks seperti Previous/Next) dan tanpa em dash di teks tampilan.
+- **Tetap diterima tetapi tidak tampil**: alias kolom impor berbahasa Indonesia (agar file Excel lama tetap bisa diimpor) dan kode enum internal (`sma/d3/s1/s2`, `L/P`; labelnya tampil dalam bahasa Inggris).
+- **Merek**: "ENGLISH INSPIRA" + "by Inspira Teknologi", logo Inspira (`public/brand/logo-white.png` untuk latar gelap, `logo-navy.png` untuk latar terang), favicon logo navy tanpa latar, font Poppins.
+
+### 26.1 Landing page (`/`)
+
+- Mengikuti desain *English Inspira — Redesign Website*:
+  - Bagian: hero dengan contoh hasil dan percakapan konselor, mitra pengembang (Inspira Teknologi, Telkom University, CoE AILO), cara kerja 4 langkah, Konselor AI, English Intelligence Journey 7 tahap, untuk institusi, untuk siapa, FAQ, dan CTA akhir.
+  - **Tanpa harga, keranjang, atau free trial.**
+  - CTA: **Create account** (kode institusi), **Sign in**, dan **Contact us** untuk institusi (email/WhatsApp dari Pengaturan, cadangan inspiratekno.com).
+- Klaim hanya fitur yang memang ada: tidak menyebut pengingat WhatsApp atau proctoring webcam. Proctoring hanya layar penuh dan perpindahan tab.
+- Pengguna yang sudah masuk diarahkan ke dasbor perannya. Logout kembali ke landing page. Halaman masuk punya tautan "Back to home".

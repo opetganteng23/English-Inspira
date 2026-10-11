@@ -1,4 +1,4 @@
-# TODO English Inspira (repo Edulyfe EPTA) — acuan: English_Inspira_LMS_MTS_V2_2.md
+# TODO English Inspira (repo Edulyfe EPTA) — acuan: English_Inspira_LMS_MTS_V2_3.md (v2.3)
 
 Legenda status: ✅ Sudah · 🔄 Sedang · ⬜ Belum · ⏭️ Sengaja dilewati/ditunda (alasan wajib) · ❌ Dihapus karena bertentangan dengan v2.2
 Prioritas: **P1** fondasi (Fase 1+3) → **P2** belajar & analitik (Fase 4+5) → **P3** coaching (Fase 6) → **P4** PDF/level-up/laporan/hardening (Fase 7+8) → **P5** opsional (Fase 9, sudah ada)
