@@ -47,6 +47,8 @@ export default function Hasil({ params }: { params: { id: string } }) {
   if (!r) return <Loading text="Loading results…" />;
   const target = me.data?.targetScore ?? null;
   const a = r.analysis;
+  // Mode template: narasi diawali ringkasan yang sama; tampilkan hanya kelanjutannya.
+  const extra = a.narrative ? (a.summary && a.narrative.startsWith(a.summary) ? a.narrative.slice(a.summary.length).trim() : a.narrative) : "";
   const shown = r.review.filter((x) => (filter === "wrong" ? !x.correct : true));
   const secDelta = (section: string) => {
     const now = r.sectionScores.find((s) => s.section === section), before = r.previous?.sectionScores.find((s) => s.section === section);
@@ -135,7 +137,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
           <div className="mt-3 grid gap-4 text-sm lg:grid-cols-2">
             <div className="flex flex-col gap-3">
               <p className="leading-relaxed">{a.summary}</p>
-              {a.narrative && a.narrative !== a.summary && <p className="leading-relaxed text-ink-soft">{a.narrative}</p>}
+              {extra && <p className="leading-relaxed text-ink-soft">{extra}</p>}
               {!!a.strengths?.length && <div><p className="font-semibold text-navy">Already strong</p><ul className="mt-1 flex flex-col gap-1 text-ink-soft">{a.strengths.map((x) => <li key={x.topic}><b className="text-navy">{x.topic}</b> · {x.evidence}</li>)}</ul></div>}
               {!!a.nextSteps?.length && <div><p className="font-semibold text-navy">Next steps</p><ol className="mt-1 list-decimal pl-5 text-ink-soft">{a.nextSteps.map((s) => <li key={s}>{s}</li>)}</ol></div>}
             </div>

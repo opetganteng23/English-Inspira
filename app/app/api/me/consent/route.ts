@@ -4,10 +4,12 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { User } from "@/models/User";
+import { composeName } from "@/lib/person-name";
 
 const schema = z.object({
   consent: z.literal(true, { message: "Agree to the use of your data to continue" }),
-  name: z.string().trim().min(2).max(100),
+  givenName: z.string().trim().min(1, "Enter your given name").max(60),
+  surname: z.string().trim().min(1, "Enter your surname").max(60),
   phone: z.string().trim().regex(/^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional().or(z.literal("")),
 });
 
@@ -17,7 +19,7 @@ export async function POST(req: Request) {
     const me = await requireRole(["participant", "coach", "inst_admin"], { allowInvited: true });
     const b = schema.parse(await req.json());
     await connectDB();
-    await User.updateOne({ _id: me._id }, { name: b.name, ...(b.phone ? { phone: b.phone } : {}), consentAt: me.consentAt ?? new Date(), status: "active" });
+    await User.updateOne({ _id: me._id }, { name: composeName(b.givenName, b.surname), givenName: b.givenName, surname: b.surname, ...(b.phone ? { phone: b.phone } : {}), consentAt: me.consentAt ?? new Date(), status: "active" });
     await audit(me._id, "consent.accept", String(me._id));
     return NextResponse.json({ ok: true });
   } catch (e) {

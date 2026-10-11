@@ -96,7 +96,7 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
         <label className={`${label} sm:col-span-2`}>Title<input className="field font-normal" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
         <label className={`${label} sm:col-span-2`}>Summary (shown in the materials list)<input className="field font-normal" maxLength={400} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
         <label className={label}>Material type<select className="field font-normal" value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value as "rich" | "html" })} disabled={!isNew && !!loaded && loaded.status === "published" && false}><option value="rich">Rich text (reading)</option>{isAdmin && <option value="html">Full-page HTML (interactive)</option>}</select></label>
-        <label className={`${label} sm:col-span-2`}>Tag (pisah koma)<input className="field font-normal" value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} placeholder="structure, grammar" /></label>
+        <label className={`${label} sm:col-span-2`}>Tags (comma separated)<input className="field font-normal" value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} placeholder="structure, grammar" /></label>
       </section>
 
       {ready && f.kind === "rich" && (

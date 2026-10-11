@@ -219,3 +219,23 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | 4 | Beranda "Today" (≤ 3 item + durasi), learning days, past due tanpa merah, microcopy | ⬜ |
 | 5 | Notifikasi: jam tenang, maks pengingat/hari, ringkasan harian, `ui_comfort` | ⬜ |
 | 6 | Pengingat istirahat, ulasan berjeda, survei SEQ/SUS, metrik kenyamanan di dasbor admin | ⬜ |
+
+## 17. Logo, tema, hasil tes, Learn, Journey, nama, responsif (permintaan pemilik 2026-10-11)
+
+| ID | Item | Status |
+|---|---|---|
+| U1 | Logo baru dari berkas pemilik (`design/brand/logo-english-inspira-source.jpeg` → `app/public/brand/logo.png`, `logo-mark.png`, favicon, PDF, pemeliharaan) | ✅ dilihat di Chrome (landing, masuk, shell, PDF belum dibuka) |
+| U2 | Tema warna mengikuti logo: navy `#0A2257`, biru `#0B4FA6`, emas `#D9A02F` (aksen oranye lama dihapus); kontras 20 pasangan lulus WCAG AA | ✅ dihitung |
+| U3 | Hanya konten yang menggulung (shell `h-dvh`, ruang tes header/timer/tombol tetap), tanpa overflow samping di 5 ukuran layar | ✅ pemeriksaan otomatis di Chrome (halaman login); landing/legal memang dokumen |
+| U4 | Halaman hasil sesuai desain: kartu skor + penanda target, kartu per section, selisih vs tes sebelumnya, Unduh PDF, rincian per tipe, **Konselor AI di dalam halaman** | ✅ uji klik: kirim pesan dan balasan |
+| U5 | Ringkasan analisis menunjuk bagian lemah + "Courses to take next" (peta remedial → unit) | ✅ dengan 1 pemetaan uji; bergantung isi peta remedial admin |
+| U6 | Learn: course sebagai kartu yang bisa dipilih; unit sebagai kartu | ✅ uji klik |
+| U7 | Journey 7 tahap (`/journey`) dari data nyata, tanpa pembelian | ✅ uji klik (Discover selesai setelah placement) |
+| U8 | Nama dipisah **given name** + **surname** (daftar, persetujuan, Profil); `name` = gabungan untuk tampilan; akun lama dipisah heuristik di Profil | ✅ uji klik persetujuan + smoke diperbarui; impor CSV masih satu kolom `name` |
+| U9 | Tombol "Start placement" langsung ke halaman persiapan | ✅ uji klik |
+| U10 | Perbaikan: label sr-only membuat halaman bisa digulung; grid melebar karena tabel; header ikut tergulung (`overflow-clip`); teks Indonesia tersisa; narasi analisis dobel; lint `/api/me` yang menggagalkan build | ✅ |
+| U11 | Fokus keyboard terlihat (`:focus-visible`) | ⬜ ditulis, belum diuji dengan keyboard |
+| U12 | Uji klik authoring (course, unit, soal, grup audio, tes, materi) di browser | ⬜ skrip siap, belum dijalankan |
+| U13 | Profil: ganti foto, ubah email (OTP email baru), pengaturan notifikasi | ⬜ belum dibuat |
+| U14 | Tabel admin di ponsel menjadi kartu | ⏭️ ditunda; saat ini digulung ke samping di dalam kotaknya |
+| U15 | Impor peserta CSV/Excel dengan kolom given name dan surname | ⬜ |

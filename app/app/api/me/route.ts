@@ -3,6 +3,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { handleError, HttpError } from "@/lib/rbac";
+import { composeName, splitName } from "@/lib/person-name";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
 import { Level } from "@/models/Config";
@@ -21,7 +22,7 @@ export async function GET() {
     const nameLocked = !!(await ItpRegistration.exists({ userId: u._id, status: { $ne: "cancelled" } }));
     const hasPassword = !!(await User.exists({ _id: u._id, passwordHash: { $exists: true } }));
     return NextResponse.json({
-      id: String(u._id), email: u.email, name: u.name ?? null, role: u.role, status: u.status, phone: u.phone ?? null,
+      id: String(u._id), email: u.email, name: u.name ?? null, givenName: u.givenName ?? splitName(u.name).givenName, surname: u.surname ?? splitName(u.name).surname, role: u.role, status: u.status, phone: u.phone ?? null,
       education: u.education ?? null, targetScore: u.targetScore ?? null, goal: u.goal ?? null,
       institutionId: u.institutionId ? String(u.institutionId) : null, institution: inst ? { name: inst.name, contractEnd: inst.contractEnd ?? null } : null,
       consentAt: u.consentAt ?? null, createdAt: u.createdAt, nameLocked, hasPassword,
@@ -35,7 +36,8 @@ export async function GET() {
 }
 
 const patch = z.object({
-  name: z.string().trim().min(2).max(100).optional(),
+  givenName: z.string().trim().min(1).max(60).optional(),
+  surname: z.string().trim().min(1).max(60).optional(),
   phone: z.string().trim().regex(/^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional(),
   education: z.enum(["sma", "d3", "s1", "s2"]).optional(),
   targetScore: z.union([z.literal(450), z.literal(500), z.literal(550), z.literal(600)]).optional(),
@@ -52,9 +54,15 @@ export async function PATCH(req: Request) {
     await connectDB();
     const u = await User.findById(me._id);
     if (!u) throw new HttpError(401, "Not signed in");
-    if (b.name && b.name !== u.name && (await ItpRegistration.exists({ userId: u._id, status: { $ne: "cancelled" } })))
+    const cur = splitName(u.name);
+    const given = b.givenName ?? u.givenName ?? cur.givenName, sur = b.surname ?? u.surname ?? cur.surname;
+    const nameChanged = (b.givenName !== undefined || b.surname !== undefined) && composeName(given, sur) !== (u.name ?? "");
+    if (nameChanged && (await ItpRegistration.exists({ userId: u._id, status: { $ne: "cancelled" } })))
       throw new HttpError(409, "Your name is locked after registering for the official ITP test");
-    u.set(b);
+    const rest: Partial<typeof b> = { ...b };
+    delete rest.givenName; delete rest.surname;
+    u.set(rest);
+    if (nameChanged) u.set({ givenName: given, surname: sur, name: composeName(given, sur) });
     await u.save();
     return NextResponse.json({ ok: true });
   } catch (e) {

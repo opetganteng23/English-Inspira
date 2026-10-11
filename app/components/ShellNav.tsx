@@ -51,7 +51,7 @@ export function ShellNav({
   );
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden md:flex-row">
+    <div className="relative flex h-dvh flex-col overflow-clip md:flex-row">
       {/* Desktop / tablet landscape */}
       <aside className="hidden h-full w-64 shrink-0 flex-col gap-5 overflow-y-auto bg-navy p-4 md:flex lg:w-[264px] lg:p-5">
         <Logo />

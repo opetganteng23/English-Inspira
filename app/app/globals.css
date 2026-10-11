@@ -9,6 +9,9 @@ body {
 img, video, canvas, svg { max-width: 100%; }
 /* Grid satu kolom tidak boleh melebar mengikuti isi (tabel lebar): kolom default minmax(0,1fr); grid-cols-* tetap menimpa. */
 @layer base {
+  /* Fokus keyboard selalu terlihat (kontras biru brand pada putih 7,8:1). */
+  :focus-visible { outline: 2px solid #0B4FA6; outline-offset: 2px; border-radius: 6px; }
+  aside :focus-visible, header :focus-visible { outline-color: #FFFFFF; }
   .grid { grid-template-columns: minmax(0, 1fr); }
   .grid > * { min-width: 0; }
 }

@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 
-export function ConsentForm({ email, initialName, initialPhone }: { email: string; initialName: string; initialPhone: string }) {
-  const [name, setName] = useState(initialName);
+export function ConsentForm({ email, initialGivenName, initialSurname, initialPhone }: { email: string; initialGivenName: string; initialSurname: string; initialPhone: string }) {
+  const [givenName, setGivenName] = useState(initialGivenName);
+  const [surname, setSurname] = useState(initialSurname);
   const [phone, setPhone] = useState(initialPhone);
   const [agree, setAgree] = useState(false);
   const [err, setErr] = useState("");
@@ -14,7 +15,7 @@ export function ConsentForm({ email, initialName, initialPhone }: { email: strin
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);
     try {
-      await api("/api/me/consent", { json: { consent: agree, name, phone } });
+      await api("/api/me/consent", { json: { consent: agree, givenName, surname, phone } });
       window.location.href = "/";
     } catch (x) { setErr((x as Error).message); setBusy(false); }
   }
@@ -25,9 +26,13 @@ export function ConsentForm({ email, initialName, initialPhone }: { email: strin
         <h1 className="font-display text-2xl font-extrabold text-navy">Complete your profile & consent</h1>
         <p className="text-[15px] text-ink-soft">The account <b>{email}</b> was created by your institution. One last step before you start.</p>
       </div>
-      <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Full name as on ID card/passport
-        <input className="field font-normal" required minLength={2} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
-        <span className="text-xs font-normal text-ink-soft">Used for official test registration and certificates.</span></label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Given name
+          <input className="field font-normal" required autoComplete="given-name" value={givenName} onChange={(e) => setGivenName(e.target.value)} /></label>
+        <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Surname
+          <input className="field font-normal" required autoComplete="family-name" value={surname} onChange={(e) => setSurname(e.target.value)} /></label>
+      </div>
+      <p className="-mt-3 text-xs text-ink-soft">Enter your name as on your ID card or passport. It is used for official test registration and certificates.</p>
       <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Phone number <span className="font-normal text-ink-soft">(optional)</span>
         <input className="field font-normal" inputMode="tel" autoComplete="tel" pattern="[0-9+\- ]{8,20}" value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
       <label className="flex items-start gap-2 text-sm">
@@ -35,7 +40,7 @@ export function ConsentForm({ email, initialName, initialPhone }: { email: strin
         <span>I agree to the processing of my personal data and learning data in accordance with the <Link className="underline" href="/privacy" target="_blank">Privacy Policy</Link> and <Link className="underline" href="/terms" target="_blank">Terms & Conditions</Link>, including sharing my learning results with my institution and coach.</span>
       </label>
       {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
-      <button className="btn-primary" disabled={busy || !agree || name.trim().length < 2}>{busy ? "Saving…" : "Agree & Continue"}</button>
+      <button className="btn-primary" disabled={busy || !agree || !givenName.trim() || !surname.trim()}>{busy ? "Saving…" : "Agree & Continue"}</button>
     </form>
   );
 }

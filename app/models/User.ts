@@ -7,7 +7,9 @@ export const USER_STATUS = ["invited", "active", "disabled"] as const;
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    name: { type: String, trim: true },
+    name: { type: String, trim: true }, // "Given Surname" (diturunkan dari givenName + surname bila ada)
+    givenName: { type: String, trim: true },
+    surname: { type: String, trim: true },
     phone: String,
     role: { type: String, enum: ROLES, default: "participant", index: true },
     // Wajib untuk participant/coach/inst_admin; hanya admin tanpa institusi (ditegakkan di lib/participants.ts).

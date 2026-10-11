@@ -9,9 +9,11 @@ import { activeInstitution } from "@/lib/participants";
 import { hashPassword, passwordSchema } from "@/lib/password";
 import { issueCode } from "@/lib/otp-code";
 import { enqueueMail } from "@/lib/mailq";
+import { composeName } from "@/lib/person-name";
 
 const schema = z.object({
-  name: z.string().trim().min(2, "Enter your full name").max(100),
+  givenName: z.string().trim().min(1, "Enter your given name").max(60),
+  surname: z.string().trim().min(1, "Enter your surname").max(60),
   email: z.email("Invalid email").max(200),
   password: passwordSchema,
   code: z.string().trim().min(3, "Enter your institution code").max(20).transform((s) => s.toUpperCase()),
@@ -39,8 +41,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, expiresInSec: 300 });
     }
     const pendingPasswordHash = await hashPassword(b.password);
-    if (existing) await User.updateOne({ _id: existing._id }, { name: b.name, institutionId: inst._id, pendingPasswordHash });
-    else await User.create({ email, name: b.name, role: "participant", institutionId: inst._id, status: "invited", selfRegistered: true, pendingPasswordHash });
+    if (existing) await User.updateOne({ _id: existing._id }, { name: composeName(b.givenName, b.surname), givenName: b.givenName, surname: b.surname, institutionId: inst._id, pendingPasswordHash });
+    else await User.create({ email, name: composeName(b.givenName, b.surname), givenName: b.givenName, surname: b.surname, role: "participant", institutionId: inst._id, status: "invited", selfRegistered: true, pendingPasswordHash });
     await issueCode(email, "verify_email");
     return NextResponse.json({ ok: true, expiresInSec: 300 });
   } catch (e) {

@@ -7,23 +7,23 @@ import { api, tgl } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { PasswordCard } from "@/components/PasswordCard";
 
-type Me = { hasPassword?: boolean; name: string | null; email: string; phone: string | null; education: string | null; targetScore: number | null; goal: string | null; institution: { name: string; contractEnd: string | null } | null; level: { name: string } | null; scoreEst: number | null; createdAt: string; nameLocked: boolean };
+type Me = { hasPassword?: boolean; name: string | null; givenName?: string; surname?: string; email: string; phone: string | null; education: string | null; targetScore: number | null; goal: string | null; institution: { name: string; contractEnd: string | null } | null; level: { name: string } | null; scoreEst: number | null; createdAt: string; nameLocked: boolean };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
 export default function Profil() {
   const router = useRouter();
   const { data: me, loading, error, reload } = useApi<Me>("/api/me");
-  const [f, setF] = useState({ name: "", phone: "", education: "", targetScore: "", goal: "" });
+  const [f, setF] = useState({ givenName: "", surname: "", phone: "", education: "", targetScore: "", goal: "" });
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [del, setDel] = useState("");
 
-  useEffect(() => { if (me) setF({ name: me.name ?? "", phone: me.phone ?? "", education: me.education ?? "", targetScore: me.targetScore ? String(me.targetScore) : "", goal: me.goal ?? "" }); }, [me]);
+  useEffect(() => { if (me) setF({ givenName: me.givenName ?? "", surname: me.surname ?? "", phone: me.phone ?? "", education: me.education ?? "", targetScore: me.targetScore ? String(me.targetScore) : "", goal: me.goal ?? "" }); }, [me]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setMsg(null);
     try {
-      await api("/api/me", { method: "PATCH", json: { ...(!me?.nameLocked && f.name ? { name: f.name } : {}), ...(f.phone ? { phone: f.phone } : {}), ...(f.education ? { education: f.education } : {}), ...(f.targetScore ? { targetScore: Number(f.targetScore) } : {}), ...(f.goal ? { goal: f.goal } : {}) } });
+      await api("/api/me", { method: "PATCH", json: { ...(!me?.nameLocked && f.givenName && f.surname ? { givenName: f.givenName, surname: f.surname } : {}), ...(f.phone ? { phone: f.phone } : {}), ...(f.education ? { education: f.education } : {}), ...(f.targetScore ? { targetScore: Number(f.targetScore) } : {}), ...(f.goal ? { goal: f.goal } : {}) } });
       setMsg({ ok: true, text: "Changes saved." }); reload();
     } catch (x) { setMsg({ ok: false, text: (x as Error).message }); } finally { setBusy(false); }
   }
@@ -44,7 +44,11 @@ export default function Profil() {
 
       <form onSubmit={save} className="card flex flex-col gap-4">
         <h2 className="font-display text-lg font-extrabold text-navy">Personal details</h2>
-        <label className={label}>Full name as on ID card/passport<input className="field font-normal" disabled={me.nameLocked} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />{me.nameLocked && <span className="text-xs font-normal text-ink-soft">Locked after you register for the official ITP test.</span>}</label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className={label}>Given name<input className="field font-normal" disabled={me.nameLocked} autoComplete="given-name" value={f.givenName} onChange={(e) => setF({ ...f, givenName: e.target.value })} /></label>
+          <label className={label}>Surname<input className="field font-normal" disabled={me.nameLocked} autoComplete="family-name" value={f.surname} onChange={(e) => setF({ ...f, surname: e.target.value })} /></label>
+        </div>
+        <p className="-mt-2 text-xs text-ink-soft">Enter your name as on your ID card or passport. {me.nameLocked ? "Locked after you register for the official ITP test." : ""}</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className={label}>Phone number<input className="field font-normal" inputMode="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
           <label className={label}>Highest education<select className="field font-normal" value={f.education} onChange={(e) => setF({ ...f, education: e.target.value })}><option value="">Choose</option><option value="sma">High school</option><option value="d3">Diploma</option><option value="s1">Bachelor&apos;s degree</option><option value="s2">Master&apos;s degree</option></select></label>

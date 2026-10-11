@@ -152,7 +152,7 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
 
 // ---------- Daftar ----------
 function RegisterForm() {
-  const [f, setF] = useState({ name: "", email: "", password: "", confirm: "", code: "" });
+  const [f, setF] = useState({ givenName: "", surname: "", email: "", password: "", confirm: "", code: "" });
   const [step, setStep] = useState<"form" | "otp">("form");
   const [otp, setOtp] = useState("");
   const [err, setErr] = useState("");
@@ -166,7 +166,7 @@ function RegisterForm() {
     if (f.password !== f.confirm) { setErr("The passwords do not match"); return; }
     setBusy(true);
     try {
-      await api("/api/auth/register", { json: { name: f.name, email: f.email, password: f.password, code: f.code } });
+      await api("/api/auth/register", { json: { givenName: f.givenName, surname: f.surname, email: f.email, password: f.password, code: f.code } });
       setStep("otp"); setOtp(""); setCooldown(60);
       setTimeout(() => otpRef.current?.focus(), 50);
     } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
@@ -195,7 +195,10 @@ function RegisterForm() {
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-4">
           <Title t="Create an account" s="All fields are required." />
-          <Field label="Full name" required autoComplete="name" value={f.name} onChange={set("name")} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Given name" required autoComplete="given-name" value={f.givenName} onChange={set("givenName")} />
+            <Field label="Surname" required autoComplete="family-name" value={f.surname} onChange={set("surname")} />
+          </div>
           <Field label="Email" type="email" required autoComplete="email" placeholder="name@email.com" value={f.email} onChange={set("email")} />
           <Field label="Password" type="password" required minLength={8} autoComplete="new-password" placeholder="At least 8 characters" value={f.password} onChange={set("password")} />
           <Field label="Confirm password" type="password" required minLength={8} autoComplete="new-password" value={f.confirm} onChange={set("confirm")} />

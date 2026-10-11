@@ -50,7 +50,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
         <h2 className="font-display text-lg font-extrabold text-navy">Device check</h2>
         <p className="text-sm text-ink-soft">Put on your headset, then play the test tone. Listening audio will only be played <b>sekali</b>.</p>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button type="button" className="btn-outline" onClick={beep}>🔊 Putar nada uji</button>
+          <button type="button" className="btn-outline" onClick={beep}>Play test tone</button>
           <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={audioOk} onChange={(e) => setAudioOk(e.target.checked)} />I can hear the tone</label>
         </div>
       </section>
@@ -62,7 +62,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
         </ul>
         <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={ready} onChange={(e) => setReady(e.target.checked)} /><span>I understand the rules and am ready to finish the test. The test attempt is counted when the test starts.</span></label>
         <ErrorNote text={err} />
-        <button className="btn-primary mt-4" disabled={!audioOk || !ready || busy} onClick={begin}>{busy ? "Memulai…" : `Start ${t.name}`}</button>
+        <button className="btn-primary mt-4" disabled={!audioOk || !ready || busy} onClick={begin}>{busy ? "Starting…" : `Start ${t.name}`}</button>
         <Link href="/tests" className="mt-3 block text-center text-sm font-semibold text-brand">Cancel</Link>
       </section>
     </div>

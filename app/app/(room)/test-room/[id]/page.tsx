@@ -166,7 +166,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
   );
 
   return (
-    <div className="relative flex h-dvh flex-col overflow-hidden">
+    <div className="relative flex h-dvh flex-col overflow-clip">
       <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
         <div className="min-w-0">
           <p className="truncate font-display text-sm font-extrabold sm:text-base">{st.testName}</p>

@@ -72,7 +72,7 @@ export function ruleBasedReply(msg: string, c: CounselorContext): z.infer<typeof
   const weeks = Math.max(2, Math.ceil(gap / 15));
   const reply = asksSchedule
     ? `Your estimated score is ${last.scoreEst}, target ${target} (a gap of ${gap} points). With consistent practice, allow at least ${weeks} weeks before the official test, and take one more simulation test a week before to confirm you are ready. This is an estimate, not a guarantee. (Basic mode without AI.)`
-    : `Based on your last test (estimate ${last.scoreEst}), your weakest section is ${weakest?.section ?? "-"}. ${c.weaknesses[0] ? `Prioritaskan: ${c.weaknesses[0]}. ` : ""}Start with 20 questions a day in that section, then review the explanation for each wrong answer. (Basic mode without AI.)`;
+    : `Based on your last test (estimate ${last.scoreEst}), your weakest section is ${weakest?.section ?? "-"}. ${c.weaknesses[0] ? `Top priority: ${c.weaknesses[0]}. ` : ""}Start with 20 questions a day in that section, then review the explanation for each wrong answer. (Basic mode without AI.)`;
   return {
     reply,
     actionPlan: [

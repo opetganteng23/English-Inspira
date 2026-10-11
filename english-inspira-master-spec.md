@@ -1,3 +1,7 @@
+> **DOKUMEN LAMA (v1.1, model jual paket). Jangan dipakai sebagai acuan implementasi.**
+> Acuan resmi sekarang: `English_Inspira_LMS_MTS_V2_4.md` dan `TODO.md`. Perbedaan penting dengan isi di bawah:
+> nama produk **English Inspira** (bukan "Edulyfe EPTA"; domain, database, dan PM2 tetap `edulyfe`); font **Poppins saja** (bukan Montserrat); tanpa paket, keranjang, Midtrans, voucher, free trial; daftar wajib kode institusi; seluruh UI berbahasa Inggris.
+
 # Edulyfe EPTA (English Proficiency Test & Analytics) — Master Technical Specification & Build Instructions
 
 Versi 1.1 · Basis: desain "English Inspira — Redesign Website" (28 layar, 3 peran). Nama produk resmi: **Edulyfe EPTA**. Teks "English Inspira" di desain adalah nama lama dan harus diganti saat implementasi UI.

@@ -92,8 +92,8 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   const p1 = await login("p1@test.local", { invite: tok });
   ok(p1.needsConsent === true, "login pertama: perlu persetujuan data");
   r = await req(p1, "/api/home"); ok(r.status === 403, "sebelum persetujuan, API peserta terkunci", String(r.status));
-  r = await req(p1, "/api/me/consent", { method: "POST", json: { consent: false, name: "Peserta Satu" } }); ok(r.status === 400, "persetujuan wajib dicentang");
-  r = await req(p1, "/api/me/consent", { method: "POST", json: { consent: true, name: "Peserta Satu", phone: "081234567890" } }); ok(r.status === 200, "persetujuan diterima → aktif");
+  r = await req(p1, "/api/me/consent", { method: "POST", json: { consent: false, givenName: "Peserta", surname: "Satu" } }); ok(r.status === 400, "persetujuan wajib dicentang");
+  r = await req(p1, "/api/me/consent", { method: "POST", json: { consent: true, givenName: "Peserta", surname: "Satu", phone: "081234567890" } }); ok(r.status === 200, "persetujuan diterima → aktif");
   r = await req(null, `/api/auth/invite?token=${tok}`); ok(r.status === 404, "token undangan sekali pakai");
   r = await req(p1, "/api/me"); ok(r.data.status === "active" && r.data.needsPlacement === true && r.data.institution?.name === "Kampus Uji", "profil: aktif, perlu placement", J(r.data));
 
@@ -148,16 +148,16 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
 
   console.log("\n== Peran & isolasi institusi ==");
   const coach = await login("coach@test.local", { invite: inviteTokenFor("coach@test.local") });
-  ok(coach.needsConsent === true, "coach juga lewat persetujuan"); await req(coach, "/api/me/consent", { method: "POST", json: { consent: true, name: "Coach Uji" } });
+  ok(coach.needsConsent === true, "coach juga lewat persetujuan"); await req(coach, "/api/me/consent", { method: "POST", json: { consent: true, givenName: "Coach", surname: "Uji" } });
   r = await req(coach, "/api/coach/participants"); ok(r.status === 200 && r.data.participants.length === 3 && r.data.participants.every((p) => /@test\.local$/.test(p.email)), "coach melihat peserta institusinya", J(r.data.participants?.map((p) => p.email)));
   r = await req(coach, "/api/admin/dashboard"); ok(r.status === 403, "coach tidak bisa API admin");
   r = await req(coach, "/api/home"); ok(r.status === 403, "coach tidak bisa API peserta");
-  const ia = await login("ia@test.local", { invite: inviteTokenFor("ia@test.local") }); await req(ia, "/api/me/consent", { method: "POST", json: { consent: true, name: "Admin Inst" } });
+  const ia = await login("ia@test.local", { invite: inviteTokenFor("ia@test.local") }); await req(ia, "/api/me/consent", { method: "POST", json: { consent: true, givenName: "Admin", surname: "Inst" } });
   r = await req(ia, "/api/inst/participants"); ok(r.status === 200 && r.data.participants.length === 3, "inst_admin A melihat 3 peserta", J(r.data.participants?.length));
   r = await req(ia, `/api/inst/participants?institution=${iB}`); ok(r.data.participants.length === 3, "parameter ?institution diabaikan untuk inst_admin");
   r = await req(ia, "/api/inst/code"); ok(r.status === 200 && r.data.seats === 3 && r.data.used === 3, "info kursi institusi", J(r.data));
   r = await req(ia, "/api/inst/invites", { method: "POST", json: { emails: ["extra@test.local"] } }); ok(r.status === 200 && r.data.failed.length === 1, "undang di luar kursi gagal terlaporkan", J(r.data));
-  const ib = await login("ib@test.local", { invite: inviteTokenFor("ib@test.local") }); await req(ib, "/api/me/consent", { method: "POST", json: { consent: true, name: "Admin Lain" } });
+  const ib = await login("ib@test.local", { invite: inviteTokenFor("ib@test.local") }); await req(ib, "/api/me/consent", { method: "POST", json: { consent: true, givenName: "Admin", surname: "Lain" } });
   r = await req(ib, `/api/inst/participants/${pid}`); ok(r.status === 404, "inst_admin B membuka peserta A = 404");
   r = await req(ib, "/api/inst/participants"); ok(r.data.participants.length === 0, "inst_admin B tidak melihat peserta A");
   r = await req(ia, "/api/admin/institutions"); ok(r.status === 403, "inst_admin tidak bisa API admin");
@@ -252,7 +252,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   await req(admin, "/api/admin/users", { method: "POST", json: { email: "coachb@test.local", name: "Coach B", role: "coach", institutionId: iB } });
   await sleep(1500);
   const coachB = await login("coachb@test.local", { invite: inviteTokenFor("coachb@test.local") });
-  await req(coachB, "/api/me/consent", { method: "POST", json: { consent: true, name: "Coach B" } });
+  await req(coachB, "/api/me/consent", { method: "POST", json: { consent: true, givenName: "Coach", surname: "B" } });
   r = await req(coachB, `/api/coach/slots/${s1}`, { method: "POST", json: { action: "cancel", reason: "bukan milikku" } }); ok(r.status === 403, "coach lain tidak bisa mengubah slot");
   r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: s1 } }); ok(r.status === 201, "peserta memesan slot"); const bk1 = r.data.id;
   r = await req(p1, "/api/coaching/book", { method: "POST", json: { slotId: s1 } }); ok(r.status === 409, "pesan ganda ditolak");
@@ -476,7 +476,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(coach, "/api/admin/questions"); ok(r.status === 403, "coach tidak bisa membuka bank soal");
   r = await req(coach, "/api/admin/courses"); ok(r.status === 403, "coach tidak bisa mengelola course");
   await req(admin, `/api/admin/institutions/${iB}/invites`, { method: "POST", json: { emails: ["pb@test.local"] } }); await sleep(1500);
-  const pbJar = await login("pb@test.local", { invite: inviteTokenFor("pb@test.local") }); await req(pbJar, "/api/me/consent", { method: "POST", json: { consent: true, name: "Peserta B" } });
+  const pbJar = await login("pb@test.local", { invite: inviteTokenFor("pb@test.local") }); await req(pbJar, "/api/me/consent", { method: "POST", json: { consent: true, givenName: "Peserta", surname: "B" } });
   r = await req(pbJar, "/api/materials"); ok(r.status === 200 && r.data.materials.some((m) => m.slug === bSlug), "materi global terlihat oleh peserta institusi lain");
 
   console.log("\n== Kedaluwarsa kontrak & penonaktifan ==");
@@ -531,11 +531,11 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
     r = await req(admin, "/api/admin/institutions", { method: "POST", json: { name: "Kampus Daftar", code: "KDAFTAR", seats: 1, contractStart: new Date().toISOString(), contractEnd: new Date(Date.now() + 365 * 86400000).toISOString() } });
     ok(r.status === 201, "institusi untuk daftar mandiri dibuat", J(r.data));
     const em = "daftar@test.local";
-    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Peserta Daftar", email: em, password: "rahasia123", code: "SALAH99" } });
+    r = await req(null, "/api/auth/register", { method: "POST", json: { givenName: "Peserta", surname: "Daftar", email: em, password: "rahasia123", code: "SALAH99" } });
     ok(r.status === 400, "daftar dengan kode institusi salah ditolak");
-    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Peserta Daftar", email: em, password: "pendek", code: "kdaftar" } });
+    r = await req(null, "/api/auth/register", { method: "POST", json: { givenName: "Peserta", surname: "Daftar", email: em, password: "pendek", code: "kdaftar" } });
     ok(r.status === 400, "password < 8 karakter ditolak");
-    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Peserta Daftar", email: em, password: "rahasia123", code: "kdaftar" } });
+    r = await req(null, "/api/auth/register", { method: "POST", json: { givenName: "Peserta", surname: "Daftar", email: em, password: "rahasia123", code: "kdaftar" } });
     ok(r.status === 200, "daftar: kode verifikasi dikirim", J(r.data));
     r = await req(null, "/api/auth/login", { method: "POST", json: { email: em, password: "rahasia123" } });
     ok(r.status === 400, "belum verifikasi email: login password ditolak");
@@ -544,9 +544,9 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
     const jarR = { c: "" };
     r = await req(jarR, "/api/auth/register/verify", { method: "POST", json: { email: em, code: vcode } });
     ok(r.status === 200 && r.data.needsConsent === true && !!jarR.c, "verifikasi: akun aktif, masuk, lanjut ke persetujuan data", J(r.data));
-    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Orang Lain", email: "lain@test.local", password: "rahasia123", code: "KDAFTAR" } });
+    r = await req(null, "/api/auth/register", { method: "POST", json: { givenName: "Orang", surname: "Lain", email: "lain@test.local", password: "rahasia123", code: "KDAFTAR" } });
     ok(r.status === 409, "kursi institusi penuh: daftar ditolak");
-    r = await req(null, "/api/auth/register", { method: "POST", json: { name: "Penyerang", email: em, password: "bukanmilik1", code: "KUJI" } });
+    r = await req(null, "/api/auth/register", { method: "POST", json: { givenName: "Penyerang", surname: "Uji", email: em, password: "bukanmilik1", code: "KUJI" } });
     ok(r.status === 200 || r.status === 409, "daftar ulang email yang sudah ada: tidak membocorkan / tidak mengubah akun");
     r = await req(null, "/api/auth/login", { method: "POST", json: { email: em, password: "bukanmilik1" } });
     ok(r.status === 400, "password dari pendaftaran ulang tidak berlaku");
