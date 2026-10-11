@@ -101,8 +101,8 @@ export async function setParam(key: ParamKey, value: unknown, by: Types.ObjectId
 export const LEVEL_DEFAULTS = [
   // PLACEHOLDER (MTS §5): ditetapkan pihak yang meminta.
   { key: "basic", name: "Basic", order: 1, scoreMin: 310, scoreMax: 459, coachingQuota: 8 },
-  { key: "intermediate", name: "Intermediate", order: 2, scoreMin: 460, scoreMax: 542, coachingQuota: 6 },
-  { key: "advanced", name: "Advanced", order: 3, scoreMin: 543, scoreMax: 677, coachingQuota: 4 },
+  { key: "intermediate", name: "Intermediate", order: 2, scoreMin: 460, scoreMax: 559, coachingQuota: 6 },
+  { key: "advanced", name: "Advanced", order: 3, scoreMin: 560, scoreMax: 677, coachingQuota: 4 },
 ];
 
 /** Daftar level terurut. Bila koleksi kosong, diisi nilai bawaan (sekali). */

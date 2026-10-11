@@ -11,6 +11,9 @@ import { recommendCourses } from "@/lib/units";
 import { Attempt, Test, AttemptSnapshot } from "@/models/Test";
 import { Certificate } from "@/models/Itp";
 import { ScoringProfile } from "@/models/Scoring";
+import { equivalents } from "@/lib/score-equivalence";
+import { getEquivalence } from "@/lib/clustering";
+import { LEVEL_INFO } from "@/lib/level-info";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +81,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,
       scoreRaw: attempt.scoreRaw, scoreEst: attempt.scoreEst, sectionScores: attempt.sectionScores, topicScores: attempt.topicScores,
       flags: attempt.proctorFlags.length, attemptId: String(attempt._id), analysis: attempt.aiAnalysis ?? { status: "pending" },
-      level: level ? { name: level.name, quota: level.coachingQuota, scoreMin: level.scoreMin, scoreMax: level.scoreMax } : null,
+      level: level ? { name: level.name, quota: level.coachingQuota, scoreMin: level.scoreMin, scoreMax: level.scoreMax, info: LEVEL_INFO[String(level.key)] ?? null } : null,
+      equivalents: attempt.scoreEst != null ? equivalents(attempt.scoreEst, await getEquivalence()) : null,
       review, transcripts,
     });
   } catch (e) {

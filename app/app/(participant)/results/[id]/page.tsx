@@ -11,7 +11,7 @@ type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string; oce: { name: string; score: number; estimated: boolean }; pure: { name: string; score: number; estimated: boolean } } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
 const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", practice: "PRACTICE" };
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -102,6 +102,21 @@ export default function Hasil({ params }: { params: { id: string } }) {
           {r.scoring && <p className={`mt-2 inline-block rounded-md px-2 py-1 text-[11px] font-semibold ${r.scoring.basis === "verified" ? "bg-white/15 text-[#DCE7F7]" : "bg-accent text-navy"}`}>{r.scoring.basis === "verified" ? `Scored with a verified conversion${r.scoring.name ? `: ${r.scoring.name}` : ""}` : "Provisional conversion: treat this score as a rough estimate"}</p>}
         </div>
       </section>
+
+      {r.equivalents && (
+        <section className="card" aria-label="Score equivalents">
+          <h2 className="font-display text-lg font-extrabold text-navy">Score equivalents</h2>
+          {r.level?.info && <p className="mt-1 text-sm text-ink"><b>{r.level.name} ({r.level.scoreMin} to {r.level.scoreMax}).</b> {r.level.info.summary} {r.level.info.traits}</p>}
+          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">TOEFL ITP</dt><dd className="font-display text-2xl font-extrabold text-navy">{r.equivalents.itp}</dd><dd className="text-xs text-ink-soft">estimate, 310 to 677</dd></div>
+            <div className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">CEFR</dt><dd className="font-display text-2xl font-extrabold text-navy">{r.equivalents.cefr}</dd><dd className="text-xs text-ink-soft">{r.equivalents.cefrLabel.replace(/^\S+ /, "")}</dd></div>
+            {[r.equivalents.oce, r.equivalents.pure].map((x) => (
+              <div key={x.name} className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">{x.name}</dt><dd className="font-display text-2xl font-extrabold text-navy">{x.estimated ? "≈ " : ""}{x.score}</dd><dd className="text-xs text-ink-soft">{x.estimated ? "converted estimate" : "same scale as TOEFL ITP"}</dd></div>
+            ))}
+          </dl>
+          <p className="mt-2 text-xs text-ink-soft">CEFR follows the TOEFL ITP mapping published by ETS. Equivalents are guides for placement, not official scores.</p>
+        </section>
+      )}
 
       {levelBanners}
 

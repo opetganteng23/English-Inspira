@@ -163,7 +163,10 @@ Override per institusi (`institutions.configOverrides`) disiapkan di skema tetap
 - `program_cycles` per institusi: nama, `startsAt`, `endsAt`, `durationSource`, `closedAt`, `itpDate`, `itpRequired`. Status diturunkan dari tanggal dan `closedAt`; periode satu institusi tidak boleh beririsan; penutupan manual membebaskan sisa tanggalnya.
 - Institusi tanpa periode memakai perilaku lama (tanpa batas periode). Periode pertama yang langsung aktif mengadopsi placement dan kuota yang sudah ada; periode berikutnya selalu mewajibkan placement baru.
 - `users.placementCycleId` menandai periode tempat placement terakhir diambil; `programCycleId` tersimpan pada attempt, `coaching_quotas`, dan booking. Periode tanpa data peserta dapat dihapus; selebihnya hanya ditutup.
-- Belum: tautan jadwal ITP resmi periode ke sesi ITP, dan butir 9 (OCE/PURE) menunggu konfirmasi pemilik proses.
+- Sesi ITP resmi dapat ditautkan ke periode; hanya peserta institusi periode itu yang melihat dan mendaftar.
+- Butir 9 diputuskan (Oktober 2026): hasil OCE/PURE diunggah admin (CSV/Excel atau PDF per orang) dan dicocokkan ke peserta lewat email atau nama. Setelah dikonfirmasi, padanan TOEFL ITP-nya menetapkan level, kuota coaching periode berjalan, dan kelas; peserta tidak wajib placement di aplikasi lagi untuk periode itu (`users.placementSource` = `pure`/`oce`). Placement di aplikasi tetap dipakai bila peserta belum punya hasil OCE/PURE.
+- Kelompok kemampuan: Basic 310-459, Intermediate 460-559, Advanced 560-677 (skala TOEFL ITP). Kelas (`class_groups`) berada di bawah level, berkapasitas dan ber-coach; peserta ditempatkan acak ke kelas berkursi yang paling longgar, sisanya masuk antrean menunggu kelas; admin dapat memindahkan peserta (riwayat di `class_members`).
+- Padanan skor: TOEFL ITP ke CEFR memakai batas ETS (A2 337, B1 460, B2 543, C1 627); skala OCE/PURE diisi admin (batas minimal tiap tingkat CEFR, interpolasi linear di antaranya) dan ditampilkan di analisis hasil bersama penjelasan level.
 
 **Aturan akses ringkas**
 

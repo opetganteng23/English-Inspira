@@ -7,6 +7,8 @@ const nav: NavGroup[] = [
     { href: "/admin", label: "Overview" },
     { href: "/admin/institutions", label: "Institutions" },
     { href: "/admin/participants", label: "Participants" },
+    { href: "/admin/external-results", label: "PURE / OCE Results" },
+    { href: "/admin/classes", label: "Classes" },
     { href: "/admin/users", label: "Coaches & Admins" },
   ] },
   { label: "Tests & Materials", items: [
@@ -32,7 +34,7 @@ const nav: NavGroup[] = [
 
 // Menu per peran: academic_admin tanpa pengguna, parameter, pengaturan, audit; content_editor hanya soal dan audio.
 const ALLOWED: Record<string, string[]> = {
-  academic_admin: ["/admin", "/admin/participants", "/admin/question-bank", "/admin/audio", "/admin/media", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
+  academic_admin: ["/admin", "/admin/participants", "/admin/external-results", "/admin/classes", "/admin/question-bank", "/admin/audio", "/admin/media", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
   content_editor: ["/admin/question-bank", "/admin/audio", "/admin/media"],
 };
 

@@ -31,6 +31,7 @@ export async function applyPlacement(attempt: HydratedDocument<AttemptDoc>) {
   const cycleId = cs.active?._id;
   user.placementAttemptId = attempt._id;
   user.placementCycleId = cycleId;
+  user.set("placementSource", "test");
   user.placementRetakeAllowed = false;
   if (changed) user.levelHistory.push({ levelId: level._id, at: new Date(), reason: "placement" } as never);
   await user.save();
