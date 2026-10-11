@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { composeName } from "./person-name";
 import type { Types } from "mongoose";
 import { z } from "zod";
 import { connectDB } from "./db";
@@ -32,7 +33,7 @@ export async function issueInvitation(user: { _id: Types.ObjectId; email: string
   await enqueueMail(user.email, "invitation", { institution: institution.name, name: user.name, link, expiresAt });
 }
 
-export type MemberInput = { email: string; name?: string; phone?: string; role?: "participant" | "coach" | "inst_admin" };
+export type MemberInput = { email: string; name?: string; givenName?: string; surname?: string; phone?: string; role?: "participant" | "coach" | "inst_admin" };
 
 /**
  * Buat akun anggota institusi: user (invited) + enrollment + undangan.
@@ -57,7 +58,8 @@ export async function createMember(institutionId: Types.ObjectId | string, input
   }
   let user;
   try {
-    user = await User.create({ email, name: input.name?.trim() || undefined, phone: input.phone?.trim() || undefined, role, institutionId: inst._id, status: "invited" });
+    const given = input.givenName?.trim() || undefined, sur = input.surname?.trim() || undefined;
+    user = await User.create({ email, name: (given || sur ? composeName(given ?? "", sur ?? "") : input.name?.trim()) || undefined, givenName: given, surname: sur, phone: input.phone?.trim() || undefined, role, institutionId: inst._id, status: "invited" });
     await Enrollment.create({ userId: user._id, institutionId: inst._id, startsAt: inst.contractStart && inst.contractStart > new Date() ? inst.contractStart : new Date(), expiresAt: inst.contractEnd });
   } catch (e) {
     if (role === "participant") await Institution.updateOne({ _id: inst._id }, { $inc: { seatsUsed: -1 } }); // gagal: kembalikan kursi

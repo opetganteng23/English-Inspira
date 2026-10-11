@@ -16,7 +16,7 @@ export async function importMembers(institutionId: Types.ObjectId | string, rows
     if (seen.has(r.email)) { report.failed.push({ row: r.row, email: r.email, reason: "Duplicate within the file" }); continue; }
     seen.add(r.email);
     try {
-      const out = await createMember(institutionId, { email: r.email, name: r.name, phone: r.phone }, actorId);
+      const out = await createMember(institutionId, { email: r.email, name: r.name, givenName: r.givenName, surname: r.surname, phone: r.phone }, actorId);
       if (out.resent) report.resent++; else report.created++;
     } catch (e) {
       if (e instanceof HttpError && e.status === 404) throw e; // institusi tidak ada: hentikan seluruh impor

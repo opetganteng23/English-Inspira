@@ -2,11 +2,13 @@ import Papa from "papaparse";
 import ExcelJS from "exceljs";
 import { HttpError } from "./rbac";
 
-export type ImportRow = { row: number; email: string; name?: string; phone?: string };
+export type ImportRow = { row: number; email: string; name?: string; givenName?: string; surname?: string; phone?: string };
 
 const ALIASES: Record<string, string[]> = {
   email: ["email", "e-mail", "surel"],
   name: ["nama", "name", "full name", "fullname"],
+  givenName: ["given name", "given_name", "givenname", "first name", "nama depan"],
+  surname: ["surname", "last name", "family name", "nama belakang"],
   phone: ["telepon", "phone", "hp", "no hp", "nomor hp", "whatsapp", "telp"],
 };
 const pick = (head: Map<string, number>, k: keyof typeof ALIASES) => ALIASES[k].map((a) => head.get(a)).find((x) => x !== undefined);
@@ -37,12 +39,12 @@ export async function readTable(file: File, maxRows = 2000): Promise<string[][]>
   return table;
 }
 
-/** Baca CSV atau .xlsx (kolom: email wajib; nama, telepon opsional). Maks 2 MB dan 2.000 baris. */
+/** Baca CSV atau .xlsx (kolom: email wajib; given name + surname atau name, telepon opsional). Maks 2 MB dan 2.000 baris. */
 export async function parseMembersFile(file: File): Promise<ImportRow[]> {
   const table = await readTable(file);
   const head = new Map(table[0].map((h, i) => [h.toLowerCase().trim(), i] as const));
   const ie = pick(head, "email");
   if (ie === undefined) throw new HttpError(400, 'Column "email" not found');
-  const inn = pick(head, "name"), ip = pick(head, "phone");
-  return table.slice(1).map((r, i) => ({ row: i + 2, email: (r[ie] ?? "").toLowerCase(), name: inn !== undefined ? r[inn] || undefined : undefined, phone: ip !== undefined ? r[ip] || undefined : undefined }));
+  const inn = pick(head, "name"), ip = pick(head, "phone"), ig = pick(head, "givenName"), isn = pick(head, "surname");
+  return table.slice(1).map((r, i) => ({ row: i + 2, email: (r[ie] ?? "").toLowerCase(), name: inn !== undefined ? r[inn] || undefined : undefined, givenName: ig !== undefined ? r[ig] || undefined : undefined, surname: isn !== undefined ? r[isn] || undefined : undefined, phone: ip !== undefined ? r[ip] || undefined : undefined }));
 }

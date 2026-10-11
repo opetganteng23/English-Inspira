@@ -36,7 +36,7 @@ export function ImportPanel({ base, query = "", onDone }: { base: string; query?
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-2">
           <p className="text-sm font-semibold text-navy">Import a file</p>
-          <p className="text-xs text-ink-soft">CSV/Excel with columns <b>email</b> (required), <b>name</b>, <b>phone</b>.</p>
+          <p className="text-xs text-ink-soft">CSV/Excel with columns <b>email</b> (required), <b>given name</b>, <b>surname</b>, <b>phone</b>. A single <b>name</b> column also works.</p>
           <input ref={fileRef} type="file" aria-label="Participant file" accept=".csv,.xlsx" className="field" />
           <button className="btn-solid self-start" disabled={busy} onClick={upload}>{busy ? "Processing…" : "Import & send invitations"}</button>
         </div>

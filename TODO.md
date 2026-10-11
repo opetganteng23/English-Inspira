@@ -240,4 +240,4 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | U17 | Dialog meluber di ponsel karena `fieldset`; course tanpa unit tidak lagi tampil ke peserta | ✅ |
 | U13 | Profil: ganti foto, ubah email (OTP email baru), pengaturan notifikasi | ⬜ belum dibuat |
 | U14 | Tabel admin di ponsel menjadi kartu | ⏭️ ditunda; saat ini digulung ke samping di dalam kotaknya |
-| U15 | Impor peserta CSV/Excel dengan kolom given name dan surname | ⬜ |
+| U15 | Impor peserta CSV/Excel: kolom given name + surname (atau name tunggal); `createMember` menyimpan keduanya | ✅ unit test pembacaan CSV (alias given/surname, name tunggal) |
