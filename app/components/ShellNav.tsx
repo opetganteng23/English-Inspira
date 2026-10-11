@@ -24,19 +24,39 @@ export function ShellNav({
   const all = nav.flatMap((g) => g.items);
   const best = all.filter((i) => path === i.href || path.startsWith(i.href + "/")).sort((a, b) => b.href.length - a.href.length)[0];
 
+  // Kelompok menu berlabel bisa dilipat. Status disimpan di browser; kelompok yang memuat halaman aktif selalu terbuka.
+  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  useEffect(() => { try { setClosed(JSON.parse(localStorage.getItem("ei-nav-closed") ?? "{}")); } catch { /* penyimpanan tidak tersedia */ } }, []);
+  const toggle = (label: string) => setClosed((c) => { const n = { ...c, [label]: !c[label] }; try { localStorage.setItem("ei-nav-closed", JSON.stringify(n)); } catch { /* abaikan */ } return n; });
+  const showLabels = nav.filter((g) => g.label).length > 0 && all.length > 7; // menu pendek tidak perlu dilipat
+
   const links = (
-    <nav aria-label="Main menu" className="flex flex-col gap-4">
-      {nav.map((g, gi) => (
+    <nav aria-label="Main menu" className="flex flex-col gap-2">
+      {nav.map((g, gi) => {
+        const hasActive = g.items.some((n) => n.href === best?.href);
+        const foldable = !!g.label && showLabels;
+        const isOpen = !foldable || hasActive || !closed[g.label!];
+        const id = `nav-group-${gi}`;
+        return (
         <div key={gi} className="flex flex-col gap-1">
-          {g.label && <p className="px-3 text-[11px] font-semibold tracking-wider text-[#8FA6C8]">{g.label.toUpperCase()}</p>}
+          {g.label && (foldable
+            ? <button type="button" aria-expanded={isOpen} aria-controls={id} disabled={hasActive} onClick={() => toggle(g.label!)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold tracking-wider text-[#8FA6C8] hover:bg-navy-700 hover:text-white disabled:cursor-default disabled:hover:bg-transparent">
+                <span>{g.label.toUpperCase()}{!isOpen && <span className="ml-2 rounded-full bg-navy-700 px-1.5 py-0.5 text-[10px] text-mist">{g.items.length}</span>}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden className={`transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
+              </button>
+            : <p className="px-3 text-[11px] font-semibold tracking-wider text-[#8FA6C8]">{g.label.toUpperCase()}</p>)}
+          <div id={id} hidden={!isOpen} className={isOpen ? "flex flex-col gap-1" : "hidden"}>
           {g.items.map((n) => (
             <Link key={n.href} href={n.href} aria-current={best?.href === n.href ? "page" : undefined}
               className={`rounded-lg px-3 py-2.5 text-[15px] font-medium ${best?.href === n.href ? "bg-navy-700 text-white" : "text-mist hover:bg-navy-700 hover:text-white"}`}>
               {n.label}
             </Link>
           ))}
+          </div>
         </div>
-      ))}
+        );
+      })}
     </nav>
   );
 

@@ -1,0 +1,316 @@
+===============================================================================
+  PANDUAN ADMIN ENGLISH INSPIRA
+  Untuk tim admin yang mulai mengisi materi, soal, tes, dan data peserta
+  Alamat: https://english.edulyfe.id/admin/login        Versi: Oktober 2026
+===============================================================================
+
+DAFTAR ISI
+  1. Masuk dan mengenal tampilan
+  2. Peran akun staf
+  3. Urutan kerja yang disarankan (mulai dari database kosong)
+  4. Bank Soal (Question Bank)
+  5. Audio Library dan Media Library
+  6. Tes (Tests)
+  7. Scoring Profiles (konversi skor)
+  8. Course, Modul, Unit, dan Materi
+  9. Institusi, Program Cycle, dan Peserta
+ 10. Hasil PURE/OCE, Kelompok, dan Kelas
+ 11. Hal yang perlu diingat
+ 12. Jika ada masalah
+
+
+-------------------------------------------------------------------------------
+1. MASUK DAN MENGENAL TAMPILAN
+-------------------------------------------------------------------------------
+- Buka https://english.edulyfe.id/admin/login, masukkan email staf, lalu masuk
+  dengan kode OTP yang dikirim ke email (atau password bila sudah dibuat).
+- Menu ada di sisi kiri dan dikelompokkan:
+    Overview            ringkasan
+    PEOPLE & CLASSES    Institutions, Participants, PURE / OCE Results,
+                        Classes, Coaches & Admins
+    CONTENT             Question Bank, Tests, Courses & Units, Materials,
+                        Audio Library, Media Library
+    MONITORING          Coaching Monitor, AI Counselor, Review Proctoring,
+                        ITP Schedule & Scores
+    SYSTEM              Program Cycles, Scoring Profiles, System Parameters,
+                        Settings, Audit Log
+- Klik judul kelompok untuk melipat atau membuka isinya. Kelompok dari halaman
+  yang sedang dibuka selalu terbuka. Pilihan lipat diingat di browser Anda.
+- Di ponsel, menu dibuka lewat tombol tiga garis di kanan atas. Tabel tampil
+  sebagai kartu agar mudah dibaca.
+- Setiap kali menyimpan muncul notifikasi kecil "Saved" di bawah layar.
+- Setiap aksi hapus, keluar (log out), atau tindakan penting lain meminta
+  konfirmasi lebih dulu. Pilih "Cancel" bila ragu; tidak ada yang berubah.
+
+
+-------------------------------------------------------------------------------
+2. PERAN AKUN STAF
+-------------------------------------------------------------------------------
+  Admin            Semua menu.
+  Academic admin   Soal, audio, media, tes, course, materi, Scoring Profiles,
+                   hasil PURE/OCE, kelas, dan melihat peserta. Tidak mengelola
+                   akun, institusi, pengaturan, parameter, atau audit log.
+  Question editor  Hanya Question Bank, Audio Library, dan Media Library.
+                   Bisa menyimpan soal sebagai Draft dan mengirim ke Review,
+                   tetapi tidak bisa mem-publish atau menghapus. Soal
+                   di-publish oleh Academic admin atau Admin.
+
+Membuat akun staf: Coaches & Admins > + Add user > pilih peran. Admin,
+Academic admin, dan Question editor tidak perlu institusi. Coach dan admin
+institusi wajib dipilihkan institusinya.
+
+
+-------------------------------------------------------------------------------
+3. URUTAN KERJA YANG DISARANKAN (MULAI DARI DATABASE KOSONG)
+-------------------------------------------------------------------------------
+Database sudah dikosongkan. Yang tersisa hanya akun admin dan pengaturan
+sistem (level, parameter, tampilan landing). Ikuti urutan ini:
+
+  1. Question Bank  > Manage types: periksa jenis soal per bagian.
+  2. Audio Library : unggah audio Listening.
+  3. Question Bank : isi soal (manual, impor Excel/CSV/Word, atau draf AI),
+                     buat grup audio/bacaan untuk Listening dan Reading.
+  4. Scoring Profiles: siapkan tabel konversi skor (lihat bagian 7).
+  5. Tests         : buat Placement, Simulation, Practice, dan Unit quiz.
+  6. Materials     : buat materi belajar.
+  7. Courses & Units: susun Course > Modul > Unit, pasang materi dan kuis.
+  8. Institutions  : daftarkan institusi mitra.
+  9. Program Cycles: buat periode program untuk tiap institusi.
+ 10. Classes       : buat kelas per level.
+ 11. Coaches & Admins: buat akun coach.
+ 12. Participants  : impor atau undang peserta.
+ 13. PURE / OCE Results: unggah hasil tes peserta, cocokkan, konfirmasi.
+
+Langkah 1-7 (konten) bisa dikerjakan bersamaan oleh beberapa orang.
+
+
+-------------------------------------------------------------------------------
+4. BANK SOAL (QUESTION BANK)
+-------------------------------------------------------------------------------
+Tiga bagian: Listening, Structure & Written Expression, Reading.
+
+Status soal:
+  Draft      masih dikerjakan, tidak dipakai tes
+  Review     menunggu diperiksa
+  Published  siap dipakai tes (WAJIB punya tag skill + topic)
+  Archived   disimpan, tidak dipakai lagi
+
+A. Menambah satu soal
+   + New question > pilih bagian dan jenis > tulis soal, pilihan A-D,
+   kunci jawaban, pembahasan, kesulitan, dan tag (skill + topic) > Save.
+   Gunakan tombol Preview untuk melihat tampilan seperti peserta.
+
+B. Soal Listening dan Reading (berbagi audio atau bacaan)
+   Buat dulu + Audio/passage group (pilih audio, atau tulis teks bacaan),
+   lalu saat membuat soal pilih grup tersebut.
+
+C. Impor dari Excel/CSV
+   Import Excel/CSV/Word > Download template. Kolom: section, type, stem,
+   A-F, answer (huruf), explanation, difficulty (easy/medium/hard),
+   tags (skill:topic; skill:topic), status. Maksimal 500 baris.
+   Klik "Check first (without saving)" dulu untuk melihat baris yang salah,
+   baru Import.
+
+D. Impor dari Word (.docx)
+   Tulis dengan format berikut (unduh contoh di dialog impor):
+
+       Section: structure
+       Type: subject-verb
+       Difficulty: medium
+       Tags: structure:subject-verb agreement
+       Status: draft
+
+       1. The results of the study ___ clear.
+       A. is
+       B. are
+       C. was
+       D. be
+       Answer: B
+       Explanation: The plural subject takes "are".
+
+       2. ...
+
+   Baris Section/Type/Difficulty/Tags/Status berlaku untuk soal-soal di
+   bawahnya sampai diganti. Soal harus bernomor (1. 2. 3.).
+
+E. Draf soal dengan AI (hanya Structure & Written Expression)
+   Draft with AI > pilih jenis, kesulitan, tag, jumlah (1-10) > Generate.
+   Periksa setiap soal, centang yang layak, lalu "Save as draft". Soal AI
+   SELALU tersimpan sebagai Draft dan WAJIB dicek kunci jawaban serta
+   bahasanya sebelum di-publish.
+
+F. Lainnya
+   - Duplicate: menyalin soal sebagai Draft baru.
+   - History: melihat dan memulihkan versi lama soal.
+   - Export CSV: mengunduh bank soal.
+   - Soal yang sudah dipakai tes tidak bisa dihapus; ubah statusnya saja.
+
+
+-------------------------------------------------------------------------------
+5. AUDIO LIBRARY DAN MEDIA LIBRARY
+-------------------------------------------------------------------------------
+Audio Library
+  - + Upload audio: MP3 (maks 15 MB) atau WAV (maks 30 MB), maks 10 menit.
+  - Isi judul, jenis (short conversation, longer conversation, talk),
+    sumber/hak pakai, dan transkrip (peserta melihat transkrip setelah tes).
+  - Edit: tampil gelombang suara. Klik gelombang untuk melompat ke detik
+    tertentu. Tambahkan penanda waktu, misalnya "Question 1 starts".
+  - Replace: ganti berkas tanpa memutus tautan ke soal.
+  - Audio yang masih dipakai soal atau materi tidak bisa dihapus.
+
+Media Library
+  - Tempat semua gambar (soal, bacaan, materi, cover course, landing).
+  - + Upload images: bisa banyak sekaligus, otomatis dikompres.
+  - Copy URL untuk menempel gambar, Rename untuk memberi nama yang jelas.
+  - Label "In use" menunjukkan di mana gambar dipakai; gambar yang masih
+    dipakai tidak bisa dihapus.
+
+
+-------------------------------------------------------------------------------
+6. TES (TESTS)
+-------------------------------------------------------------------------------
+Jenis tes:
+  Placement   diagnostik awal (sekali per periode program)
+  Simulation  simulasi format ITP
+  Practice    latihan
+  Unit quiz   kuis di dalam unit course
+
+Membuat tes: + New test > nama, jenis, level (opsional) > tambahkan bagian
+(Listening/Structure/Reading) dan durasinya > pilih soal secara manual atau
+otomatis berdasarkan jenis/kesulitan/topik (grup audio/bacaan tetap utuh).
+Opsi: acak urutan soal, acak pilihan jawaban, batas jumlah percobaan,
+dan Scoring profile. Hanya soal Published yang bisa dipakai.
+
+
+-------------------------------------------------------------------------------
+7. SCORING PROFILES (KONVERSI SKOR)
+-------------------------------------------------------------------------------
+Mengubah jumlah benar menjadi skor skala TOEFL ITP (310-677).
+- Profil bawaan "Default (linear estimate)" hanya perkiraan; hasil tes
+  peserta berlabel "Provisional".
+- + New profile > pilih "Conversion table" > isi tabel per bagian (bisa
+  ditempel dari spreadsheet: kolom raw, scaled). Kalkulator di bawah
+  membantu mengecek.
+- Bila tabel berasal dari sumber resmi: Edit > tulis sumbernya > centang
+  konfirmasi > Mark as verified. Hasil peserta berlabel "verified".
+- Mengubah tabel menaikkan versi dan mencabut status verified. Hasil lama
+  tidak berubah.
+- Pilih profil per tes di menu Tests.
+
+
+-------------------------------------------------------------------------------
+8. COURSE, MODUL, UNIT, DAN MATERI
+-------------------------------------------------------------------------------
+Struktur: Level > Course > Modul > Unit (lesson) > Materi (sub-lesson) + kuis.
+
+Materials
+  - Rich text: editor lengkap (gambar, tabel, audio, video YouTube, blok
+    latihan interaktif).
+  - HTML interaktif: hanya Admin; berjalan terisolasi dan wajib melalui
+    Review sebelum Published.
+  - Materi baru tampil ke peserta setelah Published.
+
+Courses & Units
+  - + New course: level, judul, deskripsi, cover (gambar), prasyarat
+    (course lain yang harus selesai dulu).
+  - + Module: pengelompok unit di dalam course (opsional).
+  - + Unit: judul, modul, materi wajib (urutan = urutan belajar), kuis unit,
+    dan "Opens after (days)" untuk membuka unit bertahap (drip). 0 = langsung
+    terbuka.
+  - Unit selesai bila semua materi wajib selesai dan kuisnya lulus.
+  - Archive menyembunyikan course dari peserta tanpa menghapus progres.
+  - Remedial map (bawah halaman): hubungkan topik lemah ke unit perbaikan.
+
+
+-------------------------------------------------------------------------------
+9. INSTITUSI, PROGRAM CYCLE, DAN PESERTA
+-------------------------------------------------------------------------------
+Institutions: nama, kode institusi (dipakai peserta saat daftar mandiri),
+jumlah kursi, masa kontrak.
+
+Program Cycles: periode belajar resmi per institusi (tanggal mulai dan akhir
+sesuai kontrak/kalender). Aturannya:
+  - Periode baru = peserta wajib placement lagi dan kuota coaching diatur
+    ulang penuh (Basic 8, Intermediate 6, Advanced 4 sesi).
+  - Periode yang ditutup: materi tetap bisa dibaca, tetapi tes, kuis, dan
+    booking coaching baru ditutup.
+  - Periode satu institusi tidak boleh tumpang tindih.
+
+Participants: impor dari Excel/CSV (email wajib; given name, surname,
+telepon opsional) atau undang lewat email dari halaman institusi. Peserta
+juga bisa daftar sendiri dengan kode institusi.
+
+
+-------------------------------------------------------------------------------
+10. HASIL PURE/OCE, KELOMPOK, DAN KELAS
+-------------------------------------------------------------------------------
+Kelompok kemampuan (skala TOEFL ITP):
+  Basic          310-459
+  Intermediate   460-559
+  Advanced       560-677
+
+A. Siapkan kelas dulu
+   Classes > + New class > level, nama (misal "Basic A"), jumlah kursi,
+   coach, institusi/periode (opsional). Buat beberapa kelas per level bila
+   pesertanya banyak.
+
+B. Unggah hasil PURE/OCE
+   PURE / OCE Results > + Upload results > pilih PURE atau OCE > pilih
+   berkas:
+     - Excel/CSV: kolom name dan score (wajib); email, date, test (opsional).
+       Lebih akurat bila ada kolom email.
+     - PDF: satu berkas per orang. Nama dibaca dari isi PDF atau nama berkas.
+
+C. Cocokkan dan konfirmasi (tab "To match")
+     Sure          email sama atau nama sama persis: aman dikonfirmasi
+     Check (xx%)   nama mirip: periksa dulu orangnya benar
+     No match      pilih peserta lewat kotak cari, atau Skip
+   - Skor bisa dikoreksi langsung di kolom Score. Tampil juga padanan ITP dan
+     CEFR-nya.
+   - "Confirm N sure matches" mengonfirmasi semua yang pasti sekaligus.
+   - Setelah dikonfirmasi: level, kuota coaching, dan kelas peserta
+     ditetapkan otomatis. Peserta tidak perlu placement test di aplikasi
+     untuk periode itu.
+
+D. Pembagian kelas
+   - Peserta masuk acak ke kelas di levelnya yang masih ada kursi, diutamakan
+     kelas yang paling kosong agar seimbang.
+   - Bila semua kelas penuh, peserta masuk "waiting for a class". Tambah
+     kelas atau kursi, lalu klik "Place N waiting".
+   - Students: melihat siswa per kelas, filter Active (masuk atau belajar
+     7 hari terakhir) dan Not active, serta memindahkan siswa ke kelas lain.
+
+E. Score equivalents (tombol di halaman PURE / OCE Results)
+   Bila skor OCE atau PURE BUKAN skala 310-677, hilangkan centang "Uses the
+   TOEFL ITP scale" lalu isi skor terendah, skor tertinggi, dan skor minimal
+   tiap tingkat CEFR (A2, B1, B2, C1) dari penyedia tes. Angka ini juga
+   tampil di analisis hasil peserta (TOEFL ITP, CEFR, OCE, PURE).
+
+
+-------------------------------------------------------------------------------
+11. HAL YANG PERLU DIINGAT
+-------------------------------------------------------------------------------
+- Semua teks yang dilihat peserta berbahasa Inggris. Tulis soal, materi,
+  dan pengumuman dalam bahasa Inggris.
+- Soal baru dipakai tes hanya bila statusnya Published dan bertag.
+- Soal hasil AI selalu diperiksa manusia sebelum di-publish.
+- Hapus hanya bila yakin. Data yang sudah dipakai (soal di tes, audio di
+  soal, gambar di materi, kelas berisi siswa) sengaja dilindungi dari
+  penghapusan; arsipkan atau nonaktifkan saja.
+- Semua perubahan penting tercatat di Audit Log (siapa, kapan, apa).
+- Jangan membagikan password, kode OTP, atau kunci rahasia lewat chat.
+
+
+-------------------------------------------------------------------------------
+12. JIKA ADA MASALAH
+-------------------------------------------------------------------------------
+- Pesan galat merah di layar biasanya menjelaskan penyebabnya (misalnya
+  kolom wajib kosong atau data masih dipakai). Perbaiki lalu simpan lagi.
+- Tidak menerima kode OTP: cek folder spam, tunggu 1 menit, lalu minta
+  ulang (maksimal 3 kali per 10 menit).
+- Halaman tidak bisa dibuka atau tombol tidak ada: periksa peran akun Anda
+  (bagian 2). Hubungi Admin untuk mengubah peran.
+- Masalah teknis lain: hubungi pengelola aplikasi dan sertakan halaman,
+  waktu kejadian, dan tangkapan layar.
+
+===============================================================================

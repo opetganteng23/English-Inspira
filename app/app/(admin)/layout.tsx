@@ -3,32 +3,34 @@ import { getCurrentUser } from "@/lib/auth";
 import { STAFF_ROLES } from "@/lib/rbac";
 
 const nav: NavGroup[] = [
-  { items: [
-    { href: "/admin", label: "Overview" },
+  { items: [{ href: "/admin", label: "Overview" }] },
+  { label: "People & Classes", items: [
     { href: "/admin/institutions", label: "Institutions" },
     { href: "/admin/participants", label: "Participants" },
     { href: "/admin/external-results", label: "PURE / OCE Results" },
     { href: "/admin/classes", label: "Classes" },
     { href: "/admin/users", label: "Coaches & Admins" },
   ] },
-  { label: "Tests & Materials", items: [
+  { label: "Content", items: [
     { href: "/admin/question-bank", label: "Question Bank" },
-    { href: "/admin/audio", label: "Audio Library" },
-    { href: "/admin/media", label: "Media Library" },
     { href: "/admin/tests", label: "Tests" },
     { href: "/admin/courses", label: "Courses & Units" },
     { href: "/admin/materials", label: "Materials" },
+    { href: "/admin/audio", label: "Audio Library" },
+    { href: "/admin/media", label: "Media Library" },
+  ] },
+  { label: "Monitoring", items: [
+    { href: "/admin/coaching", label: "Coaching Monitor" },
     { href: "/admin/ai-counselor", label: "AI Counselor" },
     { href: "/admin/proctoring", label: "Review Proctoring" },
-  ] },
-  { label: "Operations", items: [
-    { href: "/admin/coaching", label: "Coaching Monitor" },
     { href: "/admin/itp-schedule", label: "ITP Schedule & Scores" },
+  ] },
+  { label: "System", items: [
     { href: "/admin/cycles", label: "Program Cycles" },
     { href: "/admin/scoring", label: "Scoring Profiles" },
     { href: "/admin/parameters", label: "System Parameters" },
-    { href: "/admin/audit", label: "Audit Log" },
     { href: "/admin/settings", label: "Settings" },
+    { href: "/admin/audit", label: "Audit Log" },
   ] },
 ];
 
