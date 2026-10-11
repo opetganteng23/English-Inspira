@@ -6,7 +6,6 @@ import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { PasswordCard } from "@/components/PasswordCard";
-import { ComfortSettings } from "@/components/ComfortSettings";
 
 type Me = { hasPassword?: boolean; name: string | null; email: string; phone: string | null; education: string | null; targetScore: number | null; goal: string | null; institution: { name: string; contractEnd: string | null } | null; level: { name: string } | null; scoreEst: number | null; createdAt: string; nameLocked: boolean };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
@@ -38,7 +37,7 @@ export default function Profil() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex items-center gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-navy font-display text-xl font-extrabold text-on-primary">{(me.name ?? me.email)[0].toUpperCase()}</span>
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-navy font-display text-xl font-extrabold text-white">{(me.name ?? me.email)[0].toUpperCase()}</span>
         <div className="min-w-0"><h1 className="page-title truncate">Profile & settings</h1><p className="truncate text-sm text-ink-soft">{me.email} · joined {tgl(me.createdAt)}</p></div>
       </div>
       {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? "bg-success-tint text-success" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
@@ -58,7 +57,6 @@ export default function Profil() {
       <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Institution & level</h2>
         <p className="mt-1 text-sm">{me.institution ? <>Program <b>{me.institution.name}</b>{me.institution.contractEnd ? <> · access until {tgl(me.institution.contractEnd)}</> : null}.</> : "Your account is not linked to an institution."} {me.level ? <>Level: <b>{me.level.name}</b>{me.scoreEst ? ` (estimate ${me.scoreEst})` : ""}.</> : "Your level is set after the placement test."}</p></section>
 
-      <ComfortSettings />
       <PasswordCard email={me.email} hasPassword={!!me.hasPassword} onDone={reload} />
 
       <section className="card flex flex-col gap-3"><h2 className="font-display text-lg font-extrabold text-navy">Privacy</h2>

@@ -18,7 +18,7 @@ export default function Materi() {
     <div className="flex flex-col gap-5">
       <div><h1 className="page-title">Materials</h1><p className="mt-1 text-ink-soft">Materials and interactive exercises to strengthen your weak areas.</p></div>
       <ErrorNote text={error} />
-      {tags.length > 0 && <div className="flex flex-wrap gap-2">{["", ...tags].map((t) => <button key={t || "all"} onClick={() => setTag(t)} className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${tag === t ? "border-navy bg-navy text-on-primary" : "border-line-strong bg-surface text-navy"}`}>{t || "All"}</button>)}</div>}
+      {tags.length > 0 && <div className="flex flex-wrap gap-2">{["", ...tags].map((t) => <button key={t || "all"} onClick={() => setTag(t)} className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${tag === t ? "border-navy bg-navy text-white" : "border-line-strong bg-white text-navy"}`}>{t || "All"}</button>)}</div>}
       {list.length === 0 ? <Empty>No published materials yet.</Empty> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((m) => (

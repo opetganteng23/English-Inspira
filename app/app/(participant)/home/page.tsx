@@ -39,11 +39,11 @@ export default function Beranda() {
       </div>
 
       {h.step && (
-        <section className="card border-t-4 !border-t-gold">
-          <p className="text-xs font-semibold tracking-wider text-ink-soft">NEXT STEP</p>
-          <h2 className="mt-1 font-display text-xl font-semibold text-ink sm:text-2xl">{h.step.title}</h2>
-          <p className="mt-1 text-ink-soft">{h.step.body}</p>
-          <Link href={h.step.href} className="btn-solid mt-4">{h.step.cta}</Link>
+        <section className="rounded-2xl bg-navy p-5 text-white sm:p-6">
+          <p className="text-xs font-semibold tracking-wider text-[#8FA6C8]">NEXT STEP</p>
+          <h2 className="mt-1 font-display text-xl font-extrabold sm:text-2xl">{h.step.title}</h2>
+          <p className="mt-1 text-mist">{h.step.body}</p>
+          <Link href={h.step.href} className="btn-accent mt-4">{h.step.cta}</Link>
         </section>
       )}
 

@@ -39,7 +39,7 @@ export default function KonselorAdmin() {
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             <section>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Conversations</h2>
-                <div className="flex gap-1 rounded-lg bg-surface p-1 text-sm" role="tablist">{([["review", "Needs review"], ["flagged", "Flagged"], ["all", "All"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === k ? "bg-navy text-on-primary" : "text-ink-soft"}`}>{l}</button>)}</div></div>
+                <div className="flex gap-1 rounded-lg bg-white p-1 text-sm" role="tablist">{([["review", "Needs review"], ["flagged", "Flagged"], ["all", "All"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={filter === k} onClick={() => setFilter(k)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === k ? "bg-navy text-white" : "text-ink-soft"}`}>{l}</button>)}</div></div>
               <div className="table-wrap"><table>
                 <thead><tr><th>Participant</th><th>Conversations</th><th>Messages</th><th>Status</th><th /></tr></thead>
                 <tbody>
@@ -79,7 +79,7 @@ function ThreadModal({ id, onClose, onChanged }: { id: string; onClose: () => vo
           <p className="text-ink-soft">{d.user.name ?? d.user.email} · target {d.user.targetScore ?? "-"} <span className="text-xs">(admin access is recorded in the audit log)</span></p>
           <ErrorNote text={err} />
           <div className="flex max-h-[45vh] flex-col gap-2 overflow-y-auto rounded-xl bg-canvas p-3">
-            {d.messages.map((m, i) => <div key={i} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "self-end bg-brand text-on-primary" : "self-start border border-line bg-surface"}`}>{m.role === "assistant" && <b className="block text-xs text-brand">AI{m.mock ? " (basic mode)" : ""}</b>}{m.content}</div>)}
+            {d.messages.map((m, i) => <div key={i} className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 ${m.role === "user" ? "self-end bg-brand text-white" : "self-start border border-line bg-white"}`}>{m.role === "assistant" && <b className="block text-xs text-brand">AI{m.mock ? " (basic mode)" : ""}</b>}{m.content}</div>)}
           </div>
           {d.actionPlan.length > 0 && <div><b className="text-navy">Action plan</b><ul className="mt-1 list-disc pl-5">{d.actionPlan.map((p, i) => <li key={i} className={p.done ? "line-through" : ""}>{p.text}</li>)}</ul></div>}
           <label className="flex flex-col gap-1.5 font-semibold text-navy">Review notes<textarea className="field" rows={2} value={note ?? d.reviewNote} onChange={(e) => setNote(e.target.value)} /></label>

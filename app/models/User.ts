@@ -36,19 +36,6 @@ const userSchema = new Schema(
     goal: { type: String, enum: ["graduation", "scholarship", "career", "other"] },
     education: { type: String, enum: ["sma", "d3", "s1", "s2"] },
     deletedAt: Date,
-    // Preferensi tampilan dan kenyamanan milik peserta (MTS v2.4 §27.8), diatur di Profil.
-    uiPrefs: {
-      _id: false,
-      theme: { type: String, enum: ["system", "light", "dark"] },
-      fontSize: { type: Number, enum: [16, 18, 20, 22] },
-      reduceMotion: Boolean,
-      timerDefault: { type: String, enum: ["shown", "hidden"] },
-      breakReminder: Boolean,
-      breakMin: Number,
-      reminderDigest: { type: String, enum: ["daily", "weekly", "important_only"] },
-      quietStart: String,
-      quietEnd: String,
-    },
   },
   { timestamps: true }
 );

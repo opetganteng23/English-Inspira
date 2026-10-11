@@ -25,13 +25,6 @@ export const PARAM_SCHEMAS = {
   pdf_retention_days: z.number().int().min(1).max(3650), // file PDF asli dihapus setelah ini; nilai terverifikasi tetap
   analysis_prompt: z.object({ version: z.string().min(1).max(40), text: z.string().min(20).max(4000) }), // prompt analisis berversi (MTS §13.5)
   narrative_template: z.object({ summary: z.string().max(600), strong: z.string().max(300), weak: z.string().max(300), gap: z.string().max(300), suggestion: z.string().max(300) }), // narasi cadangan
-  ui_comfort: z.object({ // kenyamanan belajar (MTS v2.4 §27.8)
-    quietHours: z.object({ start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/) }),
-    maxRemindersPerDay: z.number().int().min(0).max(20), breakReminderMin: z.number().int().min(0).max(240),
-    timerDefault: z.enum(["shown", "hidden"]), timerAlwaysShowAtSec: z.array(z.number().int().min(10)).max(5),
-    todayMaxItems: z.number().int().min(1).max(5), spacedReviewDays: z.array(z.number().int().min(1)).max(6),
-    bannedFeedbackWords: z.array(z.string().min(2).max(40)).max(40),
-  }),
 } as const;
 export type ParamKey = keyof typeof PARAM_SCHEMAS;
 
@@ -63,11 +56,6 @@ export const PARAM_DEFAULTS: { [K in ParamKey]: z.infer<(typeof PARAM_SCHEMAS)[K
     gap: "Gap to the {next} level: {gap} points.",
     suggestion: "Do exercises and materials on {weak}, then retake a test to see your progress.",
   },
-  ui_comfort: {
-    quietHours: { start: "21:00", end: "07:00" }, maxRemindersPerDay: 2, breakReminderMin: 45,
-    timerDefault: "shown", timerAlwaysShowAtSec: [300, 60], todayMaxItems: 3, spacedReviewDays: [2, 7, 21],
-    bannedFeedbackWords: ["fail", "failed", "poor", "bad", "lazy", "weak student", "behind others"],
-  },
 };
 
 export const PARAM_HELP: Record<ParamKey, string> = {
@@ -87,7 +75,6 @@ export const PARAM_HELP: Record<ParamKey, string> = {
   pdf_retention_days: "How long the original PDF file is kept (days). After that the file is deleted automatically; verified scores remain. PLACEHOLDER: agree with partners.",
   analysis_prompt: "Claude analysis prompt (versioned). Change the version whenever you change the text so older results remain traceable.",
   narrative_template: "Fallback narrative when Claude is unavailable. Placeholders: {level} {score} {strong} {weak} {gap} {next}.",
-  ui_comfort: "Learning comfort: quiet hours for reminders, max reminders per day, break reminder (minutes, 0 = off), default timer display, items on the Today card, spaced review days, and words the AI feedback must not use.",
 };
 
 export async function getParam<K extends ParamKey>(key: K): Promise<z.infer<(typeof PARAM_SCHEMAS)[K]>> {

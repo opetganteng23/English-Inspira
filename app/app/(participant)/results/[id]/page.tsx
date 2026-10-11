@@ -123,7 +123,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><h2 className="font-display text-lg font-extrabold text-navy">Answer review</h2><p className="text-sm text-ink-soft">{r.review.length} questions · {r.review.filter((x) => x.correct).length} correct</p></div>
           <div className="flex gap-1 rounded-lg bg-canvas p-1 text-sm" role="tablist">
-            {(["wrong", "all"] as const).map((f) => <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === f ? "bg-surface text-navy shadow-sm" : "text-ink-soft"}`}>{f === "wrong" ? "Incorrect" : "All"}</button>)}
+            {(["wrong", "all"] as const).map((f) => <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === f ? "bg-white text-navy shadow-sm" : "text-ink-soft"}`}>{f === "wrong" ? "Incorrect" : "All"}</button>)}
           </div>
         </div>
         <ul className="mt-4 flex flex-col gap-3">

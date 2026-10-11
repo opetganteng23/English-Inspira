@@ -43,7 +43,7 @@ const InteractiveNode = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     let label = "Interactive block";
     try { label = blockSummary(node.attrs.type as BlockType, JSON.parse(node.attrs.config)) ?? label; } catch { /* tampilkan label bawaan */ }
-    return ["div", mergeAttributes(HTMLAttributes, { style: "border:1.5px dashed var(--primary);border-radius:10px;padding:10px;background:var(--primary-soft)" }), `🧩 ${label}${node.attrs.topic ? ` · topic ${node.attrs.topic}` : ""}`];
+    return ["div", mergeAttributes(HTMLAttributes, { style: "border:1.5px dashed #1B5FB8;border-radius:10px;padding:10px;background:#E9F0FA" }), `🧩 ${label}${node.attrs.topic ? ` · topik ${node.attrs.topic}` : ""}`];
   },
 });
 
@@ -66,7 +66,7 @@ export function RichEditor({ initial, onChange, audios }: { initial?: unknown; o
       TaskList, TaskItem.configure({ nested: true }), Table.configure({ resizable: false }), TableRow, TableCell, TableHeader, Youtube.configure({ width: 560, height: 315, nocookie: true }), CharacterCount, AudioBlock, InteractiveNode,
     ],
     content: (initial as object) || "",
-    editorProps: { attributes: { class: "prose-ei min-h-[280px] rounded-b-xl border border-line-strong bg-surface p-4 outline-none focus:border-brand", "aria-label": "Material content" } },
+    editorProps: { attributes: { class: "prose-ei min-h-[280px] rounded-b-xl border border-line-strong bg-white p-4 outline-none focus:border-brand", "aria-label": "Material content" } },
     onUpdate: ({ editor: e }) => { setHtml(e.getHTML()); onChange(e.getJSON(), e.getHTML()); },
   });
   useEffect(() => { if (editor) { setHtml(editor.getHTML()); onChange(editor.getJSON(), editor.getHTML()); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [editor]);
@@ -101,7 +101,7 @@ export function RichEditor({ initial, onChange, audios }: { initial?: unknown; o
   }
 
   return (
-    <div className={full ? "fixed inset-0 z-50 overflow-y-auto bg-surface p-3 sm:p-6" : ""}>
+    <div className={full ? "fixed inset-0 z-50 overflow-y-auto bg-white p-3 sm:p-6" : ""}>
       <Toolbar editor={editor} onImage={() => file.current?.click()} onPdf={() => pdf.current?.click()} onLink={addLink} onYoutube={addYoutube} onAudio={addAudio} onBlock={() => setBlockDlg(true)} audios={audios}
         full={full} onFull={() => setFull(!full)} phone={phone} onPhone={() => setPhone(!phone)} />
       <input ref={file} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => { addImage(e.target.files?.[0]); e.target.value = ""; }} />
@@ -110,7 +110,7 @@ export function RichEditor({ initial, onChange, audios }: { initial?: unknown; o
       <EditorContent editor={editor} />
       <p className="mt-1 text-right text-xs text-ink-soft">{editor.storage.characterCount.words()} words</p>
       {phone && (
-        <div className="mx-auto mt-3 w-full max-w-[391px] rounded-[28px] border-[6px] border-navy bg-surface p-3" aria-label="Phone view preview">
+        <div className="mx-auto mt-3 w-full max-w-[391px] rounded-[28px] border-[6px] border-navy bg-white p-3" aria-label="Phone view preview">
           <p className="mb-2 text-center text-[11px] text-ink-soft">Phone preview (interactive blocks active, results are not saved)</p>
           <RichViewer html={html} />
         </div>
@@ -125,10 +125,10 @@ function Toolbar({ editor: e, onImage, onPdf, onLink, onYoutube, onAudio, onBloc
   full: boolean; onFull: () => void; phone: boolean; onPhone: () => void;
 }) {
   const B = ({ on, active, label, children }: { on: () => void; active?: boolean; label: string; children: React.ReactNode }) => (
-    <button type="button" aria-label={label} title={label} aria-pressed={active} onClick={on} className={`flex h-9 min-w-[36px] items-center justify-center rounded-md px-2 text-sm font-semibold ${active ? "bg-navy text-on-primary" : "text-navy hover:bg-brand-tint"}`}>{children}</button>
+    <button type="button" aria-label={label} title={label} aria-pressed={active} onClick={on} className={`flex h-9 min-w-[36px] items-center justify-center rounded-md px-2 text-sm font-semibold ${active ? "bg-navy text-white" : "text-navy hover:bg-brand-tint"}`}>{children}</button>
   );
   const sep = <span className="mx-1 h-6 w-px bg-line-strong" />;
-  const sel = "h-9 rounded-md border border-line-strong bg-surface px-2 text-sm";
+  const sel = "h-9 rounded-md border border-line-strong bg-white px-2 text-sm";
   const inTable = e.isActive("table");
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-t-xl border border-b-0 border-line-strong bg-canvas p-2" role="toolbar" aria-label="Text format">
@@ -140,7 +140,7 @@ function Toolbar({ editor: e, onImage, onPdf, onLink, onYoutube, onAudio, onBloc
       <B label="Underline" active={e.isActive("underline")} on={() => e.chain().focus().toggleUnderline().run()}><u>U</u></B>
       <B label="Strikethrough" active={e.isActive("strike")} on={() => e.chain().focus().toggleStrike().run()}><s>S</s></B>
       <B label="Highlight" active={e.isActive("highlight")} on={() => e.chain().focus().toggleHighlight().run()}>▮</B>
-      <input aria-label="Text color" type="color" className="h-9 w-9 cursor-pointer rounded-md border border-line-strong bg-surface p-1" onChange={(ev) => e.chain().focus().setColor(ev.target.value).run()} />
+      <input aria-label="Text color" type="color" className="h-9 w-9 cursor-pointer rounded-md border border-line-strong bg-white p-1" onChange={(ev) => e.chain().focus().setColor(ev.target.value).run()} />
       <B label="Subscript" active={e.isActive("subscript")} on={() => e.chain().focus().toggleSubscript().run()}>x₂</B>
       <B label="Superscript" active={e.isActive("superscript")} on={() => e.chain().focus().toggleSuperscript().run()}>x²</B>
       {sep}
@@ -159,7 +159,7 @@ function Toolbar({ editor: e, onImage, onPdf, onLink, onYoutube, onAudio, onBloc
       <B label="Attach PDF" on={onPdf}>📎</B>
       <B label="Insert table" on={() => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>▦</B>
       <select aria-label="Insert audio" className={`${sel} max-w-[160px]`} value="" onChange={(ev) => onAudio(ev.target.value)}><option value="">🔊 Insert audio</option>{audios.map((a) => <option key={a.id} value={a.id}>{a.title} ({a.durationSec}s)</option>)}</select>
-      <button type="button" onClick={onBlock} className="h-9 rounded-md bg-brand px-3 text-sm font-semibold text-on-primary">🧩 Interactive block</button>
+      <button type="button" onClick={onBlock} className="h-9 rounded-md bg-brand px-3 text-sm font-semibold text-white">🧩 Interactive block</button>
       {inTable && (
         <>
           {sep}
@@ -228,7 +228,7 @@ function BlockDialog({ onClose, onInsert }: { onClose: () => void; onInsert: (a:
   }
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Interactive block">
-      <div className="my-6 w-full max-w-xl rounded-2xl bg-surface p-5">
+      <div className="my-6 w-full max-w-xl rounded-2xl bg-white p-5">
         <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">Interactive block</h2><button aria-label="Close" onClick={onClose} className="text-2xl leading-none text-ink-soft">×</button></div>
         <div className="flex flex-col gap-3 text-sm">
           <label className="flex flex-col gap-1.5 font-semibold text-navy">Block type<select className="field font-normal" value={type} onChange={(e) => { setType(e.target.value as BlockType); setText(""); setErr(""); }}>{BLOCK_TYPES.map((t) => <option key={t} value={t}>{LABEL[t]}</option>)}</select></label>

@@ -83,7 +83,7 @@ export default function Itp() {
           <p className="rounded-lg bg-brand-tint p-3 text-sm">Choose an official ITP test schedule and complete your participant details.</p>
           {data.advice && <p className="mt-3 rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">Counselor’s advice: schedule at least <b>{data.advice.weeks} weeks</b> from now ({data.advice.basis}). This is an estimate, not a score guarantee.</p>}
 
-          <ol className="mt-4 flex gap-2 text-sm" aria-label="Registration steps">{["Choose schedule", "Participant details", "Confirm"].map((t, i) => <li key={t} className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold ${step === i + 1 ? "bg-navy text-on-primary" : step > i + 1 ? "bg-success-tint text-success" : "bg-canvas text-ink-soft"}`}>{i + 1}. {t}</li>)}</ol>
+          <ol className="mt-4 flex gap-2 text-sm" aria-label="Registration steps">{["Choose schedule", "Participant details", "Confirm"].map((t, i) => <li key={t} className={`flex-1 rounded-lg px-3 py-2 text-center font-semibold ${step === i + 1 ? "bg-navy text-white" : step > i + 1 ? "bg-success-tint text-success" : "bg-canvas text-ink-soft"}`}>{i + 1}. {t}</li>)}</ol>
 
           {step === 1 && (
             <div className="mt-4 flex flex-col gap-3">

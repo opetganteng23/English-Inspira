@@ -43,10 +43,10 @@ export default function TesAdmin() {
           <p className="text-sm text-ink-soft">Build tests from published questions in the Question Bank.</p>
         </div>
         <button onClick={() => setDraft({ name: "", kind: "placement", levelId: "", active: true, attempts: 0, sections: [{ name: "listening", durationSec: 35 * 60, questionIds: [] }, { name: "structure", durationSec: 25 * 60, questionIds: [] }, { name: "reading", durationSec: 55 * 60, questionIds: [] }] })}
-          className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-on-primary">+ New test</button>
+          className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ New test</button>
       </div>
       {err && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</p>}
-      <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
+      <div className="overflow-x-auto rounded-2xl border border-line bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-canvas text-xs uppercase text-ink-soft"><tr><th className="p-3">Name</th><th>Type</th><th>Question</th><th>Duration</th><th>Attempts</th><th>Status</th><th /></tr></thead>
           <tbody>
@@ -86,7 +86,7 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-20 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
-      <div role="dialog" aria-modal className="my-6 w-full max-w-3xl rounded-2xl bg-surface p-6">
+      <div role="dialog" aria-modal className="my-6 w-full max-w-3xl rounded-2xl bg-white p-6">
         <div className="mb-4 flex items-center justify-between"><h2 className="font-display text-xl font-extrabold text-navy">{v.id ? "Edit test" : "New test"}</h2><button onClick={onClose} aria-label="Close" className="text-2xl leading-none text-ink-soft">×</button></div>
         {locked && <p className="mb-4 rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">This test has been taken {v.attempts} times. The question set and durations are locked so earlier scores stay valid. You can still change the name and active status.</p>}
         <div className="grid gap-4 sm:grid-cols-3">
@@ -104,7 +104,7 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
         {err && <p role="alert" className="mt-4 text-sm text-red-700">{err}</p>}
         <div className="mt-5 flex justify-end gap-3">
           <button onClick={onClose} className="rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">Cancel</button>
-          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-on-primary disabled:opacity-60">{busy ? "Saving…" : "Save test"}</button>
+          <button disabled={busy} onClick={save} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60">{busy ? "Saving…" : "Save test"}</button>
         </div>
       </div>
     </div>

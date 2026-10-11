@@ -37,7 +37,7 @@ export function MaterialFrame({ doc, onProgress, minHeight = 240 }: { doc: HtmlD
     <iframe
       ref={ref} title="Interactive material" srcDoc={srcDoc} referrerPolicy="no-referrer" loading="lazy"
       sandbox={SANDBOX}
-      style={{ width: "100%", height, border: 0, display: "block" }} className="rounded-xl bg-surface"
+      style={{ width: "100%", height, border: 0, display: "block" }} className="rounded-xl bg-white"
     />
   );
 }

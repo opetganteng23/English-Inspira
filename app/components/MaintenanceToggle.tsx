@@ -31,7 +31,7 @@ export function MaintenanceToggle() {
         </div>
         <button role="switch" aria-checked={on} aria-label="Maintenance mode" disabled={busy || !data} onClick={() => set(!on)}
           className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:opacity-60 ${on ? "bg-accent" : "bg-line-strong"}`}>
-          <span className={`absolute top-1 h-6 w-6 rounded-full bg-surface shadow transition-all ${on ? "left-7" : "left-1"}`} />
+          <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${on ? "left-7" : "left-1"}`} />
         </button>
       </div>
       <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">Message shown to visitors (optional)

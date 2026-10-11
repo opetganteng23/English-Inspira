@@ -576,18 +576,6 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
     r = await req(null, "/masuk?invite=abc"); ok(r.status === 308 && (r.headers.get("location") ?? "").endsWith("/sign-in?invite=abc"), "URL lama /masuk dialihkan ke /sign-in");
   }
 
-  console.log("\n== Preferensi tampilan (uiPrefs, v2.4) ==");
-  {
-    const uj = { c: "" };
-    await req(uj, "/api/auth/login", { method: "POST", json: { email: "daftar@test.local", password: "reset12345" } });
-    r = await req(uj, "/api/me/ui-prefs"); ok(r.status === 200 && r.data.theme === "system" && r.data.fontSize === 18 && r.data.quietStart === "21:00", "ui-prefs bawaan", J(r.data));
-    r = await req(uj, "/api/me/ui-prefs", { method: "PATCH", json: { theme: "dark", fontSize: 20, timerDefault: "hidden" } }); ok(r.status === 200 && r.data.theme === "dark" && r.data.fontSize === 20, "ui-prefs disimpan");
-    r = await req(uj, "/api/me/ui-prefs"); ok(r.data.timerDefault === "hidden" && r.data.breakReminder === true, "ui-prefs terbaca kembali, sisanya bawaan");
-    r = await req(uj, "/api/me/ui-prefs", { method: "PATCH", json: { fontSize: 30 } }); ok(r.status === 400, "ukuran teks di luar 16-22 ditolak");
-    r = await req(uj, "/api/me/ui-prefs", { method: "PATCH", json: { quietStart: "22:00", quietEnd: "22:00" } }); ok(r.status === 400, "jam tenang awal = akhir ditolak");
-    r = await req(null, "/api/me/ui-prefs"); ok(r.status === 401, "ui-prefs butuh login");
-  }
-
   console.log("\n== Mode pemeliharaan ==");
   {
     const pj = { c: "" };

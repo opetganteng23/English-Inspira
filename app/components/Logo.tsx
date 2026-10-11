@@ -1,16 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 
-/**
- * Logo English Inspira (MTS v2.4). `dark` = di atas latar terang: logo berwarna apa adanya.
- * Tanpa `dark` (di atas latar navy): logo di atas chip putih agar navy ENGLISH tetap terbaca.
- * Di area aplikasi, mode gelap memakai `.logo-chip` (var(--logo-bg)).
- */
-export function Logo({ dark = false, size = 40 }: { dark?: boolean; size?: number; sub?: boolean }) {
-  const w = Math.round(size * 600 / 243);
+/** Logo Inspira + nama produk. `dark` = di atas latar terang (logo navy). */
+export function Logo({ dark = false, sub = true }: { dark?: boolean; sub?: boolean }) {
   return (
-    <Link href="/" aria-label="English Inspira home" className={`inline-flex shrink-0 items-center no-underline ${dark ? "logo-chip px-1.5 py-1" : "rounded-xl bg-white px-2.5 py-1.5"}`}>
-      <Image src="/brand/ei-full.png" alt="English Inspira" width={w} height={size} priority style={{ height: size, width: "auto" }} />
+    <Link href="/" className={`flex items-center gap-3 no-underline ${dark ? "text-navy" : "text-white"}`}>
+      <Image src={dark ? "/brand/logo-navy.png" : "/brand/logo-white.png"} alt="" width={51} height={28} priority className="h-7 w-auto" />
+      <span className="flex flex-col leading-tight">
+        <span className="font-display text-lg font-extrabold tracking-wide">ENGLISH INSPIRA</span>
+        {sub && <span className={`text-[11px] font-normal ${dark ? "text-ink-soft" : "text-mist"}`}>by Inspira Teknologi</span>}
+      </span>
     </Link>
   );
 }

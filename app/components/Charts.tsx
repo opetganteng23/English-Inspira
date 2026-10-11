@@ -10,16 +10,16 @@ export function LineChart({ points, target, min = 310, max = 677, label = "Score
   const ticks = [lo, Math.round((lo + hi) / 2), hi];
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}: ${points.map((p) => `${p.label} ${p.value}`).join(", ")}${target ? `, target ${target}` : ""}`} className="h-auto w-full">
-      {ticks.map((t) => (<g key={t}><line x1={P.l} x2={W - P.r} y1={y(t)} y2={y(t)} stroke="var(--line)" /><text x={P.l - 6} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--text-muted)">{t}</text></g>))}
-      {target ? (<g><line x1={P.l} x2={W - P.r} y1={y(target)} y2={y(target)} stroke="var(--gold)" strokeDasharray="5 4" strokeWidth="1.5" /><text x={W - P.r} y={y(target) - 5} textAnchor="end" fontSize="11" fontWeight="600" fill="var(--attention)">Target {target}</text></g>) : null}
-      <path d={path} fill="none" stroke="var(--blue)" strokeWidth="2.5" strokeLinejoin="round" />
-      {points.map((p, i) => (<g key={i}><circle cx={x(i)} cy={y(p.value)} r="5" fill="var(--blue)" stroke="var(--surface)" strokeWidth="2"><title>{`${p.label}: ${p.value}`}</title></circle><text x={x(i)} y={y(p.value) - 10} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--text)">{p.value}</text><text x={x(i)} y={H - 10} textAnchor="middle" fontSize="10.5" fill="var(--text-muted)">{p.label.length > 14 ? p.label.slice(0, 13) + "…" : p.label}</text></g>))}
+      {ticks.map((t) => (<g key={t}><line x1={P.l} x2={W - P.r} y1={y(t)} y2={y(t)} stroke="#DCE3ED" /><text x={P.l - 6} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#4B5A70">{t}</text></g>))}
+      {target ? (<g><line x1={P.l} x2={W - P.r} y1={y(target)} y2={y(target)} stroke="#F08A1C" strokeDasharray="5 4" strokeWidth="1.5" /><text x={W - P.r} y={y(target) - 5} textAnchor="end" fontSize="11" fontWeight="600" fill="#B85A00">Target {target}</text></g>) : null}
+      <path d={path} fill="none" stroke="#1B5FB8" strokeWidth="2.5" strokeLinejoin="round" />
+      {points.map((p, i) => (<g key={i}><circle cx={x(i)} cy={y(p.value)} r="5" fill="#1B5FB8" stroke="#fff" strokeWidth="2"><title>{`${p.label}: ${p.value}`}</title></circle><text x={x(i)} y={y(p.value) - 10} textAnchor="middle" fontSize="12" fontWeight="700" fill="#0F2F5E">{p.value}</text><text x={x(i)} y={H - 10} textAnchor="middle" fontSize="10.5" fill="#4B5A70">{p.label.length > 14 ? p.label.slice(0, 13) + "…" : p.label}</text></g>))}
     </svg>
   );
 }
 
 /** Batang horizontal berlabel. `max` default = nilai terbesar. */
-export function HBars({ rows, max, unit = "", color = "var(--blue)" }: { rows: { label: string; value: number; sub?: string }[]; max?: number; unit?: string; color?: string }) {
+export function HBars({ rows, max, unit = "", color = "#1B5FB8" }: { rows: { label: string; value: number; sub?: string }[]; max?: number; unit?: string; color?: string }) {
   const m = max ?? Math.max(1, ...rows.map((r) => r.value));
   if (!rows.length) return <p className="py-6 text-center text-sm text-ink-soft">No data yet.</p>;
   return (

@@ -2,106 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design token MTS v2.4 §27.3 (sumber: design/ui-v2.4/ui/ei-tokens.css).
-   Terang bawaan; gelap ikut sistem atau dipaksa lewat <html data-theme="light|dark"> dari uiPrefs. */
-:root {
-  --bg: #F5F8FD; --surface: #FFFFFF; --surface-2: #EDF2FA; --line: #DAE2EF; --line-strong: #C3D0E4;
-  --text: #14223B; --text-muted: #55627A;
-  --primary: #123B8C; --primary-hover: #0C2D6E; --on-primary: #FFFFFF; --primary-soft: #E7EEFA;
-  --blue: #1E78D6; --blue-soft: #E3EEFB;
-  --gold: #E0A526; --gold-soft: #FCF3DB; --attention: #8A5A00; --attention-soft: #FCF3DB;
-  --calm: #1E7F6E; --calm-soft: #E1F3EE;
-  --critical: #B4483C; --critical-soft: #F9E8E5;
-  --focus: #1E78D6; --logo-bg: transparent;
-  --fs-read: 18px; --lh-read: 1.7;
-  --dur: 200ms;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0C1424; --surface: #131D31; --surface-2: #1A2640; --line: #263552; --line-strong: #34466A;
-    --text: #E6ECF7; --text-muted: #9FB0CC;
-    --primary: #7FB2F5; --primary-hover: #A3C6F8; --on-primary: #0C1424; --primary-soft: #1B2B4A;
-    --blue: #5AA2F0; --blue-soft: #172A47;
-    --gold: #F0BE4A; --gold-soft: #2E2614; --attention: #F0C766; --attention-soft: #2E2614;
-    --calm: #5CC2A8; --calm-soft: #14312B;
-    --critical: #E58478; --critical-soft: #3A2220;
-    --focus: #7FB2F5; --logo-bg: #FFFFFF;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0C1424; --surface: #131D31; --surface-2: #1A2640; --line: #263552; --line-strong: #34466A;
-  --text: #E6ECF7; --text-muted: #9FB0CC;
-  --primary: #7FB2F5; --primary-hover: #A3C6F8; --on-primary: #0C1424; --primary-soft: #1B2B4A;
-  --blue: #5AA2F0; --blue-soft: #172A47;
-  --gold: #F0BE4A; --gold-soft: #2E2614; --attention: #F0C766; --attention-soft: #2E2614;
-  --calm: #5CC2A8; --calm-soft: #14312B;
-  --critical: #E58478; --critical-soft: #3A2220;
-  --focus: #7FB2F5; --logo-bg: #FFFFFF;
-  color-scheme: dark;
-}
-/* Halaman publik (landing, masuk, legal, pemeliharaan) selalu terang: memakai warna merek tetap. */
-.theme-light {
-  --bg: #F5F8FD; --surface: #FFFFFF; --surface-2: #EDF2FA; --line: #DAE2EF; --line-strong: #C3D0E4;
-  --text: #14223B; --text-muted: #55627A;
-  --primary: #123B8C; --primary-hover: #0C2D6E; --on-primary: #FFFFFF; --primary-soft: #E7EEFA;
-  --blue: #1E78D6; --blue-soft: #E3EEFB;
-  --gold: #E0A526; --gold-soft: #FCF3DB; --attention: #8A5A00; --attention-soft: #FCF3DB;
-  --calm: #1E7F6E; --calm-soft: #E1F3EE;
-  --critical: #B4483C; --critical-soft: #F9E8E5;
-  --focus: #1E78D6; --logo-bg: transparent;
-  color-scheme: light; background: var(--bg); color: var(--text);
-}
-@media (prefers-reduced-motion: reduce) { :root { --dur: 0ms; } }
-:root[data-motion="reduce"] { --dur: 0ms; }
-:root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after { animation: none !important; transition: none !important; }
-
 html { -webkit-text-size-adjust: 100%; }
 body {
   @apply min-h-screen overflow-x-hidden bg-canvas font-sans text-ink antialiased;
 }
 img, video, canvas, svg { max-width: 100%; }
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-
-/* Area aplikasi (§27.3): judul bobot 600, tanpa huruf terlalu tebal. */
-.app-calm .font-extrabold, .app-calm .font-bold { font-weight: 600; }
 
 @layer components {
   .field {
-    @apply h-12 w-full rounded-[10px] border-[1.5px] border-line-strong bg-surface px-3.5 text-[15px] text-ink outline-none focus:border-brand disabled:bg-canvas disabled:text-ink-soft;
+    @apply h-12 w-full rounded-[10px] border-[1.5px] border-line-strong bg-white px-3.5 text-[15px] outline-none focus:border-brand disabled:bg-canvas disabled:text-ink-soft;
   }
   textarea.field { @apply h-auto py-2.5; }
-  select.field option { background: var(--surface); color: var(--text); }
   .btn-primary {
-    @apply flex h-[52px] w-full items-center justify-center rounded-xl bg-brand text-base font-semibold text-on-primary transition hover:bg-brand-dark disabled:opacity-60;
+    @apply flex h-[52px] w-full items-center justify-center rounded-xl bg-brand text-base font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60;
   }
   .btn { @apply inline-flex min-h-[44px] items-center justify-center rounded-xl px-5 text-sm font-semibold transition disabled:opacity-60; }
-  .btn-solid { @apply btn bg-brand text-on-primary hover:bg-brand-dark; }
-  .btn-accent { @apply btn bg-gold text-[#14223B] hover:opacity-90; }
-  .btn-outline { @apply btn border border-line-strong bg-surface text-navy hover:bg-brand-tint; }
-  .btn-danger { @apply btn border border-critical bg-surface text-critical hover:bg-critical-soft; }
-  .card { @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgba(20,34,59,.05)] sm:p-6; }
+  .btn-solid { @apply btn bg-brand text-white hover:bg-brand-dark; }
+  .btn-accent { @apply btn bg-accent text-white hover:bg-accent-dark; }
+  .btn-outline { @apply btn border border-line-strong bg-white text-navy hover:bg-brand-tint; }
+  .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50; }
+  .card { @apply rounded-2xl border border-line bg-white p-4 sm:p-6; }
   .badge { @apply inline-block rounded-full px-2.5 py-1 text-xs font-semibold; }
-  .badge-ok { @apply badge bg-calm-soft text-calm; }
-  .badge-warn { @apply badge bg-attention-soft text-attention; }
-  .badge-muted { @apply badge bg-surface-2 text-ink-soft; }
-  .badge-bad { @apply badge bg-critical-soft text-critical; }
-  .table-wrap { @apply overflow-x-auto rounded-xl border border-line bg-surface; }
+  .badge-ok { @apply badge bg-success-tint text-success; }
+  .badge-warn { @apply badge bg-accent-tint text-accent-dark; }
+  .badge-muted { @apply badge bg-canvas text-ink-soft; }
+  .badge-bad { @apply badge bg-red-50 text-red-700; }
+  .table-wrap { @apply overflow-x-auto rounded-2xl border border-line bg-white; }
   .table-wrap table { @apply w-full min-w-[640px] text-left text-sm; }
-  .table-wrap thead { @apply bg-surface-2 text-xs uppercase text-ink-soft; }
+  .table-wrap thead { @apply bg-canvas text-xs uppercase text-ink-soft; }
   .table-wrap th, .table-wrap td { @apply px-3 py-3; }
   .table-wrap tbody tr { @apply border-t border-line; }
-  .page-title { @apply font-display text-2xl font-semibold text-ink sm:text-[28px]; }
-  /* Teks bacaan (§27.3): ukuran dari uiPrefs.fontSize, baris ≤ 68ch, line height 1.7. */
-  .prose-ei { font-size: var(--fs-read); line-height: var(--lh-read); letter-spacing: .005em; max-width: 68ch; }
-  .prose-ei p { @apply mb-4; }
-  .prose-ei h2, .prose-ei h3 { @apply mb-2 mt-5 font-display font-semibold text-ink; }
+  .page-title { @apply font-display text-2xl font-extrabold text-navy sm:text-3xl; }
+  .prose-ei p { @apply mb-3 leading-relaxed; }
+  .prose-ei h2, .prose-ei h3 { @apply mb-2 mt-5 font-display font-extrabold text-navy; }
   .prose-ei ul { @apply mb-3 list-disc pl-6; }
   .prose-ei ol { @apply mb-3 list-decimal pl-6; }
   .prose-ei table { @apply my-3 w-full border-collapse; }
   .prose-ei th, .prose-ei td { @apply border border-line px-2 py-1; }
   .prose-ei img { @apply my-3 rounded-lg; }
   .prose-ei blockquote { @apply my-3 border-l-4 border-brand pl-4 text-ink-soft; }
-  .logo-chip { background: var(--logo-bg); border-radius: 10px; }
 }
