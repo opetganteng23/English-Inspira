@@ -5,7 +5,7 @@ import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES, ACADEMIC_ROLES } from "@/lib/rbac";
 import { Question } from "@/models/Question";
 import { Test } from "@/models/Test";
 import { AuditLog } from "@/models/AuditLog";
@@ -21,7 +21,7 @@ async function find(id: string) {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     const q = await find(params.id);
     return NextResponse.json(q.toObject());
   } catch (e) {
@@ -31,9 +31,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     const q = await find(params.id);
     const body = questionSchema.parse(await req.json());
+    if (admin.role === "content_editor") {
+      if (!["draft", "review"].includes(q.status)) throw new HttpError(403, "This question is already published or archived. Ask an academic admin to change it.");
+      if (!["draft", "review"].includes(body.status)) throw new HttpError(403, "Editors can save drafts and send questions for review. An academic admin publishes them.");
+    }
     // Ubah kunci/pilihan pada soal yang sudah dipakai tes mengubah skor lama; dicatat di audit.
     const used = await Test.exists({ "sections.questionIds": q._id });
     await ensureBaseline(q._id, q.toObject());
@@ -51,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const q = await find(params.id);
     if (await Test.exists({ "sections.questionIds": q._id })) throw new HttpError(409, "The question is used by a test. Remove it from the test first or change its status to draft.");
     await q.deleteOne();

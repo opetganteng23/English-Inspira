@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { RemedialMap } from "@/models/Course";
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Mapping not found");
     await connectDB();
     const r = await RemedialMap.deleteOne({ _id: params.id });

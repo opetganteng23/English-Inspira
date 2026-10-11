@@ -3,7 +3,7 @@ import { HttpError, requireRole } from "./rbac";
 
 // Penulis materi (MTS §10.2): admin, coach, inst_admin. Coach/inst_admin hanya menulis rich text untuk institusinya
 // sendiri (materi ber-institutionId, hanya terlihat peserta institusi itu). Materi HTML hanya admin (MTS §19).
-export const AUTHOR_ROLES = ["admin"] as const; // v2.4: konten (materi, audio, soal, course) hanya dikelola admin pusat
+export const AUTHOR_ROLES = ["admin", "academic_admin"] as const; // v2.4: konten (materi, audio, soal, course) hanya dikelola admin pusat
 
 export async function requireAuthor() {
   return requireRole([...AUTHOR_ROLES]);
@@ -13,7 +13,7 @@ type U = { role: string; institutionId?: Types.ObjectId | null };
 
 /** Filter daftar/akses materi untuk penulis: admin semua; lainnya hanya milik institusinya. */
 export function authorScope(u: U): Record<string, unknown> {
-  if (u.role === "admin") return {};
+  if (u.role === "admin" || u.role === "academic_admin") return {};
   if (!u.institutionId) throw new HttpError(403, "Your account is not linked to an institution yet");
   return { institutionId: u.institutionId };
 }
@@ -23,6 +23,7 @@ export const visibleTo = (u: { institutionId?: Types.ObjectId | null }) => ({ in
 
 export function assertCanWrite(u: U, m: { institutionId?: Types.ObjectId | null; kind: string }) {
   if (u.role === "admin") return;
+  if (u.role === "academic_admin") { if (m.kind !== "rich") throw new HttpError(403, "HTML materials are managed by admins only"); return; }
   if (!m.institutionId || String(m.institutionId) !== String(u.institutionId)) throw new HttpError(404, "Material not found");
   if (m.kind !== "rich") throw new HttpError(403, "HTML materials are managed by admins only");
 }

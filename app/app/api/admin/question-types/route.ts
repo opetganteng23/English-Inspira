@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { zodMessage } from "@/lib/zod-message";
 import { audit } from "@/lib/audit";
 import { ensureQuestionTypes } from "@/lib/question-types";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 /** Daftar jenis soal per kategori beserta jumlah soal yang memakainya. */
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     await ensureQuestionTypes();
     const [types, counts] = await Promise.all([
       QuestionType.find().sort({ section: 1, order: 1, name: 1 }).lean(),
@@ -35,7 +35,7 @@ const createInput = z.object({ section: z.enum(SECTIONS), name: z.string().trim(
 
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     const b = createInput.parse(await req.json());
     await connectDB();
     if (await QuestionType.findOne({ section: b.section, name: b.name }).collation({ locale: "en", strength: 2 })) throw new HttpError(409, "A type with this name already exists in this category");

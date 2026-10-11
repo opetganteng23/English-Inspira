@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { testSchema } from "@/lib/admin-schemas";
 import { validateTestQuestions } from "@/lib/test-validate";
 import { Test, Attempt } from "@/models/Test";
@@ -10,7 +10,7 @@ import { AuditLog } from "@/models/AuditLog";
 
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     await connectDB();
     const tests = await Test.find().sort({ createdAt: -1 }).lean();
     const counts = await Attempt.aggregate([{ $group: { _id: "$testId", n: { $sum: 1 } } }]);
@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const body = testSchema.parse(await req.json());
     await connectDB();
     await validateTestQuestions(body.sections);

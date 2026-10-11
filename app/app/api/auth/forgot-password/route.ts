@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCentralStaff } from "@/lib/role-home";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { connectDB } from "@/lib/db";
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     await limit("resetEmail", email);
     await connectDB();
     const user = await User.findOne({ email }).lean();
-    const eligible = user && user.status !== "disabled" && (user.role === "admin" || (await hasActiveEnrollment(user._id)));
+    const eligible = user && user.status !== "disabled" && (isCentralStaff(user.role) || (await hasActiveEnrollment(user._id)));
     if (eligible) {
       const token = randomBytes(32).toString("hex");
       await User.updateOne({ _id: user._id }, { resetTokenHash: sha256(token), resetExpiresAt: new Date(Date.now() + 30 * 60_000) });

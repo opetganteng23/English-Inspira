@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCentralStaff } from "@/lib/role-home";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { consumeCode, CODE_BAD as BAD } from "@/lib/otp-code";
@@ -28,9 +29,9 @@ export async function POST(req: Request) {
       if (!adminEmails().includes(email)) throw new HttpError(400, BAD);
       user = await User.create({ email, role: "admin", status: "active", consentAt: new Date() });
     }
-    if (body.adminOnly && user.role !== "admin") throw new HttpError(403, "This sign-in page is for admins only. Use the regular sign-in page.");
+    if (body.adminOnly && !isCentralStaff(user.role)) throw new HttpError(403, "This sign-in page is for admins only. Use the regular sign-in page.");
     if (user.status === "disabled") throw new HttpError(403, "Account deactivated");
-    if (user.role !== "admin" && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Your access has ended. Contact your institution.");
+    if (!isCentralStaff(user.role) && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Your access has ended. Contact your institution.");
 
     if (body.invite) await Invitation.updateOne({ tokenHash: sha256(body.invite), userId: user._id, status: "pending" }, { status: "used" });
     user.lastLoginAt = new Date();

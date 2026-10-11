@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { zodMessage } from "@/lib/zod-message";
 import { audit } from "@/lib/audit";
 import { Question, QuestionType } from "@/models/Question";
@@ -27,7 +27,7 @@ const patchInput = z.object({
 /** Ubah nama (soal ikut berubah), deskripsi, urutan, atau aktif/nonaktif (jenis nonaktif tidak muncul di form soal baru). */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     const t = await find(params.id);
     const b = patchInput.parse(await req.json());
     if (b.name && b.name.toLowerCase() !== t.name.toLowerCase()) {
@@ -52,7 +52,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /** Hapus jenis. Bila masih dipakai soal: tolak, kecuali `?moveTo=<id jenis lain di kategori yang sama>` memindahkan soalnya. */
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     const t = await find(params.id);
     const used = await Question.countDocuments({ section: t.section, type: t.name }).collation(CI);
     const moveTo = new URL(req.url).searchParams.get("moveTo");

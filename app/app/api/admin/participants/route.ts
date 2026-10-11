@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { getLevels } from "@/lib/config";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
@@ -14,7 +14,7 @@ const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** Daftar peserta lintas institusi untuk admin: level, skor estimasi, kuota coaching, status undangan. */
 export async function GET(req: Request) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     await connectDB();
     const sp = new URL(req.url).searchParams;
     const filter: Record<string, unknown> = { role: "participant", deletedAt: { $exists: false } };

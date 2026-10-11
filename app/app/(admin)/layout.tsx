@@ -1,4 +1,6 @@
 import { AppShell, type NavGroup } from "@/components/AppShell";
+import { getCurrentUser } from "@/lib/auth";
+import { STAFF_ROLES } from "@/lib/rbac";
 
 const nav: NavGroup[] = [
   { items: [
@@ -26,6 +28,15 @@ const nav: NavGroup[] = [
   ] },
 ];
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <AppShell roles={["admin"]} nav={nav} title="Admin">{children}</AppShell>;
+// Menu per peran: academic_admin tanpa pengguna, parameter, pengaturan, audit; content_editor hanya soal dan audio.
+const ALLOWED: Record<string, string[]> = {
+  academic_admin: ["/admin", "/admin/participants", "/admin/question-bank", "/admin/audio", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
+  content_editor: ["/admin/question-bank", "/admin/audio"],
+};
+
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
+  const allow = user ? ALLOWED[user.role] : undefined;
+  const menu = allow ? nav.map((g) => ({ ...g, items: g.items.filter((i) => allow.includes(i.href)) })).filter((g) => g.items.length) : nav;
+  return <AppShell roles={STAFF_ROLES} nav={menu} title={user?.role === "content_editor" ? "Question Editor" : user?.role === "academic_admin" ? "Academic" : "Admin"}>{children}</AppShell>;
 }

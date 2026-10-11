@@ -3,7 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { audioBucket, verifyAudioToken } from "@/lib/audio-store";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { Audio } from "@/models/Audio";
 import { QuestionGroup } from "@/models/Question";
 import { Material } from "@/models/Material";
@@ -54,7 +54,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /** Ubah judul dan/atau transkrip. */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Audio not found");
     const body = await req.json().catch(() => ({}));
     const set: Record<string, string> = {};
@@ -86,7 +86,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /** Ganti berkas MP3 tanpa memutus tautan: soal dan materi tetap memakai id yang sama. */
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Audio not found");
     await connectDB();
     const a = await Audio.findById(params.id);
@@ -107,7 +107,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Audio not found");
     await connectDB();
     const a = await Audio.findById(params.id);

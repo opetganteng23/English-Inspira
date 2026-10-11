@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { unitInput } from "@/lib/course-schemas";
 import { validateUnit, syncQuizOwner } from "@/lib/unit-admin";
@@ -10,7 +10,7 @@ import { Unit } from "@/models/Course";
 
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const b = unitInput.parse(await req.json());
     await connectDB();
     await validateUnit(b);

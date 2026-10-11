@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCentralStaff } from "@/lib/role-home";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
 
     const user = await User.findOne({ email }).lean();
     const eligible = user
-      ? user.status !== "disabled" && (user.role === "admin" || (await hasActiveEnrollment(user._id)))
+      ? user.status !== "disabled" && (isCentralStaff(user.role) || (await hasActiveEnrollment(user._id)))
       : adminBootstrap().includes(email); // admin pertama dari ADMIN_EMAILS
 
     if (eligible) await issueCode(email, "otp");

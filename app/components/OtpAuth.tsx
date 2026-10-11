@@ -5,11 +5,12 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { api } from "@/lib/client";
+import { roleHome } from "@/lib/role-home";
 
 // Halaman autentikasi: masuk (password atau kode email), daftar dengan kode institusi, lupa & reset password.
 
 const homeOf = (role: string, consent: boolean) =>
-  consent ? "/consent" : role === "admin" ? "/admin" : role === "inst_admin" ? "/institution" : role === "coach" ? "/coach" : "/home";
+  consent ? "/consent" : roleHome(role);
 const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith("//") ? n : null);
 
 function Shell({ heading, text, children }: { heading: string; text: string; children: React.ReactNode }) {
@@ -91,7 +92,7 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
       .catch((x) => setErr((x as Error).message));
   }, [invite]);
 
-  const go = (d: { role: string; needsConsent: boolean }) => { window.location.href = admin ? "/admin" : d.needsConsent ? "/consent" : next ?? homeOf(d.role, false); };
+  const go = (d: { role: string; needsConsent: boolean }) => { window.location.href = admin ? roleHome(d.role) : d.needsConsent ? "/consent" : next ?? homeOf(d.role, false); };
 
   async function loginPassword(e: React.FormEvent) {
     e.preventDefault(); setErr(""); setBusy(true);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { courseInput } from "@/lib/course-schemas";
 import { getLevels } from "@/lib/config";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 /** Struktur lengkap untuk editor admin: course per level beserta unit, materi, dan kuisnya. */
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     await connectDB();
     const [levels, courses, units, materials, quizzes] = await Promise.all([
       getLevels(),
@@ -43,7 +43,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const b = courseInput.parse(await req.json());
     await connectDB();
     const c = await Course.create(b);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { Audio } from "@/models/Audio";
 import { Material } from "@/models/Material";
 import { Question, QuestionGroup } from "@/models/Question";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 /** Detail satu audio: metadata, transkrip, dan semua soal serta materi yang memakainya (untuk peringatan sebelum ganti atau hapus). */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Audio not found");
     await connectDB();
     const a = await Audio.findById(params.id).lean();

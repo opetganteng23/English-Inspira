@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { Level } from "@/models/Config";
 import { getLevels } from "@/lib/config";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     return NextResponse.json({ levels: (await getLevels()).map((l) => ({ id: String(l._id), key: l.key, name: l.name, order: l.order })) });
   } catch (e) {
     return handleError(e);
@@ -33,7 +33,7 @@ const level = z.object({
  */
 export async function PUT(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const { levels } = z.object({ levels: z.array(level).min(1).max(10) }).parse(await req.json());
     const sorted = [...levels].sort((a, b) => a.order - b.order);
     for (const l of sorted) if (l.scoreMin > l.scoreMax) throw new HttpError(400, `${l.name}: the lower bound is above the upper bound`);

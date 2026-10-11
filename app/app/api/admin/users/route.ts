@@ -17,7 +17,7 @@ export async function GET() {
   try {
     await requireRole(["admin"]);
     await connectDB();
-    const [users, insts] = await Promise.all([User.find({ role: { $in: ["admin", "inst_admin", "coach"] }, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).lean(), Institution.find().select("name").lean()]);
+    const [users, insts] = await Promise.all([User.find({ role: { $in: ["admin", "academic_admin", "content_editor", "inst_admin", "coach"] }, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).lean(), Institution.find().select("name").lean()]);
     const name = new Map(insts.map((i) => [String(i._id), i.name]));
     return NextResponse.json({
       users: users.map((u) => ({ id: String(u._id), name: u.name ?? null, givenName: u.givenName ?? splitName(u.name).givenName, surname: u.surname ?? splitName(u.name).surname, phone: u.phone ?? "", email: u.email, role: u.role, status: u.status, institution: u.institutionId ? name.get(String(u.institutionId)) ?? null : null, institutionId: u.institutionId ? String(u.institutionId) : null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt })),
@@ -36,11 +36,11 @@ export async function POST(req: Request) {
     const admin = await requireRole(["admin"]);
     const b = userCreateInput.parse(await req.json());
     await connectDB();
-    if (b.role === "admin") {
+    if (b.role === "admin" || b.role === "academic_admin" || b.role === "content_editor") {
       const email = b.email.toLowerCase();
       if (await User.exists({ email })) throw new HttpError(409, "Email already registered");
-      const u = await User.create({ email, name: b.name, role: "admin", status: "active", consentAt: new Date() });
-      await audit(admin._id, "user.create", String(u._id), { role: "admin" });
+      const u = await User.create({ email, name: b.name, role: b.role, status: "active", consentAt: new Date() });
+      await audit(admin._id, "user.create", String(u._id), { role: b.role });
       return NextResponse.json({ id: String(u._id) }, { status: 201 });
     }
     if (!b.institutionId) throw new HttpError(400, "Coaches and institution admins must be linked to an institution");

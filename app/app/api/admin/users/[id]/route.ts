@@ -43,7 +43,7 @@ const origin = (req: Request) => process.env.APP_URL ?? new URL(req.url).origin;
 async function internalUser(id: string) {
   if (!isValidObjectId(id)) throw new HttpError(404, "User not found");
   await connectDB();
-  const u = await User.findOne({ _id: id, role: { $in: ["admin", "inst_admin", "coach"] }, deletedAt: { $exists: false } });
+  const u = await User.findOne({ _id: id, role: { $in: ["admin", "academic_admin", "content_editor", "inst_admin", "coach"] }, deletedAt: { $exists: false } });
   if (!u) throw new HttpError(404, "User not found");
   return u;
 }

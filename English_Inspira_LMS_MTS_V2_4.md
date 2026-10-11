@@ -11,7 +11,7 @@ Versi 2.5 · Pembaruan dari MTS v2.4 · LMS persiapan TOEFL ITP berbasis level, 
 | 2.2 | Perubahan keamanan materi HTML: JavaScript materi tidak lagi dijalankan di origin/hak aplikasi utama. Materi interaktif dijalankan dalam iframe sandbox terisolasi dengan CSP ketat dan jembatan analitik terbatas. |
 | 2.3 | Diselaraskan dengan implementasi (Oktober 2026): seluruh antarmuka dan URL berbahasa Inggris; nama produk **English Inspira** dengan logo Inspira dan font Poppins; landing page publik; login **password atau OTP**; **daftar mandiri wajib kode institusi** + verifikasi email; lupa/reset password; **mode pemeliharaan** dengan login khusus admin `/admin/login`; keluaran Claude terstruktur lewat tool use; deploy **PM2 tanpa Docker**. Lihat bagian 0.2. |
 | 2.4 | **Kenyamanan belajar dan psikologi UI** (bagian 27): prinsip berbasis teori (beban kognitif, motivasi, kecemasan tes, umpan balik), design token tenang, mode fokus, ruang tes yang menurunkan kecemasan, penyajian hasil yang tidak menghakimi, panduan microcopy, notifikasi dengan jam tenang, aksesibilitas, parameter `ui_comfort`, metrik kenyamanan, dan kriteria penerimaan tambahan. Tidak mengubah aturan skor, keamanan, atau RBAC. |
-| 2.5 | **Scoring Profile Manager** (Oktober 2026): `score_conversion` tunggal diganti koleksi `scoring_profiles` (mode linear atau tabel per section, versi, status terverifikasi dengan sumber, default, arsip). Tes memilih profil; attempt menyimpan `scoringProfileId`, `scoringVersion`, dan `scoreBasis` (`verified` atau `provisional`). Mengubah aturan konversi menaikkan versi dan mencabut verifikasi; hasil lama tidak dihitung ulang. Profil linear tidak dapat diverifikasi. Tidak mengubah RBAC atau keamanan. |
+| 2.5 | **Scoring Profile Manager** (Oktober 2026): `score_conversion` tunggal diganti koleksi `scoring_profiles` (mode linear atau tabel per section, versi, status terverifikasi dengan sumber, default, arsip). Tes memilih profil; attempt menyimpan `scoringProfileId`, `scoringVersion`, dan `scoreBasis` (`verified` atau `provisional`). Mengubah aturan konversi menaikkan versi dan mencabut verifikasi; hasil lama tidak dihitung ulang. Profil linear tidak dapat diverifikasi. Menambah peran `academic_admin` dan `content_editor` (bagian 4): staf pusat tanpa institusi, tidak terikat enrollment, akses dibatasi per halaman (middleware) dan per endpoint (`requireRole`). |
 
 ## 0.1 Perubahan dari v1
 
@@ -96,6 +96,8 @@ Tiga jalur di atas satu fondasi:
 | `coach` | Peserta institusinya yang berada di kelas atau slotnya | Menentukan dan mengelola jadwal/slot coaching, kehadiran, profil peserta, laporan pra-sesi, catatan sesi, ubah study plan, rekomendasi naik level |
 | `inst_admin` | Institusinya saja | Impor dan undang peserta, statistik agregat, daftar peserta (nama, level, skor estimasi, kehadiran, status plan), laporan |
 | `admin` | Semua institusi | Semua konfigurasi, konten, bank soal, kelas, penugasan coach, monitoring, laporan, materi HTML interaktif terisolasi |
+| `academic_admin` | Pusat (lintas institusi), tanpa institusi | Mengelola dan mem-publish bank soal, audio, tes, course, unit, materi rich text, remedial map, dan Scoring Profiles; membaca daftar peserta. Tidak dapat mengelola akun, institusi, parameter, pengaturan, audit log, mode pemeliharaan, atau materi HTML |
+| `content_editor` | Pusat, tanpa institusi | Menulis soal dan audio sampai status `draft` atau `review`. Tidak dapat mem-publish, mengubah soal yang sudah published atau archived, atau menghapus; tidak melihat menu lain |
 
 **Aturan wajib**
 

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { roleHome } from "@/lib/role-home";
 
 // Gerbang kasar berbasis token (Edge). Pengecekan peran/status final tetap di handler via requireRole().
 const COOKIE = "epta_session";
@@ -28,7 +29,13 @@ async function maintenanceOn(req: NextRequest) {
   return maint.on;
 }
 
-const home = (role: string) => (role === "admin" ? "/admin" : role === "inst_admin" ? "/institution" : role === "coach" ? "/coach" : "/home");
+// Peran staf pusat selain admin hanya boleh membuka halaman admin yang sesuai (API tetap memeriksa ulang).
+const STAFF_PAGES: Record<string, string[]> = {
+  academic_admin: ["/admin", "/admin/participants", "/admin/question-bank", "/admin/audio", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
+  content_editor: ["/admin/question-bank", "/admin/audio"],
+};
+const staffOk = (role: string, path: string) => (STAFF_PAGES[role] ?? []).some((p) => path === p || (p !== "/admin" && path.startsWith(p + "/")));
+const home = roleHome;
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -66,20 +73,21 @@ export async function middleware(req: NextRequest) {
   }
 
   if ((pathname === "/sign-in" || pathname === "/register") && role) return NextResponse.redirect(new URL(home(role), req.url));
-  if (pathname === "/admin/login") return role === "admin" ? NextResponse.redirect(new URL("/admin", req.url)) : NextResponse.next();
+  if (pathname === "/admin/login") return role === "admin" || role === "academic_admin" || role === "content_editor" ? NextResponse.redirect(new URL(home(role), req.url)) : NextResponse.next();
   if (pathname === "/maintenance" && !(await maintenanceOn(req))) return NextResponse.redirect(new URL("/", req.url));
 
   const need =
-    pathname.startsWith("/admin") ? ["admin"] :
+    pathname.startsWith("/admin") ? ["admin", "academic_admin", "content_editor"] :
     pathname.startsWith("/institution") ? ["inst_admin", "admin"] :
     pathname === "/coach" || pathname.startsWith("/coach/") ? ["coach", "admin"] :
-    pathname === "/consent" ? ["participant", "coach", "inst_admin", "admin"] :
+    pathname === "/consent" ? ["participant", "coach", "inst_admin", "admin", "academic_admin", "content_editor"] :
     PARTICIPANT.some((p) => pathname === p || pathname.startsWith(p + "/")) ? ["participant", "admin"] :
     null;
 
   if (need) {
     if (!role) return NextResponse.redirect(new URL(pathname.startsWith("/admin") ? "/admin/login" : `/sign-in?next=${encodeURIComponent(pathname)}`, req.url));
     if (!need.includes(role)) return NextResponse.redirect(new URL(home(role), req.url));
+    if (pathname.startsWith("/admin") && pathname !== "/admin/login" && role !== "admin" && !staffOk(role, pathname)) return NextResponse.redirect(new URL(home(role), req.url));
   }
   return NextResponse.next();
 }

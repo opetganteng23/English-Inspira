@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { sniffImage } from "@/lib/files";
 import { Asset } from "@/models/Asset";
 
@@ -10,13 +10,13 @@ const MAX_SENSITIVE = 500 * 1024; // KTP / pas foto
 
 export async function POST(req: Request) {
   try {
-    const user = await requireRole(["participant", "admin", "inst_admin"]);
+    const user = await requireRole(["participant", "inst_admin", ...CONTENT_ROLES]);
     const form = await req.formData();
     const file = form.get("file");
     const sensitive = form.get("sensitive") === "true";
     if (!(file instanceof File)) throw new HttpError(400, "A file is required");
     // Aset publik (materi/soal) hanya boleh diunggah admin; peserta hanya aset sensitif miliknya.
-    if (!sensitive && user.role !== "admin") throw new HttpError(403, "No access");
+    if (!sensitive && !CONTENT_ROLES.includes(user.role)) throw new HttpError(403, "No access");
 
     const buf = Buffer.from(await file.arrayBuffer());
     if (buf.length > (sensitive ? MAX_SENSITIVE : MAX_GENERAL))

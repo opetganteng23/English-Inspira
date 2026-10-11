@@ -3,6 +3,11 @@ import type { QueryFilter } from "mongoose";
 import { getCurrentUser } from "./auth";
 import type { Role, UserDoc } from "@/models/User";
 
+/** Peran staf pusat. admin: semua; academic_admin: konten dan tes (tanpa pengguna, parameter, pengaturan, audit); content_editor: hanya menulis soal dan audio sampai status review. */
+export const CONTENT_ROLES: Role[] = ["admin", "academic_admin", "content_editor"];
+export const ACADEMIC_ROLES: Role[] = ["admin", "academic_admin"];
+export const STAFF_ROLES: Role[] = ["admin", "academic_admin", "content_editor"];
+
 export class HttpError extends Error {
   constructor(public status: number, message: string, public code?: string) {
     super(message);

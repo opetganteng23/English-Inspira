@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { zodMessage } from "@/lib/zod-message";
 import { audit } from "@/lib/audit";
 import { validateTables, toConversion } from "@/lib/scoring-profiles";
@@ -27,7 +27,7 @@ const plain = (p: Awaited<ReturnType<typeof find>>) => {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     return NextResponse.json(plain(await find(params.id)));
   } catch (e) {
     return handleError(e);
@@ -37,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 /** Ubah profil. Bila aturan konversi berubah: versi naik dan status terverifikasi dicabut (harus diverifikasi ulang). */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const p = await find(params.id);
     const b = profileInput.parse(await req.json());
     const { errors, warnings } = validateTables(b.mode, b.scaledMin, b.scaledMax, b.tables);
@@ -69,7 +69,7 @@ const action = z.discriminatedUnion("action", [
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const p = await find(params.id);
     const b = action.parse(await req.json());
     if (b.action === "duplicate") {
@@ -105,7 +105,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 /** Hapus profil: ditolak bila bawaan, dipilih oleh tes, atau sudah dipakai menilai percobaan (jejak audit tidak boleh putus). */
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const p = await find(params.id);
     if (p.isDefault) throw new HttpError(409, "The default profile cannot be deleted");
     const [tests, attempts] = await Promise.all([Test.countDocuments({ scoringProfileId: p._id }), Attempt.countDocuments({ scoringProfileId: p._id })]);

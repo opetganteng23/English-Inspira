@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { recordQuestionVersion } from "@/lib/question-versions";
 import { Question } from "@/models/Question";
@@ -9,7 +9,7 @@ import { Question } from "@/models/Question";
 /** Duplikat soal sebagai draf baru (kunci, pilihan, tag, dan grup ikut disalin) untuk dipakai ulang dan diubah. */
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Question not found");
     await connectDB();
     const q = await Question.findById(params.id).lean();

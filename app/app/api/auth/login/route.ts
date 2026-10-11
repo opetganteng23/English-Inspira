@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCentralStaff } from "@/lib/role-home";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     if (!(await checkPassword(body.password, user?.passwordHash)) || !user || !user.emailVerifiedAt) throw new HttpError(400, WRONG);
     if (body.adminOnly && user.role !== "admin") throw new HttpError(403, "This sign-in page is for admins only. Use the regular sign-in page.");
     if (user.status === "disabled") throw new HttpError(403, "Account deactivated");
-    if (user.role !== "admin" && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Your access has ended. Contact your institution.");
+    if (!isCentralStaff(user.role) && !(await hasActiveEnrollment(user._id))) throw new HttpError(403, "Your access has ended. Contact your institution.");
     user.lastLoginAt = new Date();
     await user.save();
     await createSession(String(user._id), user.role);

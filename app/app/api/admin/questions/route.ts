@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { Question, QuestionGroup } from "@/models/Question";
 import { registerQuestionType } from "@/lib/question-types";
 import { recordQuestionVersion } from "@/lib/question-versions";
@@ -14,7 +14,7 @@ const escapeRegex = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export async function GET(req: Request) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     await connectDB();
     const sp = new URL(req.url).searchParams;
     const filter: Record<string, unknown> = {};
@@ -57,8 +57,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     const body = questionSchema.parse(await req.json());
+    if (admin.role === "content_editor" && !["draft", "review"].includes(body.status)) throw new HttpError(403, "Editors can save drafts and send questions for review. An academic admin publishes them.");
     await connectDB();
     const q = await Question.create({ ...body, groupId: body.groupId ?? undefined });
     await registerQuestionType(body.section, body.type);

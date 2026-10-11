@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { zodMessage } from "@/lib/zod-message";
 import { audit } from "@/lib/audit";
 import { Question, QuestionGroup } from "@/models/Question";
@@ -21,7 +21,7 @@ async function ensure(id: string) {
 /** Riwayat versi soal (terbaru dulu): siapa, kapan, kolom yang berubah, dan salinan lengkapnya untuk perbandingan. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     await ensure(params.id);
     const versions = await QuestionVersion.find({ questionId: params.id }).sort({ version: -1 }).limit(100).lean();
     const actors = new Map((await User.find({ _id: { $in: versions.map((v) => v.actorId).filter((x): x is NonNullable<typeof x> => !!x) } }).select("name email").lean()).map((u) => [String(u._id), u]));
@@ -38,7 +38,7 @@ const restoreInput = z.object({ version: z.number().int().min(1) });
 /** Pulihkan soal ke salinan sebuah versi lama. Pemulihan sendiri tercatat sebagai versi baru (riwayat tidak pernah ditimpa). */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     await ensure(params.id);
     const { version } = restoreInput.parse(await req.json());
     const v = await QuestionVersion.findOne({ questionId: params.id, version }).lean();

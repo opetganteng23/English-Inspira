@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { zodMessage } from "@/lib/zod-message";
 import { audit } from "@/lib/audit";
 import { ensureDefaultProfile, validateTables } from "@/lib/scoring-profiles";
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 /** Daftar profil penilaian beserta pemakaiannya (tes yang memilihnya dan percobaan yang sudah dinilai dengannya). */
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     await ensureDefaultProfile();
     const profiles = await ScoringProfile.find().sort({ isDefault: -1, createdAt: 1 }).lean();
     const out = [];
@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const b = profileInput.parse(await req.json());
     await connectDB();
     const { errors, warnings } = validateTables(b.mode, b.scaledMin, b.scaledMax, b.tables);

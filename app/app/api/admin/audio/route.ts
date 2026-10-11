@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { handleError } from "@/lib/rbac";
-import { requireAuthor } from "@/lib/material-authz";
+import { requireRole, handleError, CONTENT_ROLES } from "@/lib/rbac";
 import { Audio } from "@/models/Audio";
 import { Material } from "@/models/Material";
 import { Question, QuestionGroup } from "@/models/Question";
@@ -13,7 +12,7 @@ const ID = /data-audio-id="([0-9a-f]{24})"/g;
 /** Daftar audio untuk Audio Library dan pemilih audio di editor: jenis, durasi, ukuran, dan pemakaian (grup soal, soal, materi). */
 export async function GET() {
   try {
-    await requireAuthor(); // penulis materi perlu daftar audio untuk menyisipkan pemutar
+    await requireRole(CONTENT_ROLES); // penulis materi perlu daftar audio untuk menyisipkan pemutar
     await connectDB();
     const list = await Audio.find().select("title durationSec size transcript kind description source createdAt").sort({ createdAt: -1 }).limit(500).lean();
     const ids = list.map((a) => a._id);

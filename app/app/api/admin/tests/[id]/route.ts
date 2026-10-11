@@ -3,7 +3,7 @@ import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { testSchema } from "@/lib/admin-schemas";
 import { validateTestQuestions } from "@/lib/test-validate";
 import { Test, Attempt } from "@/models/Test";
@@ -19,7 +19,7 @@ async function find(id: string) {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     const t = await find(params.id);
     const attempts = await Attempt.countDocuments({ testId: t._id });
     return NextResponse.json({ ...t.toObject(), attempts });
@@ -34,7 +34,7 @@ const sameStructure = (a: { name: string; durationSec: number; questionIds: unkn
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const t = await find(params.id);
     const body = testSchema.parse(await req.json());
     const attempts = await Attempt.countDocuments({ testId: t._id });
@@ -55,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const t = await find(params.id);
     if (await Attempt.exists({ testId: t._id })) throw new HttpError(409, "This test has been taken. Deactivate it instead of deleting it.");
     await t.deleteOne();

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, CONTENT_ROLES } from "@/lib/rbac";
 import { zodMessage } from "@/lib/zod-message";
 import { Question, SECTIONS } from "@/models/Question";
 
@@ -22,7 +22,7 @@ const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  */
 export async function POST(req: Request) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     const b = input.parse(await req.json());
     await connectDB();
     const filter: Record<string, unknown> = { section: b.section, status: "published", _id: { $nin: b.excludeIds } };

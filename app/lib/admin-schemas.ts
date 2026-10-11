@@ -75,7 +75,7 @@ export const institutionInput = z.object({
 export const userCreateInput = z.object({
   email: z.email().max(200),
   name: z.string().trim().max(100).optional(),
-  role: z.enum(["coach", "inst_admin", "admin"]),
+  role: z.enum(["coach", "inst_admin", "admin", "academic_admin", "content_editor"]),
   institutionId: z.string().regex(/^[0-9a-f]{24}$/).optional().nullable(),
 });
 export const userPatchInput = z.object({

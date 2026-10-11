@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { getLevels } from "@/lib/config";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 /** Dashboard admin v2.2: peserta, placement, sebaran level, aktivitas tes, dan hal yang perlu ditindak. */
 export async function GET(req: Request) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     await connectDB();
     const days = Math.min(365, Math.max(1, Number(new URL(req.url).searchParams.get("days")) || 30));
     const since = new Date(Date.now() - days * 86_400_000), now = new Date();

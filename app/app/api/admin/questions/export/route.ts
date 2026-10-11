@@ -1,5 +1,5 @@
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, CONTENT_ROLES } from "@/lib/rbac";
 import { Question } from "@/models/Question";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ const esc = (v: unknown) => {
 /** Ekspor soal ke CSV dengan kolom yang sama dengan templat impor (bisa diimpor kembali). Filter: section, type, status, difficulty. */
 export async function GET(req: Request) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     await connectDB();
     const sp = new URL(req.url).searchParams;
     const filter: Record<string, unknown> = {};

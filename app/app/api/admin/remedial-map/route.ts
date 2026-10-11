@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { Course, RemedialMap, Unit } from "@/models/Course";
 import { Question } from "@/models/Question";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 /** Peta remedial + daftar topik yang dikenal (dari tag soal) dan unit yang bisa dipilih. */
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     await connectDB();
     const [maps, units, courses, tags] = await Promise.all([
       RemedialMap.find().sort({ skill: 1, topic: 1 }).lean(), Unit.find().select("title courseId").lean(), Course.find().select("title").lean(),
@@ -33,7 +33,7 @@ const body = z.object({ skill: z.string().trim().min(1).max(40), topic: z.string
 
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const b = body.parse(await req.json());
     await connectDB();
     if (!(await Unit.exists({ _id: b.unitId }))) throw new HttpError(400, "Unit not found");

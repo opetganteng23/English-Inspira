@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, CONTENT_ROLES } from "@/lib/rbac";
 import { Audio } from "@/models/Audio";
 import { readMp3, storeMp3 } from "@/lib/audio-upload";
 
@@ -9,7 +9,7 @@ type Kind = (typeof KINDS)[number];
 
 export async function POST(req: Request) {
   try {
-    const user = await requireRole(["admin"]);
+    const user = await requireRole(CONTENT_ROLES);
     const form = await req.formData();
     const { buf, durationSec, sha256, name } = await readMp3(form.get("file"));
     const dup = await Audio.findOne({ sha256 }).select("_id title");

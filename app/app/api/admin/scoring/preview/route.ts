@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireRole, handleError } from "@/lib/rbac";
+import { requireRole, handleError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { zodMessage } from "@/lib/zod-message";
 import { previewScore, validateTables } from "@/lib/scoring-profiles";
 import { profileInput } from "@/lib/scoring-schemas";
@@ -14,7 +14,7 @@ const input = z.object({
 /** Kalkulator pratinjau: hitung skala section dan total dari skor mentah memakai aturan profil yang sedang diedit (belum disimpan). */
 export async function POST(req: Request) {
   try {
-    await requireRole(["admin"]);
+    await requireRole(ACADEMIC_ROLES);
     const b = input.parse(await req.json());
     const { errors, warnings } = validateTables(b.profile.mode, b.profile.scaledMin, b.profile.scaledMax, b.profile.tables);
     const result = previewScore({ mode: b.profile.mode, scaledMin: b.profile.scaledMin, scaledMax: b.profile.scaledMax, tables: b.profile.tables }, b.sections);

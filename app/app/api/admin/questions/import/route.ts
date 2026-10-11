@@ -2,7 +2,7 @@ import { registerQuestionType } from "@/lib/question-types";
 import { recordQuestionVersion } from "@/lib/question-versions";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { readTable } from "@/lib/import-parse";
 import { mapQuestionRows, QUESTION_TEMPLATE_EXAMPLE, QUESTION_TEMPLATE_HEADER } from "@/lib/import-questions";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 /** Templat CSV impor soal. */
 export async function GET() {
   try {
-    await requireRole(["admin"]);
+    await requireRole(CONTENT_ROLES);
     const csv = [QUESTION_TEMPLATE_HEADER, QUESTION_TEMPLATE_EXAMPLE].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\r\n");
     return new Response("\uFEFF" + csv, { headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="question-import-template.csv"' } });
   } catch (e) {
@@ -27,7 +27,7 @@ export async function GET() {
  */
 export async function POST(req: Request) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(CONTENT_ROLES);
     const dry = new URL(req.url).searchParams.get("dry") === "1";
     const file = (await req.formData()).get("file");
     if (!(file instanceof File)) throw new HttpError(400, "A file is required");
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     await connectDB();
     const failed = rows.filter((r): r is Extract<typeof r, { ok: false }> => !r.ok).map((r) => ({ row: r.row, reason: r.error }));
     const good = rows.filter((r): r is Extract<typeof r, { ok: true }> => r.ok);
-    if (!dry) for (const g of good) { const nq = await Question.create({ ...g.data, groupId: undefined }); await registerQuestionType(g.data.section, g.data.type); await recordQuestionVersion(nq._id, nq.toObject(), undefined, "Imported from file"); }
+    if (!dry) for (const g of good) { const nq = await Question.create({ ...g.data, ...(admin.role === "content_editor" && !["draft", "review"].includes(g.data.status) ? { status: "draft" } : {}), groupId: undefined }); await registerQuestionType(g.data.section, g.data.type); await recordQuestionVersion(nq._id, nq.toObject(), undefined, "Imported from file"); }
     if (!dry) await audit(admin._id, "questions.import", file.name, { created: good.length, failed: failed.length });
     return NextResponse.json({ dry, created: good.length, failed });
   } catch (e) {

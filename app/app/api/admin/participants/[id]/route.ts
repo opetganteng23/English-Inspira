@@ -3,7 +3,7 @@ import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { disableMember, enableMember, issueInvitation } from "@/lib/participants";
 import { getLevels } from "@/lib/config";
@@ -29,7 +29,7 @@ async function find(id: string) {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     const u = await find(params.id);
     const [attempts, notes, inst, enr, quotas, levels] = await Promise.all([
       Attempt.find({ userId: u._id, status: "submitted" }).sort({ finishedAt: -1 }).limit(30).select("kind scoreEst sectionScores finishedAt proctorFlags").lean(),

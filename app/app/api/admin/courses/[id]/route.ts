@@ -3,14 +3,14 @@ import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
-import { requireRole, handleError, HttpError } from "@/lib/rbac";
+import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { courseInput } from "@/lib/course-schemas";
 import { Course, Unit } from "@/models/Course";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Course not found");
     const b = courseInput.parse(await req.json());
     await connectDB();
@@ -26,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const admin = await requireRole(["admin"]);
+    const admin = await requireRole(ACADEMIC_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Course not found");
     await connectDB();
     if (await Unit.exists({ courseId: params.id })) throw new HttpError(409, "This course still has units. Delete its units first or deactivate the course.");

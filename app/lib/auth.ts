@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { isCentralStaff } from "@/lib/role-home";
 import { cookies } from "next/headers";
 import { connectDB } from "./db";
 import { hasActiveEnrollment } from "./access";
@@ -56,6 +57,6 @@ export async function getCurrentUser() {
   await connectDB();
   const user = await User.findById(sess.uid).lean();
   if (!user || user.status === "disabled") return null;
-  if (user.role !== "admin" && !(await hasActiveEnrollment(user._id))) return null;
+  if (!isCentralStaff(user.role) && !(await hasActiveEnrollment(user._id))) return null;
   return user;
 }

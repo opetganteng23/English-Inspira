@@ -1,6 +1,6 @@
 import mongoose, { Schema, InferSchemaType, Model } from "mongoose";
 
-export const ROLES = ["participant", "coach", "inst_admin", "admin"] as const;
+export const ROLES = ["participant", "coach", "inst_admin", "admin", "academic_admin", "content_editor"] as const;
 export type Role = (typeof ROLES)[number];
 export const USER_STATUS = ["invited", "active", "disabled"] as const;
 

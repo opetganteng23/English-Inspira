@@ -7,8 +7,9 @@ import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { EditAccountDialog, ResetPasswordDialog, DeleteAccountDialog } from "@/components/AccountDialogs";
 
-type U = { id: string; name: string | null; givenName?: string; surname?: string; phone?: string; email: string; role: "admin" | "inst_admin" | "coach"; status: "active" | "invited" | "disabled"; institution: string | null; institutionId: string | null; createdAt: string };
-const ROLE = { admin: "Admin", inst_admin: "Institution admin", coach: "Coach" } as const;
+type U = { id: string; name: string | null; givenName?: string; surname?: string; phone?: string; email: string; role: "admin" | "academic_admin" | "content_editor" | "inst_admin" | "coach"; status: "active" | "invited" | "disabled"; institution: string | null; institutionId: string | null; createdAt: string };
+const CENTRAL = ["admin", "academic_admin", "content_editor"];
+const ROLE = { admin: "Admin", academic_admin: "Academic admin", content_editor: "Question editor", inst_admin: "Institution admin", coach: "Coach" } as const;
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
 export default function Pengguna() {
@@ -61,7 +62,7 @@ function AddModal({ institutions, onClose, onSaved }: { institutions: { id: stri
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   async function save() {
     setBusy(true); setErr("");
-    try { await api("/api/admin/users", { json: { email: v.email, name: v.name || undefined, role: v.role, institutionId: v.role !== "admin" ? v.institutionId || null : null } }); onSaved(); }
+    try { await api("/api/admin/users", { json: { email: v.email, name: v.name || undefined, role: v.role, institutionId: !CENTRAL.includes(v.role) ? v.institutionId || null : null } }); onSaved(); }
     catch (e) { setErr((e as Error).message); setBusy(false); }
   }
   return (
@@ -69,11 +70,11 @@ function AddModal({ institutions, onClose, onSaved }: { institutions: { id: stri
       <div className="flex flex-col gap-4">
         <label className={label}>Email<input className="field font-normal" type="email" value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} /></label>
         <label className={label}>Name (optional)<input className="field font-normal" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} /></label>
-        <label className={label}>Role<select className="field font-normal" value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })}><option value="admin">Admin</option><option value="inst_admin">Institution admin</option><option value="coach">Coach</option></select></label>
-        {v.role !== "admin" && <label className={label}>Institution<select className="field font-normal" value={v.institutionId} onChange={(e) => setV({ ...v, institutionId: e.target.value })}><option value="">Choose an institution</option>{institutions.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></label>}
+        <label className={label}>Role<select className="field font-normal" value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })}><option value="admin">Admin</option><option value="academic_admin">Academic admin</option><option value="content_editor">Question editor</option><option value="inst_admin">Institution admin</option><option value="coach">Coach</option></select></label>
+        {!CENTRAL.includes(v.role) && <label className={label}>Institution<select className="field font-normal" value={v.institutionId} onChange={(e) => setV({ ...v, institutionId: e.target.value })}><option value="">Choose an institution</option>{institutions.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></label>}
         <p className="text-xs text-ink-soft">Users sign in on the Sign in page with this email (OTP code). A password can be set later with Reset password.</p>
         <ErrorNote text={err} />
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-outline" onClick={onClose}>Cancel</button><button className="btn-solid" disabled={busy || !v.email || (v.role !== "admin" && !v.institutionId)} onClick={save}>{busy ? "Saving…" : "Save"}</button></div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-outline" onClick={onClose}>Cancel</button><button className="btn-solid" disabled={busy || !v.email || (!CENTRAL.includes(v.role) && !v.institutionId)} onClick={save}>{busy ? "Saving…" : "Save"}</button></div>
       </div>
     </Modal>
   );
