@@ -2,8 +2,8 @@
 // Semua memakai EI.report / EI.complete(skor 0-100, jawaban) untuk melaporkan hasil ke induk.
 import type { HtmlDoc } from "./material-doc";
 
-const BASE_CSS = `body{max-width:720px;margin:0 auto}h2{margin:0 0 12px;color:#0F2F5E}button{font:inherit;cursor:pointer}
-.btn{background:#1B5FB8;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:600;min-height:44px}.btn.alt{background:#fff;color:#1B5FB8;border:1.5px solid #C5D2E4}
+const BASE_CSS = `body{max-width:720px;margin:0 auto}h2{margin:0 0 12px;color:#0A2257}button{font:inherit;cursor:pointer}
+.btn{background:#0B4FA6;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:600;min-height:44px}.btn.alt{background:#fff;color:#0B4FA6;border:1.5px solid #C5D2E4}
 .card{border:1px solid #DCE3ED;border-radius:14px;padding:16px;margin:12px 0;background:#fff}.muted{color:#4B5A70;font-size:14px}.ok{color:#1D6B3F;font-weight:600}.bad{color:#B3261E;font-weight:600}
 input[type=text]{font:inherit;padding:8px 10px;border:1.5px solid #C5D2E4;border-radius:8px;min-width:110px}`;
 
@@ -11,7 +11,7 @@ export const PRESETS: { key: string; name: string; desc: string; doc: HtmlDoc }[
   {
     key: "quiz", name: "Multiple-choice quiz", desc: "Questions with options A-D, score at the end.",
     doc: {
-      css: BASE_CSS + `.opt{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 14px;border:1.5px solid #C5D2E4;border-radius:10px;background:#fff}.opt.sel{border-color:#1B5FB8;background:#E9F0FA}.opt.right{border-color:#1D6B3F;background:#E6F4EC}.opt.wrong{border-color:#B3261E;background:#FDECEA}`,
+      css: BASE_CSS + `.opt{display:block;width:100%;text-align:left;margin:8px 0;padding:12px 14px;border:1.5px solid #C5D2E4;border-radius:10px;background:#fff}.opt.sel{border-color:#0B4FA6;background:#E6EEFA}.opt.right{border-color:#1D6B3F;background:#E6F4EC}.opt.wrong{border-color:#B3261E;background:#FDECEA}`,
       html: `<h2>Quiz: Subject-Verb Agreement</h2><div id="app"></div>`,
       js: `// EDIT DATA HERE: q = question, o = options, a = index of the correct answer (starting at 0)
 var DATA=[
@@ -31,7 +31,7 @@ show();`,
   {
     key: "flashcard", name: "Flashcard", desc: "Two-sided cards; mark the ones you know.",
     doc: {
-      css: BASE_CSS + `.fc{min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:700;color:#0F2F5E;cursor:pointer;user-select:none}`,
+      css: BASE_CSS + `.fc{min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:700;color:#0A2257;cursor:pointer;user-select:none}`,
       html: `<h2>Flashcard: Vocabulary</h2><div id="app"></div>`,
       js: `// EDIT DATA HERE: f = front, b = back
 var DATA=[{f:"reluctant",b:"unwilling, hesitant"},{f:"adequate",b:"sufficient, enough"},{f:"hinder",b:"to obstruct, hold back"},{f:"thrive",b:"to grow strongly, flourish"}];
@@ -58,7 +58,7 @@ document.getElementById('chk').onclick=function(){var ok=0,ans=[];DATA.forEach(f
   {
     key: "matching", name: "Matching (drag & drop)", desc: "Drag or tap each word to its match.",
     doc: {
-      css: BASE_CSS + `.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.it{padding:10px 12px;margin:6px 0;border:1.5px solid #C5D2E4;border-radius:10px;background:#fff;touch-action:manipulation}.it.sel{border-color:#1B5FB8;background:#E9F0FA}.it.done{opacity:.5}.drop{min-height:44px;padding:10px 12px;margin:6px 0;border:2px dashed #C5D2E4;border-radius:10px}.drop.good{border-color:#1D6B3F;background:#E6F4EC}`,
+      css: BASE_CSS + `.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.it{padding:10px 12px;margin:6px 0;border:1.5px solid #C5D2E4;border-radius:10px;background:#fff;touch-action:manipulation}.it.sel{border-color:#0B4FA6;background:#E6EEFA}.it.done{opacity:.5}.drop{min-height:44px;padding:10px 12px;margin:6px 0;border:2px dashed #C5D2E4;border-radius:10px}.drop.good{border-color:#1D6B3F;background:#E6F4EC}`,
       html: `<h2>Match each word with its meaning</h2><p class="muted">Drag a word onto its meaning, or tap a word and then tap a box.</p><div class="row"><div id="L"></div><div id="R"></div></div><p id="res"></p>`,
       js: `// EDIT DATA HERE: w = word, m = meaning
 var DATA=[{w:"reluctant",m:"unwilling"},{w:"adequate",m:"sufficient"},{w:"hinder",m:"obstruct"},{w:"thrive",m:"flourish"}];
@@ -72,7 +72,7 @@ shuffle(DATA).forEach(function(d){var t=document.createElement('div');t.classNam
   {
     key: "timer", name: "Practice timer", desc: "A countdown for timed reading practice per passage.",
     doc: {
-      css: BASE_CSS + `.big{font-size:56px;font-weight:800;color:#0F2F5E;text-align:center}.late{color:#B3261E}`,
+      css: BASE_CSS + `.big{font-size:56px;font-weight:800;color:#0A2257;text-align:center}.late{color:#B3261E}`,
       html: `<h2>Reading practice timer</h2><p class="muted">Set the duration, read the passage, and finish before time runs out.</p><div class="card"><div class="big" id="t">11:00</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><label>Minutes <input type="text" id="m" value="11" size="3" inputmode="numeric" aria-label="Minutes"></label><button class="btn" id="go">Start</button><button class="btn alt" id="rs">Reset</button></div><p id="msg" class="muted" style="text-align:center"></p></div>`,
       js: `var T=document.getElementById('t'),M=document.getElementById('m'),msg=document.getElementById('msg'),left=0,iv=null,total=0;
 function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}

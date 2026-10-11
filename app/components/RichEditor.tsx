@@ -43,7 +43,7 @@ const InteractiveNode = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     let label = "Interactive block";
     try { label = blockSummary(node.attrs.type as BlockType, JSON.parse(node.attrs.config)) ?? label; } catch { /* tampilkan label bawaan */ }
-    return ["div", mergeAttributes(HTMLAttributes, { style: "border:1.5px dashed #1B5FB8;border-radius:10px;padding:10px;background:#E9F0FA" }), `🧩 ${label}${node.attrs.topic ? ` · topik ${node.attrs.topic}` : ""}`];
+    return ["div", mergeAttributes(HTMLAttributes, { style: "border:1.5px dashed #0B4FA6;border-radius:10px;padding:10px;background:#E6EEFA" }), `🧩 ${label}${node.attrs.topic ? ` · topik ${node.attrs.topic}` : ""}`];
   },
 });
 

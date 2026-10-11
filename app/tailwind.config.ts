@@ -6,9 +6,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: { DEFAULT: "#0F2F5E", 700: "#173E73", 800: "#123F7C" },
-        brand: { DEFAULT: "#1B5FB8", dark: "#123F7C", tint: "#E9F0FA" },
-        accent: { DEFAULT: "#F08A1C", dark: "#B85A00", tint: "#FDEBD6" },
+        navy: { DEFAULT: "#0A2257", 700: "#13357A", 800: "#083B7D" },
+        brand: { DEFAULT: "#0B4FA6", dark: "#083B7D", tint: "#E6EEFA" },
+        accent: { DEFAULT: "#D9A02F", dark: "#8A5A00", tint: "#FBF1DB" },
         success: { DEFAULT: "#1D6B3F", tint: "#E6F4EC" },
         ink: { DEFAULT: "#1C2B44", soft: "#4B5A70" },
         line: { DEFAULT: "#DCE3ED", strong: "#C5D2E4" },

@@ -7,6 +7,11 @@ body {
   @apply min-h-screen overflow-x-hidden bg-canvas font-sans text-ink antialiased;
 }
 img, video, canvas, svg { max-width: 100%; }
+/* Grid satu kolom tidak boleh melebar mengikuti isi (tabel lebar): kolom default minmax(0,1fr); grid-cols-* tetap menimpa. */
+@layer base {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .grid > * { min-width: 0; }
+}
 
 @layer components {
   .field {
@@ -18,7 +23,7 @@ img, video, canvas, svg { max-width: 100%; }
   }
   .btn { @apply inline-flex min-h-[44px] items-center justify-center rounded-xl px-5 text-sm font-semibold transition disabled:opacity-60; }
   .btn-solid { @apply btn bg-brand text-white hover:bg-brand-dark; }
-  .btn-accent { @apply btn bg-accent text-white hover:bg-accent-dark; }
+  .btn-accent { @apply btn bg-accent text-navy hover:brightness-95; }
   .btn-outline { @apply btn border border-line-strong bg-white text-navy hover:bg-brand-tint; }
   .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50; }
   .card { @apply rounded-2xl border border-line bg-white p-4 sm:p-6; }

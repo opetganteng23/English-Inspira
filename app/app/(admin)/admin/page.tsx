@@ -44,7 +44,7 @@ export default function AdminHome() {
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Participant level distribution</h2><div className="mt-4"><HBars rows={d.levels.map((l) => ({ label: l.name, value: l.n, sub: "participants" }))} /></div></section>
             <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Completed tests ({d.days} days)</h2>
-              <div className="mt-4">{d.tests.length ? <HBars color="#F08A1C" rows={d.tests.map((t) => ({ label: KIND[t.kind] ?? t.kind, value: t.n, sub: "tests" }))} /> : <p className="text-sm text-ink-soft">No completed tests yet.</p>}</div></section>
+              <div className="mt-4">{d.tests.length ? <HBars color="#D9A02F" rows={d.tests.map((t) => ({ label: KIND[t.kind] ?? t.kind, value: t.n, sub: "tests" }))} /> : <p className="text-sm text-ink-soft">No completed tests yet.</p>}</div></section>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">

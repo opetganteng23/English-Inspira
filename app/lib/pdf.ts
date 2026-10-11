@@ -5,7 +5,7 @@ import path from "node:path";
 // Poppins untuk semua PDF (file sama dengan font aplikasi, disajikan dari public/fonts).
 const FONT = (w: string) => path.join(process.cwd(), "public", "fonts", `poppins-${w}.ttf`);
 
-const NAVY = "#0F2F5E", BLUE = "#1B5FB8", GRAY = "#4B5A70", LINE = "#DCE3ED";
+const NAVY = "#0A2257", BLUE = "#0B4FA6", GRAY = "#4B5A70", LINE = "#DCE3ED";
 const fmt = (d: Date | string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
 function render(build: (doc: PDFKit.PDFDocument) => void | Promise<void>, opts: PDFKit.PDFDocumentOptions = {}) {
@@ -21,10 +21,7 @@ function render(build: (doc: PDFKit.PDFDocument) => void | Promise<void>, opts: 
 }
 
 function brand(doc: PDFKit.PDFDocument) {
-  doc.roundedRect(48, 44, 34, 34, 7).fill(NAVY);
-  doc.image(path.join(process.cwd(), "public", "brand", "logo-white.png"), 52, 54, { width: 26 });
-  doc.fillColor(NAVY).font("Bold").fontSize(15).text("ENGLISH INSPIRA", 92, 53);
-  doc.fillColor(GRAY).font("Regular").fontSize(8).text("by Inspira Teknologi", 92, 71);
+  doc.image(path.join(process.cwd(), "public", "brand", "logo.png"), 48, 40, { width: 130 });
 }
 
 export async function certificatePdf(c: {

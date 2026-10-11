@@ -45,7 +45,7 @@ export default function InstHome() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Level distribution</h2><div className="mt-4"><HBars rows={s.levels.map((d) => ({ label: d.label, value: d.n, sub: "participants" }))} /></div></section>
-        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Most common weak topics</h2><p className="text-sm text-ink-soft">Material for in-person classes or internal training. Group aggregates only.</p><div className="mt-4"><HBars color="#F08A1C" rows={s.commonWeaknesses.map((w) => ({ label: w.title, value: w.n, sub: "participants" }))} /></div></section>
+        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Most common weak topics</h2><p className="text-sm text-ink-soft">Material for in-person classes or internal training. Group aggregates only.</p><div className="mt-4"><HBars color="#D9A02F" rows={s.commonWeaknesses.map((w) => ({ label: w.title, value: w.n, sub: "participants" }))} /></div></section>
       </div>
 
       <section className="card"><div className="flex items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Participants who need attention</h2><Link href={withQ("/institution/participants")} className="text-sm font-semibold text-brand">See all participants</Link></div>
