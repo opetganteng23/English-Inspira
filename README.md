@@ -2,7 +2,7 @@
 
 Platform persiapan TOEFL ITP untuk institusi mitra: placement test yang menentukan level, tes simulasi dan latihan, analisis AI, Konselor AI, materi interaktif, pendaftaran tes ITP resmi, sertifikat, serta dashboard institusi dan coach. Peserta tidak mendaftar sendiri; akun dibuat lewat undangan institusi (kontrak, kursi, impor CSV/Excel). Satu proyek Next.js: UI di `app/app/`, API di `app/app/api/`.
 
-- Spesifikasi acuan: [English_Inspira_LMS_MTS_V2_3.md](English_Inspira_LMS_MTS_V2_3.md) (v2.3). `english-inspira-master-spec.md` (v1.1) sudah tidak berlaku.
+- Spesifikasi acuan: [English_Inspira_LMS_MTS_V2_4.md](English_Inspira_LMS_MTS_V2_4.md) (v2.4). `english-inspira-master-spec.md` (v1.1) sudah tidak berlaku.
 - Status pekerjaan per item (✅/🔄/⬜/⏭️): [TODO.md](TODO.md)
 - Desain acuan: `English Inspira — Redesign Website.html` (hasil ekstraksi terbaca ada di `design/body/`)
 

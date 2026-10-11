@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coaching</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  /* /coaching  (MTS 27.4.6): hanya slot yang bisa dipilih, aturan disampaikan sekali, catatan coach terhubung ke plan */
+  .cols { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--s5); align-items: start; }
+  @media (max-width: 920px) { .cols { grid-template-columns: 1fr; } }
+  .quota { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-weight: 500; font-size: 15px; }
+  .day { padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
+  .day:last-child { border-bottom: 0; }
+  .day h3 { font-size: 16px; margin-bottom: var(--s3); }
+  .day h3 span { color: var(--text-muted); font-weight: 400; }
+  .slots { display: flex; gap: var(--s2); flex-wrap: wrap; }
+  .slot { min-height: 48px; padding: 0 var(--s4); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; font-size: 16px; font-weight: 500; transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease); }
+  .slot:hover { border-color: var(--primary); background: var(--primary-soft); }
+  .slot[disabled] { color: var(--text-muted); background: var(--surface-2); cursor: not-allowed; text-decoration: line-through; border-color: transparent; }
+  .slot small { display: block; font-size: 11px; font-weight: 400; text-decoration: none; }
+  .up { display: grid; gap: var(--s2); }
+  .up .when { font-size: 20px; font-weight: 600; }
+  .coach-av { width: 44px; height: 44px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-weight: 600; flex: none; }
+  .note { padding: var(--s4); border-radius: var(--radius-sm); background: var(--surface-2); line-height: 1.65; }
+  .note + .note { margin-top: var(--s3); }
+  .note .linked { display: flex; gap: 8px; align-items: center; margin-top: var(--s3); font-size: var(--fs-small); }
+  .hint { display: flex; justify-content: space-between; gap: var(--s3); align-items: flex-start; }
+</style>
+</head>
+<body data-page="coaching">
+<main class="page">
+  <div class="page-head row-between">
+    <div>
+      <h1>Coaching</h1>
+      <p>Pick a time that works for you. Your coach publishes the available slots.</p>
+    </div>
+    <span class="quota" id="quota">3 sessions left</span>
+  </div>
+
+  <div class="banner banner-info" id="rules" style="margin-bottom: var(--s5)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+    <div class="hint" style="width:100%">
+      <span>Each session uses 1 of your sessions this month. You can cancel up to 24 hours before without losing it.</span>
+      <button class="btn btn-quiet btn-sm" id="gotIt">Got it</button>
+    </div>
+  </div>
+
+  <div class="cols">
+    <section class="card" aria-labelledby="slots-h">
+      <h2 id="slots-h">Available times</h2>
+      <p class="muted small" style="margin: calc(var(--s2) * -1) 0 var(--s3)">Times are shown in WIB (Asia/Jakarta).</p>
+      <div id="days"></div>
+    </section>
+
+    <aside class="stack" style="gap: var(--s4)">
+      <section class="card up" aria-labelledby="up-h">
+        <h2 id="up-h" style="margin-bottom: var(--s2)">Your next session</h2>
+        <div id="upcoming">
+          <div class="row" style="margin-bottom: var(--s3)"><span class="coach-av">R</span><div><strong>Coach Rina</strong><div class="muted small">Zoom · 30 min</div></div></div>
+          <p class="when">Thu 15 Oct, 16:00</p>
+          <div class="row" style="margin-top: var(--s3)">
+            <a class="btn btn-secondary btn-sm" href="#">Add to calendar</a>
+            <button class="btn btn-quiet btn-sm" id="cancelBtn">Cancel session</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="notes-h">
+        <h2 id="notes-h">Notes from your coach</h2>
+        <div class="note">
+          You explained your answers clearly in Reading this week. Next, try to find the supporting sentence before choosing an option.
+          <div class="linked"><span class="pill pill-blue">Added to your plan</span><a href="04-home.html">Reading: inference questions</a></div>
+        </div>
+        <div class="note">
+          For Structure, slow down on sentences with three items in a list and check that they all have the same form.
+          <div class="linked"><span class="pill pill-muted">Linked item</span><a href="04-home.html">Structure: parallel structure</a></div>
+        </div>
+      </section>
+
+      <section class="banner banner-calm" aria-label="Example of a session change">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span><strong>Example notice.</strong> Your coach moved your session on 8 Oct and we are sorry for the change. Your session count was not reduced.</span>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dh">
+  <h2 id="dh">Book this time?</h2>
+  <p id="dmsg"></p>
+  <div class="dialog-actions">
+    <button class="btn btn-quiet" id="dno">Not now</button>
+    <button class="btn btn-primary" id="dyes">Book session</button>
+  </div>
+</dialog>
+
+<dialog id="cdlg" aria-labelledby="ch">
+  <h2 id="ch">Cancel this session?</h2>
+  <p>You are cancelling more than 24 hours ahead, so your session count stays the same.</p>
+  <div class="dialog-actions">
+    <button class="btn btn-quiet" id="cno">Keep session</button>
+    <button class="btn btn-secondary" id="cyes">Cancel session</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let left = 3, picked = null, hasSession = true;
+  const base = new Date(2026, 9, 12);
+  const fmtDay = (d) => d.toLocaleDateString('en-GB', { weekday: 'long' });
+  const fmtDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+  const pattern = [[], ['10:00', '16:00', '19:30'], ['09:00', '13:00'], ['15:00', '16:00', '20:00'], [], ['10:00', '14:00'], ['11:00']];
+  const full = new Set(['2026-10-14|16:00']);
+  const days = [];
+  for (let i = 0; i < 10; i++) { const d = new Date(base); d.setDate(base.getDate() + i); const t = pattern[d.getDay()]; if (t.length) days.push({ d, t }); }
+  const key = (d, t) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '|' + t;
+
+  $('days').innerHTML = days.map(x => '<div class="day"><h3>' + fmtDay(x.d) + ' <span>' + fmtDate(x.d) + '</span></h3><div class="slots">' +
+    x.t.map(t => { const f = full.has(key(x.d, t)); return '<button class="slot" ' + (f ? 'disabled aria-label="' + t + ', full"' : '') + ' data-d="' + x.d.toISOString() + '" data-t="' + t + '">' + t + (f ? '<small>Full</small>' : '') + '</button>'; }).join('') +
+    '</div></div>').join('');
+
+  document.querySelectorAll('.slot:not([disabled])').forEach(b => b.onclick = () => {
+    if (left < 1) { EI.toast('You have no sessions left this month. Ask your coach if you need more.'); return; }
+    const d = new Date(b.dataset.d); picked = { d, t: b.dataset.t };
+    $('dmsg').textContent = fmtDay(d) + ' ' + fmtDate(d) + ' at ' + picked.t + ' with Coach Rina. You will have ' + (left - 1) + ' ' + (left - 1 === 1 ? 'session' : 'sessions') + ' left.';
+    $('dlg').showModal();
+  });
+  $('dno').onclick = () => $('dlg').close();
+  $('dyes').onclick = () => {
+    $('dlg').close(); left--; $('quota').textContent = left + (left === 1 ? ' session left' : ' sessions left');
+    $('upcoming').innerHTML = '<div class="row" style="margin-bottom: var(--s3)"><span class="coach-av">R</span><div><strong>Coach Rina</strong><div class="muted small">Zoom · 30 min</div></div></div><p class="when">' + fmtDay(picked.d).slice(0, 3) + ' ' + picked.d.getDate() + ' Oct, ' + picked.t + '</p>';
+    EI.toast('Session booked.');
+  };
+  $('cancelBtn').onclick = () => $('cdlg').showModal();
+  $('cno').onclick = () => $('cdlg').close();
+  $('cyes').onclick = () => { $('cdlg').close(); $('upcoming').innerHTML = '<p class="muted">No session booked. Pick a time on the left when you are ready.</p>'; EI.toast('Session cancelled.'); };
+
+  try { if (localStorage.getItem('ei.rules') === '1') $('rules').hidden = true; } catch (e) {}
+  $('gotIt').onclick = () => { $('rules').hidden = true; try { localStorage.setItem('ei.rules', '1'); } catch (e) {} };
+})();
+</script>
+</body>
+</html>

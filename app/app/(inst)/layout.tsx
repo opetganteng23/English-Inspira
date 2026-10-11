@@ -6,7 +6,6 @@ const nav: NavGroup[] = [
     { href: "/institution/participants", label: "Participants & invitations" },
     { href: "/institution/schedule", label: "Group test schedule" },
     { href: "/institution/reports", label: "Reports" },
-    { href: "/institution/materials", label: "Institution materials" },
   ] },
 ];
 

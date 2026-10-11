@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  /* /home  (MTS 27.4.1 dan 27.4.5): Today, progres, coaching, study plan */
+  .hello h1 { font-size: 30px; }
+  .hello p { margin-top: var(--s2); color: var(--text-muted); }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--s5); align-items: start; margin-top: var(--s5); }
+  @media (max-width: 920px) { .cols { grid-template-columns: 1fr; } }
+
+  .today { padding: var(--s6); border-top: 4px solid var(--gold); }
+  .today h2 { font-size: 22px; }
+  .today-sub { margin: var(--s2) 0 var(--s5); color: var(--text-muted); }
+  .items { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+  .item { display: grid; grid-template-columns: 36px 1fr auto; gap: var(--s3); align-items: center; padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+  .item.first { border-color: var(--primary); background: var(--primary-soft); }
+  .item.done { background: var(--calm-soft); border-color: transparent; }
+  .item.done .item-t { text-decoration: line-through; text-decoration-color: var(--text-muted); color: var(--text-muted); }
+  .check { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: transparent; padding: 0; transition: all var(--dur) var(--ease); }
+  .check:hover { border-color: var(--calm); }
+  .item.done .check { background: var(--calm); border-color: var(--calm); color: #fff; }
+  .item > div { min-width: 0; }
+  .item-t { font-weight: 500; display: block; }
+  .item-m { font-size: 13px; color: var(--text-muted); }
+  .item-dur { font-size: var(--fs-small); color: var(--text-muted); white-space: nowrap; }
+  .today-foot { margin-top: var(--s5); display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+  .nice { color: var(--calm); font-weight: 500; min-height: 24px; }
+
+  .goal-line { font-size: 22px; font-weight: 600; color: var(--primary); }
+  .month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: var(--s3); }
+  .month i { height: 22px; border-radius: 6px; background: var(--surface-2); display: block; }
+  .month i.on { background: var(--blue); }
+  .month i.today { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .month-h { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: var(--s3); font-size: 11px; color: var(--text-muted); text-align: center; }
+
+  .session { display: grid; gap: var(--s2); }
+  .session .when { font-size: 20px; font-weight: 600; }
+  .quota { font-size: var(--fs-small); color: var(--text-muted); }
+
+  .plan-row > * { min-width: 0; }
+  .plan-row { display: grid; grid-template-columns: 1fr auto; gap: var(--s3); align-items: center; padding: var(--s3) 0; border-bottom: 1px solid var(--line); }
+  .plan-row:last-child { border-bottom: 0; }
+  .plan-row strong { font-weight: 500; display: block; }
+  .plan-row .sub { font-size: 13px; color: var(--text-muted); }
+  @media (max-width: 560px) { .plan-row { grid-template-columns: 1fr; } .item { grid-template-columns: 36px 1fr; } .item-dur { grid-column: 2; } }
+</style>
+</head>
+<body data-page="home">
+<main class="page">
+  <div class="hello">
+    <h1 id="greet">Good morning, Dani</h1>
+    <p id="dateLine"></p>
+  </div>
+
+  <div class="cols">
+    <div class="stack" style="gap: var(--s5)">
+      <section class="today card" aria-labelledby="today-h">
+        <h2 id="today-h">Today</h2>
+        <p class="today-sub">Three small steps. About 50 minutes in total.</p>
+        <ul class="items" id="items"></ul>
+        <div class="today-foot">
+          <a class="btn btn-primary" id="continueBtn" href="05-learn.html">Continue</a>
+          <span class="nice" id="nice" role="status"></span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="plan-h">
+        <div class="row-between" style="margin-bottom: var(--s3)">
+          <h2 id="plan-h" style="margin:0">Study plan</h2>
+          <span class="small muted">5 of 5 active</span>
+        </div>
+        <div id="plan"></div>
+      </section>
+    </div>
+
+    <aside class="stack" style="gap: var(--s4)">
+      <section class="card" aria-labelledby="prog-h">
+        <h2 id="prog-h">Your progress</h2>
+        <p class="goal-line">38 points to Advanced</p>
+        <div class="bar" style="margin: var(--s3) 0" role="img" aria-label="58 percent of the way from Intermediate to Advanced"><span style="width:58%"></span></div>
+        <p class="muted small">You improved in 4 topics this month.</p>
+      </section>
+
+      <section class="card" aria-labelledby="days-h">
+        <h2 id="days-h">Learning days this month</h2>
+        <p class="goal-line">9 days</p>
+        <div class="month-h" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+        <div class="month" id="month" role="img" aria-label="9 learning days so far in October"></div>
+        <p class="muted small" style="margin-top: var(--s3)">Every day you learn counts. There is no streak to protect.</p>
+      </section>
+
+      <section class="card session" aria-labelledby="coach-h">
+        <h2 id="coach-h">Coaching</h2>
+        <p class="when">Thu 15 Oct, 16:00</p>
+        <p class="muted">with Coach Rina · Zoom</p>
+        <p class="quota">3 sessions left</p>
+        <a class="btn btn-secondary btn-sm" href="06-coaching.html" style="justify-self: start; margin-top: var(--s2)">Manage sessions</a>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const now = new Date(), h = now.getHours();
+  $('greet').textContent = (h < 11 ? 'Good morning' : h < 15 ? 'Good afternoon' : h < 19 ? 'Good evening' : 'Good evening') + ', Dani';
+  $('dateLine').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const today = [
+    { t: 'Inference questions, part 2', m: 'Reading unit', d: 'About 25 min' },
+    { t: 'Quick review: 3 questions', m: 'Subject-verb agreement, spaced review', d: 'About 5 min' },
+    { t: 'Listening: short conversations', m: 'Practice set 4', d: 'About 20 min' }
+  ];
+  const state = today.map(() => false);
+  function drawToday() {
+    $('items').innerHTML = today.map((x, i) =>
+      '<li class="item' + (state[i] ? ' done' : '') + (!state[i] && state.findIndex(v => !v) === i ? ' first' : '') + '">' +
+      '<button class="check" aria-pressed="' + state[i] + '" aria-label="Mark ' + x.t + ' as ' + (state[i] ? 'not done' : 'done') + '" data-i="' + i + '">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>' +
+      '<div><span class="item-t">' + x.t + '</span><span class="item-m">' + x.m + '</span></div><span class="item-dur">' + x.d + '</span></li>').join('');
+    $('items').querySelectorAll('.check').forEach(b => b.onclick = () => {
+      const i = +b.dataset.i; state[i] = !state[i]; drawToday();
+      const left = state.filter(v => !v).length;
+      $('nice').textContent = state[i] ? (left === 0 ? 'All done for today. Well done.' : 'Nice, one step closer.') : '';
+      $('continueBtn').textContent = left === 0 ? 'See tomorrow’s plan' : 'Continue';
+    });
+  }
+  drawToday();
+
+  const plan = [
+    { t: 'Reading: inference questions', s: 'Due Sat 17 Oct', k: 'blue', l: 'In progress' },
+    { t: 'Structure: parallel structure', s: 'Due Mon 19 Oct', k: 'muted', l: 'Not started' },
+    { t: 'Listening: short conversations', s: 'Due Tue 20 Oct', k: 'muted', l: 'Not started' },
+    { t: 'Structure: reduced clauses', s: 'Was due Fri 9 Oct', k: 'attention', l: 'Past due', act: 'Pick a new date' },
+    { t: 'Simulation 3', s: 'Opens Sat 24 Oct', k: 'muted', l: 'Scheduled' }
+  ];
+  const icon = { blue: '<path d="M5 12h14"/>', muted: '<circle cx="12" cy="12" r="3"/>', attention: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' };
+  $('plan').innerHTML = plan.map(p =>
+    '<div class="plan-row"><div><strong>' + p.t + '</strong><span class="sub">' + p.s + '</span></div>' +
+    '<div class="row"><span class="status status-' + p.k + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' + icon[p.k] + '</svg>' + p.l + '</span>' +
+    (p.act ? '<button class="btn btn-secondary btn-sm" data-act="1">' + p.act + '</button><a class="btn btn-quiet btn-sm" href="05-learn.html">Start now</a>' : '') + '</div></div>').join('');
+  $('plan').querySelectorAll('[data-act]').forEach(b => b.onclick = () => EI.toast('Choose a new date with your coach in Coaching.'));
+
+  /* kalender bulan ini: 9 hari belajar, tanpa hukuman */
+  const first = new Date(now.getFullYear(), now.getMonth(), 1), pad = (first.getDay() + 6) % 7, days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const learned = new Set([1, 2, 4, 5, 6, 7, 8, 9, 10]);
+  let m = '<i style="background:none"></i>'.repeat(pad);
+  for (let d = 1; d <= days; d++) m += '<i class="' + (learned.has(d) ? 'on ' : '') + (d === now.getDate() ? 'today' : '') + '" title="' + d + '"></i>';
+  $('month').innerHTML = m;
+})();
+</script>
+</body>
+</html>

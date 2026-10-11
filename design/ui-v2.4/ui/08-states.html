@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>States and microcopy</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  /* MTS 27.4.8 dan 27.5: memuat, kosong, error, input error, sesi habis, panduan microcopy */
+  .demo { padding: var(--s5); min-height: 220px; display: grid; align-content: center; justify-items: start; gap: var(--s3); }
+  .demo h3 { font-size: 18px; }
+  .state-label { font-size: var(--fs-small); color: var(--text-muted); margin-bottom: var(--s2); }
+  .empty-art { width: 64px; height: 64px; border-radius: 16px; background: var(--primary-soft); display: grid; place-items: center; color: var(--primary); }
+  .skel-card { width: 100%; display: grid; gap: 12px; }
+  .skel-card .skel { height: 16px; } .skel-card .skel.t { height: 24px; width: 50%; } .skel-card .skel.b { height: 90px; }
+  table.mc { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.mc th, table.mc td { text-align: left; padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.mc th { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+  table.mc td:first-child { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--line); }
+  table.mc td:nth-child(2) { color: var(--text); font-weight: 500; }
+  .why { color: var(--text-muted); font-size: 14px; }
+  @media (max-width: 700px) { table.mc thead { display: none; } table.mc tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--line); } table.mc td { display: block; border: 0; padding: 2px 0; } }
+  .btns { display: flex; gap: var(--s2); flex-wrap: wrap; }
+</style>
+</head>
+<body data-page="profile">
+<main class="page">
+  <div class="page-head">
+    <h1>States and microcopy</h1>
+    <p>How empty, loading, error, and offline moments look. Every one says what happened and what to do next.</p>
+  </div>
+
+  <div class="grid-2">
+    <section>
+      <p class="state-label">Loading: a skeleton shaped like the final layout</p>
+      <div class="card demo" aria-busy="true"><div class="skel-card"><div class="skel t"></div><div class="skel"></div><div class="skel" style="width:80%"></div><div class="skel b"></div></div></div>
+    </section>
+    <section>
+      <p class="state-label">Empty: one sentence and one action</p>
+      <div class="card demo">
+        <div class="empty-art"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg></div>
+        <h3>No results yet</h3>
+        <p class="muted">Your first results appear after the placement test.</p>
+        <a class="btn btn-primary btn-sm" href="01-test-prepare.html">Start placement test</a>
+      </div>
+    </section>
+    <section>
+      <p class="state-label">Network error: blames no one, says what is safe</p>
+      <div class="card demo">
+        <div class="banner banner-info" style="width:100%"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg><span><strong>We couldn't load this page.</strong> Your progress is saved.</span></div>
+        <button class="btn btn-secondary btn-sm" id="retry">Try again</button>
+      </div>
+    </section>
+    <section>
+      <p class="state-label">Input error: next to the field, specific</p>
+      <form class="card demo" id="pw" novalidate style="width:100%">
+        <div class="field" style="width:100%">
+          <label for="pwd">New password</label>
+          <input class="input" id="pwd" type="password" aria-describedby="pwe">
+          <p class="field-error" id="pwe" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Use at least 8 characters.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" type="submit">Save password</button>
+      </form>
+    </section>
+    <section>
+      <p class="state-label">Session expired: work is saved first</p>
+      <div class="card demo">
+        <h3>Please sign in again to continue</h3>
+        <p class="muted">Your work is saved.</p>
+        <a class="btn btn-primary btn-sm" href="#">Sign in</a>
+      </div>
+    </section>
+    <section>
+      <p class="state-label">Offline and confirmations</p>
+      <div class="card demo">
+        <div class="banner banner-attention" style="width:100%"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>You are offline. Your answers are safe and will sync when you are back.</span></div>
+        <div class="btns"><button class="btn btn-secondary btn-sm" id="t1">Show saved toast</button><button class="btn btn-secondary btn-sm" id="t2">Show booked toast</button></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top: var(--s5)" aria-labelledby="mc-h">
+    <h2 id="mc-h">Microcopy guide</h2>
+    <p class="muted" style="margin: calc(var(--s2) * -1) 0 var(--s4)">Short sentences, active verbs, no ALL CAPS, at most one exclamation mark per screen, no emoji in tests and results.</p>
+    <table class="mc">
+      <thead><tr><th>Avoid</th><th>Use</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>You failed this quiz</td><td>You scored 55. The pass mark is 70. Let's review and try again.</td><td class="why">A fact and a next step, not a label.</td></tr>
+        <tr><td>Wrong!</td><td>Not quite. The answer is B because...</td><td class="why">Informative, not threatening.</td></tr>
+        <tr><td>Your weaknesses</td><td>Focus next</td><td class="why">About the task, not the person.</td></tr>
+        <tr><td>You are behind schedule</td><td>2 items are past due. Start with the first one?</td><td class="why">Specific and doable.</td></tr>
+        <tr><td>Warning: tab switch detected</td><td>Please stay in this tab during the test.</td><td class="why">A reminder, not an accusation.</td></tr>
+        <tr><td>Time is running out!</td><td>5 minutes left. Keep going at your pace.</td><td class="why">Lowers the sense of threat.</td></tr>
+        <tr><td>Error 500</td><td>Something went wrong on our side. Your progress is saved.</td><td class="why">Calm and honest.</td></tr>
+        <tr><td>Low quota!</td><td>1 coaching session left.</td><td class="why">Neutral.</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  $('retry').onclick = () => { $('retry').textContent = 'Trying'; setTimeout(() => { $('retry').textContent = 'Try again'; EI.toast('Page loaded.'); }, 900); };
+  $('pw').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = $('pwd').value.length < 8;
+    $('pwe').hidden = !bad; $('pwd').setAttribute('aria-invalid', String(bad));
+    if (!bad) EI.toast('Password saved.');
+  });
+  $('t1').onclick = () => EI.toast('Saved');
+  $('t2').onclick = () => EI.toast('Session booked.');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  /* /learn  (MTS 27.4.4): mode baca, posisi unit, umpan balik segera, pengingat istirahat, ulasan berjeda */
+  .readbar { position: sticky; top: 64px; z-index: 10; height: 4px; background: var(--surface-2); }
+  .readbar span { display: block; height: 100%; width: 0; background: var(--blue); transition: width var(--dur) var(--ease); }
+  @media (max-width: 760px) { .readbar { top: 56px; } }
+
+  .shell { max-width: 1120px; margin: 0 auto; padding: var(--s5) var(--s4) var(--s7); display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--s6); align-items: start; }
+  .shell.collapsed { grid-template-columns: 0 minmax(0, 1fr); gap: 0; }
+  .shell.collapsed .outline { display: none; }
+  @media (max-width: 900px) { .shell, .shell.collapsed { grid-template-columns: 1fr; gap: var(--s4); } .shell.collapsed .outline { display: none; } }
+
+  .outline { position: sticky; top: 92px; padding: var(--s4); }
+  .outline h2 { font-size: 15px; margin-bottom: var(--s3); }
+  .outline ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .outline button { width: 100%; display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; text-align: left; padding: 10px; border: 0; border-radius: 10px; background: none; color: var(--text); cursor: pointer; font-size: 15px; }
+  .outline button:hover { background: var(--surface-2); }
+  .outline button[aria-current="step"] { background: var(--primary-soft); color: var(--primary); font-weight: 500; }
+  .outline .n { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; }
+  .outline .done .n { background: var(--calm); border-color: var(--calm); color: #fff; }
+  .outline small { display: block; color: var(--text-muted); font-weight: 400; font-size: 12px; }
+
+  .reader-top { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin-bottom: var(--s4); }
+  .crumb { color: var(--text-muted); font-size: var(--fs-small); }
+  .tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .tools button { min-height: 40px; min-width: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; }
+  .tools button:hover { border-color: var(--primary); }
+
+  article.read { max-width: var(--measure); }
+  article.read h1 { margin-bottom: var(--s2); }
+  .meta-line { color: var(--text-muted); font-size: var(--fs-small); margin-bottom: var(--s5); }
+  article.read p, article.read li { font-size: var(--fs-read); line-height: var(--lh-read); letter-spacing: .005em; }
+  article.read p { margin-bottom: 1em; }
+  article.read h2 { margin: var(--s6) 0 var(--s3); }
+  .rule { padding: var(--s4) var(--s5); border-left: 4px solid var(--blue); background: var(--blue-soft); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: var(--s4) 0; }
+  .rule p { margin: 0; }
+  .ex { display: grid; gap: var(--s2); margin: var(--s3) 0 var(--s4); padding: 0; list-style: none; }
+  .ex li { padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+  .ex b { color: var(--primary); font-weight: 600; }
+
+  .try { padding: var(--s5); margin: var(--s5) 0; }
+  .try h2 { margin: 0 0 var(--s2); }
+  .try .q { font-size: 18px; line-height: 1.6; font-weight: 500; margin: var(--s4) 0 var(--s3); }
+  .try .opts { display: flex; gap: var(--s2); flex-wrap: wrap; }
+  .try .opts button { min-height: 48px; padding: 0 var(--s5); border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 17px; cursor: pointer; }
+  .try .opts button:hover:not(:disabled) { border-color: var(--primary); }
+  .try .opts button.right { background: var(--calm-soft); border-color: var(--calm); color: var(--text); }
+  .try .opts button.retry { background: var(--attention-soft); border-color: var(--gold); }
+  .fb { margin-top: var(--s3); padding: var(--s3) var(--s4); border-radius: var(--radius-sm); line-height: 1.6; font-size: 16px; }
+  .fb.ok { background: var(--calm-soft); } .fb.ok strong { color: var(--calm); }
+  .fb.try { background: var(--attention-soft); } .fb.try strong { color: var(--attention); }
+  .fb p { font-size: 16px !important; margin: 0 !important; line-height: 1.6 !important; }
+  .try-nav { display: flex; justify-content: space-between; align-items: center; margin-top: var(--s4); }
+
+  .pager { display: flex; justify-content: space-between; gap: var(--s3); margin-top: var(--s6); padding-top: var(--s5); border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .review-note { margin-top: var(--s5); }
+
+  /* Pengingat istirahat: kartu kecil, tidak memblokir */
+  .break { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(360px, calc(100% - 32px)); padding: var(--s4) var(--s5); box-shadow: 0 8px 28px rgba(12, 20, 36, .18); }
+  body[data-shell="on"] .break { bottom: 88px; }
+  @media (min-width: 761px) { body[data-shell="on"] .break { bottom: 16px; } }
+  .break h3 { margin-bottom: 4px; }
+  .break .row { margin-top: var(--s3); }
+  .timerline { font-size: 56px; font-weight: 600; text-align: center; color: var(--primary); font-variant-numeric: tabular-nums; }
+  .proto { position: fixed; left: 12px; bottom: 12px; z-index: 35; font-size: 13px; }
+  body[data-shell="on"] .proto { bottom: 80px; }
+  @media (min-width: 761px) { body[data-shell="on"] .proto { bottom: 12px; } }
+  .proto button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text-muted); cursor: pointer; font-size: 13px; }
+</style>
+</head>
+<body data-page="learn">
+<div class="readbar" aria-hidden="true"><span id="prog"></span></div>
+
+<div class="shell" id="shell">
+  <aside class="outline surface" aria-label="Unit outline">
+    <h2>Subject-verb agreement</h2>
+    <ol id="outline"></ol>
+  </aside>
+
+  <main>
+    <div class="reader-top">
+      <button class="btn btn-quiet btn-sm" id="toggleOutline" aria-expanded="true" aria-controls="outline">Hide outline</button>
+      <span class="crumb" id="crumb">Part 2 of 4 · about 6 min</span>
+      <div class="tools" role="group" aria-label="Text size">
+        <button id="smaller" aria-label="Smaller text">A-</button>
+        <button id="bigger" aria-label="Larger text">A+</button>
+      </div>
+    </div>
+    <article class="read" id="read"></article>
+    <div class="pager">
+      <button class="btn btn-secondary" id="prevPart">Previous part</button>
+      <button class="btn btn-primary" id="nextPart">Next part</button>
+    </div>
+  </main>
+</div>
+
+<aside class="break surface" id="breakCard" hidden aria-labelledby="bk-h">
+  <h3 id="bk-h">You've been learning for 45 minutes</h3>
+  <p class="muted small">A short break helps you remember more.</p>
+  <div class="row">
+    <button class="btn btn-primary btn-sm" id="takeBreak">Take a 5 min break</button>
+    <button class="btn btn-quiet btn-sm" id="keepGoing">Keep going</button>
+  </div>
+</aside>
+
+<dialog id="breakDlg" aria-labelledby="bd-h">
+  <h2 id="bd-h">Break time</h2>
+  <p class="timerline" id="bt" style="margin-top: var(--s4)">5:00</p>
+  <p style="text-align:center">Stand up, drink some water, look at something far away. Your place in the unit is saved.</p>
+  <div class="dialog-actions"><button class="btn btn-primary" id="endBreak">Back to learning</button></div>
+</dialog>
+
+<div class="proto"><button id="simBreak">Prototype: simulate 45 min</button></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const parts = [
+    { t: 'The basic rule', m: '4 min', h: `
+      <h1>Subject-verb agreement</h1>
+      <p class="meta-line">Structure and Written Expression</p>
+      <p>A verb has to match its subject in number. A singular subject takes a singular verb, and a plural subject takes a plural verb.</p>
+      <div class="rule"><p>Find the subject first. Then check the verb, not the word that sits closest to it.</p></div>
+      <ul class="ex"><li>The <b>student</b> <b>studies</b> every evening.</li><li>The <b>students</b> <b>study</b> every evening.</li></ul>
+      <p>That is the whole idea. The next part shows why it gets harder when other words sit between the subject and the verb.</p>` },
+    { t: 'When words get in the way', m: '6 min', h: `
+      <h1>Subject-verb agreement</h1>
+      <p class="meta-line">Structure and Written Expression</p>
+      <h2 style="margin-top:0">Phrases between the subject and the verb</h2>
+      <p>On the test, a phrase often sits between the subject and the verb. The verb still agrees with the subject, not with the noun inside the phrase.</p>
+      <ul class="ex"><li>The <b>list</b> of requirements <b>is</b> on the website.</li><li>The <b>results</b> of the experiment <b>were</b> surprising.</li></ul>
+      <p>A useful habit: cross out the phrase in your head, then read the sentence again.</p>
+      <h2>Try it</h2>
+      <p>Two quick items. You get an answer and a reason straight away, so there is nothing to be nervous about.</p>
+      <section class="try surface" id="try" aria-live="polite"></section>` },
+    { t: 'Tricky subjects', m: '6 min', h: `
+      <h1>Subject-verb agreement</h1><p class="meta-line">Structure and Written Expression</p>
+      <p>Some subjects look plural but take a singular verb, such as <em>everyone</em>, <em>each</em>, and <em>the news</em>. Others, like <em>a number of</em>, are plural.</p>
+      <ul class="ex"><li><b>Everyone</b> <b>has</b> a copy of the schedule.</li><li><b>A number of</b> students <b>were</b> absent.</li></ul>` },
+    { t: 'Wrap-up and review', m: '3 min', h: `
+      <h1>Subject-verb agreement</h1><p class="meta-line">Structure and Written Expression</p>
+      <p>You covered the basic rule, phrases in between, and tricky subjects. That is the full unit.</p>
+      <div class="banner banner-calm review-note"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>A quick 3-question review is scheduled for Tuesday. Reviewing after a short gap helps you remember longer.</span></div>` }
+  ];
+  let cur = 1; const doneSet = new Set([0]);
+
+  const items = [
+    { q: 'The list of required documents ______ on the table.', o: ['is', 'are'], a: 0, why: 'The subject is "list" (singular). "Of required documents" is a phrase in between.' },
+    { q: 'The effects of the new policy ______ difficult to measure.', o: ['is', 'are'], a: 1, why: 'The subject is "effects" (plural), so the verb is "are".' }
+  ];
+  let qi = 0;
+  function drawTry() {
+    const box = $('try'); if (!box) return;
+    const it = items[qi];
+    box.innerHTML = '<h2>Item ' + (qi + 1) + ' of 2</h2><p class="q">' + it.q + '</p><div class="opts">' +
+      it.o.map((t, i) => '<button data-i="' + i + '">' + t + '</button>').join('') + '</div><div id="fb"></div>';
+    box.querySelectorAll('.opts button').forEach(b => b.onclick = () => {
+      const right = +b.dataset.i === it.a, fb = $('fb');
+      if (right) {
+        b.classList.add('right');
+        fb.innerHTML = '<div class="fb ok"><strong>That\'s right.</strong> ' + it.why + '</div>' +
+          '<div class="try-nav"><span></span>' + (qi < items.length - 1 ? '<button class="btn btn-secondary btn-sm" id="nx">Next item</button>' : '<span class="status status-calm">Both items done</span>') + '</div>';
+        box.querySelectorAll('.opts button').forEach(x => x.disabled = true);
+        if ($('nx')) $('nx').onclick = () => { qi++; drawTry(); };
+      } else {
+        b.classList.add('retry');
+        fb.innerHTML = '<div class="fb try"><strong>Not quite.</strong> The answer is "' + it.o[it.a] + '". ' + it.why + '</div>' +
+          '<div class="try-nav"><span></span><button class="btn btn-secondary btn-sm" id="again">Try a similar item</button></div>';
+        box.querySelectorAll('.opts button').forEach(x => x.disabled = true);
+        $('again').onclick = () => drawTry();
+      }
+    });
+  }
+
+  function render() {
+    $('read').innerHTML = parts[cur].h;
+    $('crumb').textContent = 'Part ' + (cur + 1) + ' of ' + parts.length + ' · about ' + parts[cur].m;
+    $('outline').innerHTML = parts.map((p, i) =>
+      '<li><button class="' + (doneSet.has(i) ? 'done' : '') + '" data-i="' + i + '"' + (i === cur ? ' aria-current="step"' : '') + '><span class="n">' + (doneSet.has(i) ? '✓' : i + 1) + '</span><span>' + p.t + '<small>' + p.m + '</small></span></button></li>').join('');
+    $('outline').querySelectorAll('button').forEach(b => b.onclick = () => { cur = +b.dataset.i; render(); window.scrollTo(0, 0); });
+    $('prevPart').style.visibility = cur === 0 ? 'hidden' : 'visible';
+    $('nextPart').textContent = cur === parts.length - 1 ? 'Finish unit' : 'Next part';
+    $('prog').style.width = ((cur + 1) / parts.length * 100) + '%';
+    qi = 0; drawTry();
+    try { localStorage.setItem('ei.bookmark', String(cur)); } catch (e) {}
+  }
+  $('nextPart').onclick = () => { doneSet.add(cur); if (cur < parts.length - 1) { cur++; render(); window.scrollTo(0, 0); } else { render(); EI.toast('Unit finished. Nice work.'); setTimeout(() => location.href = '04-home.html', 1400); } };
+  $('prevPart').onclick = () => { cur--; render(); window.scrollTo(0, 0); };
+  $('toggleOutline').onclick = () => { const c = $('shell').classList.toggle('collapsed'); $('toggleOutline').setAttribute('aria-expanded', String(!c)); $('toggleOutline').textContent = c ? 'Show outline' : 'Hide outline'; };
+
+  /* ukuran teks: tersimpan di uiPrefs */
+  function size(d) { const p = EI.load(); p.fontSize = Math.min(22, Math.max(16, p.fontSize + d * 2)); EI.save(p); EI.apply(p); EI.toast('Text size ' + p.fontSize + ' px'); }
+  $('smaller').onclick = () => size(-1); $('bigger').onclick = () => size(1);
+
+  /* kembali ke posisi terakhir */
+  try { const b = +localStorage.getItem('ei.bookmark'); if (b >= 0 && b < parts.length && localStorage.getItem('ei.bookmark') !== null) { cur = b; } } catch (e) {}
+
+  /* pengingat istirahat: hanya bila diaktifkan, tidak memblokir */
+  function showBreak() { if (EI.load().breakReminder) { $('breakCard').hidden = false; } else { EI.toast('Break reminders are off in your profile.'); } }
+  $('simBreak').onclick = showBreak;
+  $('keepGoing').onclick = () => { $('breakCard').hidden = true; };
+  let bt;
+  $('takeBreak').onclick = () => {
+    $('breakCard').hidden = true; let s = 300; $('bt').textContent = '5:00'; $('breakDlg').showModal();
+    clearInterval(bt); bt = setInterval(() => { s--; $('bt').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); if (s <= 0) { clearInterval(bt); } }, 1000);
+  };
+  $('endBreak').onclick = () => { clearInterval(bt); $('breakDlg').close(); };
+
+  render();
+})();
+</script>
+</body>
+</html>

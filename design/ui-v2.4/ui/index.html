@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>English Inspira UI v2.4</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s6); align-items: center; padding: var(--s7) 0 var(--s5); }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+  .hero h1 { font-size: 34px; max-width: 18ch; }
+  .hero p { margin-top: var(--s3); color: var(--text-muted); max-width: 52ch; line-height: 1.65; }
+  .hero .logo { padding: var(--s4) var(--s5); justify-self: end; }
+  .hero .logo img { height: auto; width: 100%; max-width: 300px; }
+  .list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin-top: var(--s5); }
+  @media (max-width: 760px) { .list { grid-template-columns: 1fr; } }
+  .tile { display: grid; grid-template-columns: 40px 1fr; gap: var(--s4); padding: var(--s4) var(--s5); text-decoration: none; color: var(--text); transition: border-color var(--dur) var(--ease); }
+  .tile:hover { border-color: var(--primary); }
+  .tile .n { width: 40px; height: 40px; border-radius: 12px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-weight: 600; }
+  .tile strong { display: block; font-weight: 500; }
+  .tile span.d { font-size: var(--fs-small); color: var(--text-muted); }
+  .tile .ref { font-size: 12px; color: var(--text-muted); margin-top: 4px; display: block; }
+  .pal { display: flex; gap: var(--s2); margin-top: var(--s5); flex-wrap: wrap; align-items: center; }
+  .pal i { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); display: block; }
+</style>
+</head>
+<body data-page="home">
+<main class="page">
+  <section class="hero">
+    <div>
+      <h1>A calmer English Inspira</h1>
+      <p>Prototype screens for MTS v2.4, section 27. Open any screen below. Theme, text size, and motion changes made in Profile apply everywhere.</p>
+      <div class="pal" aria-label="Palette from the logo">
+        <i style="background:#123B8C" title="Navy"></i><i style="background:#1E78D6" title="Blue"></i><i style="background:#E0A526" title="Gold"></i><i style="background:#1E7F6E" title="Calm teal"></i><i style="background:#F5F8FD" title="Background"></i>
+        <span class="small muted" style="margin-left: 8px">Navy, blue, and gold from the logo. Poppins only.</span>
+      </div>
+    </div>
+    <a class="logo" href="04-home.html" aria-label="Open home"><img src="assets/logo-full.png" alt="English Inspira" width="300" height="123"></a>
+  </section>
+
+  <div class="list">
+    <a class="tile surface" href="01-test-prepare.html"><span class="n">1</span><div><strong>Test preparation</strong><span class="d">No pass or fail, sample questions, sound check, breathing</span><span class="ref">MTS 27.4.2</span></div></a>
+    <a class="tile surface" href="02-test-room.html"><span class="n">2</span><div><strong>Test room</strong><span class="d">Focus mode, hideable timer, navigator, flags, offline</span><span class="ref">MTS 27.4.2</span></div></a>
+    <a class="tile surface" href="03-results.html"><span class="n">3</span><div><strong>Results</strong><span class="d">Going well, focus next, compare with yourself, details</span><span class="ref">MTS 27.4.3</span></div></a>
+    <a class="tile surface" href="04-home.html"><span class="n">4</span><div><strong>Home and study plan</strong><span class="d">Today, learning days, coaching, past due without red</span><span class="ref">MTS 27.4.1, 27.4.5</span></div></a>
+    <a class="tile surface" href="05-learn.html"><span class="n">5</span><div><strong>Learning a unit</strong><span class="d">Reading mode, instant feedback, break reminder</span><span class="ref">MTS 27.4.4</span></div></a>
+    <a class="tile surface" href="06-coaching.html"><span class="n">6</span><div><strong>Coaching</strong><span class="d">Bookable slots, quota, notes linked to your plan</span><span class="ref">MTS 27.4.6</span></div></a>
+    <a class="tile surface" href="07-counselor.html"><span class="n">7</span><div><strong>Counselor</strong><span class="d">Starter prompts, calm answers, support path</span><span class="ref">MTS 27.4.7</span></div></a>
+    <a class="tile surface" href="08-states.html"><span class="n">8</span><div><strong>States and microcopy</strong><span class="d">Loading, empty, error, offline, wording guide</span><span class="ref">MTS 27.4.8, 27.5</span></div></a>
+    <a class="tile surface" href="09-profile.html"><span class="n">9</span><div><strong>Profile comfort settings</strong><span class="d">Theme, text size, motion, timer, reminders, quiet hours</span><span class="ref">MTS 27.6, 27.8</span></div></a>
+    <a class="tile surface" href="10-coach-admin.html"><span class="n">10</span><div><strong>Coach and admin</strong><span class="d">Pre-session report, group view, comfort metrics</span><span class="ref">MTS 27.4.9, 27.9</span></div></a>
+  </div>
+</main>
+</body>
+</html>

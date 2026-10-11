@@ -3,7 +3,7 @@ import { HttpError, requireRole } from "./rbac";
 
 // Penulis materi (MTS §10.2): admin, coach, inst_admin. Coach/inst_admin hanya menulis rich text untuk institusinya
 // sendiri (materi ber-institutionId, hanya terlihat peserta institusi itu). Materi HTML hanya admin (MTS §19).
-export const AUTHOR_ROLES = ["admin", "coach", "inst_admin"] as const;
+export const AUTHOR_ROLES = ["admin"] as const; // v2.4: konten (materi, audio, soal, course) hanya dikelola admin pusat
 
 export async function requireAuthor() {
   return requireRole([...AUTHOR_ROLES]);

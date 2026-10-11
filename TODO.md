@@ -1,4 +1,4 @@
-# TODO English Inspira (repo Edulyfe EPTA) — acuan: English_Inspira_LMS_MTS_V2_3.md (v2.3)
+# TODO English Inspira (repo Edulyfe EPTA) — acuan: English_Inspira_LMS_MTS_V2_4.md (v2.4)
 
 Legenda status: ✅ Sudah · 🔄 Sedang · ⬜ Belum · ⏭️ Sengaja dilewati/ditunda (alasan wajib) · ❌ Dihapus karena bertentangan dengan v2.2
 Prioritas: **P1** fondasi (Fase 1+3) → **P2** belajar & analitik (Fase 4+5) → **P3** coaching (Fase 6) → **P4** PDF/level-up/laporan/hardening (Fase 7+8) → **P5** opsional (Fase 9, sudah ada)
@@ -127,7 +127,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 |---|---|
 | Font lokal (build tidak bergantung Google), `next build` bersih | ✅ |
 | README, PM2 (`ecosystem.config.cjs`), Nginx, `/api/health` | ✅ (deploy: Biznet Gio + PM2, **tanpa Docker**) |
-| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (313 pemeriksaan API, semua lulus) | ✅ |
+| Uji unit (vitest, 60 uji) & `scripts/smoke.mjs` v2.2 (310 pemeriksaan API, semua lulus) | ✅ |
 | `tsc --noEmit` & `next build` (termasuk lint) bersih | ✅ |
 
 ## 10. Temuan selama pengerjaan (arsip)
@@ -153,7 +153,7 @@ Aturan: setiap perubahan dicatat di sini. Status "✅" hanya bila sudah dijalank
 
 ## 12. Sisa pekerjaan
 
-Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 313/313 (alur v2.2 termasuk ITP, daftar, password, reset).
+Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 310/310 (alur v2.2 termasuk ITP, daftar, password, reset).
 
 | Prioritas | Item | Status |
 |---|---|---|
@@ -205,3 +205,17 @@ Keadaan terakhir: `tsc`, `next build` dan lint bersih; vitest 60/60; smoke 313/3
 | M3 | `/admin/login`: login khusus admin (password atau kode email), menolak akun bukan admin, tetap terbuka saat pemeliharaan | ✅ teruji |
 | M4 | Status dibaca middleware dengan cache 10 detik di produksi (`INTERNAL_URL` untuk cek lewat localhost) | ✅ perubahan berlaku paling lambat 10 detik |
 | M5 | Halaman error memuat ulang sekali bila chunk build lama hilang setelah deploy | ✅ |
+
+## 16. MTS v2.4: kenyamanan belajar dan UI baru (2026-10-11)
+
+Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.html`. Dikerjakan per tahap §27.11; tiap tahap di-commit dan di-deploy.
+
+| Tahap | Isi | Status |
+|---|---|---|
+| 0 | Konten hanya admin: materi, lampiran, audio, soal, tes, course (coach & admin institusi dicabut; menu materi mereka dihapus) | ✅ teruji smoke (310/310) |
+| 1 | Design token v2.4 (CSS variable + Tailwind), mode gelap, logo baru, Poppins 400/500/600, `uiPrefs` + `GET/PATCH /api/me/ui-prefs`, pengaturan tampilan di Profil, shell peserta menu atas | ⬜ |
+| 2 | Halaman persiapan ("no pass or fail", struktur tes, 3 soal contoh tak dinilai) dan ruang tes (mode fokus, timer bisa disembunyikan, muncul di 5 dan 1 menit, tanda flag, navigator, keyboard) | ⬜ |
+| 3 | Layar hasil (ringkasan, going well, focus next ≤ 3, banding diri sendiri, See details) dan aturan narasi AI (kata terlarang, langkah hari ini) | ⬜ |
+| 4 | Beranda "Today" (≤ 3 item + durasi), learning days, past due tanpa merah, microcopy | ⬜ |
+| 5 | Notifikasi: jam tenang, maks pengingat/hari, ringkasan harian, `ui_comfort` | ⬜ |
+| 6 | Pengingat istirahat, ulasan berjeda, survei SEQ/SUS, metrik kenyamanan di dasbor admin | ⬜ |

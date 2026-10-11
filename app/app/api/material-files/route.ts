@@ -8,10 +8,10 @@ import { pdfBucket } from "@/models/Pdf";
 
 export const runtime = "nodejs";
 
-/** Unggah lampiran PDF untuk materi (penulis: admin, coach, inst_admin). PDF saja (magic bytes), maks 10 MB. */
+/** Unggah lampiran PDF untuk materi (hanya admin). PDF saja (magic bytes), maks 10 MB. */
 export async function POST(req: Request) {
   try {
-    const me = await requireRole(["admin", "coach", "inst_admin"]);
+    const me = await requireRole(["admin"]);
     const file = (await req.formData()).get("file");
     if (!(file instanceof File)) throw new HttpError(400, "A file is required");
     if (file.size > MAX_PDF_BYTES) throw new HttpError(413, "Maximum 10 MB");

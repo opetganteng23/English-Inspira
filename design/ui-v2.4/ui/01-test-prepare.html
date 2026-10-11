@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Placement test prep</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  /* Bagian 1: /tests/prepare/:id  (MTS 27.4.2, "Sebelum mulai") */
+
+  .layout {
+    max-width: 1120px; margin: 0 auto; padding: var(--s6) var(--s4) var(--s7);
+    display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s6); align-items: start;
+  }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; gap: var(--s5); } }
+
+  .intro { max-width: 60ch; }
+  .intro h1 { margin-bottom: var(--s3); }
+  .lead { font-size: 18px; line-height: 1.6; color: var(--text); }
+  .lead + .lead { margin-top: var(--s2); color: var(--text-muted); font-size: var(--fs-ui); }
+
+  .block { margin-top: var(--s6); }
+  .block h2 { margin-bottom: var(--s4); }
+
+  /* Struktur tes: urutan nyata, jadi bernomor */
+  .sections { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+  .sections li {
+    display: grid; grid-template-columns: 32px 1fr auto; gap: var(--s4); align-items: center;
+    padding: var(--s4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  }
+  .step {
+    width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--primary-soft); color: var(--primary); font-weight: 600; font-size: var(--fs-small);
+  }
+  .sections strong { display: block; font-weight: 500; }
+  .sections .meta { text-align: right; font-size: var(--fs-small); color: var(--text-muted); white-space: nowrap; }
+  .total { margin-top: var(--s3); font-size: var(--fs-small); color: var(--text-muted); }
+
+  .rules { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s3); }
+  .rules li { display: grid; grid-template-columns: 24px 1fr; gap: var(--s3); align-items: start; }
+  .rules svg { margin-top: 2px; color: var(--calm); }
+
+  /* Latihan */
+  .practice-toggle { margin-top: var(--s2); }
+  .practice { margin-top: var(--s4); padding: var(--s5); }
+  .practice[hidden] { display: none; }
+  .practice-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); margin-bottom: var(--s4); }
+  .q-label { font-size: var(--fs-small); color: var(--text-muted); }
+  .q-text { font-size: 18px; line-height: 1.6; font-weight: 500; margin: var(--s2) 0 var(--s4); max-width: var(--measure); }
+  .passage {
+    font-size: var(--fs-read); line-height: var(--lh-read); padding: var(--s4); border-radius: var(--radius-sm);
+    background: var(--surface-2); margin-bottom: var(--s3); max-width: var(--measure);
+  }
+  .options { display: grid; gap: var(--s2); border: 0; margin: 0; padding: 0; }
+  .option {
+    display: flex; gap: var(--s3); align-items: center; min-height: 52px; padding: var(--s3) var(--s4);
+    border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; font-size: 17px;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .option:hover { border-color: var(--primary); }
+  .option input { position: absolute; opacity: 0; }
+  .option .key {
+    flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line);
+    display: grid; place-items: center; font-size: var(--fs-small); font-weight: 500; color: var(--text-muted);
+  }
+  .option:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); }
+  .option:has(input:checked) .key { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+  .option:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .feedback { margin-top: var(--s4); padding: var(--s4); border-radius: var(--radius-sm); line-height: 1.6; }
+  .feedback[hidden] { display: none; }
+  .feedback.ok { background: var(--calm-soft); }
+  .feedback.ok strong { color: var(--calm); }
+  .feedback.try { background: var(--attention-soft); }
+  .feedback.try strong { color: var(--attention); }
+  .practice-actions { display: flex; gap: var(--s2); justify-content: flex-end; margin-top: var(--s4); flex-wrap: wrap; }
+
+  .listen-row { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+  .transcript { margin-top: var(--s3); font-size: var(--fs-small); color: var(--text-muted); line-height: 1.6; }
+  .transcript[hidden] { display: none; }
+
+  /* Panel kanan: kesiapan */
+  .ready { position: sticky; top: var(--s4); padding: var(--s5); }
+  @media (max-width: 880px) { .ready { position: static; } }
+  .ready h2 { margin-bottom: var(--s4); }
+  .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
+  .check { display: grid; grid-template-columns: 28px 1fr; gap: var(--s3); }
+  .dot {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line);
+    display: grid; place-items: center; color: transparent; transition: all var(--dur) var(--ease);
+  }
+  .check.done .dot { background: var(--calm); border-color: var(--calm); color: #fff; }
+  .check strong { display: block; font-weight: 500; }
+  .check .small { margin-top: 2px; }
+  .check-actions { display: flex; gap: var(--s2); margin-top: var(--s2); flex-wrap: wrap; }
+  .check-actions .btn { min-height: 40px; padding: 0 var(--s4); font-size: var(--fs-small); }
+  .tick { display: flex; gap: var(--s2); align-items: flex-start; margin-top: var(--s2); cursor: pointer; font-size: var(--fs-small); }
+  .tick input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--calm); }
+
+  .start { margin-top: var(--s5); padding-top: var(--s5); border-top: 1px solid var(--line); }
+  .start .btn-primary { width: 100%; }
+  .start-hint { margin-top: var(--s2); text-align: center; }
+
+  /* Napas: satu-satunya momen gerak di halaman ini */
+  .breath { margin-top: var(--s4); text-align: center; }
+  .breath-stage { display: grid; place-items: center; gap: var(--s3); padding: var(--s5) 0 var(--s2); }
+  .breath-stage[hidden] { display: none; }
+  .orb {
+    width: 96px; height: 96px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, var(--calm-soft), var(--calm) 140%);
+    transform: scale(.7); transition: transform 4s ease-in-out;
+  }
+  .orb.in { transform: scale(1); }
+  .orb.out { transform: scale(.7); transition-duration: 6s; }
+  :root[data-motion="reduce"] .orb { transition: none; }
+  @media (prefers-reduced-motion: reduce) { .orb { transition: none; } }
+  .breath-text { min-height: 24px; color: var(--text-muted); }
+
+  /* Dialog konfirmasi sebelum timer berjalan */
+  dialog {
+    border: 0; border-radius: var(--radius); padding: var(--s6); max-width: 440px; width: calc(100% - 32px);
+    background: var(--surface); color: var(--text); box-shadow: 0 12px 40px rgba(0,0,0,.18);
+  }
+  dialog::backdrop { background: rgba(18, 22, 29, .45); }
+  dialog p { margin-top: var(--s3); color: var(--text-muted); line-height: 1.6; }
+  .dialog-actions { display: flex; gap: var(--s2); justify-content: flex-end; margin-top: var(--s5); flex-wrap: wrap; }
+</style>
+</head>
+<body data-page="tests">
+
+
+
+<main class="layout">
+  <div>
+    <section class="intro">
+      <h1>Placement test</h1>
+      <p class="lead">This test helps us find the right starting point for you. There is no pass or fail.</p>
+      <p class="lead">Your result sets your level, your coaching sessions, and your first study plan. Just do your best, then we take it from there together.</p>
+    </section>
+
+    <section class="block" aria-labelledby="structure-h">
+      <h2 id="structure-h">What to expect</h2>
+      <ol class="sections">
+        <li><span class="step">1</span><div><strong>Listening</strong><span class="small muted">Short and long conversations. Each audio plays once.</span></div><span class="meta">50 questions<br>about 35 min</span></li>
+        <li><span class="step">2</span><div><strong>Structure and Written Expression</strong><span class="small muted">Complete sentences and spot the error.</span></div><span class="meta">40 questions<br>25 min</span></li>
+        <li><span class="step">3</span><div><strong>Reading</strong><span class="small muted">Academic passages with questions.</span></div><span class="meta">50 questions<br>55 min</span></li>
+      </ol>
+      <p class="total">About 2 hours in total. You move through the sections in this order.</p>
+    </section>
+
+    <section class="block" aria-labelledby="rules-h">
+      <h2 id="rules-h">Good to know</h2>
+      <ul class="rules">
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Your answers save automatically after every choice.</span></li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>You can flag a question and come back to it before the section ends.</span></li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>You can hide the timer. It shows again when 5 minutes and 1 minute are left.</span></li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>The timer keeps running if your connection drops, so a stable place helps. Your answers stay safe.</span></li>
+        <li><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Please stay in this tab and in full screen during the test.</span></li>
+      </ul>
+    </section>
+
+    <section class="block" aria-labelledby="practice-h">
+      <h2 id="practice-h">Try it first</h2>
+      <p class="muted">Three sample questions in the same layout as the test. They are not scored.</p>
+      <button class="btn btn-secondary practice-toggle" id="practiceToggle" aria-expanded="false" aria-controls="practice">Try 3 sample questions</button>
+
+      <div class="practice surface" id="practice" hidden>
+        <div class="practice-head">
+          <span class="q-label" id="qPos">Question 1 of 3</span>
+          <span class="q-label" id="qSection">Listening</span>
+        </div>
+        <div id="qBody"></div>
+        <div class="feedback" id="feedback" role="status" hidden></div>
+        <div class="practice-actions">
+          <button class="btn btn-secondary" id="checkBtn">Check answer</button>
+          <button class="btn btn-secondary" id="nextBtn" hidden>Next question</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="ready surface" aria-labelledby="ready-h">
+    <h2 id="ready-h">Before you start</h2>
+    <ul class="checks">
+      <li class="check" id="checkSound">
+        <span class="dot" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div>
+          <strong>Sound check</strong>
+          <p class="small muted" id="soundText">Play a short tone with your headphones on.</p>
+          <div class="check-actions">
+            <button class="btn btn-secondary" id="playTone">Play tone</button>
+            <button class="btn btn-secondary" id="heardIt" hidden>I can hear it</button>
+          </div>
+        </div>
+      </li>
+      <li class="check" id="checkNet">
+        <span class="dot" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div>
+          <strong>Connection</strong>
+          <p class="small muted" id="netText">Checking your connection.</p>
+        </div>
+      </li>
+      <li class="check" id="checkTime">
+        <span class="dot" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <div>
+          <strong>Time and place</strong>
+          <label class="tick"><input type="checkbox" id="timeOk"><span>I have about 2 hours in a quiet place.</span></label>
+        </div>
+      </li>
+    </ul>
+
+    <div class="breath">
+      <button class="btn btn-quiet" id="breathBtn" aria-expanded="false" aria-controls="breathStage">Take a slow breath first</button>
+      <div class="breath-stage" id="breathStage" hidden>
+        <div class="orb" id="orb" aria-hidden="true"></div>
+        <p class="breath-text" id="breathText" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="start">
+      <button class="btn btn-primary" id="startBtn" disabled>Start placement test</button>
+      <p class="small muted start-hint" id="startHint">Finish the checks above to start.</p>
+    </div>
+  </aside>
+</main>
+
+<dialog id="confirm" aria-labelledby="confirm-h">
+  <h2 id="confirm-h">Ready to begin?</h2>
+  <p>The timer starts when you continue. Listening comes first, so keep your headphones on.</p>
+  <div class="dialog-actions">
+    <button class="btn btn-quiet" id="notYet">Not yet</button>
+    <button class="btn btn-primary" id="beginBtn">Begin test</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const state = { sound: false, net: navigator.onLine, time: false };
+
+  function refresh() {
+    $('checkSound').classList.toggle('done', state.sound);
+    $('checkNet').classList.toggle('done', state.net);
+    $('checkTime').classList.toggle('done', state.time);
+    $('netText').textContent = state.net
+      ? 'You are online.'
+      : 'You seem to be offline. Connect to start the test.';
+    const left = [];
+    if (!state.sound) left.push('the sound check');
+    if (!state.net) left.push('your connection');
+    if (!state.time) left.push('time and place');
+    const ready = left.length === 0;
+    $('startBtn').disabled = !ready;
+    $('startHint').textContent = ready
+      ? 'All set. Take your time.'
+      : 'Finish ' + left.join(', ') + ' to start.';
+  }
+
+  /* Sound check: nada lembut lewat Web Audio, tanpa file */
+  $('playTone').addEventListener('click', () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [523.25, 659.25].forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        const t = ctx.currentTime + i * 0.35;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.18, t + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+        o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 1);
+      });
+      $('soundText').textContent = 'Did you hear two soft notes?';
+    } catch (e) {
+      $('soundText').textContent = 'Your browser blocked the sound. Check that it is not muted, then try again.';
+    }
+    $('playTone').textContent = 'Play again';
+    $('heardIt').hidden = false;
+  });
+  $('heardIt').addEventListener('click', () => {
+    state.sound = true;
+    $('soundText').textContent = 'Sound is working.';
+    $('heardIt').hidden = true;
+    refresh();
+  });
+
+  window.addEventListener('online', () => { state.net = true; refresh(); });
+  window.addEventListener('offline', () => { state.net = false; refresh(); });
+  $('timeOk').addEventListener('change', (e) => { state.time = e.target.checked; refresh(); });
+
+  /* Napas: 4 detik tarik, 6 detik buang, tiga putaran. Bisa dihentikan kapan saja. */
+  let breathTimer = null;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function stopBreath() {
+    clearTimeout(breathTimer); breathTimer = null;
+    $('breathStage').hidden = true;
+    $('breathBtn').textContent = 'Take a slow breath first';
+    $('breathBtn').setAttribute('aria-expanded', 'false');
+    $('orb').className = 'orb';
+  }
+  $('breathBtn').addEventListener('click', () => {
+    if (breathTimer !== null || !$('breathStage').hidden) return stopBreath();
+    $('breathStage').hidden = false;
+    $('breathBtn').textContent = 'Stop';
+    $('breathBtn').setAttribute('aria-expanded', 'true');
+    let round = 0;
+    const orb = $('orb'), txt = $('breathText');
+    const inhale = () => {
+      if (round === 3) { txt.textContent = 'Ready when you are.'; orb.className = 'orb'; breathTimer = null; $('breathBtn').textContent = 'Close'; return; }
+      round++; orb.className = 'orb in'; txt.textContent = 'Breathe in slowly';
+      breathTimer = setTimeout(exhale, 4000);
+    };
+    const exhale = () => {
+      orb.className = 'orb out'; txt.textContent = reduced ? 'And breathe out, a little longer' : 'And breathe out';
+      breathTimer = setTimeout(inhale, 6000);
+    };
+    inhale();
+  });
+
+  /* Latihan 3 soal, tidak dinilai */
+  const questions = [
+    {
+      section: 'Listening', type: 'listen',
+      audio: [['Man', 'Have you finished the report for Professor Lee?'], ['Woman', 'Almost. I just need to check the references.']],
+      prompt: 'What does the woman mean?',
+      options: ['She has not started the report.', 'She is nearly done with the report.', 'Professor Lee already has the report.', 'She lost the list of references.'],
+      answer: 1,
+      why: '"Almost" tells you she has done most of it. Only the references are left.'
+    },
+    {
+      section: 'Structure', type: 'plain',
+      prompt: 'The campus library ______ open until nine on weekdays.',
+      options: ['staying', 'stays', 'to stay', 'stayed it'],
+      answer: 1,
+      why: 'The sentence needs a main verb that agrees with "library", a singular subject. "Stays" fits.'
+    },
+    {
+      section: 'Reading', type: 'reading',
+      passage: 'Coral reefs cover less than one percent of the ocean floor, yet they are home to a large share of all marine species.',
+      prompt: 'The word "yet" in the passage is closest in meaning to',
+      options: ['however', 'because', 'therefore', 'already'],
+      answer: 0,
+      why: '"Yet" introduces a contrast: a small area, but many species. "However" carries the same contrast.'
+    }
+  ];
+  let qi = 0, played = false;
+
+  function renderQ() {
+    const q = questions[qi];
+    played = false;
+    $('qPos').textContent = 'Question ' + (qi + 1) + ' of ' + questions.length;
+    $('qSection').textContent = q.section;
+    $('feedback').hidden = true;
+    $('checkBtn').hidden = false; $('checkBtn').disabled = false;
+    $('nextBtn').hidden = true;
+    let html = '';
+    if (q.type === 'listen') {
+      html += '<div class="listen-row"><button class="btn btn-secondary" id="playQ">Play audio</button>' +
+              '<span class="small muted" id="playNote">Plays once, like in the test.</span></div>' +
+              '<p class="transcript" id="transcript" hidden>' + q.audio.map(l => '<strong>' + l[0] + ':</strong> ' + l[1]).join('<br>') + '</p>';
+    }
+    if (q.type === 'reading') html += '<div class="passage">' + q.passage + '</div>';
+    html += '<p class="q-text" id="qText">' + q.prompt + '</p>';
+    html += '<fieldset class="options" aria-labelledby="qText">' + q.options.map((o, i) =>
+      '<label class="option"><input type="radio" name="ans" value="' + i + '"><span class="key">' + 'ABCD'[i] + '</span><span>' + o + '</span></label>'
+    ).join('') + '</fieldset>';
+    $('qBody').innerHTML = html;
+
+    if (q.type === 'listen') {
+      $('playQ').addEventListener('click', () => {
+        if (played) return;
+        played = true;
+        $('playQ').disabled = true;
+        $('playQ').textContent = 'Playing';
+        const synth = window.speechSynthesis;
+        if (!synth) { $('playNote').textContent = 'Audio is not available here, so the script is shown below.'; $('transcript').hidden = false; return; }
+        synth.cancel();
+        q.audio.forEach((line, i) => {
+          const u = new SpeechSynthesisUtterance(line[1]);
+          u.lang = 'en-US'; u.rate = 0.92; u.pitch = line[0] === 'Woman' ? 1.2 : 0.85;
+          if (i === q.audio.length - 1) u.onend = () => { $('playQ').textContent = 'Played'; $('playNote').textContent = 'Now choose your answer.'; };
+          synth.speak(u);
+        });
+      });
+    }
+  }
+
+  $('checkBtn').addEventListener('click', () => {
+    const picked = document.querySelector('input[name="ans"]:checked');
+    const fb = $('feedback');
+    if (!picked) { fb.className = 'feedback try'; fb.innerHTML = 'Choose an option first, then check.'; fb.hidden = false; return; }
+    const q = questions[qi], right = +picked.value === q.answer;
+    fb.className = 'feedback ' + (right ? 'ok' : 'try');
+    fb.innerHTML = right
+      ? '<strong>That\'s right.</strong> ' + q.why
+      : '<strong>Not quite.</strong> The answer is ' + 'ABCD'[q.answer] + '. ' + q.why;
+    fb.hidden = false;
+    if ($('transcript')) $('transcript').hidden = false;
+    $('checkBtn').hidden = true;
+    $('nextBtn').hidden = false;
+    $('nextBtn').textContent = qi < questions.length - 1 ? 'Next question' : 'Finish practice';
+    $('nextBtn').focus();
+  });
+
+  $('nextBtn').addEventListener('click', () => {
+    if (qi < questions.length - 1) { qi++; renderQ(); return; }
+    $('qPos').textContent = 'Practice done';
+    $('qSection').textContent = '';
+    $('qBody').innerHTML = '<p class="q-text">Nice. That is how the test looks and feels. When you are ready, finish the checks and start.</p>';
+    $('feedback').hidden = true; $('nextBtn').hidden = true; $('checkBtn').hidden = true;
+  });
+
+  $('practiceToggle').addEventListener('click', () => {
+    const p = $('practice'), open = p.hidden;
+    p.hidden = !open;
+    $('practiceToggle').setAttribute('aria-expanded', String(open));
+    $('practiceToggle').textContent = open ? 'Hide sample questions' : 'Try 3 sample questions';
+    if (open && !$('qBody').innerHTML) renderQ();
+  });
+
+  /* Konfirmasi sebelum timer berjalan */
+  $('startBtn').addEventListener('click', () => $('confirm').showModal());
+  $('notYet').addEventListener('click', () => $('confirm').close());
+  $('beginBtn').addEventListener('click', () => {
+    $('confirm').close();
+    $('startHint').textContent = 'In the app, this opens the test room.';
+  });
+
+  refresh();
+})();
+</script>
+</body>
+</html>

@@ -19,6 +19,11 @@ const nextConfig = {
   async redirects() {
     return [
       {source: "/admin/materi/baru", destination: "/admin/materials/new", permanent: true},
+      // v2.4: materi hanya dikelola admin; menu materi coach/admin institusi dihapus.
+      {source: "/coach/materials/:path*", destination: "/coach", permanent: false},
+      {source: "/coach/materials", destination: "/coach", permanent: false},
+      {source: "/institution/materials/:path*", destination: "/institution", permanent: false},
+      {source: "/institution/materials", destination: "/institution", permanent: false},
       {source: "/tes/persiapan", destination: "/tests/prepare", permanent: true},
       {source: "/tes/persiapan/:path*", destination: "/tests/prepare/:path*", permanent: true},
       {source: "/admin/bank-soal", destination: "/admin/question-bank", permanent: true},

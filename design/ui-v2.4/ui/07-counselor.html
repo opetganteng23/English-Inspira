@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counselor</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  /* /counselor  (MTS 27.4.7): tenang, ringkas, praktis. Starter prompts, kuota halus, jawaban <= 120 kata */
+  .chat { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; min-height: calc(100vh - 64px - 64px); }
+  .chat-head { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); }
+  .chat-head img { width: 44px; height: auto; }
+  .chat-head .quota { margin-left: auto; font-size: var(--fs-small); color: var(--text-muted); }
+  .log { flex: 1; display: grid; gap: var(--s3); align-content: start; padding: var(--s2) 0 var(--s5); }
+  .msg { max-width: 86%; padding: var(--s3) var(--s4); border-radius: 16px; line-height: 1.65; font-size: 16px; }
+  .msg.ai { background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; justify-self: start; }
+  .msg.me { background: var(--primary); color: var(--on-primary); border-bottom-right-radius: 4px; justify-self: end; }
+  .msg p + p { margin-top: var(--s2); }
+  .msg .acts { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s3); }
+  .typing { display: inline-flex; gap: 5px; padding: 6px 2px; }
+  .typing i { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); opacity: .4; animation: dot 1.2s infinite ease-in-out; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes dot { 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .typing i { animation: none; opacity: .7; } }
+  :root[data-motion="reduce"] .typing i { animation: none; opacity: .7; }
+  .starters { display: flex; flex-wrap: wrap; gap: var(--s2); margin-bottom: var(--s3); }
+  .starters button { min-height: 44px; padding: 0 var(--s4); border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--primary); cursor: pointer; font-size: 15px; font-weight: 500; }
+  .starters button:hover { border-color: var(--primary); background: var(--primary-soft); }
+  .composer { position: sticky; bottom: 0; background: var(--bg); padding: var(--s3) 0 var(--s4); }
+  body[data-shell="on"] .composer { bottom: 72px; }
+  @media (min-width: 761px) { body[data-shell="on"] .composer { bottom: 0; } }
+  .composer form { display: flex; gap: var(--s2); }
+  .composer .input { flex: 1; }
+  .foot-note { font-size: 13px; color: var(--text-muted); margin-top: var(--s2); }
+</style>
+</head>
+<body data-page="counselor">
+<main class="page">
+  <div class="chat">
+    <div class="chat-head">
+      <img src="assets/logo-mark.png" alt="" width="44" height="43">
+      <div><h1 style="font-size: 22px">Counselor</h1><p class="muted small">Study guidance, in short answers.</p></div>
+      <span class="quota" id="quota">12 messages left this month</span>
+    </div>
+
+    <div class="log" id="log" aria-live="polite">
+      <div class="msg ai"><p>Hi Dani. I can help you plan your study, work on test strategy, or talk through test nerves. What would you like to start with?</p></div>
+    </div>
+
+    <div class="composer">
+      <div class="starters" id="starters">
+        <button>What should I study today?</button>
+        <button>How do I manage time in Reading?</button>
+        <button>I feel nervous about the test</button>
+      </div>
+      <form id="form" autocomplete="off">
+        <label class="visually-hidden" for="msg">Your message</label>
+        <input class="input" id="msg" placeholder="Type your message" maxlength="400">
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+      <p class="foot-note">The Counselor gives study guidance. It does not replace your coach or professional support.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let left = 12;
+  const R = {
+    today: '<p>Start with <strong>Inference questions, part 2</strong>. It is about 25 minutes and it is where most of your remaining points are.</p><p>Then do the 3-question review of subject-verb agreement. Short and steady works better than one long session.</p><div class="acts"><a class="btn btn-secondary btn-sm" href="05-learn.html">Open the unit</a></div>',
+    time: '<p>For a 55-minute Reading section, a steady plan is about 11 minutes per passage.</p><p>Try this: read the questions first, skim the passage once, then answer. If a question takes more than a minute and a half, flag it and move on. You can come back at the end.</p><p>Practice this in your next simulation and notice how it feels.</p>',
+    nerves: '<p>Feeling nervous before a test is common, and it usually means you care about doing well.</p><p>Two things that help: take one slow breath before each section, and do the sample questions in the test room format so nothing feels new on the day.</p><p>Your placement is a starting point, not a pass or fail. Your coach can also plan the week before the test with you.</p><div class="acts"><a class="btn btn-secondary btn-sm" href="01-test-prepare.html">Try the sample questions</a><a class="btn btn-secondary btn-sm" href="06-coaching.html">Talk to your coach</a></div>',
+    heavy: '<p>I am sorry it feels this heavy right now. Thank you for telling me.</p><p>This is bigger than a study question, and you deserve real support. Please talk to someone you trust today, such as a friend, family member, or a counselor at your institution.</p><p>If you ever feel unsafe, contact local emergency services or a crisis line in your area. I can also let your coach know you could use a check-in.</p><div class="acts"><a class="btn btn-secondary btn-sm" href="06-coaching.html">Ask my coach for a check-in</a></div>',
+    other: '<p>Thanks for asking. I can help best with what to study next, test strategy for each section, and managing nerves.</p><p>Could you tell me which section feels hardest right now: Listening, Structure, or Reading?</p>'
+  };
+  function pick(t) {
+    t = t.toLowerCase();
+    if (/hopeless|can'?t go on|hurt myself|no point|give up on everything|want to disappear/.test(t)) return 'heavy';
+    if (/nervous|anxious|scared|worried|panic|stress|cemas|takut/.test(t)) return 'nerves';
+    if (/time|timing|manage|slow|fast|waktu/.test(t)) return 'time';
+    if (/today|study|plan|next|belajar/.test(t)) return 'today';
+    return 'other';
+  }
+  function add(cls, html) { const d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; $('log').appendChild(d); d.scrollIntoView({ block: 'end', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); return d; }
+  function send(text) {
+    text = text.trim(); if (!text) return;
+    if (left < 1) { EI.toast('You have used all messages this month. Your coach can help in the meantime.'); return; }
+    $('starters').hidden = true;
+    add('me', '').textContent = text;
+    left--; $('quota').textContent = left + (left === 1 ? ' message left' : ' messages left this month');
+    const t = add('ai', '<span class="typing" aria-label="Counselor is typing"><i></i><i></i><i></i></span>');
+    setTimeout(() => { t.innerHTML = R[pick(text)]; t.scrollIntoView({ block: 'end' }); }, 1100);
+  }
+  document.querySelectorAll('#starters button').forEach(b => b.onclick = () => send(b.textContent));
+  $('form').onsubmit = (e) => { e.preventDefault(); send($('msg').value); $('msg').value = ''; };
+})();
+</script>
+</body>
+</html>

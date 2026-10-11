@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profile</title>
+<link rel="stylesheet" href="ei-tokens.css">
+<link rel="stylesheet" href="ei-ui.css">
+<script src="ei-shell.js"></script>
+<style>
+  /* /profile  (MTS 27.8): uiPrefs milik peserta. Perubahan langsung terlihat dan tersimpan otomatis. */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--s5); align-items: start; }
+  @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+  .set { display: grid; grid-template-columns: 1fr auto; gap: var(--s4); align-items: center; padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
+  .set:last-child { border-bottom: 0; }
+  .set strong { font-weight: 500; display: block; }
+  .set .d { color: var(--text-muted); font-size: var(--fs-small); max-width: 46ch; }
+  @media (max-width: 620px) { .set { grid-template-columns: 1fr; } }
+  .group-h { margin: 0 0 var(--s2); }
+  .preview { position: sticky; top: 88px; padding: var(--s5); }
+  .preview h2 { font-size: 17px; margin-bottom: var(--s3); }
+  .preview .pass { font-size: var(--fs-read); line-height: var(--lh-read); max-width: var(--measure); }
+  .preview .opt { margin-top: var(--s4); display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--primary); background: var(--primary-soft); border-radius: var(--radius-sm); }
+  .preview .opt b { width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-size: 13px; }
+  .preview .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: var(--s4); }
+  .times { display: flex; gap: var(--s2); align-items: center; }
+  .times .input { width: 148px; min-height: 44px; }
+  .range { width: 220px; accent-color: var(--primary); }
+  .size-val { min-width: 52px; text-align: right; font-weight: 500; }
+</style>
+</head>
+<body data-page="profile">
+<main class="page">
+  <div class="page-head">
+    <h1>Profile</h1>
+    <p>Set up the app so it feels comfortable for you. Changes apply right away and save automatically.</p>
+  </div>
+
+  <div class="grid">
+    <div class="stack" style="gap: var(--s5)">
+      <section class="card" aria-labelledby="look-h">
+        <h2 id="look-h" class="group-h">Look and feel</h2>
+        <div class="set">
+          <div><strong id="lbTheme">Theme</strong><span class="d">Follows your device by default. Dark mode is easier on the eyes at night.</span></div>
+          <div class="seg" role="group" aria-labelledby="lbTheme" id="theme">
+            <button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button>
+          </div>
+        </div>
+        <div class="set">
+          <div><strong id="lbSize">Text size for reading</strong><span class="d">Used in materials and passages. The line length stays comfortable at every size.</span></div>
+          <div class="row"><input class="range" id="size" type="range" min="16" max="22" step="2" aria-labelledby="lbSize"><span class="size-val" id="sizeVal">18 px</span></div>
+        </div>
+        <div class="set">
+          <div><strong id="lbMotion">Reduce motion</strong><span class="d">Turns off animations that are not needed to understand what changed.</span></div>
+          <label class="switch"><input type="checkbox" id="motion" aria-labelledby="lbMotion"><i></i></label>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="test-h">
+        <h2 id="test-h" class="group-h">During tests</h2>
+        <div class="set">
+          <div><strong id="lbTimer">Timer</strong><span class="d">If hidden, it still appears when 5 minutes and 1 minute are left. The real time is always kept by the server.</span></div>
+          <div class="seg" role="group" aria-labelledby="lbTimer" id="timer"><button data-v="shown">Shown</button><button data-v="hidden">Hidden</button></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="study-h">
+        <h2 id="study-h" class="group-h">While you study</h2>
+        <div class="set">
+          <div><strong id="lbBreak">Break reminders</strong><span class="d">A small card, never during a test. You can always choose to keep going.</span></div>
+          <label class="switch"><input type="checkbox" id="brk" aria-labelledby="lbBreak"><i></i></label>
+        </div>
+        <div class="set" id="brkMinRow">
+          <div><strong id="lbBrkMin">Remind me after</strong><span class="d">Minutes of active learning.</span></div>
+          <select class="select" id="brkMin" aria-labelledby="lbBrkMin" style="width: 140px"><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="notif-h">
+        <h2 id="notif-h" class="group-h">Reminders</h2>
+        <div class="set">
+          <div><strong id="lbDigest">How often should we remind you?</strong><span class="d">Plan reminders come as one summary, never one email per item. At most 2 a day.</span></div>
+          <select class="select" id="digest" aria-labelledby="lbDigest" style="width: 200px"><option value="daily">Daily summary</option><option value="weekly">Weekly summary</option><option value="important_only">Important only</option></select>
+        </div>
+        <div class="set">
+          <div><strong id="lbQuiet">Quiet hours</strong><span class="d">No reminders in this window. Sign-in codes and security emails still arrive.</span></div>
+          <div class="times" role="group" aria-labelledby="lbQuiet"><input class="input" type="time" id="qs" aria-label="Quiet hours start"><span class="muted">to</span><input class="input" type="time" id="qe" aria-label="Quiet hours end"></div>
+        </div>
+      </section>
+
+      <div class="row"><button class="btn btn-secondary" id="reset">Reset to defaults</button></div>
+    </div>
+
+    <aside class="preview surface" aria-labelledby="pv-h">
+      <h2 id="pv-h">Preview</h2>
+      <p class="pass">Coral reefs cover less than one percent of the ocean floor, yet they are home to a large share of all marine species.</p>
+      <div class="opt"><b>B</b><span>A selected answer looks like this.</span></div>
+      <div class="pills"><span class="pill pill-calm">Strong</span><span class="pill pill-blue">On track</span><span class="pill pill-attention">Needs practice</span></div>
+    </aside>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let p = EI.load();
+  let t;
+  function persist() { EI.save(p); EI.apply(p); clearTimeout(t); t = setTimeout(() => EI.toast('Saved'), 350); }
+  function segSet(id, v) { $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v))); }
+  function paint() {
+    segSet('theme', p.theme); segSet('timer', p.timerDefault);
+    $('size').value = p.fontSize; $('sizeVal').textContent = p.fontSize + ' px';
+    $('motion').checked = p.reduceMotion; $('brk').checked = p.breakReminder; $('brkMin').value = String(p.breakMin);
+    $('brkMinRow').style.opacity = p.breakReminder ? 1 : .5; $('brkMin').disabled = !p.breakReminder;
+    $('digest').value = p.digest; $('qs').value = p.quietStart; $('qe').value = p.quietEnd;
+  }
+  $('theme').querySelectorAll('button').forEach(b => b.onclick = () => { p.theme = b.dataset.v; paint(); persist(); });
+  $('timer').querySelectorAll('button').forEach(b => b.onclick = () => { p.timerDefault = b.dataset.v; paint(); persist(); });
+  $('size').oninput = () => { p.fontSize = +$('size').value; paint(); persist(); };
+  $('motion').onchange = () => { p.reduceMotion = $('motion').checked; persist(); };
+  $('brk').onchange = () => { p.breakReminder = $('brk').checked; paint(); persist(); };
+  $('brkMin').onchange = () => { p.breakMin = +$('brkMin').value; persist(); };
+  $('digest').onchange = () => { p.digest = $('digest').value; persist(); };
+  $('qs').onchange = () => { p.quietStart = $('qs').value; persist(); };
+  $('qe').onchange = () => { p.quietEnd = $('qe').value; persist(); };
+  $('reset').onclick = () => { p = Object.assign({}, EI.DEF); paint(); persist(); };
+  paint();
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
-# English Inspira LMS — Master Technical Specification v2.3 (MTS)
+# English Inspira LMS — Master Technical Specification v2.4 (MTS)
 
-Versi 2.3 · Pembaruan dari MTS v2.2 · LMS persiapan TOEFL ITP berbasis level, kerja sama institusi mitra, tanpa jalur komersial · Status implementasi: produksi di english.edulyfe.id
+Versi 2.4 · Pembaruan dari MTS v2.3 · LMS persiapan TOEFL ITP berbasis level, kerja sama institusi mitra, tanpa jalur komersial · Status implementasi: produksi di english.edulyfe.id
 
 ## 0. Riwayat Perubahan
 
@@ -10,6 +10,7 @@ Versi 2.3 · Pembaruan dari MTS v2.2 · LMS persiapan TOEFL ITP berbasis level, 
 | 2.1 | Penegasan bahwa coach adalah penentu jadwal dan peserta hanya memilih slot yang telah diterbitkan. |
 | 2.2 | Perubahan keamanan materi HTML: JavaScript materi tidak lagi dijalankan di origin/hak aplikasi utama. Materi interaktif dijalankan dalam iframe sandbox terisolasi dengan CSP ketat dan jembatan analitik terbatas. |
 | 2.3 | Diselaraskan dengan implementasi (Oktober 2026): seluruh antarmuka dan URL berbahasa Inggris; nama produk **English Inspira** dengan logo Inspira dan font Poppins; landing page publik; login **password atau OTP**; **daftar mandiri wajib kode institusi** + verifikasi email; lupa/reset password; **mode pemeliharaan** dengan login khusus admin `/admin/login`; keluaran Claude terstruktur lewat tool use; deploy **PM2 tanpa Docker**. Lihat bagian 0.2. |
+| 2.4 | **Kenyamanan belajar dan psikologi UI** (bagian 27): prinsip berbasis teori (beban kognitif, motivasi, kecemasan tes, umpan balik), design token tenang, mode fokus, ruang tes yang menurunkan kecemasan, penyajian hasil yang tidak menghakimi, panduan microcopy, notifikasi dengan jam tenang, aksesibilitas, parameter `ui_comfort`, metrik kenyamanan, dan kriteria penerimaan tambahan. Tidak mengubah aturan skor, keamanan, atau RBAC. |
 
 ## 0.1 Perubahan dari v1
 
@@ -97,6 +98,8 @@ Tiga jalur di atas satu fondasi:
 
 **Aturan wajib**
 
+- **Konten hanya dikelola `admin` pusat** (keputusan pemilik, v2.4): bank soal, audio, materi (rich text maupun HTML), lampiran, tes, course, unit, dan remedial map. `coach` dan `inst_admin` tidak dapat membuat atau mengubah konten; coach memandu peserta lewat sesi, catatan, dan item study plan. Tujuannya standar skor dan kualitas materi sama di semua institusi. Materi ber-`institutionId` yang sudah ada tetap terlihat oleh peserta institusinya dan dikelola admin.
+
 - `institutionId` wajib untuk `participant`, `coach`, `inst_admin`. Hanya `admin` tanpa institusi.
 - Middleware `requireRole([...])` dan `scopeByInstitution(user)` dipanggil di **setiap** handler. Filter institusi wajib di level query, bukan hanya di UI.
 - Satu coach melayani satu institusi. Coach yang melatih dua mitra memakai dua akun.
@@ -131,6 +134,7 @@ Semua angka di bawah **tidak ditulis mati di kode**. Disimpan di `levels` dan `c
 | `plan_deadline_days` | Prioritas tinggi 7, sedang 14 | Deadline otomatis study plan |
 | `counselor_quota` | 30 pesan per bulan (placeholder) | Batas Konselor AI |
 | `maintenance` | `{on: false, message: ""}` | Mode pemeliharaan, diubah lewat saklar di dasbor admin (bagian 20.1), bukan halaman Parameter |
+| `ui_comfort` | Jam tenang 21:00-07:00, maks 2 pengingat/hari, pengingat istirahat 45 menit, maks 3 item hari ini | Kenyamanan belajar (bagian 27.8) |
 
 Override per institusi (`institutions.configOverrides`) disiapkan di skema tetapi **tidak dipakai di v2.0**.
 
@@ -605,7 +609,7 @@ Notifikasi dalam aplikasi (`notifications`) dan email memakai template yang sama
 
 ```
 Auth        POST /api/auth/request-otp · verify-otp · login · register · register/verify · forgot-password · reset-password · logout
-            GET /api/me (termasuk hasPassword) · POST /api/me/consent · POST /api/me/password
+            GET /api/me (termasuk hasPassword) · POST /api/me/consent · POST /api/me/password · GET/PATCH /api/me/ui-prefs
 Pemeliharaan GET /api/maintenance (publik) · GET/PUT /api/admin/maintenance (admin)
 Onboarding  POST /api/inst/participants/import · /invites · GET /api/inst/participants
 Tes         GET /api/tests · POST /api/tests/:id/start · PATCH /api/attempts/:id
@@ -627,7 +631,7 @@ Admin       /api/admin/{dashboard,institutions,users,levels,params,questions,cou
 Institusi   /api/inst/{summary,participants,invites,reports}
 ```
 
-Semua endpoint memakai `requireRole` dan `scopeByInstitution`. Endpoint penulisan materi `html` hanya untuk `admin`.
+Semua endpoint memakai `requireRole` dan `scopeByInstitution`. **Semua endpoint penulisan konten** (materi rich text dan HTML, lampiran, audio, bank soal, tes, course, unit, remedial map) **hanya untuk `admin`**.
 
 ## 20. Keamanan
 
@@ -663,7 +667,7 @@ app/                                   # proyek Next.js (repo: opetganteng23/Eng
 │  ├─ (participant)/ home, tests, tests/prepare/[id], results, learn, materials, coaching, counselor, itp,
 │  │                 certificates, upload-result, profile, help
 │  ├─ (room)/test-room/[id]
-│  ├─ (coach)/coach/ schedule, sessions, participants/[id], counselor, materials
+│  ├─ (coach)/coach/ schedule, sessions, participants/[id], counselor
 │  ├─ (admin)/admin/ institutions, participants, users, question-bank, tests, courses, materials, ai-counselor,
 │  │                 proctoring, coaching, itp-schedule, parameters, settings
 │  ├─ (inst)/institution/ participants, schedule, reports, materials
@@ -686,7 +690,7 @@ app/                                   # proyek Next.js (repo: opetganteng23/Eng
 | --- | --- | --- |
 | Publik | `/`, `/sign-in`, `/register`, `/forgot-password`, `/reset-password`, `/consent`, `/privacy`, `/terms`, `/verify/:number`, `/admin/login`, `/maintenance` | `/masuk`, `/persetujuan`, `/privasi`, `/syarat`, `/verifikasi` |
 | Peserta | `/home`, `/tests`, `/tests/prepare/:id`, `/test-room/:id`, `/results`, `/learn`, `/materials`, `/coaching`, `/counselor`, `/itp`, `/certificates`, `/upload-result`, `/profile`, `/help` | `/beranda`, `/tes`, `/tes/persiapan`, `/ruang-tes`, `/hasil`, `/belajar`, `/materi`, `/konselor`, `/sertifikat`, `/unggah-hasil`, `/profil`, `/bantuan` |
-| Coach | `/coach`, `/coach/schedule`, `/coach/sessions`, `/coach/participants/:id`, `/coach/counselor`, `/coach/materials` | `jadwal`, `sesi`, `peserta`, `konselor`, `materi` |
+| Coach | `/coach`, `/coach/schedule`, `/coach/sessions`, `/coach/participants/:id`, `/coach/counselor` | `jadwal`, `sesi`, `peserta`, `konselor`, `materi` |
 | Admin institusi | `/institution`, `/institution/participants`, `/institution/schedule`, `/institution/reports`, `/institution/materials` | `/institusi/…` |
 | Admin | `/admin`, `/admin/institutions`, `/admin/participants`, `/admin/users`, `/admin/question-bank`, `/admin/tests`, `/admin/courses`, `/admin/materials`, `/admin/ai-counselor`, `/admin/proctoring`, `/admin/coaching`, `/admin/itp-schedule`, `/admin/parameters`, `/admin/settings` | `bank-soal`, `institusi`, `jadwal-itp`, `konselor-ai`, `kursus`, `materi`, `parameter`, `pengaturan`, `pengguna`, `peserta`, `tes` |
 
@@ -822,3 +826,316 @@ node scripts/smoke.mjs   # uji asap end-to-end (dev server :3100, DB in-memory);
   - CTA: **Create account** (kode institusi), **Sign in**, dan **Contact us** untuk institusi (email/WhatsApp dari Pengaturan, cadangan inspiratekno.com).
 - Klaim hanya fitur yang memang ada: tidak menyebut pengingat WhatsApp atau proctoring webcam. Proctoring hanya layar penuh dan perpindahan tab.
 - Pengguna yang sudah masuk diarahkan ke dasbor perannya. Logout kembali ke landing page. Halaman masuk punya tautan "Back to home".
+
+## 27. Kenyamanan Belajar dan Psikologi UI
+
+Belajar untuk TOEFL ITP adalah kegiatan yang panjang dan menekan: ada skor, ada level, ada deadline, ada tes berwaktu. Antarmuka tidak boleh menambah tekanan itu. Bagian ini menetapkan bagaimana setiap layar dirancang agar peserta merasa **tenang, mampu, dan tahu langkah berikutnya**. Semua aturan di sini bersifat tampilan dan bahasa; aturan skor, keamanan, RBAC, dan timer server **tidak berubah**.
+
+### 27.1 Landasan teori
+
+Setiap keputusan desain di bagian ini mengacu ke salah satu teori berikut. Bila ada usulan UI baru, tanyakan: teori mana yang mendukungnya, dan apakah ia melanggar salah satunya.
+
+| Teori | Inti | Konsekuensi untuk UI English Inspira |
+| --- | --- | --- |
+| **Cognitive Load Theory** (Sweller) | Memori kerja terbatas. Beban yang tidak berhubungan dengan materi (*extraneous load*) mengurangi kapasitas untuk belajar | Satu tugas utama per layar, navigasi dan dekorasi minimal saat belajar dan tes, tanpa animasi yang bersaing dengan materi |
+| **Self-Determination Theory** (Deci & Ryan) | Motivasi bertahan bila tiga kebutuhan terpenuhi: otonomi, kompetensi, keterhubungan | Peserta diberi pilihan (urutan item plan, mode tampilan), progres yang terlihat, dan rasa didampingi coach dan Konselor AI |
+| **Attentional Control Theory** (Eysenck dkk.) dan riset kecemasan tes | Kecemasan menguras sumber daya perhatian sehingga kinerja turun, terutama pada tugas berat seperti Structure dan Reading | Ruang tes tanpa sinyal ancaman (merah berkedip, hitung mundur besar), bahasa yang menenangkan, latihan kondisi tes sebelum placement |
+| **Feedback Intervention Theory** (Kluger & DeNisi) dan model umpan balik Hattie & Timperley | Umpan balik yang mengarah ke diri ("kamu lemah") cenderung menurunkan kinerja; umpan balik pada tugas dan proses ("topik ini butuh latihan, mulai dari unit ini") membantu | Hasil disajikan per topik dan langkah berikutnya, bukan label tentang orangnya |
+| **Mindset dan atribusi** (Dweck; Weiner) | Keyakinan bahwa kemampuan bisa tumbuh, dan atribusi kegagalan ke faktor yang bisa diubah, menjaga usaha | Bahasa "belum" dan "butuh latihan", penyebab yang dapat diubah (strategi, waktu), bukan bakat |
+| **Flow** (Csikszentmihalyi) | Fokus penuh muncul saat tantangan seimbang dengan kemampuan dan umpan balik jelas | Course sesuai level, kuis pendek, umpan balik segera setelah selesai |
+| **Goal-setting** (Locke & Latham) dan **goal-gradient** (Hull; Kivetz dkk.) | Tujuan spesifik dan dekat lebih memotivasi; usaha naik saat tujuan terasa dekat | Study plan ditampilkan sebagai 1 sampai 3 tugas hari ini, progres menuju level berikutnya ditampilkan sebagai jarak yang menyempit |
+| **Spacing dan retrieval practice** (Ebbinghaus; Roediger & Karpicke) | Latihan mengingat yang diberi jeda menghasilkan ingatan lebih awet dibanding membaca ulang | Pengingat ulasan topik setelah jeda, kuis singkat sebagai latihan, bukan hanya ujian |
+| **Peak-end rule** (Kahneman) | Pengalaman diingat dari puncak dan akhirnya | Setiap sesi belajar dan tes ditutup dengan layar penutup yang hangat dan satu langkah jelas |
+| **Hick's law** dan **progressive disclosure** | Waktu memutuskan naik dengan jumlah pilihan | Satu tombol aksi utama per layar, detail analisis disembunyikan di balik "See details" |
+| **Calm Technology** (Weiser & Brown) | Teknologi yang baik memberi informasi di pinggir perhatian dan hanya memanggil ke tengah saat perlu | Notifikasi dibatasi, dikelompokkan, dan menghormati jam tenang |
+
+> Catatan empiris: teknik seperti Pomodoro dan psikologi warna punya bukti yang lebih lemah dibanding teori di atas. Keduanya dipakai sebagai **pilihan yang dapat diatur peserta**, bukan klaim ilmiah di UI.
+
+### 27.2 Prinsip desain (wajib di semua layar peserta)
+
+1. **Satu hal pada satu waktu.** Setiap layar punya satu aksi utama yang jelas (tombol primer tunggal). Aksi lain tampil sebagai tombol sekunder atau tautan.
+2. **Selalu ada langkah berikutnya.** Tidak ada layar buntu. Hasil, error, dan halaman kosong selalu menawarkan apa yang bisa dilakukan sekarang.
+3. **Umpan balik pada tugas, bukan pada orang.** Tidak ada label seperti "weak student" atau "failed". Yang dinilai adalah topik dan pengerjaan.
+4. **Tenang secara visual.** Warna lembut, ruang kosong yang lega, gerak minimal. Warna kuat hanya untuk aksi utama dan informasi yang benar-benar penting.
+5. **Peserta memegang kendali.** Mode tampilan, ukuran teks, mode fokus, pengingat istirahat, dan jam tenang notifikasi dapat diatur di Profil.
+6. **Prediktabel.** Posisi navigasi, tombol, dan pola interaksi sama di semua halaman. Tidak ada kejutan seperti modal yang muncul sendiri saat sedang membaca materi.
+7. **Jujur tanpa menekan.** Data tetap akurat (skor, deadline, kuota). Yang diatur adalah cara penyajiannya, bukan isinya.
+
+### 27.3 Design token tenang
+
+Semua nilai disimpan sebagai CSS variable / token Tailwind, bukan ditulis langsung di komponen.
+
+**Warna** (diambil dari logo English Inspira: navy ENGLISH, biru INSPIRA, emas pesawat kertas)
+
+| Token | Terang | Gelap | Pemakaian |
+| --- | --- | --- | --- |
+| `--bg` | `#F5F8FD` (putih kebiruan, bukan putih murni) | `#0C1424` | Latar halaman, mengurangi silau saat belajar lama |
+| `--surface` | `#FFFFFF` | `#131D31` | Kartu dan area konten |
+| `--text` | `#14223B` | `#E6ECF7` | Teks utama (kontras ≥ 7:1 untuk bacaan panjang) |
+| `--text-muted` | `#55627A` | `#9FB0CC` | Teks pendukung (kontras ≥ 4.5:1) |
+| `--primary` | Navy-biru `#123B8C` | `#7FB2F5` | Aksi utama, tautan, pilihan terpilih |
+| `--blue` | `#1E78D6` | `#5AA2F0` | Progres dan jalur menuju level berikutnya |
+| `--gold` / `--attention` | Emas `#E0A526` (isian), `#8A5A00` (teks) | `#F0BE4A` / `#F0C766` | Butuh perhatian: topik prioritas, deadline dekat, penanda flag. Emas dipakai sebagai isian, bukan teks kecil |
+| `--calm` | Teal `#1E7F6E` | `#5CC2A8` | Selesai, kuat |
+| `--critical` | Merah redup `#B4483C` | `#E58478` | **Hanya** untuk error sistem dan tindakan yang tidak bisa dibatalkan |
+
+Logo memakai PNG transparan. Pada mode gelap logo ditempatkan di atas chip putih agar warna navy ENGLISH tetap terbaca.
+
+- **Merah tidak dipakai untuk jawaban salah, topik lemah, atau item plan terlambat.** Penanda salah memakai `--attention` + ikon dan teks, karena merah memicu respons ancaman pada konteks evaluasi.
+- Status tidak boleh hanya dibedakan warna: selalu ada ikon dan teks (aksesibilitas buta warna).
+
+**Tipografi** (Poppins saja, sesuai bagian 26; bobot 400, 500, dan 600, di-host lokal agar tidak bergantung pada CDN)
+
+| Unsur | Ukuran | Line height | Catatan |
+| --- | --- | --- | --- |
+| Teks materi dan passage Reading | 18 px (dapat diubah 16-22 px) | 1.7 | Lebar baris maksimal 68 karakter (`max-width: 68ch`) |
+| Teks UI | 16 px | 1.5 | Minimum 14 px untuk label sekunder |
+| Stem soal | 18 px, weight 500 | 1.6 | Opsi jawaban 17 px, area klik ≥ 48 px tinggi |
+| Judul halaman | 24-28 px, weight 600 | 1.3 | Satu H1 per halaman |
+
+Poppins punya bentuk huruf lebar; untuk passage panjang, letter-spacing `0.005em` dan paragraf diberi jarak `1em`.
+
+**Ruang dan bentuk**: skala jarak 4/8/12/16/24/32/48 px; radius kartu 12 px; bayangan sangat tipis; maksimal tiga tingkat hierarki visual per layar.
+
+**Gerak**: durasi 150-250 ms, easing `ease-out`, hanya untuk transisi status (buka panel, centang selesai). Tanpa animasi berulang, parallax, atau konfeti otomatis. `prefers-reduced-motion` dihormati penuh, dan peserta dapat mematikan animasi di Profil.
+
+### 27.4 Penerapan per layar
+
+#### 27.4.1 Beranda peserta (`/home`)
+
+Beranda menjawab tiga pertanyaan, dalam urutan ini: **Apa yang saya kerjakan hari ini? Seberapa jauh saya? Kapan sesi coaching berikutnya?**
+
+1. **Kartu "Today"**: 1 sampai 3 item dari study plan (urut prioritas dan deadline), masing-masing dengan perkiraan durasi ("About 15 min"). Satu tombol primer **Continue** ke item pertama. Item lain dapat dipilih (otonomi).
+2. **Kartu progres**: level saat ini dan jarak ke level berikutnya sebagai bilah yang menyempit ("38 points to Advanced"), ditambah jumlah topik yang membaik bulan ini. Tidak menampilkan peringkat atau perbandingan dengan peserta lain.
+3. **Kartu coaching**: sesi terdekat atau ajakan memilih slot, dengan sisa kuota ditulis netral ("3 sessions left").
+4. Sisanya (riwayat, semua analisis, Konselor AI) di bawah lipatan atau di menu.
+
+Sapaan menyesuaikan waktu lokal ("Good morning, Dani"). Tidak ada banner promosi atau notifikasi bertumpuk di beranda.
+
+#### 27.4.2 Placement test dan simulasi
+
+Kecemasan tertinggi terjadi di sini. Tujuannya menurunkan ancaman tanpa mengubah kondisi tes.
+
+**Sebelum mulai** (`/tests/prepare/:id`)
+- Bingkai placement sebagai **titik awal, bukan ujian lulus/gagal**: "This test helps us find the right starting point for you. There is no pass or fail."
+- Tampilkan struktur tes (tiga bagian, durasi, jumlah soal) dan aturan audio "plays once" **sebelum** mulai, agar tidak ada kejutan.
+- Cek audio dan koneksi (sudah ada di bagian 11) dibuat sebagai daftar centang yang tenang, bukan peringatan.
+- Tawarkan **latihan 3 soal contoh** dalam format ruang tes yang sama, tidak dinilai. Paparan terhadap format mengurangi ketidakpastian.
+- Satu ajakan bernapas singkat yang dapat dilewati ("Take a slow breath. Ready when you are."). Tanpa teks panjang tentang kecemasan.
+
+**Di ruang tes** (`/test-room/:id`)
+- Mode fokus otomatis: header aplikasi, menu, notifikasi dalam aplikasi, dan Konselor AI disembunyikan.
+- **Tampilan timer** (timer tetap dipegang server):
+  - Bawaan: sisa waktu bagian ini dalam teks kecil di pojok (`18:42 left in Structure`).
+  - Peserta dapat menyembunyikan timer dengan satu klik; timer muncul sendiri pada 5 menit dan 1 menit terakhir.
+  - Tidak ada warna merah, kedipan, atau hitung mundur detik besar. Pada 5 menit terakhir teks berubah ke `--attention` dengan pesan tenang "5 minutes left. Keep going at your pace."
+- Navigator soal menandai *answered*, *not yet answered*, dan *flagged for review* (peserta boleh menandai soal untuk ditinjau). Tidak ada penanda yang menghakimi.
+- Autosave terlihat halus ("Saved") agar peserta tidak khawatir kehilangan jawaban. Bila koneksi putus: "You are offline. Your answers are safe and will sync when you are back." Waktu tetap berjalan sesuai aturan server, dan itu disampaikan dengan jujur.
+- Peringatan proctoring kepada peserta (keluar layar penuh, pindah tab) ditulis sebagai pengingat, bukan tuduhan: "Please stay in this tab during the test." Detail flag hanya terlihat admin.
+- Konfirmasi submit menyebut jumlah soal belum dijawab secara netral dan menawarkan kembali: "You have 3 unanswered questions. Review them or submit now."
+
+**Setelah submit**
+- Layar penutup segera: "Well done for finishing. Your results are being prepared." Ini titik akhir pengalaman (*peak-end*), jadi dibuat hangat dan singkat.
+
+#### 27.4.3 Penyajian hasil dan analisis (`/results`)
+
+Urutan tampil mengikuti model umpan balik *Where am I going? How am I going? Where to next?* (Hattie & Timperley):
+
+1. **Ringkasan satu kalimat** yang berorientasi tugas: "Your estimated score is 505. You are in Intermediate, 38 points from Advanced."
+2. **Yang sudah berjalan baik** (1 sampai 3 topik terkuat). Ini bukan hiburan; ia memberi bukti kompetensi yang nyata dari data.
+3. **Fokus berikutnya** (maksimal 3 topik prioritas), masing-masing dengan satu tombol ke unit remedial. Label status:
+
+| Status internal | Label tampil | Bukan |
+| --- | --- | --- |
+| `strong` | Strong | |
+| `ok` | On track | |
+| `weak` | Needs practice | "Weak" |
+| `priority` | Focus next | "Critical", "Failing" |
+| `insufficient` | Not enough data yet | |
+
+4. **Perbandingan dengan diri sendiri** (percobaan sebelumnya), bukan dengan orang lain. Penurunan ditulis netral: "Down 6 points from your last simulation. Scores often vary between attempts."
+5. **Detail** (per soal, waktu, soal yang membuat stuck, pembahasan) disembunyikan di balik "See details" (*progressive disclosure*).
+6. Narasi Claude tampil saat siap; sambil menunggu, angka sudah tampil (bagian 13.3) dengan placeholder tenang "Your personal feedback is on its way."
+
+Soal "stuck" disajikan sebagai "Questions that took longer", tanpa kata stuck.
+
+**Aturan narasi AI tambahan** (ditambahkan ke system prompt analisis dan Konselor):
+- Bicara tentang topik, strategi, dan langkah, bukan tentang sifat peserta.
+- Penyebab yang disebut harus dapat diubah (strategi membaca, manajemen waktu, konsep yang belum dilatih).
+- Maksimal satu kalimat pengakuan usaha, tanpa pujian berlebihan.
+- Akhiri dengan satu langkah konkret yang bisa dimulai hari ini.
+- Kata yang dilarang di keluaran: *fail, failed, poor, bad, weak student, lazy, behind others*. Validator memeriksa dan meminta ulang bila muncul.
+
+#### 27.4.4 Materi dan unit (`/learn`, `/materials`)
+
+- **Mode baca**: konten di tengah, lebar 68ch, sidebar dapat dilipat, header mengecil saat menggulir.
+- Indikator posisi di unit ("Part 2 of 4") dan perkiraan durasi tiap item, karena ketidakpastian durasi menurunkan kemauan memulai.
+- Blok interaktif memberi umpan balik segera dan informatif: jawaban benar disertai alasan singkat; jawaban salah memakai `--attention`, menunjukkan jawaban benar dan penjelasannya, serta ajakan mencoba soal serupa.
+- Penanda halaman otomatis: kembali ke materi melanjutkan dari posisi terakhir.
+- **Pengingat istirahat** (opsional, bawaan nyala): setelah `break_reminder_min` menit belajar aktif, muncul kartu kecil yang tidak memblokir: "You've been learning for 45 minutes. A short break helps you remember more." Tombol: *Take a 5 min break* / *Keep going*. Tidak pernah tampil di ruang tes.
+- **Ulasan berjeda**: topik yang membaik dijadwalkan untuk ulasan singkat 3 soal setelah 2, 7, dan 21 hari, muncul sebagai item ringan di kartu Today ("Quick review: 3 questions").
+
+#### 27.4.5 Study plan (`/home`, `/learn`)
+
+- Item aktif maksimal 5 (sudah ada di bagian 15), dan beranda hanya menampilkan 1 sampai 3 untuk hari ini.
+- Status `late` ditampilkan sebagai **"Past due"** dengan warna `--attention` dan tombol "Pick a new date" (jika diizinkan kebijakan) atau "Start now". Tidak ada merah, tidak ada hitungan hari terlambat yang besar.
+- Item selesai mendapat centang dengan transisi singkat dan kalimat "Nice, one step closer." Penyelesaian plan penuh mendapat layar penutup yang sedikit lebih hangat, tanpa konfeti bawaan.
+- **Konsistensi tanpa hukuman**: ditampilkan "Learning days this month: 9", bukan streak harian yang bisa putus. Streak yang hilang memicu rasa kehilangan (*loss aversion*) dan sering membuat orang berhenti.
+
+#### 27.4.6 Coaching (`/coaching`)
+
+- Kalender menampilkan hanya slot yang bisa dipilih; slot yang tidak bisa dipilih tidak ditampilkan atau disamarkan dengan alasan yang jelas ("Full", "Booking closed").
+- Sebelum booking, aturan kuota dan batas izin 24 jam disampaikan sekali, singkat, dalam bahasa biasa.
+- Setelah sesi, catatan coach yang dibagikan muncul dengan judul "Notes from your coach" dan langsung terhubung ke item plan yang terkait. Ini memperkuat rasa didampingi (keterhubungan dalam SDT).
+- Pembatalan oleh coach disampaikan dengan permintaan maaf dan penegasan bahwa kuota tidak berkurang.
+
+#### 27.4.7 Konselor AI (`/counselor`)
+
+- Persona: tenang, ringkas, praktis. Jawaban maksimal sekitar 120 kata kecuali diminta lebih panjang.
+- Saran awal (*starter prompts*) yang mengurangi kebingungan memulai: "What should I study today?", "How do I manage time in Reading?", "I feel nervous about the test".
+- Untuk ungkapan cemas tentang tes: validasi singkat, satu strategi praktis (misal latihan kondisi tes, strategi per bagian), dan saran berbicara dengan coach. Konselor **tidak** berperan sebagai konselor kesehatan mental. Bila pesan menunjukkan tekanan berat di luar konteks belajar, Konselor menjawab dengan empati, tidak melanjutkan diagnosis, dan menyarankan berbicara dengan orang yang dipercaya atau layanan profesional di institusinya; thread diberi `flag` untuk ditinjau coach/admin sesuai kebijakan privasi mitra (lihat 27.8).
+- Kuota pesan ditampilkan halus ("12 messages left this month"), dan peringatan hanya saat tersisa ≤ 5.
+
+#### 27.4.8 Error, kosong, dan memuat
+
+| Situasi | Pola | Contoh teks |
+| --- | --- | --- |
+| Memuat | Skeleton yang menyerupai tata letak akhir, tanpa spinner penuh layar bila < 1 detik | |
+| Kosong | Penjelasan singkat + satu aksi | "No results yet. Your first results appear after the placement test." *Start placement test* |
+| Error jaringan | Tidak menyalahkan, menjelaskan yang aman, menawarkan coba lagi | "We couldn't load this page. Your progress is saved. Try again" |
+| Error input | Di samping kolom, spesifik, tanpa huruf kapital semua | "Use at least 8 characters." |
+| Sesi habis | Simpan pekerjaan dulu, lalu minta masuk | "Please sign in again to continue. Your work is saved." |
+
+#### 27.4.9 Coach, admin institusi, dan admin
+
+Prinsip yang sama berlaku dengan penekanan berbeda:
+- **Coach**: laporan pra-sesi diawali kekuatan peserta lalu fokus sesi, agar sesi dibuka dengan nada positif. Daftar peserta "Past due" diberi label netral, tidak dirangking.
+- **inst_admin**: statistik agregat tanpa peringkat individu yang bisa dipakai mempermalukan peserta.
+- **Admin**: kepadatan informasi boleh lebih tinggi (pekerjaan administratif berbeda dari belajar), tetapi token warna dan bahasa tetap sama.
+
+### 27.5 Panduan microcopy
+
+Semua teks tampilan tetap berbahasa Inggris, tanpa tanda panah dan tanpa em dash (bagian 26).
+
+| Hindari | Gunakan | Alasan |
+| --- | --- | --- |
+| You failed this quiz | You scored 55. The pass mark is 70. Let's review and try again. | Fakta + langkah, bukan label |
+| Wrong! | Not quite. The answer is B because... | Informatif, tidak mengancam |
+| Your weaknesses | Focus next | Berorientasi tugas |
+| You are behind schedule | 2 items are past due. Start with the first one? | Spesifik dan dapat ditindaklanjuti |
+| Warning: tab switch detected | Please stay in this tab during the test. | Pengingat, bukan tuduhan |
+| Time is running out! | 5 minutes left. Keep going at your pace. | Menurunkan ancaman |
+| Error 500 | Something went wrong on our side. Your progress is saved. | Menenangkan dan jujur |
+| Low quota! | 1 coaching session left. | Netral |
+
+Aturan umum: kalimat pendek (≤ 20 kata), kata kerja aktif, sapaan "you", tanpa huruf kapital semua, tanpa lebih dari satu tanda seru per layar, tanpa emoji di konteks tes dan hasil.
+
+### 27.6 Notifikasi yang tenang
+
+| Aturan | Nilai bawaan |
+| --- | --- |
+| Jam tenang (tanpa email/notifikasi pengingat; zona waktu peserta, bawaan Asia/Jakarta) | 21:00-07:00 |
+| Batas notifikasi pengingat per hari | 2 (email transaksional seperti OTP, reset password, konfirmasi booking tidak dihitung) |
+| Pengelompokan | Pengingat deadline plan digabung dalam satu ringkasan harian, bukan satu email per item |
+| Nada | Ajakan, bukan peringatan: "You have 2 items planned for this week." |
+| Kendali | Peserta dapat memilih ringkasan harian, mingguan, atau hanya yang penting di Profil |
+
+Pengingat sesi coaching H-1 tetap dikirim di luar jam tenang (dijadwalkan ulang ke 07:00 bila jatuh di jam tenang). OTP dan email keamanan tidak terkena jam tenang.
+
+### 27.7 Aksesibilitas
+
+- Target **WCAG 2.2 AA** untuk semua halaman peserta, kontras teks bacaan panjang ≥ 7:1.
+- Navigasi keyboard penuh di ruang tes (pilih opsi dengan tombol 1-4 atau A-D, `N`/`P` untuk soal berikutnya/sebelumnya), fokus selalu terlihat.
+- Area sentuh ≥ 48×48 px; tata letak ruang tes nyaman di ponsel (passage dan soal dapat dipisah tab).
+- Ukuran teks dapat diperbesar sampai 200% tanpa kehilangan fungsi.
+- Transkrip dan teks alternatif untuk media di luar mode tes.
+- Mode gelap dan terang mengikuti sistem, dapat dipaksa di Profil.
+
+### 27.8 Data, parameter, dan privasi
+
+**`config_params.ui_comfort`** (dapat diubah admin)
+
+```ts
+ui_comfort: {
+  quietHours: { start: '21:00', end: '07:00' },
+  maxRemindersPerDay: 2,
+  breakReminderMin: 45,          // 0 = mati
+  timerDefault: 'shown',         // 'shown' | 'hidden'
+  timerAlwaysShowAtSec: [300, 60],
+  todayMaxItems: 3,
+  spacedReviewDays: [2, 7, 21],
+  bannedFeedbackWords: ['fail', 'failed', 'poor', 'bad', 'lazy', 'weak student', 'behind others']
+}
+```
+
+**`users.uiPrefs`** (milik peserta, diatur di Profil)
+
+```ts
+uiPrefs?: { theme: 'system'|'light'|'dark'; fontSize: 16|18|20|22; reduceMotion: boolean;
+            timerDefault: 'shown'|'hidden'; breakReminder: boolean;
+            reminderDigest: 'daily'|'weekly'|'important_only'; quietHours?: {start, end} }
+```
+
+Endpoint: `GET/PATCH /api/me/ui-prefs` (Zod, hanya pemilik).
+
+**Privasi**: tidak ada pelacakan suasana hati wajib. Survei kenyamanan (27.9) bersifat opsional, anonim di laporan agregat, tidak ditampilkan ke `inst_admin` per individu, dan tidak dikirim ke Claude. Thread Konselor yang ditandai karena tekanan berat hanya dapat dibaca peran yang ditetapkan dalam persetujuan data dan setiap akses dicatat di `audit_logs`.
+
+### 27.9 Mengukur kenyamanan
+
+Kenyamanan diukur, bukan diasumsikan. Metrik dipantau di dasbor admin per bulan.
+
+| Metrik | Cara | Target awal |
+| --- | --- | --- |
+| **System Usability Scale (SUS)** | 10 butir, ditawarkan sekali per 3 bulan setelah sesi belajar | ≥ 75 |
+| **Single Ease Question** | 1 butir (1-7) setelah placement dan simulasi pertama: "How easy was this test to take?" | Rata-rata ≥ 5.5 |
+| **Beban kerja persepsi** | Versi singkat NASA-TLX (mental demand, frustration) setelah simulasi, opsional | Frustration turun antar simulasi |
+| Penyelesaian item plan tepat waktu | Dari `study_plans` | Naik per bulan |
+| Kembali dalam 7 hari setelah hasil buruk | Dari `learning_events`: peserta yang skornya turun lalu tetap belajar | Mendekati peserta yang skornya naik |
+| Drop-off di tengah materi | `material_open` tanpa `material_close` atau unit tidak lanjut | Turun |
+| Rasio thread Konselor bertopik cemas | Dari `flag` dan klasifikasi ringan | Dipantau, bukan target |
+
+Survei ditampilkan tidak lebih dari sekali per minggu per peserta, selalu dapat dilewati, dan tidak pernah di tengah tes atau materi.
+
+**Uji dengan pengguna**: sebelum rilis setiap perubahan besar, uji *think-aloud* dengan 5 sampai 8 peserta dari minimal dua institusi, dan satu putaran uji ruang tes di ponsel kelas menengah.
+
+### 27.10 Kriteria penerimaan tambahan
+
+- Tidak ada warna `--critical` (merah) pada jawaban salah, topik `weak`/`priority`, atau item plan `late`; status selalu disertai ikon dan teks.
+- Setiap layar peserta memiliki tepat satu tombol primer; layar hasil, kosong, dan error selalu menawarkan langkah berikutnya.
+- Ruang tes: header, menu, notifikasi dalam aplikasi, dan Konselor tersembunyi; timer dapat disembunyikan dan muncul sendiri pada 5 menit dan 1 menit terakhir; tidak ada animasi berkedip. Sisa waktu tetap mengikuti server.
+- Halaman persiapan placement menyebut "no pass or fail", struktur tes, aturan audio, dan menyediakan latihan 3 soal yang tidak dinilai.
+- Layar hasil menampilkan berurutan: ringkasan, yang berjalan baik, fokus berikutnya (≤ 3), perbandingan dengan diri sendiri; detail di balik "See details"; tidak ada perbandingan dengan peserta lain.
+- Narasi AI yang mengandung kata di `bannedFeedbackWords` ditolak validator dan dibuat ulang.
+- Beranda menampilkan ≤ `todayMaxItems` item hari ini dengan perkiraan durasi.
+- Tidak ada pengingat terkirim di jam tenang (kecuali transaksional dan keamanan); pengingat ≤ `maxRemindersPerDay`; pengingat deadline digabung dalam satu ringkasan.
+- `prefers-reduced-motion` dan `uiPrefs.reduceMotion` mematikan semua animasi non-esensial.
+- Halaman peserta lulus pemeriksaan otomatis aksesibilitas (axe) tanpa pelanggaran serius atau kritis; ruang tes dapat diselesaikan hanya dengan keyboard.
+- Teks passage dan materi memakai lebar ≤ 68ch dan line height ≥ 1.6; ukuran teks dapat diubah 16-22 px dan tersimpan di `uiPrefs`.
+- Pengingat istirahat tidak pernah muncul di ruang tes dan tidak memblokir konten.
+
+### 27.11 Urutan pengerjaan
+
+| Tahap | Isi | Alasan urutan |
+| --- | --- | --- |
+| 1 | Design token, tipografi, mode gelap, `uiPrefs` | Fondasi semua layar, perubahan murah dan berdampak luas |
+| 2 | Ruang tes dan halaman persiapan | Titik kecemasan tertinggi |
+| 3 | Layar hasil dan aturan narasi AI | Menentukan bagaimana peserta memaknai skornya |
+| 4 | Beranda "Today", study plan, microcopy | Motivasi harian |
+| 5 | Notifikasi jam tenang dan ringkasan | Membutuhkan perubahan job (bagian 18) |
+| 6 | Pengingat istirahat, ulasan berjeda, survei SUS/SEQ | Penyempurnaan dan pengukuran |
+
+### 27.12 Referensi
+
+- Sweller, J. (1988). Cognitive load during problem solving. *Cognitive Science*, 12(2).
+- Deci, E. L., & Ryan, R. M. (2000). The "what" and "why" of goal pursuits. *Psychological Inquiry*, 11(4).
+- Eysenck, M. W., Derakshan, N., Santos, R., & Calvo, M. G. (2007). Anxiety and cognitive performance: Attentional control theory. *Emotion*, 7(2).
+- Kluger, A. N., & DeNisi, A. (1996). The effects of feedback interventions on performance. *Psychological Bulletin*, 119(2).
+- Hattie, J., & Timperley, H. (2007). The power of feedback. *Review of Educational Research*, 77(1).
+- Dweck, C. S. (2006). *Mindset*. Random House. Weiner, B. (1985). An attributional theory of achievement motivation and emotion. *Psychological Review*, 92(4).
+- Csikszentmihalyi, M. (1990). *Flow*. Harper & Row.
+- Locke, E. A., & Latham, G. P. (2002). Building a practically useful theory of goal setting. *American Psychologist*, 57(9). Kivetz, R., Urminsky, O., & Zheng, Y. (2006). The goal-gradient hypothesis resurrected. *Journal of Marketing Research*, 43(1).
+- Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning. *Psychological Science*, 17(3).
+- Kahneman, D., et al. (1993). When more pain is preferred to less. *Psychological Science*, 4(6).
+- Weiser, M., & Brown, J. S. (1996). Designing calm technology. *PowerGrid Journal*.
+- Brooke, J. (1996). SUS: A quick and dirty usability scale. Hart, S. G., & Staveland, L. E. (1988). Development of NASA-TLX.
+- W3C (2023). Web Content Accessibility Guidelines (WCAG) 2.2.
