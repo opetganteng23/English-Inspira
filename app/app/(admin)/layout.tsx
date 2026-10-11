@@ -21,6 +21,7 @@ const nav: NavGroup[] = [
   { label: "Operations", items: [
     { href: "/admin/coaching", label: "Coaching Monitor" },
     { href: "/admin/itp-schedule", label: "ITP Schedule & Scores" },
+    { href: "/admin/cycles", label: "Program Cycles" },
     { href: "/admin/scoring", label: "Scoring Profiles" },
     { href: "/admin/parameters", label: "System Parameters" },
     { href: "/admin/audit", label: "Audit Log" },

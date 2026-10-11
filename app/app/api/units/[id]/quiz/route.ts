@@ -1,4 +1,5 @@
 import { LIVE, assertUnitAccess } from "@/lib/course-access";
+import { cycleState } from "@/lib/cycles";
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
@@ -16,13 +17,15 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const course = unit ? await Course.findOne({ _id: unit.courseId, ...LIVE, levelId: me.currentLevelId ?? undefined }).lean() : null;
     if (!unit || !course || !unit.quizTestId) throw new HttpError(404, "Quiz not found");
     await assertUnitAccess(me._id, unit, course);
+    const cs = await cycleState(me.institutionId);
+    if (cs.blockedReason) throw new HttpError(403, cs.blockedReason);
     const test = await Test.findOne({ _id: unit.quizTestId, active: true, kind: "quiz" }).lean();
     if (!test) throw new HttpError(404, "Quiz not found");
 
     const running = await Attempt.findOne({ userId: me._id, testId: test._id, status: "in_progress" });
     if (running) return NextResponse.json({ attemptId: String(running._id), resumed: true });
     const now = new Date();
-    const a = await Attempt.create({ userId: me._id, institutionId: me.institutionId, testId: test._id, unitId: unit._id, kind: "quiz", startedAt: now, sectionStartedAt: now });
+    const a = await Attempt.create({ userId: me._id, institutionId: me.institutionId, testId: test._id, unitId: unit._id, programCycleId: cs.active?._id, kind: "quiz", startedAt: now, sectionStartedAt: now });
     return NextResponse.json({ attemptId: String(a._id) }, { status: 201 });
   } catch (e) {
     return handleError(e);

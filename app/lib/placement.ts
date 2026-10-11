@@ -6,6 +6,7 @@ import { audit } from "./audit";
 import { notify } from "./notify";
 import { User } from "@/models/User";
 import { CoachingQuota } from "@/models/Config";
+import { cycleState } from "./cycles";
 import type { AttemptDoc } from "@/models/Test";
 
 /**
@@ -26,15 +27,20 @@ export async function applyPlacement(attempt: HydratedDocument<AttemptDoc>) {
 
   user.currentLevelId = level._id;
   user.currentScoreEst = attempt.scoreEst;
+  const cs = await cycleState(user.institutionId);
+  const cycleId = cs.active?._id;
   user.placementAttemptId = attempt._id;
+  user.placementCycleId = cycleId;
   user.placementRetakeAllowed = false;
   if (changed) user.levelHistory.push({ levelId: level._id, at: new Date(), reason: "placement" } as never);
   await user.save();
 
   let quota = await CoachingQuota.findOne({ userId: user._id, active: true });
-  if (user.institutionId && (!quota || changed)) {
+  // Periode baru: kuota diatur ulang penuh dari kategori placement terbaru; sisa kuota periode lama hangus.
+  const newCycle = !!cycleId && String(quota?.programCycleId ?? "") !== String(cycleId);
+  if (user.institutionId && (!quota || changed || newCycle)) {
     if (quota) await CoachingQuota.updateMany({ userId: user._id, active: true }, { active: false }); // sisa kuota lama hangus
-    quota = await CoachingQuota.create({ userId: user._id, institutionId: user.institutionId, levelId: level._id, total: level.coachingQuota });
+    quota = await CoachingQuota.create({ userId: user._id, institutionId: user.institutionId, levelId: level._id, total: level.coachingQuota, ...(cycleId ? { programCycleId: cycleId } : {}) });
   }
   await enqueueMail(user.email, "placement_result", { score: attempt.scoreEst, level: level.name, quota: quota?.total ?? level.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/home` });
   await notify(user._id, "placement_result", { title: `Placement result: ${level.name} level`, body: `Estimated score ${attempt.scoreEst}. Coaching quota ${quota?.total ?? level.coachingQuota} sessions.`, href: "/home" }, String(attempt._id));

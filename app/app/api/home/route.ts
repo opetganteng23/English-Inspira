@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cycleState, placementNeeded } from "@/lib/cycles";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { getLevels } from "@/lib/config";
@@ -33,11 +34,14 @@ export async function GET() {
     const next = level ? levels.find((l) => l.order === level.order + 1) : undefined;
     const last = attempts[attempts.length - 1];
 
-    const placementTest = !u?.placementAttemptId ? await Test.findOne({ kind: "placement", active: true }).select("_id").lean() : null;
+    const cs = await cycleState(u?.institutionId);
+    const needPlace = !u?.placementAttemptId || placementNeeded(u, cs);
+    const placementTest = needPlace ? await Test.findOne({ kind: "placement", active: true }).select("_id").lean() : null;
     // Langkah berikutnya mengikuti kondisi nyata akun (urutan prioritas).
     let step: { title: string; body: string; cta: string; href: string } | null = null;
     if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/test-room/${inProgress._id}` };
-    else if (!u?.placementAttemptId) step = { title: "Start with the placement test", body: "Taken once, in ITP format. The result sets your level, coaching quota, and initial study plan.", cta: "Start placement", href: placementTest ? `/tests/prepare/${placementTest._id}` : "/tests" };
+    else if (cs.blockedReason) step = { title: "Program period closed", body: cs.blockedReason, cta: "Open learning", href: "/learn" };
+    else if (needPlace) step = { title: "Start with the placement test", body: "Taken once per program period, in ITP format. The result sets your level, coaching quota, and initial study plan.", cta: "Start placement", href: placementTest ? `/tests/prepare/${placementTest._id}` : "/tests" };
     else step = { title: "Keep learning", body: "Do exercises or simulations to track your progress.", cta: "Open tests", href: "/tests" };
 
     return NextResponse.json({

@@ -32,6 +32,7 @@ const userSchema = new Schema(
     currentScoreEst: Number,
     placementAttemptId: { type: Schema.Types.ObjectId, ref: "Attempt" },
     placementRetakeAllowed: { type: Boolean, default: false }, // diizinkan admin/coach
+    placementCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle" }, // periode tempat placement terakhir diambil
     levelHistory: [{ _id: false, levelId: { type: Schema.Types.ObjectId, ref: "Level" }, at: Date, reason: String }],
     // Profil opsional
     nik: String,

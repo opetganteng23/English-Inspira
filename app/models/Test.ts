@@ -34,6 +34,7 @@ const attemptSchema = new Schema(
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },
     testId: { type: Schema.Types.ObjectId, ref: "Test", required: true },
     unitId: { type: Schema.Types.ObjectId, ref: "Unit" },
+    programCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle", index: true }, // periode saat attempt dimulai
     kind: String, // salinan Test.kind
     startedAt: { type: Date, required: true },
     finishedAt: Date,

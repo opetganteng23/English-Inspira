@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cycleState, placementNeeded } from "@/lib/cycles";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
@@ -31,7 +32,7 @@ export async function GET() {
       emailPrefs: { reminders: u.emailPrefs?.reminders !== false, progress: u.emailPrefs?.progress !== false }, avatarAssetId: u.avatarAssetId ? String(u.avatarAssetId) : null,
       needsConsent: u.status === "invited",
       level: level ? { id: String(level._id), name: level.name } : null, scoreEst: u.currentScoreEst ?? null,
-      needsPlacement: u.role === "participant" && !u.placementAttemptId,
+      needsPlacement: u.role === "participant" && placementNeeded(u, await cycleState(u.institutionId)),
     });
   } catch (e) {
     return handleError(e);

@@ -27,6 +27,7 @@ const bookingSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     coachId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", required: true, index: true },
+    programCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle" },
     // booked → (cancelled | present | absent | excused). Kuota dipakai menurut quota_rules dan idempoten lewat quotaCharged.
     status: { type: String, enum: ["booked", "cancelled", "present", "absent", "excused"], default: "booked" },
     quotaCharged: { type: Boolean, default: false },

@@ -3,6 +3,7 @@ import { connectDB } from "./db";
 import { getParam } from "./config";
 import { Course, RemedialMap, Unit, UnitProgress } from "@/models/Course";
 import { LIVE, unitAccess } from "./course-access";
+import { cycleState } from "./cycles";
 import type { AttemptDoc } from "@/models/Test";
 
 /** Unit selesai bila semua materi wajib selesai dan (bila ada kuis) kuisnya lulus. */
@@ -44,6 +45,7 @@ export async function findRemedialUnit(levelId: Types.ObjectId | string | null |
 export async function markMaterialDone(user: { _id: Types.ObjectId; institutionId?: Types.ObjectId | null; currentLevelId?: Types.ObjectId | null }, materialId: Types.ObjectId | string) {
   await connectDB();
   if (!user.currentLevelId) return;
+  if ((await cycleState(user.institutionId)).blockedReason) return; // periode ditutup: materi hanya dibaca, progres tidak berubah
   const courses = await Course.find({ levelId: user.currentLevelId, ...LIVE }).select("_id prerequisiteCourseIds").lean();
   const units = await Unit.find({ courseId: { $in: courses.map((c) => c._id) }, materialIds: materialId, active: true }).lean();
   for (const u of units) {

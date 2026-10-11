@@ -8,6 +8,7 @@ import { enqueueMail } from "./mailq";
 import { bookableLeft, canCancel, canMarkAttendance, canRegister, chargesQuota, overlaps, type AttendanceStatus } from "./coaching-rules";
 import { Booking, CoachSlot, type SlotDoc } from "@/models/Coaching";
 import { CoachingQuota } from "@/models/Config";
+import { cycleState, placementNeeded } from "./cycles";
 import { User } from "@/models/User";
 
 const APP = () => process.env.APP_URL ?? "http://localhost:3000";
@@ -118,6 +119,10 @@ export async function bookSlot(user: Actor & { currentLevelId?: Types.ObjectId |
   const booking = await getParam("booking");
   if (!canRegister(new Date(), s.startsAt, booking.registerBeforeHours)) throw new HttpError(409, `Registration closes ${booking.registerBeforeHours} hours before the session`);
 
+  const cs = await cycleState(user.institutionId);
+  if (cs.blockedReason) throw new HttpError(403, cs.blockedReason);
+  const u = await User.findById(user._id).select("placementAttemptId placementCycleId").lean();
+  if (u && placementNeeded(u, cs)) throw new HttpError(403, "Take the placement test for the current program period first. Your coaching quota is set from its result.");
   const q = await activeQuota(user._id);
   if (!q) throw new HttpError(403, "No coaching quota yet. Finish the placement test first.");
   const mine = await Booking.find({ userId: user._id, status: "booked" }).lean();
@@ -128,7 +133,7 @@ export async function bookSlot(user: Actor & { currentLevelId?: Types.ObjectId |
   const got = await CoachSlot.findOneAndUpdate({ _id: s._id, status: "published", $expr: { $lt: ["$booked", "$capacity"] } }, { $inc: { booked: 1 } }, { new: true });
   if (!got) throw new HttpError(409, "The slot is full");
   try {
-    const b = await Booking.create({ slotId: s._id, userId: user._id, coachId: s.coachId, institutionId: s.institutionId });
+    const b = await Booking.create({ slotId: s._id, userId: user._id, coachId: s.coachId, institutionId: s.institutionId, programCycleId: cs.active?._id });
     const coach = await User.findById(s.coachId).select("name").lean();
     const me = await User.findById(user._id).select("email").lean();
     if (me) await enqueueMail(me.email, "booking_confirmed", { coach: coach?.name ?? "Coach", ...mailBase(s) });

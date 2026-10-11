@@ -3,6 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { canStartTest } from "@/lib/test-access";
+import { cycleState, placementNeeded } from "@/lib/cycles";
 import { Test, Attempt } from "@/models/Test";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -22,11 +23,12 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       const taken = await Attempt.countDocuments({ userId: user._id, testId: test._id });
       if (taken >= test.maxAttempts!) throw new HttpError(403, `You have used all ${test.maxAttempts} attempt${test.maxAttempts === 1 ? "" : "s"} for this test.`);
     }
-    const gate = canStartTest(user, test);
+    const cs = await cycleState(user.institutionId);
+    const gate = canStartTest(user, test, { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs) });
     if (!gate.ok) throw new HttpError(403, gate.reason ?? "This test cannot be taken yet");
 
     const now = new Date();
-    const attempt = await Attempt.create({ userId: user._id, institutionId: user.institutionId, testId: test._id, kind: test.kind, startedAt: now, sectionStartedAt: now });
+    const attempt = await Attempt.create({ userId: user._id, institutionId: user.institutionId, testId: test._id, kind: test.kind, programCycleId: cs.active?._id, startedAt: now, sectionStartedAt: now });
     return NextResponse.json({ attemptId: String(attempt._id) }, { status: 201 });
   } catch (e) {
     return handleError(e);

@@ -1,4 +1,5 @@
 import { LIVE, courseLocks, courseStartedAt, unitDrip } from "@/lib/course-access";
+import { cycleState, placementNeeded } from "@/lib/cycles";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
@@ -11,7 +12,7 @@ export async function GET() {
   try {
     const me = await requireRole(["participant"]);
     await connectDB();
-    if (!me.currentLevelId) return NextResponse.json({ needsPlacement: true, courses: [] });
+    if (!me.currentLevelId || placementNeeded(me, await cycleState(me.institutionId))) return NextResponse.json({ needsPlacement: true, courses: [] });
     const courses = await Course.find({ levelId: me.currentLevelId, ...LIVE }).sort({ order: 1, createdAt: 1 }).lean();
     const units = await Unit.find({ courseId: { $in: courses.map((c) => c._id) }, active: true }).sort({ order: 1, createdAt: 1 }).lean();
     const [mods, locks] = await Promise.all([

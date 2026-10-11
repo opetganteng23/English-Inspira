@@ -27,6 +27,7 @@ const quotaSchema = new Schema(
     used: { type: Number, default: 0 },
     active: { type: Boolean, default: true }, // kuota level lama dinonaktifkan saat naik level
     lowWarnedAt: Date, // peringatan "kuota hampir habis" sudah dikirim
+    programCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle", index: true }, // kuota berlaku untuk satu periode
   },
   { timestamps: true }
 );
