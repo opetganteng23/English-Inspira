@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QuestionTypesDialog, type QType } from "@/components/QuestionTypesDialog";
 import { uploadImage } from "@/lib/compress-image";
 
 type Row = { _id: string; section: string; type: string; stem: string; status: string; difficulty: string };
@@ -28,7 +29,10 @@ export default function BankSoal() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [f, setF] = useState({ section: "", status: "", q: "" });
+  const [f, setF] = useState({ section: "", type: "", status: "", q: "" });
+  const [types, setTypes] = useState<QType[]>([]);
+  const [secCounts, setSecCounts] = useState<Record<string, number>>({});
+  const [typesDlg, setTypesDlg] = useState(false);
   const [err, setErr] = useState("");
   const [form, setForm] = useState<Form | null>(null);
   const [groupDlg, setGroupDlg] = useState(false);
@@ -40,7 +44,11 @@ export default function BankSoal() {
     try { const d = await api(`/api/admin/questions?${sp}`); setRows(d.items); setPages(d.pages); setTotal(d.total); setErr(""); }
     catch (e) { setErr((e as Error).message); }
   }, [page, f]);
+  const loadTypes = useCallback(async () => {
+    try { const d = await api("/api/admin/question-types"); setTypes(d.types); setSecCounts(d.sectionCounts); } catch { /* daftar jenis opsional bagi tampilan */ }
+  }, []);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadTypes(); }, [loadTypes]);
 
   async function edit(id: string) {
     try {
@@ -61,16 +69,27 @@ export default function BankSoal() {
           <p className="text-sm text-ink-soft">{total} questions · used for Placement, Simulation, Practice, and Unit quizzes. Published questions must have a skill + topic tag.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button onClick={() => setTypesDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Manage types</button>
           <button onClick={() => setImportDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Import Excel/CSV</button>
           <button onClick={() => setGroupDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">+ Audio/passage group</button>
           <button onClick={() => setForm(empty(f.section || "structure"))} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ New question</button>
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-1 rounded-xl bg-white p-1 text-sm" role="tablist" aria-label="Category">
+        {[["", "All"], ...Object.entries(SECTION)].map(([k, n]) => (
+          <button key={k || "all"} role="tab" aria-selected={f.section === k} onClick={() => { setPage(1); setF({ ...f, section: k, type: "" }); }}
+            className={`flex items-center gap-2 rounded-lg px-4 py-2 font-semibold transition ${f.section === k ? "bg-navy text-white" : "text-ink-soft hover:bg-canvas"}`}>
+            {n}<span className={`rounded-full px-2 py-0.5 text-xs ${f.section === k ? "bg-white/20" : "bg-canvas"}`}>{k ? secCounts[k] ?? 0 : Object.values(secCounts).reduce((x, y) => x + y, 0)}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap gap-3">
         <input className="field max-w-xs" placeholder="Search question text" value={f.q} onChange={(e) => { setPage(1); setF({ ...f, q: e.target.value }); }} />
-        <select className="field w-auto" value={f.section} onChange={(e) => { setPage(1); setF({ ...f, section: e.target.value }); }}>
-          <option value="">All sections</option>{Object.entries(SECTION).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        <select className="field w-auto" aria-label="Question type" value={f.type} onChange={(e) => { setPage(1); setF({ ...f, type: e.target.value }); }}>
+          <option value="">All types</option>
+          {types.filter((t) => !f.section || t.section === f.section).map((t) => <option key={t.id} value={t.name}>{f.section ? t.name : `${SECTION[t.section]}: ${t.name}`} ({t.count})</option>)}
         </select>
         <select className="field w-auto" value={f.status} onChange={(e) => { setPage(1); setF({ ...f, status: e.target.value }); }}>
           <option value="">All statuses</option><option value="draft">Draft</option><option value="review">Review</option><option value="published">Published</option>
@@ -81,7 +100,7 @@ export default function BankSoal() {
 
       <div className="overflow-x-auto rounded-2xl border border-line bg-white">
         <table className="w-full text-left text-sm">
-          <thead className="bg-canvas text-xs uppercase text-ink-soft"><tr><th className="p-3">Section</th><th>Type</th><th>Question</th><th>Status</th><th /></tr></thead>
+          <thead className="bg-canvas text-xs uppercase text-ink-soft"><tr><th className="p-3">Category</th><th>Type</th><th>Question</th><th>Status</th><th /></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r._id} className="border-t border-line">
@@ -103,7 +122,8 @@ export default function BankSoal() {
         </div>
       </div>
 
-      {form && <Editor form={form} onClose={() => setForm(null)} onSaved={() => { setForm(null); load(); }} onNewGroup={() => setGroupDlg(true)} />}
+      {form && <Editor types={types} onTypesChanged={loadTypes} form={form} onClose={() => setForm(null)} onSaved={() => { setForm(null); load(); }} onNewGroup={() => setGroupDlg(true)} />}
+      {typesDlg && <QuestionTypesDialog types={types} onClose={() => setTypesDlg(false)} onChanged={() => { loadTypes(); load(); }} />}
       {groupDlg && <GroupDialog onClose={() => setGroupDlg(false)} />}
       {importDlg && <ImportDialog onClose={() => { setImportDlg(false); load(); }} />}
     </div>
@@ -122,7 +142,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 const Label = ({ t, children }: { t: string; children: React.ReactNode }) => <label className="flex flex-col gap-1.5 text-sm font-semibold text-navy">{t}{children}</label>;
 
-function Editor({ form, onClose, onSaved, onNewGroup }: { form: Form; onClose: () => void; onSaved: () => void; onNewGroup: () => void }) {
+function Editor({ form, types, onTypesChanged, onClose, onSaved, onNewGroup }: { form: Form; types: QType[]; onTypesChanged: () => void; onClose: () => void; onSaved: () => void; onNewGroup: () => void }) {
   const [v, setV] = useState(form);
   const [groups, setGroups] = useState<Group[]>([]);
   const [err, setErr] = useState("");
@@ -152,8 +172,8 @@ function Editor({ form, onClose, onSaved, onNewGroup }: { form: Form; onClose: (
     <Modal title={v.id ? "Edit question" : "New question"} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Label t="Section"><select className="field" value={v.section} onChange={(e) => { set("section", e.target.value); set("groupId", ""); }}>{Object.entries(SECTION).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Label>
-          <Label t="Question type"><input className="field font-normal" placeholder="e.g. subject-verb, inference" value={v.type} onChange={(e) => set("type", e.target.value)} /></Label>
+          <Label t="Category"><select className="field" value={v.section} onChange={(e) => { set("section", e.target.value); set("groupId", ""); }}>{Object.entries(SECTION).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Label>
+          <TypePicker section={v.section} value={v.type} types={types} onChange={(t) => set("type", t)} onCreated={onTypesChanged} />
         </div>
         <Label t="Group (audio / passage)">
           <div className="flex gap-2">
@@ -344,7 +364,7 @@ function GroupDialog({ onClose }: { onClose: () => void }) {
     <Modal title="Audio / passage group" onClose={onClose}>
       <div className="flex flex-col gap-4">
         <p className="text-sm text-ink-soft">One audio or passage can be used by several questions. Create a group here, then select it when creating questions.</p>
-        <Label t="Section"><select className="field" value={section} onChange={(e) => setSection(e.target.value)}>{Object.entries(SECTION).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Label>
+        <Label t="Category"><select className="field" value={section} onChange={(e) => setSection(e.target.value)}>{Object.entries(SECTION).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></Label>
         <Label t="Instruction"><input className="field font-normal" placeholder="Listen to the conversation." value={instruction} onChange={(e) => setInstruction(e.target.value)} /></Label>
         {section === "listening" ? (
           <div className="flex flex-col gap-3 rounded-xl border border-line p-4">
@@ -374,5 +394,41 @@ function GroupDialog({ onClose }: { onClose: () => void }) {
         </div>
       </div>
     </Modal>
+  );
+}
+
+
+/** Jenis soal dipilih dari daftar kategori; "+ New type" membuat jenis baru tanpa meninggalkan form. */
+function TypePicker({ section, value, types, onChange, onCreated }: { section: string; value: string; types: QType[]; onChange: (t: string) => void; onCreated: () => void }) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [err, setErr] = useState("");
+  const list = types.filter((t) => t.section === section && (t.active || t.name.toLowerCase() === value.toLowerCase()));
+  const known = list.some((t) => t.name.toLowerCase() === value.toLowerCase());
+  async function create() {
+    setErr("");
+    try { await api("/api/admin/question-types", { method: "POST", ...json({ section, name }) }); onChange(name.trim()); setAdding(false); setName(""); onCreated(); }
+    catch (e) { setErr((e as Error).message); }
+  }
+  return (
+    <Label t="Question type">
+      {adding ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input className="field font-normal" autoFocus placeholder="New type name" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+            <button type="button" className="btn-solid shrink-0" disabled={!name.trim()} onClick={create}>Add</button>
+            <button type="button" className="btn-outline shrink-0" onClick={() => { setAdding(false); setErr(""); }}>Cancel</button>
+          </div>
+          {err && <span role="alert" className="text-xs font-normal text-red-700">{err}</span>}
+        </div>
+      ) : (
+        <select className="field font-normal" value={known ? list.find((t) => t.name.toLowerCase() === value.toLowerCase())!.name : value} onChange={(e) => (e.target.value === "__new" ? setAdding(true) : onChange(e.target.value))}>
+          <option value="">Choose a type</option>
+          {!known && value && <option value={value}>{value} (not in the list yet)</option>}
+          {list.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
+          <option value="__new">+ New type…</option>
+        </select>
+      )}
+    </Label>
   );
 }

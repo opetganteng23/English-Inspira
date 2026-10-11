@@ -40,3 +40,20 @@ export const Question: Model<QuestionDoc> =
   (mongoose.models.Question as Model<QuestionDoc>) || mongoose.model<QuestionDoc>("Question", questionSchema);
 export const QuestionGroup: Model<GroupDoc> =
   (mongoose.models.QuestionGroup as Model<GroupDoc>) || mongoose.model<GroupDoc>("QuestionGroup", groupSchema);
+
+// Jenis soal yang dikelola admin per kategori (section), mis. "Short conversations (Part A)" atau "Inference".
+// Soal menyimpan nama jenis di `type`; mengganti nama jenis ikut mengubah soalnya.
+const typeSchema = new Schema(
+  {
+    section: { type: String, enum: SECTIONS, required: true },
+    name: { type: String, required: true, trim: true, maxlength: 80 },
+    description: { type: String, trim: true, maxlength: 300 },
+    order: { type: Number, default: 0 },
+    active: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+typeSchema.index({ section: 1, name: 1 }, { unique: true, collation: { locale: "en", strength: 2 } });
+export type QuestionTypeDoc = InferSchemaType<typeof typeSchema> & { _id: mongoose.Types.ObjectId };
+export const QuestionType: Model<QuestionTypeDoc> =
+  (mongoose.models.QuestionType as Model<QuestionTypeDoc>) || mongoose.model<QuestionTypeDoc>("QuestionType", typeSchema);

@@ -6,6 +6,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { userCreateInput } from "@/lib/admin-schemas";
 import { createMember } from "@/lib/participants";
+import { splitName } from "@/lib/person-name";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
 
@@ -16,10 +17,10 @@ export async function GET() {
   try {
     await requireRole(["admin"]);
     await connectDB();
-    const [users, insts] = await Promise.all([User.find({ role: { $in: ["admin", "inst_admin", "coach"] } }).sort({ createdAt: -1 }).lean(), Institution.find().select("name").lean()]);
+    const [users, insts] = await Promise.all([User.find({ role: { $in: ["admin", "inst_admin", "coach"] }, deletedAt: { $exists: false } }).sort({ createdAt: -1 }).lean(), Institution.find().select("name").lean()]);
     const name = new Map(insts.map((i) => [String(i._id), i.name]));
     return NextResponse.json({
-      users: users.map((u) => ({ id: String(u._id), name: u.name ?? null, email: u.email, role: u.role, status: u.status, institution: u.institutionId ? name.get(String(u.institutionId)) ?? null : null, institutionId: u.institutionId ? String(u.institutionId) : null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt })),
+      users: users.map((u) => ({ id: String(u._id), name: u.name ?? null, givenName: u.givenName ?? splitName(u.name).givenName, surname: u.surname ?? splitName(u.name).surname, phone: u.phone ?? "", email: u.email, role: u.role, status: u.status, institution: u.institutionId ? name.get(String(u.institutionId)) ?? null : null, institutionId: u.institutionId ? String(u.institutionId) : null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt })),
     });
   } catch (e) {
     return handleError(e);

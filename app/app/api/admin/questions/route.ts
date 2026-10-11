@@ -4,9 +4,12 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { Question } from "@/models/Question";
+import { registerQuestionType } from "@/lib/question-types";
 import { questionSchema } from "@/lib/admin-schemas";
 import { AuditLog } from "@/models/AuditLog";
 
+
+const escapeRegex = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export async function GET(req: Request) {
   try {
@@ -14,7 +17,9 @@ export async function GET(req: Request) {
     await connectDB();
     const sp = new URL(req.url).searchParams;
     const filter: Record<string, unknown> = {};
-    for (const k of ["section", "status", "type", "difficulty"]) if (sp.get(k)) filter[k] = sp.get(k);
+    for (const k of ["section", "status", "difficulty"]) if (sp.get(k)) filter[k] = sp.get(k);
+    // Jenis dicocokkan tanpa membedakan huruf besar/kecil (soal lama bisa menulisnya berbeda dari daftar jenis).
+    if (sp.get("type")) filter.type = { $regex: "^" + escapeRegex(sp.get("type")!) + "$", $options: "i" };
     // ?ids=a,b,c: ambil soal tertentu (untuk perakit tes), urutan mengikuti ids.
     const ids = (sp.get("ids") ?? "").split(",").filter((x) => /^[0-9a-f]{24}$/.test(x)).slice(0, 200);
     if (sp.has("ids")) {
@@ -42,6 +47,7 @@ export async function POST(req: Request) {
     const body = questionSchema.parse(await req.json());
     await connectDB();
     const q = await Question.create({ ...body, groupId: body.groupId ?? undefined });
+    await registerQuestionType(body.section, body.type);
     await AuditLog.create({ actorId: admin._id, action: "question.create", target: String(q._id) });
     return NextResponse.json({ id: String(q._id) }, { status: 201 });
   } catch (e) {

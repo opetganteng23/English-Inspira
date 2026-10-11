@@ -75,5 +75,16 @@ export const userCreateInput = z.object({
 });
 export const userPatchInput = z.object({
   name: z.string().trim().max(100).optional(),
+  givenName: z.string().trim().min(1).max(60).optional(),
+  surname: z.string().trim().max(60).optional(),
+  email: z.email().max(200).optional(),
+  phone: z.string().trim().regex(/^$|^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional(),
   status: z.enum(["active", "disabled"]).optional(),
 });
+/** Aksi admin atas akun (internal maupun peserta): reset password dan hapus wajib beralasan untuk audit. */
+export const userActionInput = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("reset_link") }),
+  z.object({ action: z.literal("temp_password") }),
+  z.object({ action: z.literal("resend_invitation") }),
+]);
+export const deleteInput = z.object({ reason: z.string().trim().min(3, "Enter a reason (at least 3 characters)").max(300) });

@@ -6,6 +6,8 @@ import { audioBucket, verifyAudioToken } from "@/lib/audio-store";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { Audio } from "@/models/Audio";
 import { QuestionGroup } from "@/models/Question";
+import { Material } from "@/models/Material";
+import { readMp3, storeMp3 } from "@/lib/audio-upload";
 import { NextResponse } from "next/server";
 
 /** Streaming dengan HTTP Range. Akses: signed URL (peserta saat tes) atau sesi admin. */
@@ -49,18 +51,55 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   return new Response(Readable.toWeb(stream) as ReadableStream, { status, headers });
 }
 
+/** Ubah judul dan/atau transkrip. */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     await requireRole(["admin"]);
-    const body = await req.json();
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Audio not found");
+    const body = await req.json().catch(() => ({}));
+    const set: Record<string, string> = {};
+    if (typeof body.title === "string") {
+      const t = body.title.trim();
+      if (!t) throw new HttpError(400, "Title cannot be empty");
+      if (t.length > 120) throw new HttpError(400, "Title is too long (maximum 120 characters)");
+      set.title = t;
+    }
+    if (typeof body.transcript === "string") {
+      if (body.transcript.length > 20000) throw new HttpError(400, "Transcript is too long (maximum 20,000 characters)");
+      set.transcript = body.transcript;
+    }
+    if (body.kind !== undefined) {
+      if (!["short_conversation", "longer_conversation", "talk", "other"].includes(body.kind)) throw new HttpError(400, "Invalid audio kind");
+      set.kind = body.kind;
+    }
+    if (typeof body.description === "string") set.description = body.description.trim().slice(0, 500);
+    if (typeof body.source === "string") set.source = body.source.trim().slice(0, 200);
     await connectDB();
-    const a = await Audio.findByIdAndUpdate(
-      params.id,
-      { ...(typeof body.title === "string" && { title: body.title.trim() }), ...(typeof body.transcript === "string" && { transcript: body.transcript }) },
-      { new: true }
-    );
+    const a = await Audio.findByIdAndUpdate(params.id, { $set: set }, { new: true });
     if (!a) throw new HttpError(404, "Audio not found");
     return NextResponse.json({ ok: true });
+  } catch (e) {
+    return handleError(e);
+  }
+}
+
+/** Ganti berkas MP3 tanpa memutus tautan: soal dan materi tetap memakai id yang sama. */
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  try {
+    await requireRole(["admin"]);
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Audio not found");
+    await connectDB();
+    const a = await Audio.findById(params.id);
+    if (!a) throw new HttpError(404, "Audio not found");
+    const { buf, durationSec, sha256, name } = await readMp3((await req.formData()).get("file"));
+    const same = await Audio.findOne({ sha256, _id: { $ne: a._id } }).select("title");
+    if (same) throw new HttpError(409, `An identical file already exists as "${same.title}". Use that audio instead.`);
+    const oldId = a.gridFsId;
+    const gridFsId = await storeMp3(buf, name, sha256);
+    a.gridFsId = gridFsId; a.size = buf.length; a.durationSec = durationSec; a.sha256 = sha256;
+    await a.save();
+    await (await audioBucket()).delete(oldId).catch(() => {}); // berkas lama dibersihkan; kegagalan di sini tidak membatalkan penggantian
+    return NextResponse.json({ ok: true, durationSec });
   } catch (e) {
     return handleError(e);
   }
@@ -69,12 +108,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
     await requireRole(["admin"]);
+    if (!isValidObjectId(params.id)) throw new HttpError(404, "Audio not found");
     await connectDB();
     const a = await Audio.findById(params.id);
     if (!a) throw new HttpError(404, "Audio not found");
-    // Audio yang masih dipakai grup soal tidak boleh dihapus.
-    const used = await QuestionGroup.exists({ audioId: a._id });
-    if (used) throw new HttpError(409, "The audio is still used by questions");
+    // Audio yang masih dipakai grup soal atau materi tidak boleh dihapus (akan memutus pemutar).
+    const [groups, materials] = await Promise.all([
+      QuestionGroup.countDocuments({ audioId: a._id }),
+      Material.countDocuments({ contentHtml: { $regex: `data-audio-id="${String(a._id)}"` } }),
+    ]);
+    if (groups || materials) throw new HttpError(409, `The audio is still used by ${[groups && `${groups} question group${groups > 1 ? "s" : ""}`, materials && `${materials} material${materials > 1 ? "s" : ""}`].filter(Boolean).join(" and ")}. Remove it there first.`);
     await (await audioBucket()).delete(a.gridFsId);
     await a.deleteOne();
     return NextResponse.json({ ok: true });

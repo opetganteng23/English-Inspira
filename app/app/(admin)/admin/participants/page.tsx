@@ -5,10 +5,11 @@ import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
+import { EditAccountDialog, ResetPasswordDialog, DeleteAccountDialog } from "@/components/AccountDialogs";
 
 type Row = { id: string; name: string | null; email: string; status: string; institution: string | null; level: string | null; scoreEst: number | null; placementDone: boolean; quota: { used: number; total: number } | null; tests: number; lastAt: string | null; lastLoginAt: string | null };
 type Detail = {
-  profile: { id: string; name?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean };
+  profile: { id: string; name?: string; givenName?: string; surname?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean };
   enrollment: { status: string; startsAt: string; expiresAt: string | null } | null;
   quotas: { level: string; used: number; total: number; active: boolean }[];
   attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number }[];
@@ -60,6 +61,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const [reason, setReason] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [dlg, setDlg] = useState<"edit" | "reset" | "delete" | null>(null);
   const run = async (body: Record<string, unknown>, ok?: string) => {
     setErr(""); setMsg("");
     try { await api(`/api/admin/participants/${id}`, { json: body }); if (ok) setMsg(ok); reload(); } catch (e) { setErr((e as Error).message); }
@@ -85,18 +87,25 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           <section><h3 className="font-semibold text-navy">Actions</h3>
             <div className="mt-2 flex flex-wrap gap-2">
+              <button className="btn-outline !min-h-[40px]" onClick={() => setDlg("edit")}>Edit profile</button>
+              <button className="btn-outline !min-h-[40px]" onClick={() => setDlg("reset")}>Reset password</button>
+              <button className="btn-danger !min-h-[40px]" onClick={() => setDlg("delete")}>Delete account</button>
               {p.status === "invited" && <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "resend_invitation" }, "Invitation resent.")}>Resend invitation</button>}
               {p.status === "disabled" ? <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "enable" }, "Account activated.")}>Activate</button> : <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "disable" }, "Account deactivated.")}>Deactivate</button>}
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]"><input aria-label="Reason" className="field" placeholder="Reason (required for the actions on the right)" value={reason} onChange={(e) => setReason(e.target.value)} />
               <button className="btn-outline" disabled={!p.placementDone || p.placementRetakeAllowed || reason.trim().length < 3} onClick={() => run({ action: "allow_placement_retake", reason }, "Placement may be retaken once.")}>Allow placement retake</button>
-              <button className="btn-danger" disabled={reason.trim().length < 3 || !confirm("Permanently delete this participant's personal data? This cannot be undone.")} onClick={() => run({ action: "erase", reason }, "Participant data deleted.")}>Delete data</button></div></section>
+            </div>
+          </section>
 
           <section><h3 className="font-semibold text-navy">Admin notes</h3>
             <ul className="mt-1">{d.notes.map((n, i) => <li key={i} className="border-b border-line py-1.5">{n.text}<span className="ml-2 text-xs text-ink-soft">{tgl(n.at, true)}</span></li>)}</ul>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row"><input aria-label="Note" className="field" placeholder="Add a note…" value={note} onChange={(e) => setNote(e.target.value)} /><button className="btn-outline shrink-0" disabled={!note.trim()} onClick={() => run({ action: "note", text: note }).then(() => setNote(""))}>Save note</button></div></section>
         </div>
       )}
+      {d && p && dlg === "edit" && <EditAccountDialog kind="participant" account={{ id, name: p.name ?? null, givenName: p.givenName, surname: p.surname, email: p.email, phone: p.phone }} onClose={() => setDlg(null)} onDone={(m) => { setDlg(null); setMsg(m); reload(); }} />}
+      {d && p && dlg === "reset" && <ResetPasswordDialog kind="participant" account={{ id, name: p.name ?? null, email: p.email }} onClose={() => setDlg(null)} />}
+      {d && p && dlg === "delete" && <DeleteAccountDialog kind="participant" account={{ id, name: p.name ?? null, email: p.email }} onClose={() => setDlg(null)} onDone={() => { setDlg(null); onClose(); }} />}
     </Modal>
   );
 }

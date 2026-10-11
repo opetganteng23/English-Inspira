@@ -9,6 +9,7 @@ const nav: NavGroup[] = [
   ] },
   { label: "Tests & Materials", items: [
     { href: "/admin/question-bank", label: "Question Bank" },
+    { href: "/admin/audio", label: "Audio Library" },
     { href: "/admin/tests", label: "Tests" },
     { href: "/admin/courses", label: "Courses & Units" },
     { href: "/admin/materials", label: "Materials" },

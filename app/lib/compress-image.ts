@@ -1,7 +1,7 @@
 // Kompres di klien sebelum upload: sisi terpanjang <=1280 px, WebP/JPEG kualitas turun bertahap sampai <=maxBytes.
-export async function compressImage(file: File, maxBytes = 300 * 1024) {
+export async function compressImage(file: File, maxBytes = 300 * 1024, maxSide = 1280) {
   const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, 1280 / Math.max(bmp.width, bmp.height));
+  const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
   const canvas = document.createElement("canvas");
   canvas.width = w; canvas.height = h;
@@ -18,8 +18,8 @@ export async function compressImage(file: File, maxBytes = 300 * 1024) {
   return { blob, width: w, height: h };
 }
 
-export async function uploadImage(file: File, opts: { sensitive?: boolean } = {}) {
-  const { blob, width, height } = await compressImage(file, opts.sensitive ? 500 * 1024 : 300 * 1024);
+export async function uploadImage(file: File, opts: { sensitive?: boolean; maxSide?: number; maxBytes?: number } = {}) {
+  const { blob, width, height } = await compressImage(file, opts.maxBytes ?? (opts.sensitive ? 500 * 1024 : 300 * 1024), opts.maxSide);
   const fd = new FormData();
   fd.append("file", blob, "image");
   fd.append("width", String(width));

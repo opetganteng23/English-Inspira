@@ -13,5 +13,5 @@ export default async function Root() {
     redirect(u.role === "admin" ? "/admin" : u.role === "inst_admin" ? "/institution" : u.role === "coach" ? "/coach" : "/home");
   }
   const info = await publicInfo();
-  return <Landing email={info.supportEmail || undefined} whatsapp={info.supportWhatsapp || undefined} />;
+  return <Landing email={info.supportEmail || undefined} whatsapp={info.supportWhatsapp || undefined} settings={info.landing} />;
 }

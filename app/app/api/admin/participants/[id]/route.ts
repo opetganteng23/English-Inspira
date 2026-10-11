@@ -8,6 +8,8 @@ import { audit } from "@/lib/audit";
 import { disableMember, enableMember, issueInvitation } from "@/lib/participants";
 import { getLevels } from "@/lib/config";
 import { eraseUserData } from "@/lib/erase";
+import { splitName } from "@/lib/person-name";
+import { sendResetLink, setTemporaryPassword, updateAccountIdentity } from "@/lib/account-admin";
 import { User } from "@/models/User";
 import { Attempt } from "@/models/Test";
 import { AuditLog } from "@/models/AuditLog";
@@ -40,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const lv = new Map(levels.map((l) => [String(l._id), l.name]));
     await audit(admin._id, "participant.view", params.id);
     return NextResponse.json({
-      profile: { id: String(u._id), name: u.name, email: u.email, phone: u.phone, status: u.status, institution: inst?.name ?? null, consentAt: u.consentAt ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt,
+      profile: { id: String(u._id), name: u.name, givenName: u.givenName ?? splitName(u.name).givenName, surname: u.surname ?? splitName(u.name).surname, email: u.email, phone: u.phone, status: u.status, institution: inst?.name ?? null, consentAt: u.consentAt ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt,
         level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? null : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId, placementRetakeAllowed: u.placementRetakeAllowed },
       enrollment: enr ? { status: enr.status, startsAt: enr.startsAt, expiresAt: enr.expiresAt ?? null } : null,
       quotas: quotas.map((q) => ({ level: lv.get(String(q.levelId)) ?? "-", used: q.used, total: q.total, active: q.active })),
@@ -57,6 +59,9 @@ const actions = z.discriminatedUnion("action", [
   z.object({ action: z.literal("allow_placement_retake"), reason: z.string().trim().min(3).max(300) }),
   z.object({ action: z.literal("resend_invitation") }),
   z.object({ action: z.literal("erase"), reason: z.string().trim().min(3).max(300) }),
+  z.object({ action: z.literal("update_profile"), givenName: z.string().trim().min(1).max(60).optional(), surname: z.string().trim().max(60).optional(), email: z.email().max(200).optional(), phone: z.string().trim().regex(/^$|^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional() }),
+  z.object({ action: z.literal("reset_link") }),
+  z.object({ action: z.literal("temp_password") }),
   z.object({ action: z.literal("disable") }),
   z.object({ action: z.literal("enable") }),
   z.object({ action: z.literal("extend_enrollment"), days: z.number().int().min(1).max(730), reason: z.string().trim().min(3).max(300) }),
@@ -80,6 +85,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         await issueInvitation(u, inst, admin._id); await audit(admin._id, "invitation.resend", params.id); break;
       }
       case "erase": await eraseUserData(u._id, admin._id, b.reason); break;
+      case "update_profile": await updateAccountIdentity(u._id, { givenName: b.givenName, surname: b.surname, email: b.email, phone: b.phone }, admin._id); break;
+      case "reset_link": return NextResponse.json({ ok: true, ...(await sendResetLink(u._id, process.env.APP_URL ?? new URL(req.url).origin, admin._id)) });
+      case "temp_password": return NextResponse.json({ ok: true, ...(await setTemporaryPassword(u._id, admin._id)) });
       case "disable": await disableMember(u._id); await audit(admin._id, "participant.disable", params.id); break;
       case "enable": await enableMember(u._id); await audit(admin._id, "participant.enable", params.id); break;
       case "extend_enrollment": {

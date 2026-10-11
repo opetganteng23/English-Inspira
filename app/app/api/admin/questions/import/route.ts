@@ -1,3 +1,4 @@
+import { registerQuestionType } from "@/lib/question-types";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     await connectDB();
     const failed = rows.filter((r): r is Extract<typeof r, { ok: false }> => !r.ok).map((r) => ({ row: r.row, reason: r.error }));
     const good = rows.filter((r): r is Extract<typeof r, { ok: true }> => r.ok);
-    if (!dry) for (const g of good) await Question.create({ ...g.data, groupId: undefined });
+    if (!dry) for (const g of good) { await Question.create({ ...g.data, groupId: undefined }); await registerQuestionType(g.data.section, g.data.type); }
     if (!dry) await audit(admin._id, "questions.import", file.name, { created: good.length, failed: failed.length });
     return NextResponse.json({ dry, created: good.length, failed });
   } catch (e) {

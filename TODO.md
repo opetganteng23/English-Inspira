@@ -246,3 +246,15 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | U20 | Batas laju per IP dilonggarkan (login 600/10 mnt, OTP 300/jam, daftar 150/jam; env `RATE_IP_FACTOR`): satu IP kampus bersama tadinya hanya meloloskan 30 dari 100 login. Batas per email dan 5 percobaan per kode OTP tetap | ✅ |
 | U21 | Antrean email: 3 pekerja paralel (dulu serial, 20 per menit); Claude: maks 8 panggilan bersamaan (`AI_CONCURRENCY`), halaman hasil menunggu analisis sampai ±3 menit | ✅ kode + OTP paralel; Claude nyata belum diuji |
 | U22 | Bagian mitra ("Developed and owned by ...") dihapus dari landing atas permintaan pemilik | ✅ |
+
+## 18. Landing interaktif, manajemen akun, Audio Library, jenis soal (permintaan pemilik 2026-10-11)
+
+| ID | Item | Status |
+|---|---|---|
+| M1 | Landing: animasi (muncul saat digulir, hover angkat, tekan tombol memantul, skor menghitung naik, jawaban AI diketik, bar terisi), nav menyorot bagian aktif + gulir halus + garis emas di judul, menu mobile, teks berjalan dan logo mitra berjalan; hormati `prefers-reduced-motion` | ✅ uji Chrome desktop dan ponsel 19/19 |
+| M2 | Hero landing dapat diatur di Settings admin: badge, judul, deskripsi, gambar latar + overlay, gaya teks, kartu contoh, teks berjalan, logo mitra (unggah), reset ke bawaan | ✅ uji alur admin sampai halaman publik |
+| M3 | Pengguna internal (admin, coach, admin institusi): tambah, ubah nama/email/telepon, kirim tautan reset, password sementara (sekali tampil), kirim ulang undangan, nonaktif/aktif, hapus beralasan (tidak bisa hapus diri sendiri / admin terakhir / coach dengan sesi mendatang) | ✅ API 24 lulus + uji klik |
+| M4 | Peserta: ubah profil, reset password (tautan / sementara), hapus beralasan lewat dialog (bug `confirm()` di dalam `disabled` yang memunculkan dialog berulang sudah dibuang) | ✅ API 9 lulus + uji klik |
+| M5 | Audio Library (`/admin/audio`): unggah (jenis, deskripsi, sumber, transkrip), daftar + cari + filter jenis, pemutar + kecepatan, ubah, ganti berkas tanpa memutus tautan, hapus (ditolak bila dipakai grup soal atau materi, dengan daftar pemakai) | ✅ API 24 lulus + uji klik |
+| M6 | Jenis soal dikelola per kategori (Listening, Structure, Reading): daftar bawaan ITP, tambah, ganti nama (soal ikut berubah), nonaktifkan, hapus (soal dipindah), jenis baru dari soal/impor terdaftar otomatis; bank soal punya tab kategori + filter jenis + pilih jenis di form | ✅ API 16 lulus + uji klik |
+| M7 | Sisa dari `Spesifikasi_Modul_LMS_TOEFL_ITP.md`: lihat bagian 19 | ⬜ |

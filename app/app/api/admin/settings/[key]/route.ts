@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { Setting, getSetting } from "@/models/Settings";
+import { landingSchema, LANDING_DEFAULTS } from "@/lib/landing-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ const SETTINGS = {
     schema: z.object({ siteName: z.string().min(1).max(60), supportEmail: z.email().or(z.literal("")), supportWhatsapp: z.string().max(20), itpOrganizer: z.string().max(120), refundPolicy: z.string().max(2000), rescheduleDays: z.number().int().min(0).max(60), idRetentionDays: z.number().int().min(1).max(3650) }),
     defaults: { siteName: "English Inspira", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 },
   },
+  landing: { schema: landingSchema, defaults: LANDING_DEFAULTS },
 } as const;
 type Key = keyof typeof SETTINGS;
 

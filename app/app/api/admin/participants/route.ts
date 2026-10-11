@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     await requireRole(["admin"]);
     await connectDB();
     const sp = new URL(req.url).searchParams;
-    const filter: Record<string, unknown> = { role: "participant" };
+    const filter: Record<string, unknown> = { role: "participant", deletedAt: { $exists: false } };
     const q = sp.get("q")?.trim();
     if (q) { const rx = new RegExp(esc(q), "i"); filter.$or = [{ name: rx }, { email: rx }]; }
     if (sp.get("institution")) filter.institutionId = sp.get("institution");

@@ -1,3 +1,4 @@
+import { registerQuestionType } from "@/lib/question-types";
 import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
@@ -36,6 +37,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const used = await Test.exists({ "sections.questionIds": q._id });
     q.set({ ...body, groupId: body.groupId ?? undefined });
     await q.save();
+    await registerQuestionType(q.section, q.type);
     await AuditLog.create({ actorId: admin._id, action: "question.update", target: String(q._id), meta: { usedInTest: !!used } });
     return NextResponse.json({ ok: true, usedInTest: !!used });
   } catch (e) {
