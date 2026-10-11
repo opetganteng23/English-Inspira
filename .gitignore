@@ -15,3 +15,6 @@ design/src/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# berkas sementara pengembangan
+*.tmp.*
