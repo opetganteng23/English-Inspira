@@ -2,14 +2,18 @@ import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 import { HttpError } from "./rbac";
 
 // In-memory: cukup untuk satu instance. Ganti ke RateLimiterMongo/Redis bila scale-out.
+// Batas PER IP sengaja longgar: satu kampus/kantor biasanya keluar lewat SATU IP publik (NAT), dan puluhan peserta
+// bisa masuk bersamaan saat tes serentak. Perlindungan utama tetap per email (otpEmail, loginEmail, resetEmail)
+// dan per kode OTP (maks 5 percobaan di database, lib/otp-code.ts). Dapat diubah lewat env RATE_IP_FACTOR (kelipatan).
+const F = Math.max(1, Number(process.env.RATE_IP_FACTOR) || 1);
 const limiters = {
   otpEmail: new RateLimiterMemory({ points: 3, duration: 600 }),
-  otpIp: new RateLimiterMemory({ points: 10, duration: 3600 }),
-  verifyIp: new RateLimiterMemory({ points: 30, duration: 600 }),
-  loginIp: new RateLimiterMemory({ points: 30, duration: 600 }),
+  otpIp: new RateLimiterMemory({ points: 300 * F, duration: 3600 }),
+  verifyIp: new RateLimiterMemory({ points: 600 * F, duration: 600 }),
+  loginIp: new RateLimiterMemory({ points: 600 * F, duration: 600 }),
   loginEmail: new RateLimiterMemory({ points: 10, duration: 900 }),
-  registerIp: new RateLimiterMemory({ points: 10, duration: 3600 }),
-  resetIp: new RateLimiterMemory({ points: 10, duration: 3600 }),
+  registerIp: new RateLimiterMemory({ points: 150 * F, duration: 3600 }),
+  resetIp: new RateLimiterMemory({ points: 100 * F, duration: 3600 }),
   resetEmail: new RateLimiterMemory({ points: 3, duration: 900 }),
 };
 

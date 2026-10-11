@@ -112,17 +112,6 @@ export function Landing({ email, whatsapp }: { email?: string; whatsapp?: string
           </div>
         </section>
 
-        {/* Mitra */}
-        <section className="border-y border-line bg-[#EEF2F7]">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-7 text-center sm:px-6 lg:flex-row lg:px-10 lg:text-left">
-            <span className="text-sm font-medium text-ink-soft">Developed and owned by</span>
-            <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-2">
-              {["Inspira Teknologi", "Telkom University", "CoE AILO"].map((n) => <span key={n} className="font-display text-lg font-bold text-navy sm:text-xl">{n}</span>)}
-            </div>
-            <span className="max-w-[300px] text-[13px] text-ink-soft lg:text-right">Center of Excellence Artificial Intelligence for Learning and Optimization</span>
-          </div>
-        </section>
-
         {/* Cara kerja */}
         <section id="how" className="mx-auto flex max-w-7xl scroll-mt-20 flex-col gap-12 px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end lg:gap-10">

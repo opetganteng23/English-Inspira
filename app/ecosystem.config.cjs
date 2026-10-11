@@ -20,7 +20,8 @@ module.exports = {
       max_memory_restart: "900M",
       kill_timeout: 10000,
       time: true,
-      env_production: { NODE_ENV: "production", ENABLE_INPROCESS_CRON: "true" },
+      // UV_THREADPOOL_SIZE: bcrypt native (login), kompresi, dan berkas berjalan di threadpool; 8 membantu saat banyak login serentak.
+      env_production: { NODE_ENV: "production", ENABLE_INPROCESS_CRON: "true", UV_THREADPOOL_SIZE: "8" },
     },
   ],
 };

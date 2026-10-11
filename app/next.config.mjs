@@ -13,7 +13,7 @@ const nextConfig = {
     instrumentationHook: true,
     // Font bawaan pdfkit dibaca lewat fs saat runtime.
     outputFileTracingIncludes: { "/api/**/*": ["./node_modules/pdfkit/js/data/**/*"] },
-    serverComponentsExternalPackages: ["mongodb-memory-server", "mongoose", "pdfkit", "exceljs", "qrcode", "music-metadata", "pdf-parse", "node-cron", "mongodb-memory-server-core"],
+    serverComponentsExternalPackages: ["bcrypt", "mongodb-memory-server", "mongoose", "pdfkit", "exceljs", "qrcode", "music-metadata", "pdf-parse", "node-cron", "mongodb-memory-server-core"],
   },
   // URL lama berbahasa Indonesia (tautan di email/notifikasi lama) dialihkan permanen ke URL bahasa Inggris.
   async redirects() {

@@ -7,12 +7,23 @@ export const aiEnabled = () => !!process.env.ANTHROPIC_API_KEY;
 export const AI_MODEL = () => process.env.ANTHROPIC_MODEL ?? process.env.AI_MODEL ?? "claude-sonnet-5-5";
 export const AI_MODEL_LIGHT = () => process.env.ANTHROPIC_MODEL_LIGHT || null;
 
+// Batas panggilan Claude yang berjalan bersamaan: 100 peserta mengirim tes serentak diantre, bukan 100 panggilan sekaligus
+// (yang memicu 429 dari API). AI_CONCURRENCY dapat disesuaikan dengan batas akun Anthropic.
+const MAX_CONCURRENT = Math.max(1, Number(process.env.AI_CONCURRENCY) || 8);
+let active = 0;
+const waiters: (() => void)[] = [];
+async function gated<T>(fn: () => Promise<T>): Promise<T> {
+  if (active >= MAX_CONCURRENT) await new Promise<void>((r) => waiters.push(r));
+  active++;
+  try { return await fn(); } finally { active--; waiters.shift()?.(); }
+}
+
 let client: Anthropic | null = null;
 const sdk = () => (client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }));
 
 /** Panggil Claude dan kembalikan teks + pemakaian token (untuk pemantauan biaya per institusi). */
 export async function askClaude(system: string, messages: { role: "user" | "assistant"; content: string }[], maxTokens = 1200, model = AI_MODEL()) {
-  const res = await sdk().messages.create({ model, max_tokens: maxTokens, system, messages });
+  const res = await gated(() => sdk().messages.create({ model, max_tokens: maxTokens, system, messages }));
   return { text: res.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim(), tokensIn: res.usage?.input_tokens ?? 0, tokensOut: res.usage?.output_tokens ?? 0, model };
 }
 /**
@@ -22,11 +33,11 @@ export async function askClaude(system: string, messages: { role: "user" | "assi
 export async function askClaudeStructured(system: string, messages: { role: "user" | "assistant"; content: string }[], tool: { name: string; description: string; schema: z.ZodType }, maxTokens = 3000, model = AI_MODEL()) {
   const { $schema: _s, ...input_schema } = z.toJSONSchema(tool.schema) as Record<string, unknown>;
   void _s;
-  const res = await sdk().messages.create({
+  const res = await gated(() => sdk().messages.create({
     model, max_tokens: maxTokens, system, messages,
     tools: [{ name: tool.name, description: tool.description, input_schema: input_schema as Anthropic.Tool.InputSchema }],
     tool_choice: { type: "auto" }, // sebagian model tidak menerima tool_choice "tool"; system prompt mewajibkan tool ini
-  });
+  }));
   const block = res.content.find((b) => b.type === "tool_use");
   return { input: block && block.type === "tool_use" ? block.input : null, truncated: res.stop_reason === "max_tokens", tokensIn: res.usage?.input_tokens ?? 0, tokensOut: res.usage?.output_tokens ?? 0, model };
 }

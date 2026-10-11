@@ -16,7 +16,7 @@ export async function enqueueMail(to: string, template: TemplateName, data: Reco
 
 let running = false;
 /** Proses antrean di latar (debounce). Aman dipanggil berulang. */
-export function kick(limit = 20) {
+export function kick(limit = 60) {
   if (running) return;
   running = true;
   processMailQueue(limit).catch((e) => console.error("[mailq]", e)).finally(() => { running = false; });
@@ -32,26 +32,31 @@ export async function processMailQueue(limit = 20) {
   const sentInvites = await MailJob.countDocuments({ template: "invitation", status: "sent", sentAt: { $gte: new Date(Date.now() - 3_600_000) } });
   let inviteBudget = Math.max(0, cap - sentInvites);
 
-  let sent = 0, failed = 0, deferred = 0;
-  for (let i = 0; i < limit; i++) {
-    // Klaim atomik: dua proses tidak mengirim email yang sama dua kali.
-    const job = await MailJob.findOneAndUpdate(
-      { status: "queued", nextTryAt: { $lte: new Date() }, ...(inviteBudget <= 0 ? { template: { $ne: "invitation" } } : {}) },
-      { status: "sending" }, { sort: { priority: 1, nextTryAt: 1 }, new: true }
-    );
-    if (!job) break;
-    try {
-      const { subject, html } = render(job.template as TemplateName, (job.data ?? {}) as Record<string, unknown>);
-      await sendMail(job.to, subject, html);
-      job.status = "sent"; job.sentAt = new Date(); job.lastError = undefined;
-      if (job.template === "invitation") inviteBudget--;
-      sent++;
-    } catch (e) {
-      job.tries += 1; job.lastError = (e as Error).message.slice(0, 300);
-      if (job.tries >= MAX_TRIES) { job.status = "failed"; failed++; }
-      else { job.status = "queued"; job.nextTryAt = new Date(Date.now() + BACKOFF_MIN[job.tries - 1] * 60_000); deferred++; }
+  let sent = 0, failed = 0, deferred = 0, taken = 0;
+  // 3 pekerja paralel (sama dengan maxConnections pool SMTP): 100 kode OTP serentak selesai dalam hitungan detik, bukan menit.
+  const worker = async () => {
+    while (taken < limit) {
+      taken++;
+      // Klaim atomik: dua pekerja/proses tidak mengirim email yang sama dua kali.
+      const job = await MailJob.findOneAndUpdate(
+        { status: "queued", nextTryAt: { $lte: new Date() }, ...(inviteBudget <= 0 ? { template: { $ne: "invitation" } } : {}) },
+        { status: "sending" }, { sort: { priority: 1, nextTryAt: 1 }, new: true }
+      );
+      if (!job) return;
+      try {
+        const { subject, html } = render(job.template as TemplateName, (job.data ?? {}) as Record<string, unknown>);
+        await sendMail(job.to, subject, html);
+        job.status = "sent"; job.sentAt = new Date(); job.lastError = undefined;
+        if (job.template === "invitation") inviteBudget--;
+        sent++;
+      } catch (e) {
+        job.tries += 1; job.lastError = (e as Error).message.slice(0, 300);
+        if (job.tries >= MAX_TRIES) { job.status = "failed"; failed++; }
+        else { job.status = "queued"; job.nextTryAt = new Date(Date.now() + BACKOFF_MIN[job.tries - 1] * 60_000); deferred++; }
+      }
+      await job.save();
     }
-    await job.save();
-  }
+  };
+  await Promise.all([worker(), worker(), worker()]);
   return { sent, failed, deferred };
 }

@@ -241,3 +241,8 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | U13 | Profil: ganti foto, ubah email (OTP email baru), pengaturan notifikasi | ⬜ belum dibuat |
 | U14 | Tabel admin di ponsel menjadi kartu | ⏭️ ditunda; saat ini digulung ke samping di dalam kotaknya |
 | U15 | Impor peserta CSV/Excel: kolom given name + surname (atau name tunggal); `createMember` menyimpan keduanya | ✅ unit test pembacaan CSV (alias given/surname, name tunggal) |
+| U18 | Beban 100 pengguna serentak (diukur lokal, build produksi, Mongo lokal): 0 galat dari ~2.900 permintaan; beranda 1 dtk, simpan jawaban p95 0,25 dtk, kirim 0,4 dtk, hasil 0,5 dtk | ✅ lokal; VPS dan Atlas belum diukur |
+| U19 | Login password 100 serentak: 24,7 dtk dan server macet 18 dtk (bcryptjs di thread utama) menjadi 3,5 dtk dan jeda maks 0,1 dtk (`bcrypt` native di threadpool, cadangan bcryptjs; hash lama tetap valid; `UV_THREADPOOL_SIZE=8` di PM2) | ✅ lokal; perlu `npm ci` di VPS dan cek log `[password]` |
+| U20 | Batas laju per IP dilonggarkan (login 600/10 mnt, OTP 300/jam, daftar 150/jam; env `RATE_IP_FACTOR`): satu IP kampus bersama tadinya hanya meloloskan 30 dari 100 login. Batas per email dan 5 percobaan per kode OTP tetap | ✅ |
+| U21 | Antrean email: 3 pekerja paralel (dulu serial, 20 per menit); Claude: maks 8 panggilan bersamaan (`AI_CONCURRENCY`), halaman hasil menunggu analisis sampai ±3 menit | ✅ kode + OTP paralel; Claude nyata belum diuji |
+| U22 | Bagian mitra ("Developed and owned by ...") dihapus dari landing atas permintaan pemilik | ✅ |

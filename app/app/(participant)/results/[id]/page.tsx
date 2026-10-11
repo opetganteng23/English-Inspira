@@ -31,8 +31,8 @@ export default function Hasil({ params }: { params: { id: string } }) {
         const d: R = await api(`/api/attempts/${params.id}/result`);
         if (stop) return;
         setR(d);
-        // Analisis AI berjalan async: cek ulang sampai siap (maks ±1 menit).
-        if (d.analysis.status === "pending" && tries++ < 20) setTimeout(load, 3000);
+        // Analisis AI berjalan async dan diantre bila banyak peserta mengirim bersamaan: cek ulang sampai siap (maks ±3 menit).
+        if (d.analysis.status === "pending" && tries++ < 60) setTimeout(load, 3000);
       } catch (e) { if (!stop) setErr((e as Error).message); }
     };
     load();
@@ -131,7 +131,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
 
       <section className="card">
         <div className="flex items-center justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">AI analysis summary</h2>{a.status === "ready" && a.mock && <span className="badge-muted">basic automatic analysis</span>}</div>
-        {a.status === "pending" && <p className="mt-3 text-sm text-ink-soft" role="status">Preparing the analysis… usually under a minute.</p>}
+        {a.status === "pending" && <p className="mt-3 text-sm text-ink-soft" role="status">Preparing the analysis… this can take a few minutes when many people finish at the same time.</p>}
         {a.status === "failed" && <div className="mt-3 text-sm"><p className="text-red-700">{a.error ?? "Analysis not available yet."}</p><button className="btn-outline mt-2" onClick={retry}>Try again</button></div>}
         {a.status === "ready" && (
           <div className="mt-3 grid gap-4 text-sm lg:grid-cols-2">
