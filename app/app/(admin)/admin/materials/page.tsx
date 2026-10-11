@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import Link from "next/link";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
@@ -14,7 +15,7 @@ export default function MateriAdmin() {
   const { data, loading, error, reload } = useApi<{ materials: M[] }>("/api/admin/materials");
   const [err, setErr] = useState("");
   async function act(id: string, action: "publish" | "unpublish" | "submit_review" | "reject", note?: string) { setErr(""); try { await api(`/api/admin/materials/${id}/publish`, { json: { action, note } }); reload(); } catch (e) { setErr((e as Error).message); } }
-  async function remove(id: string) { if (!confirm("Delete this material and its version history?")) return; try { await api(`/api/admin/materials/${id}`, { method: "DELETE" }); reload(); } catch (e) { setErr((e as Error).message); } }
+  async function remove(id: string) { if (!(await askConfirm("Delete this material and its version history?"))) return; try { await api(`/api/admin/materials/${id}`, { method: "DELETE" }); reload(); } catch (e) { setErr((e as Error).message); } }
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Materials</h1><p className="text-sm text-ink-soft">Readings (rich text) and interactive exercises (full-page HTML).</p></div><Link href={`${base}/new`} className="btn-solid">+ New material</Link></div>

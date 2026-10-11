@@ -25,7 +25,7 @@ export default function Pengaturan() {
   if (!v) return <ErrorNote text={error} />;
   const set = <K extends keyof G>(k: K, val: G[K]) => setV({ ...v, [k]: val });
   return (
-    <div className="flex max-w-3xl flex-col gap-5">
+    <div className="page-cols">
       <div><h1 className="page-title">Settings</h1><p className="text-sm text-ink-soft">Help contacts and official test information. Level and quota numbers are in System Parameters.</p></div>
       {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? "bg-success-tint text-success" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
       <form onSubmit={save} className="card flex flex-col gap-4">

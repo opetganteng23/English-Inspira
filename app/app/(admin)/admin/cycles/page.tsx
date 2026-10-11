@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
@@ -47,9 +48,9 @@ export default function Cycles() {
             <p className="text-xs text-ink-soft">{c.counts.placed} placements · {c.counts.quotas} quotas · {c.counts.attempts} attempts · {c.counts.bookings} bookings</p>
             <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 pt-1 text-sm font-semibold">
               <button className="text-brand" onClick={() => setEdit(c)}>Edit</button>
-              {c.status !== "closed" && <button className="text-brand" onClick={() => confirm("Close this period now? Participants can no longer take tests or book coaching for it.") && run(() => api(`/api/admin/cycles/${c.id}`, { json: { action: "close" } }), "Period closed")}>Close now</button>}
+              {c.status !== "closed" && <button className="text-brand" onClick={() => void askConfirm("Close this period now? Participants can no longer take tests or book coaching for it.").then((ok) => { if (ok) run(() => api(`/api/admin/cycles/${c.id}`, { json: { action: "close" } }), "Period closed"); })}>Close now</button>}
               {c.status === "closed" && c.closedAt && <button className="text-brand" onClick={() => run(() => api(`/api/admin/cycles/${c.id}`, { json: { action: "reopen" } }), "Period reopened")}>Reopen</button>}
-              <button className="text-red-700" onClick={() => confirm("Delete this period?") && run(() => api(`/api/admin/cycles/${c.id}`, { method: "DELETE" }), "Period deleted")}>Delete</button>
+              <button className="text-red-700" onClick={() => void askConfirm("Delete this period?").then((ok) => { if (ok) run(() => api(`/api/admin/cycles/${c.id}`, { method: "DELETE" }), "Period deleted"); })}>Delete</button>
             </div>
           </li>
         ))}

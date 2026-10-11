@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
@@ -58,7 +59,7 @@ export default function Media() {
               <div className="mt-auto flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold">
                 <button className="text-brand" onClick={() => { navigator.clipboard?.writeText(`${location.origin}${m.url}`); setMsg("Image URL copied"); }}>Copy URL</button>
                 <button className="text-brand" onClick={() => setRename({ id: m.id, name: m.name })}>Rename</button>
-                <button className="text-red-700" onClick={() => confirm("Delete this image?") && run(() => api(`/api/admin/media/${m.id}`, { method: "DELETE" }), "Image deleted")}>Delete</button>
+                <button className="text-red-700" onClick={() => void askConfirm("Delete this image?").then((ok) => { if (ok) run(() => api(`/api/admin/media/${m.id}`, { method: "DELETE" }), "Image deleted"); })}>Delete</button>
               </div>
             </li>
           ))}

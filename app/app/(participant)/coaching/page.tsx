@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
@@ -40,7 +41,7 @@ export default function Coaching() {
                 {upcoming.map((b) => (
                   <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
                     <span><b className="text-navy">{b.startsAt ? tgl(b.startsAt, true) : "-"}</b> · {b.coach}<br /><span className="text-xs text-ink-soft">{b.mode === "online" ? (b.meetingUrl ? <a className="text-brand underline" href={b.meetingUrl} target="_blank" rel="noopener noreferrer">Open meeting link</a> : "Online") : `In person${b.room ? ` · ${b.room}` : ""}`}</span></span>
-                    {b.canCancel ? <button className="btn-outline !min-h-[40px]" disabled={busy === b.id} onClick={() => confirm("Cancel this session? Your quota is not reduced.") && run(b.id, () => api(`/api/coaching/bookings/${b.id}/cancel`, { json: {} }))}>Cancel</button> : <span className="text-xs text-ink-soft">Self-cancel up to {data.rules.cancelBeforeHours} hours before the session; contact your coach after that.</span>}
+                    {b.canCancel ? <button className="btn-outline !min-h-[40px]" disabled={busy === b.id} onClick={() => void askConfirm("Cancel this session? Your quota is not reduced.").then((ok) => { if (ok) run(b.id, () => api(`/api/coaching/bookings/${b.id}/cancel`, { json: {} })); })}>Cancel</button> : <span className="text-xs text-ink-soft">Self-cancel up to {data.rules.cancelBeforeHours} hours before the session; contact your coach after that.</span>}
                   </li>
                 ))}
               </ul>

@@ -26,7 +26,7 @@ export default function AuditLog() {
   const csvHref = `/api/admin/audit?format=csv&${new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][])}`;
 
   return (
-    <div className="flex max-w-6xl flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><h1 className="page-title">Audit Log</h1><p className="text-sm text-ink-soft">A record of who changed what and when: answer keys, content, accounts, settings, and access to personal data. {data ? `${data.total} entries.` : ""}</p></div>
         <a href={csvHref} className="btn-outline">Export CSV</a>

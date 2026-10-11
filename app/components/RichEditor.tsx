@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import { Node, mergeAttributes } from "@tiptap/core";
@@ -94,9 +95,9 @@ export function RichEditor({ initial, onChange, audios }: { initial?: unknown; o
     if (url === "") editor!.chain().focus().unsetLink().run(); else editor!.chain().focus().setLink({ href: url }).run();
   }
   function addYoutube() { const url = window.prompt("URL video YouTube"); if (url) editor!.commands.setYoutubeVideo({ src: url }); }
-  function addAudio(id: string) {
+  async function addAudio(id: string) {
     if (!id) return;
-    const transcript = window.confirm("Show this audio's transcript below the player?\n(OK = show, Cancel = no transcript)");
+    const transcript = await askConfirm("Show this audio's transcript below the player?", { title: "Audio transcript", confirmLabel: "Show transcript", cancelLabel: "No transcript", danger: false });
     editor!.chain().focus().insertContent({ type: "audioBlock", attrs: { audioId: id, transcript } }).run();
   }
 

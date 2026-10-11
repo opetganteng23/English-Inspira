@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useRef, useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
@@ -33,7 +34,7 @@ export default function UnggahHasil() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="page-cols">
       <div><h1 className="page-title">Upload External Results</h1><p className="mt-1 text-ink-soft">Upload a PDF score report from another test (e.g. TOEFL ITP) to get an analysis. You can correct the scores that were read first. The file is not sent to the AI; only the scores you confirm are analyzed.</p></div>
       <section className="card flex flex-col gap-3">
         <input ref={file} type="file" accept="application/pdf,.pdf" aria-label="File PDF" className="field" />
@@ -77,7 +78,7 @@ function Panel({ item, onChanged }: { item: Item; onChanged: () => void }) {
       onChanged(); det.reload();
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
-  async function remove() { if (!confirm("Delete this PDF and its results?")) return; try { await api(`/api/analytics/pdf/${item.id}`, { method: "DELETE" }); onChanged(); } catch (e) { setErr((e as Error).message); } }
+  async function remove() { if (!(await askConfirm("Delete this PDF and its results?"))) return; try { await api(`/api/analytics/pdf/${item.id}`, { method: "DELETE" }); onChanged(); } catch (e) { setErr((e as Error).message); } }
 
   const n = det.data?.analysis?.narrative;
   return (

@@ -54,6 +54,12 @@ img, video, canvas, svg { max-width: 100%; }
     .table-wrap td::before { content: attr(data-label); @apply mb-1 block text-[11px] font-semibold uppercase tracking-wide text-ink-soft; }
     .table-wrap td[data-label=""]::before { display: none; }
   }
+  /* Halaman formulir: satu kolom, lalu dua kolom kartu di layar lebar. Judul, pesan, dan elemen non-kartu tetap selebar penuh. */
+  .page-cols { @apply grid items-start gap-6; }
+  @media (min-width: 1280px) {
+    .page-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .page-cols > :not(.card), .page-cols > .wide { grid-column: 1 / -1; }
+  }
   .page-title { @apply font-display text-2xl font-extrabold text-navy sm:text-3xl; }
   .prose-ei p { @apply mb-3 leading-relaxed; }
   .prose-ei h2, .prose-ei h3 { @apply mb-2 mt-5 font-display font-extrabold text-navy; }

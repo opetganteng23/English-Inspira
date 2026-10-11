@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useCallback, useEffect, useState } from "react";
 
 type T = { id: string; name: string; kind: string; active: boolean; questions: number; durationSec: number; attempts: number };
@@ -31,12 +32,12 @@ export default function TesAdmin() {
     catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
-    if (!confirm("Delete this test?")) return;
+    if (!(await askConfirm("Delete this test?"))) return;
     try { await api(`/api/admin/tests/${id}`, { method: "DELETE" }); load(); } catch (e) { setErr((e as Error).message); }
   }
 
   return (
-    <div className="flex max-w-5xl flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div className="flex items-end justify-between">
         <div>
           <h1 className="font-display text-3xl font-extrabold text-navy">Tests</h1>

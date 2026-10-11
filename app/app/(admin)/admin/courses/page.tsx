@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
@@ -44,14 +45,14 @@ export default function Kursus() {
                     {c.coverAssetId ? <img src={`/api/assets/${c.coverAssetId}`} alt="" className="h-12 w-20 shrink-0 rounded-lg object-cover" /> : <span className="h-12 w-20 shrink-0 rounded-lg bg-canvas" aria-hidden />}
                     <div className="min-w-0"><b className="text-navy">{c.title}</b> {!c.active && <span className="badge-muted ml-1">inactive</span>}{c.archived && <span className="badge-warn ml-1">archived</span>}{c.prerequisiteCourseIds.length > 0 && <span className="badge-muted ml-1">needs {c.prerequisiteCourseIds.length} prerequisite{c.prerequisiteCourseIds.length > 1 ? "s" : ""}</span>}{c.description && <p className="text-sm text-ink-soft">{c.description}</p>}</div>
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold"><button className="text-brand" onClick={() => setMod({ courseId: c.id, active: true, order: c.modules.length })}>+ Module</button><button className="text-brand" onClick={() => setUnit({ courseId: c.id, active: true, order: c.units.length, materialIds: [], unlockAfterDays: 0 })}>+ Unit</button><button className="text-brand" onClick={() => setCourse(c)}>Edit</button><button className="text-brand" onClick={() => run(() => api(`/api/admin/courses/${c.id}`, { method: "PATCH", json: { levelId: c.levelId, title: c.title, description: c.description || undefined, order: c.order, active: c.active, archived: !c.archived, coverAssetId: c.coverAssetId, prerequisiteCourseIds: c.prerequisiteCourseIds } }))}>{c.archived ? "Restore" : "Archive"}</button><button className="text-red-700" onClick={() => confirm("Delete this course?") && run(() => api(`/api/admin/courses/${c.id}`, { method: "DELETE" }))}>Delete</button></div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold"><button className="text-brand" onClick={() => setMod({ courseId: c.id, active: true, order: c.modules.length })}>+ Module</button><button className="text-brand" onClick={() => setUnit({ courseId: c.id, active: true, order: c.units.length, materialIds: [], unlockAfterDays: 0 })}>+ Unit</button><button className="text-brand" onClick={() => setCourse(c)}>Edit</button><button className="text-brand" onClick={() => run(() => api(`/api/admin/courses/${c.id}`, { method: "PATCH", json: { levelId: c.levelId, title: c.title, description: c.description || undefined, order: c.order, active: c.active, archived: !c.archived, coverAssetId: c.coverAssetId, prerequisiteCourseIds: c.prerequisiteCourseIds } }))}>{c.archived ? "Restore" : "Archive"}</button><button className="text-red-700" onClick={() => void askConfirm("Delete this course?").then((ok) => { if (ok) run(() => api(`/api/admin/courses/${c.id}`, { method: "DELETE" })); })}>Delete</button></div>
                 </div>
                 {c.modules.length > 0 && (
                   <ul className="mt-3 flex flex-wrap gap-2" aria-label="Modules">
                     {c.modules.map((m) => (
                       <li key={m.id} className="flex items-center gap-2 rounded-lg border border-line bg-canvas px-3 py-1.5 text-sm"><b className="text-navy">{m.title}</b><span className="text-xs text-ink-soft">{c.units.filter((u) => u.moduleId === m.id).length} units</span>{!m.active && <span className="badge-muted">inactive</span>}
                         <button className="font-semibold text-brand" onClick={() => setMod({ ...m, courseId: c.id })}>Edit</button>
-                        <button className="font-semibold text-red-700" onClick={() => confirm("Delete this module? Its units stay in the course without a module.") && run(() => api(`/api/admin/modules/${m.id}`, { method: "DELETE" }))}>Delete</button></li>
+                        <button className="font-semibold text-red-700" onClick={() => void askConfirm("Delete this module? Its units stay in the course without a module.").then((ok) => { if (ok) run(() => api(`/api/admin/modules/${m.id}`, { method: "DELETE" })); })}>Delete</button></li>
                     ))}
                   </ul>
                 )}
@@ -59,7 +60,7 @@ export default function Kursus() {
                   {c.units.map((u) => (
                     <li key={u.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                       <span><b className="text-navy">{u.order}. {u.title}</b>{!u.active && <span className="badge-muted ml-2">inactive</span>}<br /><span className="text-xs text-ink-soft">{c.modules.find((m) => m.id === u.moduleId)?.title ?? "No module"} · {u.materialIds.length} required materials{u.quizTestId ? " · has quiz" : ""}{u.unlockAfterDays > 0 ? ` · opens ${u.unlockAfterDays} days after start` : ""}</span></span>
-                      <span className="flex gap-3 font-semibold"><button className="text-brand" onClick={() => setUnit({ ...u, courseId: c.id })}>Edit</button><button className="text-red-700" onClick={() => confirm("Delete this unit?") && run(() => api(`/api/admin/units/${u.id}`, { method: "DELETE" }))}>Delete</button></span>
+                      <span className="flex gap-3 font-semibold"><button className="text-brand" onClick={() => setUnit({ ...u, courseId: c.id })}>Edit</button><button className="text-red-700" onClick={() => void askConfirm("Delete this unit?").then((ok) => { if (ok) run(() => api(`/api/admin/units/${u.id}`, { method: "DELETE" })); })}>Delete</button></span>
                     </li>
                   ))}
                   {c.units.length === 0 && <li className="py-2 text-sm text-ink-soft">No units yet.</li>}
@@ -96,7 +97,7 @@ function RemedialMapSection() {
       <div><h2 className="font-display text-lg font-extrabold text-navy">Remedial map</h2><p className="text-sm text-ink-soft">Weak topics are pointed to a remedial unit. Participants’ study plan items automatically show an “Open unit” button.</p></div>
       <ErrorNote text={err || error} />
       <ul className="divide-y divide-line text-sm">
-        {data?.entries.map((e) => <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2"><span><b className="text-navy">{e.topic}</b> <span className="text-xs text-ink-soft">({e.skill})</span> to {e.unit}</span><button className="font-semibold text-red-700" onClick={() => api(`/api/admin/remedial-map/${e.id}`, { method: "DELETE" }).then(reload).catch((x) => setErr(x.message))}>Delete</button></li>)}
+        {data?.entries.map((e) => <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2"><span><b className="text-navy">{e.topic}</b> <span className="text-xs text-ink-soft">({e.skill})</span> to {e.unit}</span><button className="font-semibold text-red-700" onClick={() => void askConfirm(`Delete the mapping ${e.topic} to ${e.unit}?`).then((ok) => { if (ok) api(`/api/admin/remedial-map/${e.id}`, { method: "DELETE" }).then(reload).catch((x) => setErr(x.message)); })}>Delete</button></li>)}
         {data?.entries.length === 0 && <li className="py-2 text-ink-soft">No mappings yet.</li>}
       </ul>
       <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">

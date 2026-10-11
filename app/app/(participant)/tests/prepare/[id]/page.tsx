@@ -43,7 +43,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
   if (!t.unlocked) return <div className="card"><p>{t.reason ?? "This test is not unlocked for your account yet."}</p><Link href="/tests" className="btn-solid mt-3">Back to the test list</Link></div>;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="page-cols">
       <div><p className="text-sm font-semibold text-brand">PREPARATION</p><h1 className="page-title">{t.name}</h1><p className="mt-1 text-ink-soft">Full format: {t.totalQuestions} questions · about {Math.round(t.totalSec / 60)} minutes · Listening, Structure & Written Expression, Reading</p></div>
 
       <section className="card flex flex-col gap-3">

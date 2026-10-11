@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
 import { api } from "@/lib/client";
@@ -58,7 +59,7 @@ export function QuestionTypesDialog({ types, onClose, onChanged }: { types: QTyp
                         <span className="flex gap-3 text-sm font-semibold">
                           <button type="button" className="text-brand" onClick={() => setEditing({ id: t.id, name: t.name, description: t.description })}>Edit</button>
                           <button type="button" className="text-ink-soft" disabled={busy} onClick={() => run(() => api(`/api/admin/question-types/${t.id}`, { method: "PATCH", json: { active: !t.active } }), t.active ? "Deactivated. It no longer appears in the new question form." : "Activated.")}>{t.active ? "Deactivate" : "Activate"}</button>
-                          <button type="button" className="text-red-700" onClick={() => (t.count > 0 ? setRemoving({ t, moveTo: "" }) : confirm(`Delete the type "${t.name}"?`) && run(() => api(`/api/admin/question-types/${t.id}`, { method: "DELETE" }), "Deleted."))}>Delete</button>
+                          <button type="button" className="text-red-700" onClick={() => (t.count > 0 ? setRemoving({ t, moveTo: "" }) : void askConfirm(`Delete the type "${t.name}"?`).then((ok) => { if (ok) run(() => api(`/api/admin/question-types/${t.id}`, { method: "DELETE" }), "Deleted."); }))}>Delete</button>
                         </span>
                       </>
                     )}

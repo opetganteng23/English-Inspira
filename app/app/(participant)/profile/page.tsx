@@ -36,7 +36,7 @@ export default function Profil() {
   if (loading && !me) return <Loading />; // muat ulang diam-diam: komponen anak (pesan sukses, langkah ganti email) tidak ter-unmount
   if (!me) return <ErrorNote text={error} />;
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="page-cols">
       <div className="flex items-center gap-4">
         <AvatarEditor initial={(me.name ?? me.email)[0].toUpperCase()} avatarId={me.avatarAssetId ?? null} onChanged={() => { reload(); router.refresh(); }} />
         <div className="min-w-0"><h1 className="page-title truncate">Profile & settings</h1><p className="truncate text-sm text-ink-soft">{me.email} · joined {tgl(me.createdAt)}</p></div>

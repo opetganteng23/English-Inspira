@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
@@ -54,7 +55,7 @@ export default function Classes() {
                       <div className="rounded-lg bg-canvas p-2"><dt className="text-[11px] uppercase text-ink-soft">Active</dt><dd className="font-bold text-success">{c.active}</dd></div>
                       <div className="rounded-lg bg-canvas p-2"><dt className="text-[11px] uppercase text-ink-soft">Avg score</dt><dd className="font-bold text-navy">{c.avgScore ?? "-"}</dd></div>
                     </dl>
-                    <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold"><button className="text-brand" onClick={() => setOpen(c)}>Students</button><button className="text-brand" onClick={() => setEdit(c)}>Edit</button><button className="text-red-700" onClick={() => confirm(`Delete ${c.name}?`) && run(async () => { const r = await api<{ deactivated?: boolean }>(`/api/admin/classes/${c.id}`, { method: "DELETE" }); return r.deactivated ? `${c.name} has history, so it was deactivated instead.` : `${c.name} deleted.`; })}>Delete</button></div>
+                    <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold"><button className="text-brand" onClick={() => setOpen(c)}>Students</button><button className="text-brand" onClick={() => setEdit(c)}>Edit</button><button className="text-red-700" onClick={() => void askConfirm(`Delete ${c.name}?`).then((ok) => { if (ok) run(async () => { const r = await api<{ deactivated?: boolean }>(`/api/admin/classes/${c.id}`, { method: "DELETE" }); return r.deactivated ? `${c.name} has history, so it was deactivated instead.` : `${c.name} deleted.`; }); })}>Delete</button></div>
                   </li>
                 );
               })}

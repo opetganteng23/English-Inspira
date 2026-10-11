@@ -29,7 +29,7 @@ export default function MateriViewer({ params }: { params: { slug: string } }) {
   if (!data) return null;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
       <Link href="/materials" className="text-sm font-semibold text-brand">All materials</Link>
       <div><h1 className="page-title">{data.title}</h1>{data.summary && <p className="mt-1 text-ink-soft">{data.summary}</p>}{data.progress?.completed && <p className="mt-1 text-sm text-success">Last score {data.progress.score} · {data.progress.attempts}× attempted</p>}</div>
       {toast && <p role="status" className="rounded-lg bg-success-tint p-3 text-sm text-success">{toast}</p>}

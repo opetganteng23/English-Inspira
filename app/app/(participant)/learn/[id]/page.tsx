@@ -32,7 +32,7 @@ export default function UnitPage({ params }: { params: { id: string } }) {
   const allMaterials = data.materials.every((m) => m.done);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-5">
+    <div className="page-cols">
       <Link href="/learn" className="text-sm font-semibold text-brand">{data.courseTitle}</Link>
       <div><h1 className="page-title">{data.title}</h1>{data.description && <p className="mt-1 text-ink-soft">{data.description}</p>}{data.status === "completed" && <p className="mt-2 inline-block rounded-lg bg-success-tint px-3 py-1.5 text-sm font-semibold text-success">Unit completed</p>}</div>
       <ErrorNote text={err} />

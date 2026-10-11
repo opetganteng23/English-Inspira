@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -54,7 +55,7 @@ export function ShellNav({
       <p className="truncate text-xs text-[#8FA6C8]">{ROLE[user.role] ?? user.role}</p>
       <button
         className="mt-3 w-full rounded-lg border border-[#8FA6C8]/40 px-3 py-2 text-sm font-semibold text-mist hover:bg-navy-700"
-        onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/"; }}
+        onClick={async () => { if (!(await askConfirm("You will need to sign in again to continue.", { title: "Log out?", confirmLabel: "Log out", danger: true }))) return; await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/"; }}
       >Sign out</button>
     </div>
   );
@@ -94,7 +95,7 @@ export function ShellNav({
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
         {title && <div className="sticky top-0 z-20 hidden border-b border-line bg-white px-6 py-2.5 text-sm text-ink-soft md:block">{title}</div>}
-        <main className="mx-auto w-full max-w-[1280px] flex-1 p-4 sm:p-5 lg:p-6 xl:p-8">{children}</main>
+        <main className="w-full min-w-0 flex-1 p-4 sm:p-5 lg:p-6 xl:px-8 2xl:px-10">{children}</main>
       </div>
     </div>
   );

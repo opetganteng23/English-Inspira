@@ -24,7 +24,7 @@ export default function Parameter() {
 
   if (loading && !data) return <Loading />;
   return (
-    <div className="flex max-w-4xl flex-col gap-6">
+    <div className="page-cols">
       <div><h1 className="page-title">System Parameters</h1><p className="text-sm text-ink-soft">Numbers that define levels, quotas, and learning rules. Changes apply without code changes and are recorded in the audit log.</p></div>
       <ErrorNote text={error} />
       {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? "bg-success-tint text-success" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}

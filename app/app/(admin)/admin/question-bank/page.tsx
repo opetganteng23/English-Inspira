@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QuestionHistoryDialog } from "@/components/QuestionHistoryDialog";
 import { QuestionPreviewDialog } from "@/components/QuestionPreviewDialog";
@@ -73,12 +74,12 @@ export default function BankSoal() {
     try { const d = await api(`/api/admin/questions/${id}/duplicate`, { method: "POST" }); await load(); await edit(d.id); } catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
-    if (!confirm("Delete this question?")) return;
+    if (!(await askConfirm("Delete this question?"))) return;
     try { await api(`/api/admin/questions/${id}`, { method: "DELETE" }); load(); } catch (e) { setErr((e as Error).message); }
   }
 
   return (
-    <div className="flex max-w-6xl flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-extrabold text-navy">Question Bank</h1>

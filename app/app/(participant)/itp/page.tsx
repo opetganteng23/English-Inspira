@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import Link from "next/link";
 import { useApi } from "@/lib/useApi";
@@ -39,7 +40,7 @@ export default function Itp() {
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
   async function cancel(id: string) {
-    if (!confirm("Cancel this schedule? Your registration slot is returned so you can choose another schedule.")) return;
+    if (!(await askConfirm("Cancel this schedule? Your registration slot is returned so you can choose another schedule."))) return;
     try { await api(`/api/itp/registrations/${id}/cancel`, { json: {} }); reload(); } catch (e) { setErr((e as Error).message); }
   }
 
@@ -51,7 +52,7 @@ export default function Itp() {
   const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
   return (
-    <div className="flex max-w-4xl flex-col gap-6">
+    <div className="page-cols">
       <div>
         <h1 className="page-title">Official TOEFL ITP Test</h1>
         <p className="mt-1 text-ink-soft">The test is run by {data.organizer || "an official partner organizer"}. Here you only register and track its status.</p>

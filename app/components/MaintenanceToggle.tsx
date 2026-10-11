@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
@@ -15,7 +16,7 @@ export function MaintenanceToggle() {
   useEffect(() => { if (data) setMessage(data.message); }, [data]);
 
   async function set(on: boolean) {
-    if (on && !confirm("Turn on maintenance mode? Everyone except admins will only see the maintenance page.")) return;
+    if (on && !(await askConfirm("Turn on maintenance mode? Everyone except admins will only see the maintenance page."))) return;
     setBusy(true); setErr("");
     try { await api("/api/admin/maintenance", { method: "PUT", json: { on, message } }); reload(); }
     catch (x) { setErr((x as Error).message); } finally { setBusy(false); }

@@ -16,7 +16,7 @@ const TOPICS: [string, string][] = [
 export default async function Bantuan() {
   const info = await publicInfo();
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="page-cols">
       <div><h1 className="page-title">Help</h1><p className="mt-1 text-ink-soft">Answers to the most common questions.</p></div>
       <div className="flex flex-col gap-3">
         {TOPICS.map(([q, a]) => (

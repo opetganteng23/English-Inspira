@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
@@ -76,7 +77,7 @@ function Row({ i, tab, busy, run }: { i: Item; tab: string; busy: boolean; run: 
       </td>
       <td>{i.user ? <span className={sure ? "badge-ok" : "badge-warn"}>{sure ? "Sure" : `Check (${pct(i.matchConfidence)})`}</span> : <span className="badge-bad">No match</span>}</td>
       <td className="whitespace-nowrap text-sm font-semibold">
-        {tab === "pending" && <span className="flex flex-wrap gap-3"><button className="text-brand disabled:opacity-50" disabled={busy || !i.user || i.itpScore == null} onClick={() => run(async () => { const r = await api<{ level: string; classId: string | null }>(`/api/admin/external-results/${i.id}`, { json: { action: "confirm" } }); return `${i.rawName}: ${r.level} level, ${r.classId ? "placed in a class" : "waiting for a class (no seats yet)"}.`; })}>Confirm</button><button className="text-ink-soft" onClick={() => run(() => api(`/api/admin/external-results/${i.id}`, { json: { action: "skip" } }), "Skipped")}>Skip</button><button className="text-red-700" onClick={() => confirm("Delete this result?") && run(() => api(`/api/admin/external-results/${i.id}`, { method: "DELETE" }), "Deleted")}>Delete</button></span>}
+        {tab === "pending" && <span className="flex flex-wrap gap-3"><button className="text-brand disabled:opacity-50" disabled={busy || !i.user || i.itpScore == null} onClick={() => run(async () => { const r = await api<{ level: string; classId: string | null }>(`/api/admin/external-results/${i.id}`, { json: { action: "confirm" } }); return `${i.rawName}: ${r.level} level, ${r.classId ? "placed in a class" : "waiting for a class (no seats yet)"}.`; })}>Confirm</button><button className="text-ink-soft" onClick={() => run(() => api(`/api/admin/external-results/${i.id}`, { json: { action: "skip" } }), "Skipped")}>Skip</button><button className="text-red-700" onClick={() => void askConfirm("Delete this result?").then((ok) => { if (ok) run(() => api(`/api/admin/external-results/${i.id}`, { method: "DELETE" }), "Deleted"); })}>Delete</button></span>}
         {tab === "skipped" && <button className="text-brand" onClick={() => run(() => api(`/api/admin/external-results/${i.id}`, { json: { action: "reopen" } }), "Moved back to matching")}>Back to matching</button>}
       </td>
     </tr>

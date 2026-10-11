@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useEffect, useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
@@ -22,13 +23,13 @@ export default function ScoringProfiles() {
     try { await api(`/api/admin/scoring/${id}`, { json: body }); setMsg(ok); reload(); } catch (e) { setErr((e as Error).message); }
   }
   async function del(p: Row) {
-    if (!confirm(`Delete the profile "${p.name}"?`)) return;
+    if (!(await askConfirm(`Delete the profile "${p.name}"?`))) return;
     setErr(""); setMsg("");
     try { await api(`/api/admin/scoring/${p.id}`, { method: "DELETE" }); setMsg("Profile deleted."); reload(); } catch (e) { setErr((e as Error).message); }
   }
 
   return (
-    <div className="flex max-w-6xl flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Scoring Profiles</h1>

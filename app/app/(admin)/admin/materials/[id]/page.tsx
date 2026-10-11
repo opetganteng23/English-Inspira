@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -67,13 +68,13 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
     } catch (e) { setMsg({ ok: false, text: (e as Error).message }); } finally { setBusy(false); }
   }
   async function rollback(v: number) {
-    if (!confirm(`Restore this material to version ${v}? This creates a new version.`)) return;
+    if (!(await askConfirm(`Restore this material to version ${v}? This creates a new version.`))) return;
     try { await api(`/api/admin/materials/${params.id}/publish`, { json: { action: "rollback", version: v } }); location.reload(); } catch (e) { setMsg({ ok: false, text: (e as Error).message }); }
   }
-  function applyPreset(key: string) {
+  async function applyPreset(key: string) {
     const p = PRESETS.find((x) => x.key === key);
     if (!p) return;
-    if ((doc.html || doc.js) && !confirm("The template will overwrite the current HTML/CSS/JS code. Continue?")) return;
+    if ((doc.html || doc.js) && !(await askConfirm("The template will overwrite the current HTML/CSS/JS code. Continue?"))) return;
     setDoc(p.doc); setF((x) => ({ ...x, kind: "html", title: x.title || p.name }));
   }
 

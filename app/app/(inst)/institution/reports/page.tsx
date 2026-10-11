@@ -7,7 +7,7 @@ export default function Laporan() {
   const { url, ready } = useInstQuery();
   if (!ready) return <Loading />;
   return (
-    <div className="flex max-w-3xl flex-col gap-5">
+    <div className="page-cols">
       <div><h1 className="page-title">Reports</h1><p className="text-sm text-ink-soft">Download group results for archiving or sharing with leadership.</p></div>
       <section className="card flex flex-col gap-3">
         <h2 className="font-display text-lg font-extrabold text-navy">Participant report (Excel)</h2>

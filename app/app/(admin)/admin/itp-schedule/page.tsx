@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
@@ -48,7 +49,7 @@ function SessionEditor({ init, onClose, onSaved }: { init: Partial<S>; onClose: 
     try { await api(init.id ? `/api/admin/itp-sessions/${init.id}` : "/api/admin/itp-sessions", { method: init.id ? "PATCH" : "POST", json: { ...v, date: new Date(v.date).toISOString(), quota: Number(v.quota), organizer: v.organizer || undefined, programCycleId: v.programCycleId || null } }); onSaved(); }
     catch (e) { setErr((e as Error).message); setBusy(false); }
   }
-  async function remove() { if (!confirm("Delete this session?")) return; try { await api(`/api/admin/itp-sessions/${init.id}`, { method: "DELETE" }); onSaved(); } catch (e) { setErr((e as Error).message); } }
+  async function remove() { if (!(await askConfirm("Delete this session?"))) return; try { await api(`/api/admin/itp-sessions/${init.id}`, { method: "DELETE" }); onSaved(); } catch (e) { setErr((e as Error).message); } }
   return (
     <Modal title={init.id ? "Edit session" : "New session"} onClose={onClose}>
       <div className="flex flex-col gap-4">

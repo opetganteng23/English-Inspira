@@ -31,7 +31,7 @@ export default function AudioLibrary() {
   const done = (text: string) => { setDlg(null); setMsg(text); reload(); };
 
   return (
-    <div className="flex max-w-6xl flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Audio Library</h1>
