@@ -6,7 +6,7 @@ import { api, tgl } from "@/lib/client";
 import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
 
-type S = { id: string; title: string; date: string; place: string; organizer?: string; quota: number; registered: number; status: "open" | "closed" | "done"; docsValid: number; docsPending: number; scored: number; total: number };
+type S = { id: string; title: string; date: string; place: string; organizer?: string; quota: number; registered: number; status: "open" | "closed" | "done"; docsValid: number; docsPending: number; scored: number; total: number; programCycleId?: string | null; cycleName?: string | null };
 type Row = { id: string; fullName: string; nikLast4: string; email?: string; phone: string | null; docStatus: "pending" | "valid" | "rejected"; docNote: string | null; status: string; score: { listening: number; structure: number; reading: number; total: number } | null; idPhotoAssetId: string; facePhotoAssetId: string };
 type Roster = { session: { id: string; title: string; date: string; place: string; quota: number; registered: number }; roster: Row[] };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
@@ -40,11 +40,12 @@ export default function JadwalItp() {
 }
 
 function SessionEditor({ init, onClose, onSaved }: { init: Partial<S>; onClose: () => void; onSaved: () => void }) {
-  const [v, setV] = useState({ title: init.title ?? "", date: init.date ? toLocal(init.date) : "", place: init.place ?? "", organizer: init.organizer ?? "", quota: init.quota ?? 30, status: init.status ?? "open" });
+  const [v, setV] = useState({ title: init.title ?? "", date: init.date ? toLocal(init.date) : "", place: init.place ?? "", organizer: init.organizer ?? "", quota: init.quota ?? 30, status: init.status ?? "open", programCycleId: init.programCycleId ?? "" });
+  const cycles = useApi<{ cycles: { id: string; name: string; institution: string }[] }>("/api/admin/cycles").data?.cycles ?? [];
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   async function save() {
     setBusy(true); setErr("");
-    try { await api(init.id ? `/api/admin/itp-sessions/${init.id}` : "/api/admin/itp-sessions", { method: init.id ? "PATCH" : "POST", json: { ...v, date: new Date(v.date).toISOString(), quota: Number(v.quota), organizer: v.organizer || undefined } }); onSaved(); }
+    try { await api(init.id ? `/api/admin/itp-sessions/${init.id}` : "/api/admin/itp-sessions", { method: init.id ? "PATCH" : "POST", json: { ...v, date: new Date(v.date).toISOString(), quota: Number(v.quota), organizer: v.organizer || undefined, programCycleId: v.programCycleId || null } }); onSaved(); }
     catch (e) { setErr((e as Error).message); setBusy(false); }
   }
   async function remove() { if (!confirm("Delete this session?")) return; try { await api(`/api/admin/itp-sessions/${init.id}`, { method: "DELETE" }); onSaved(); } catch (e) { setErr((e as Error).message); } }
@@ -56,6 +57,7 @@ function SessionEditor({ init, onClose, onSaved }: { init: Partial<S>; onClose: 
           <label className={label}>Date & time<input className="field font-normal" type="datetime-local" value={v.date} onChange={(e) => setV({ ...v, date: e.target.value })} /></label>
           <label className={label}>Quota<input className="field font-normal" type="number" min={1} value={v.quota} onChange={(e) => setV({ ...v, quota: Number(e.target.value) })} /></label>
         </div>
+        <label className={label}>Program cycle (optional)<select className="field font-normal" value={v.programCycleId} onChange={(e) => setV({ ...v, programCycleId: e.target.value })}><option value="">Open to all participants</option>{cycles.map((c) => <option key={c.id} value={c.id}>{c.institution}: {c.name}</option>)}</select><span className="text-xs font-normal text-ink-soft">When set, only participants of that institution can register.</span></label>
         <label className={label}>Location<input className="field font-normal" value={v.place} onChange={(e) => setV({ ...v, place: e.target.value })} /></label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className={label}>Organizer<input className="field font-normal" value={v.organizer} onChange={(e) => setV({ ...v, organizer: e.target.value })} /></label>

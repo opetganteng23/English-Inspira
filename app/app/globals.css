@@ -42,6 +42,19 @@ img, video, canvas, svg { max-width: 100%; }
   .table-wrap thead { @apply bg-canvas text-xs uppercase text-ink-soft; }
   .table-wrap th, .table-wrap td { @apply px-3 py-3; }
   .table-wrap tbody tr { @apply border-t border-line; }
+  /* Layar sempit: tiap baris menjadi kartu; label kolom diisi ResponsiveTables dari kepala tabel. */
+  @media (max-width: 639px) {
+    .table-wrap { @apply overflow-visible border-0 bg-transparent; }
+    .table-wrap table { @apply block min-w-0; }
+    .table-wrap thead { @apply hidden; }
+    .table-wrap tbody { @apply grid gap-3; }
+    .table-wrap tbody tr { @apply block rounded-2xl border border-line bg-white px-3 py-1.5; }
+    .table-wrap td { @apply flex items-start justify-between gap-4 px-0 py-2 text-right; }
+    .table-wrap td + td { @apply border-t border-line/60; }
+    .table-wrap td::before { content: attr(data-label); @apply shrink-0 pt-0.5 text-left text-xs font-semibold uppercase text-ink-soft; }
+    .table-wrap td[data-label=""]::before { display: none; }
+    .table-wrap td[data-label=""] { @apply justify-start text-left; }
+  }
   .page-title { @apply font-display text-2xl font-extrabold text-navy sm:text-3xl; }
   .prose-ei p { @apply mb-3 leading-relaxed; }
   .prose-ei h2, .prose-ei h3 { @apply mb-2 mt-5 font-display font-extrabold text-navy; }

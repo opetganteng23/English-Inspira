@@ -7,7 +7,7 @@ import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { Audio } from "@/models/Audio";
 import { QuestionGroup } from "@/models/Question";
 import { Material } from "@/models/Material";
-import { readMp3, storeMp3 } from "@/lib/audio-upload";
+import { readAudio, storeMp3, parsePeaks, parseMarkers } from "@/lib/audio-upload";
 import { NextResponse } from "next/server";
 
 /** Streaming dengan HTTP Range. Akses: signed URL (peserta saat tes) atau sesi admin. */
@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   let isAdmin = false;
   if (!allowed) {
     const u = await getCurrentUser();
-    isAdmin = u?.role === "admin";
+    isAdmin = !!u && CONTENT_ROLES.includes(u.role);
     allowed = isAdmin;
   }
   if (!allowed) return new Response("Forbidden", { status: 403 });
@@ -41,7 +41,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const bucket = await audioBucket();
   const stream = bucket.openDownloadStream(audio.gridFsId, { start, end: end + 1 });
   const headers: Record<string, string> = {
-    "Content-Type": "audio/mpeg",
+    "Content-Type": audio.mime || "audio/mpeg",
     "Accept-Ranges": "bytes",
     "Content-Length": String(end - start + 1),
     "Cache-Control": "private, no-store",
@@ -72,6 +72,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       if (!["short_conversation", "longer_conversation", "talk", "other"].includes(body.kind)) throw new HttpError(400, "Invalid audio kind");
       set.kind = body.kind;
     }
+    if (Array.isArray(body.markers)) {
+      const cur = await Audio.findById(params.id).select("durationSec").lean();
+      if (!cur) throw new HttpError(404, "Audio not found");
+      (set as Record<string, unknown>).markers = parseMarkers(body.markers, cur.durationSec);
+    }
+    if (body.peaks !== undefined) (set as Record<string, unknown>).peaks = parsePeaks(body.peaks) ?? [];
     if (typeof body.description === "string") set.description = body.description.trim().slice(0, 500);
     if (typeof body.source === "string") set.source = body.source.trim().slice(0, 200);
     await connectDB();
@@ -91,12 +97,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     await connectDB();
     const a = await Audio.findById(params.id);
     if (!a) throw new HttpError(404, "Audio not found");
-    const { buf, durationSec, sha256, name } = await readMp3((await req.formData()).get("file"));
+    const fd = await req.formData();
+    const { buf, durationSec, sha256, name, mime } = await readAudio(fd.get("file"));
     const same = await Audio.findOne({ sha256, _id: { $ne: a._id } }).select("title");
     if (same) throw new HttpError(409, `An identical file already exists as "${same.title}". Use that audio instead.`);
     const oldId = a.gridFsId;
     const gridFsId = await storeMp3(buf, name, sha256);
-    a.gridFsId = gridFsId; a.size = buf.length; a.durationSec = durationSec; a.sha256 = sha256;
+    a.gridFsId = gridFsId; a.mime = mime; a.set("peaks", parsePeaks(fd.get("peaks")) ?? []); a.set("markers", (a.markers ?? []).filter((m) => (m.t ?? 0) <= durationSec)); a.size = buf.length; a.durationSec = durationSec; a.sha256 = sha256;
     await a.save();
     await (await audioBucket()).delete(oldId).catch(() => {}); // berkas lama dibersihkan; kegagalan di sini tidak membatalkan penggantian
     return NextResponse.json({ ok: true, durationSec });

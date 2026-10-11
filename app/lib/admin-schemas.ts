@@ -58,6 +58,7 @@ export const sessionInput = z.object({
   organizer: z.string().trim().max(120).optional(),
   quota: z.number().int().min(1).max(5000),
   status: z.enum(["open", "closed", "done"]).default("open"),
+  programCycleId: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional(),
 });
 
 

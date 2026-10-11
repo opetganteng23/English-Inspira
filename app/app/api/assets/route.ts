@@ -40,6 +40,7 @@ export async function POST(req: Request) {
       // Dedup hanya untuk aset publik; aset sensitif tidak boleh dibagi antarpengguna.
       sha256: sensitive ? undefined : sha256,
       sensitive,
+      ...(!sensitive && String(form.get("name") ?? "").trim() ? { name: String(form.get("name")).trim().slice(0, 120) } : {}),
     });
     return NextResponse.json({ id: String(asset._id), url: `/api/assets/${asset._id}` }, { status: 201 });
   } catch (e) {

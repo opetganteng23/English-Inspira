@@ -1,14 +1,16 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
+import { Waveform, type Marker } from "@/components/Waveform";
+import { computePeaks, mmss as clock } from "@/lib/waveform";
 
 type Row = { id: string; title: string; kind: Kind; description: string; source: string; durationSec: number; size: number; hasTranscript: boolean; createdAt: string; inUse: boolean; usage: { groups: number; questions: number; materials: number } };
 type Kind = "short_conversation" | "longer_conversation" | "talk" | "other";
-type Detail = Row & { transcript: string; groups: { id: string; section: string; instruction: string }[]; questions: { id: string; section: string; type: string; stem: string; status: string }[]; materials: { id: string; title: string; status: string }[] };
+type Detail = Row & { mime: string; peaks: number[]; markers: Marker[]; transcript: string; groups: { id: string; section: string; instruction: string }[]; questions: { id: string; section: string; type: string; stem: string; status: string }[]; materials: { id: string; title: string; status: string }[] };
 
 const KIND: Record<Kind, string> = { short_conversation: "Short conversation", longer_conversation: "Longer conversation", talk: "Talk / lecture", other: "Other" };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
@@ -111,6 +113,8 @@ function UploadDialog({ onClose, onDone }: { onClose: () => void; onDone: (t: st
     setBusy(true); setErr("");
     try {
       const fd = new FormData();
+      const peaks = await computePeaks(file);
+      if (peaks) fd.append("peaks", JSON.stringify(peaks));
       fd.append("file", file); fd.append("title", v.title); fd.append("kind", v.kind); fd.append("description", v.description); fd.append("source", v.source); fd.append("transcript", v.transcript);
       const r = await fetch("/api/audio", { method: "POST", body: fd });
       const d = await r.json();
@@ -121,7 +125,7 @@ function UploadDialog({ onClose, onDone }: { onClose: () => void; onDone: (t: st
   return (
     <Modal title="Upload audio" onClose={onClose}>
       <div className="flex flex-col gap-4">
-        <label className={label}>MP3 file (max 15 MB, 10 minutes)<input type="file" accept=".mp3,audio/mpeg" className="text-sm font-normal" onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); if (f && !v.title) setV((x) => ({ ...x, title: f.name.replace(/\.mp3$/i, "") })); }} /></label>
+        <label className={label}>Audio file: MP3 (max 15 MB) or WAV (max 30 MB), up to 10 minutes<input type="file" accept=".mp3,.wav,audio/mpeg,audio/wav" className="text-sm font-normal" onChange={(e) => { const f = e.target.files?.[0] ?? null; setFile(f); if (f && !v.title) setV((x) => ({ ...x, title: f.name.replace(/\.mp3$/i, "") })); }} /></label>
         <label className={label}>Title<input className="field font-normal" maxLength={120} value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} /></label>
         <KindSelect value={v.kind} onChange={(k) => setV({ ...v, kind: k })} />
         <label className={label}>Description (optional)<input className="field font-normal" maxLength={500} value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} /></label>
@@ -138,8 +142,21 @@ function ManageDialog({ mode, id, onClose, onDone }: { mode: "edit" | "replace" 
   const { data: d, error } = useApi<Detail>(`/api/admin/audio/${id}`);
   const [v, setV] = useState<{ title: string; kind: Kind; description: string; source: string; transcript: string } | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [markers, setMarkers] = useState<Marker[] | null>(null);
+  const [peaks, setPeaks] = useState<number[] | null>(null);
   const [sure, setSure] = useState(false);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  if (d && !markers) setMarkers(d.markers);
+  if (d && !peaks) setPeaks(d.peaks);
+  // Audio lama tanpa bentuk gelombang: hitung sekali dari berkasnya, lalu simpan.
+  useEffect(() => {
+    if (mode !== "edit" || !d || d.peaks.length) return;
+    let off = false;
+    (async () => {
+      try { const r = await fetch(`/api/audio/${id}`); const p = await computePeaks(await r.arrayBuffer()); if (p && !off) { setPeaks(p); await api(`/api/audio/${id}`, { method: "PATCH", json: { peaks: p } }); } } catch { /* tampilan saja */ }
+    })();
+    return () => { off = true; };
+  }, [d, id, mode]);
   if (d && !v) setV({ title: d.title, kind: d.kind, description: d.description, source: d.source, transcript: d.transcript });
   const used = d ? d.questions.length + d.materials.length : 0;
 
@@ -166,9 +183,22 @@ function ManageDialog({ mode, id, onClose, onDone }: { mode: "edit" | "replace" 
               <label className={label}>Description<input className="field font-normal" maxLength={500} value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} /></label>
               <label className={label}>Source / usage rights<input className="field font-normal" maxLength={200} value={v.source} onChange={(e) => setV({ ...v, source: e.target.value })} /></label>
               <label className={label}>Transcript<textarea className="field font-normal" rows={6} value={v.transcript} onChange={(e) => setV({ ...v, transcript: e.target.value })} /></label>
+              <div className="flex flex-col gap-2"><p className="text-sm font-semibold text-navy">Waveform and timestamps</p>
+                <Waveform src={`/api/audio/${id}`} durationSec={d.durationSec} peaks={peaks ?? []} markers={markers ?? []} />
+                <div className="flex flex-col gap-2">
+                  {(markers ?? []).map((m, i) => (
+                    <div key={i} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-2">
+                      <input className="field min-h-[40px] py-1" type="number" min={0} max={d.durationSec} step={0.5} aria-label={`Time in seconds ${i + 1}`} value={m.t} onChange={(e) => setMarkers((markers ?? []).map((x, k) => (k === i ? { ...x, t: Number(e.target.value) } : x)))} />
+                      <input className="field min-h-[40px] py-1" maxLength={80} aria-label={`Label ${i + 1}`} placeholder="Example: Question 1 starts" value={m.label} onChange={(e) => setMarkers((markers ?? []).map((x, k) => (k === i ? { ...x, label: e.target.value } : x)))} />
+                      <button type="button" className="text-sm font-semibold text-red-700" onClick={() => setMarkers((markers ?? []).filter((_, k) => k !== i))}>Remove</button>
+                    </div>
+                  ))}
+                  <button type="button" className="self-start text-sm font-semibold text-brand" disabled={(markers ?? []).length >= 50} onClick={() => setMarkers([...(markers ?? []), { t: 0, label: "" }])}>+ Add timestamp ({clock(d.durationSec)} total)</button>
+                </div>
+              </div>
               {usage}
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-outline" onClick={onClose}>Cancel</button>
-                <button className="btn-solid" disabled={busy || !v.title.trim()} onClick={() => run(async () => { await api(`/api/audio/${id}`, { method: "PATCH", json: v }); }, "Audio saved.")}>{busy ? "Saving…" : "Save"}</button></div>
+                <button className="btn-solid" disabled={busy || !v.title.trim() || (markers ?? []).some((m) => !m.label.trim())} onClick={() => run(async () => { await api(`/api/audio/${id}`, { method: "PATCH", json: { ...v, markers } }); }, "Audio saved.")}>{busy ? "Saving…" : "Save"}</button></div>
             </>
           )}
           {mode === "replace" && (
@@ -176,10 +206,10 @@ function ManageDialog({ mode, id, onClose, onDone }: { mode: "edit" | "replace" 
               <p className="text-sm text-ink-soft">Upload a corrected MP3 for “{d.title}”. Questions and materials keep pointing to this audio, so nothing needs to be re-linked.</p>
               {used > 0 && <p className="rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">This audio is used by {d.questions.length} question{d.questions.length === 1 ? "" : "s"} and {d.materials.length} material{d.materials.length === 1 ? "" : "s"}. They will play the new file from now on. Results already saved are not recalculated.</p>}
               {usage}
-              <label className={label}>New MP3 file<input type="file" accept=".mp3,audio/mpeg" className="text-sm font-normal" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
+              <label className={label}>New audio file (MP3 or WAV)<input type="file" accept=".mp3,.wav,audio/mpeg,audio/wav" className="text-sm font-normal" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
               {used > 0 && <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={sure} onChange={(e) => setSure(e.target.checked)} />I understand that all items above will use the new recording.</label>}
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-outline" onClick={onClose}>Cancel</button>
-                <button className="btn-solid" disabled={busy || !file || (used > 0 && !sure)} onClick={() => run(async () => { const fd = new FormData(); fd.append("file", file!); const r = await fetch(`/api/audio/${id}`, { method: "PUT", body: fd }); const j = await r.json(); if (!r.ok) throw new Error(j.error ?? "Replace failed"); }, "Audio file replaced.")}>{busy ? "Uploading…" : "Replace file"}</button></div>
+                <button className="btn-solid" disabled={busy || !file || (used > 0 && !sure)} onClick={() => run(async () => { const fd = new FormData(); const peaks = await computePeaks(file!); if (peaks) fd.append("peaks", JSON.stringify(peaks)); fd.append("file", file!); const r = await fetch(`/api/audio/${id}`, { method: "PUT", body: fd }); const j = await r.json(); if (!r.ok) throw new Error(j.error ?? "Replace failed"); }, "Audio file replaced.")}>{busy ? "Uploading…" : "Replace file"}</button></div>
             </>
           )}
           {mode === "delete" && (

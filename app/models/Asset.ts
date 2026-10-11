@@ -10,6 +10,7 @@ const assetSchema = new Schema(
     height: Number,
     dataBase64: { type: String, required: true },
     sha256: { type: String, index: { unique: true, sparse: true } },
+    name: { type: String, trim: true, maxlength: 120 }, // nama tampilan di Media Library
     sensitive: { type: Boolean, default: false }, // KTP/pas foto: hanya pemilik + admin
   },
   { timestamps: true }

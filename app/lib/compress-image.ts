@@ -18,13 +18,14 @@ export async function compressImage(file: File, maxBytes = 300 * 1024, maxSide =
   return { blob, width: w, height: h };
 }
 
-export async function uploadImage(file: File, opts: { sensitive?: boolean; maxSide?: number; maxBytes?: number } = {}) {
+export async function uploadImage(file: File, opts: { sensitive?: boolean; maxSide?: number; maxBytes?: number; name?: string } = {}) {
   const { blob, width, height } = await compressImage(file, opts.maxBytes ?? (opts.sensitive ? 500 * 1024 : 300 * 1024), opts.maxSide);
   const fd = new FormData();
   fd.append("file", blob, "image");
   fd.append("width", String(width));
   fd.append("height", String(height));
   if (opts.sensitive) fd.append("sensitive", "true");
+  if (opts.name) fd.append("name", opts.name);
   const r = await fetch("/api/assets", { method: "POST", body: fd });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error ?? "Upload failed");

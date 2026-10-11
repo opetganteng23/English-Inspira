@@ -10,6 +10,11 @@ export function sniffImage(b: Buffer): "image/jpeg" | "image/png" | "image/webp"
   return null; // SVG dan lainnya ditolak (SVG bisa memuat script)
 }
 
+/** WAV (RIFF/WAVE). */
+export function isWav(b: Buffer): boolean {
+  return b.length >= 12 && b.subarray(0, 4).toString("latin1") === "RIFF" && b.subarray(8, 12).toString("latin1") === "WAVE";
+}
+
 /** MP3: header ID3 atau frame sync 0xFFEx. */
 export function isMp3(b: Buffer): boolean {
   if (b.length < 4) return false;

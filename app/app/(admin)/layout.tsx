@@ -12,6 +12,7 @@ const nav: NavGroup[] = [
   { label: "Tests & Materials", items: [
     { href: "/admin/question-bank", label: "Question Bank" },
     { href: "/admin/audio", label: "Audio Library" },
+    { href: "/admin/media", label: "Media Library" },
     { href: "/admin/tests", label: "Tests" },
     { href: "/admin/courses", label: "Courses & Units" },
     { href: "/admin/materials", label: "Materials" },
@@ -31,8 +32,8 @@ const nav: NavGroup[] = [
 
 // Menu per peran: academic_admin tanpa pengguna, parameter, pengaturan, audit; content_editor hanya soal dan audio.
 const ALLOWED: Record<string, string[]> = {
-  academic_admin: ["/admin", "/admin/participants", "/admin/question-bank", "/admin/audio", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
-  content_editor: ["/admin/question-bank", "/admin/audio"],
+  academic_admin: ["/admin", "/admin/participants", "/admin/question-bank", "/admin/audio", "/admin/media", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
+  content_editor: ["/admin/question-bank", "/admin/audio", "/admin/media"],
 };
 
 export default async function Layout({ children }: { children: React.ReactNode }) {

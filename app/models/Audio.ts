@@ -9,6 +9,8 @@ const audioSchema = new Schema(
     size: { type: Number, required: true },
     durationSec: { type: Number, required: true },
     sha256: { type: String, index: { unique: true, sparse: true } },
+    peaks: [Number], // bentuk gelombang (0-100), dihitung di browser admin
+    markers: [new Schema({ t: Number, label: String }, { _id: false })], // penanda waktu: awal soal, bagian, dll.
     transcript: String, // hanya admin; peserta melihatnya setelah tes selesai
     kind: { type: String, enum: ["short_conversation", "longer_conversation", "talk", "other"], default: "other", index: true },
     description: { type: String, trim: true, maxlength: 500 },

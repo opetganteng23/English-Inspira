@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ResponsiveTables } from "@/components/ResponsiveTables";
 
 // Poppins di-host sendiri (file di app/fonts, lisensi OFL): satu-satunya font aplikasi, termasuk judul.
 const poppins = localFont({
@@ -23,7 +24,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable}`}>{children}</body>
+      <body className={`${poppins.variable}`}>{children}<ResponsiveTables /></body>
     </html>
   );
 }

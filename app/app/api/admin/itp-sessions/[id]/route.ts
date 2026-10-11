@@ -7,6 +7,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { sessionInput } from "@/lib/admin-schemas";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
+import { assertCycleExists } from "@/lib/itp-cycle";
 
 async function find(id: string) {
   if (!isValidObjectId(id)) throw new HttpError(404, "Schedule not found");
@@ -22,7 +23,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const s = await find(params.id);
     const b = sessionInput.parse(await req.json());
     if (b.quota < s.registered) throw new HttpError(409, `Quota cannot be lower than the number registered (${s.registered})`);
-    s.set(b);
+    await assertCycleExists(b.programCycleId);
+    s.set({ ...b, programCycleId: b.programCycleId ?? undefined });
     await s.save();
     await audit(admin._id, "itp.session.update", params.id);
     return NextResponse.json({ ok: true });

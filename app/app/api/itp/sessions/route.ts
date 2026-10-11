@@ -5,6 +5,7 @@ import { getSetting } from "@/models/Settings";
 import { Attempt } from "@/models/Test";
 import { User } from "@/models/User";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
+import { sessionsVisibleTo } from "@/lib/itp-cycle";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function GET() {
     const user = await requireRole(["participant", "admin", "inst_admin"]);
     await connectDB();
     const [sessions, regs, last, u, cfg] = await Promise.all([
-      ItpSession.find({ status: "open", date: { $gt: new Date() } }).sort({ date: 1 }).lean(),
+      ItpSession.find({ status: "open", date: { $gt: new Date() }, ...(await sessionsVisibleTo(user)) }).sort({ date: 1 }).lean(),
       ItpRegistration.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
       Attempt.findOne({ userId: user._id, status: "submitted" }).sort({ finishedAt: -1 }).select("scoreEst kind finishedAt").lean(),
       User.findById(user._id).select("targetScore name").lean(),

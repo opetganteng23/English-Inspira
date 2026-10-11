@@ -31,8 +31,8 @@ async function maintenanceOn(req: NextRequest) {
 
 // Peran staf pusat selain admin hanya boleh membuka halaman admin yang sesuai (API tetap memeriksa ulang).
 const STAFF_PAGES: Record<string, string[]> = {
-  academic_admin: ["/admin", "/admin/participants", "/admin/question-bank", "/admin/audio", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
-  content_editor: ["/admin/question-bank", "/admin/audio"],
+  academic_admin: ["/admin", "/admin/participants", "/admin/question-bank", "/admin/audio", "/admin/media", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
+  content_editor: ["/admin/question-bank", "/admin/audio", "/admin/media"],
 };
 const staffOk = (role: string, path: string) => (STAFF_PAGES[role] ?? []).some((p) => path === p || (p !== "/admin" && path.startsWith(p + "/")));
 const home = roleHome;

@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       Material.find({ contentHtml: { $regex: `data-audio-id="${String(a._id)}"` } }).select("title status").limit(100).lean(),
     ]);
     return NextResponse.json({
-      id: String(a._id), title: a.title, kind: a.kind ?? "other", description: a.description ?? "", source: a.source ?? "", transcript: a.transcript ?? "",
+      id: String(a._id), title: a.title, kind: a.kind ?? "other", description: a.description ?? "", source: a.source ?? "", transcript: a.transcript ?? "", mime: a.mime ?? "audio/mpeg", peaks: a.peaks ?? [], markers: (a.markers ?? []).map((m) => ({ t: m.t, label: m.label })),
       durationSec: a.durationSec, size: a.size, createdAt: a.createdAt,
       groups: groups.map((g) => ({ id: String(g._id), section: g.section, instruction: g.instruction ?? "" })),
       questions: questions.map((q) => ({ id: String(q._id), section: q.section, type: q.type, stem: q.stem.slice(0, 120), status: q.status })),

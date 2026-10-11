@@ -9,6 +9,7 @@ const sessionSchema = new Schema(
     quota: { type: Number, required: true, min: 1 },
     registered: { type: Number, default: 0 },
     status: { type: String, enum: ["open", "closed", "done"], default: "open" },
+    programCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle", index: true }, // bila diisi: hanya peserta institusi periode itu
   },
   { timestamps: true }
 );

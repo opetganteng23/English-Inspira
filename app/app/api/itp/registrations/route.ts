@@ -9,6 +9,7 @@ import { audit } from "@/lib/audit";
 import { Asset } from "@/models/Asset";
 import { User } from "@/models/User";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
+import { sessionsVisibleTo } from "@/lib/itp-cycle";
 
 const oid = z.string().regex(/^[0-9a-f]{24}$/);
 const schema = z.object({
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     const assets = await Asset.find({ _id: { $in: [b.idPhotoAssetId, b.facePhotoAssetId] }, ownerId: me._id, sensitive: true }).select("_id").lean();
     if (assets.length !== (b.idPhotoAssetId === b.facePhotoAssetId ? 1 : 2)) throw new HttpError(400, "Invalid document photo. Please upload again.");
 
-    const session = await ItpSession.findById(b.sessionId).lean();
+    const session = await ItpSession.findOne({ _id: b.sessionId, ...(await sessionsVisibleTo(me)) }).lean();
     if (!session || session.status !== "open" || session.date <= new Date()) throw new HttpError(404, "Schedule not available");
     if (await ItpRegistration.exists({ userId: me._id, sessionId: session._id, status: { $ne: "cancelled" } })) throw new HttpError(409, "You are already registered for this schedule");
 

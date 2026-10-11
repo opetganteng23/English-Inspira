@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { QuestionHistoryDialog } from "@/components/QuestionHistoryDialog";
 import { QuestionPreviewDialog } from "@/components/QuestionPreviewDialog";
 import { QuestionTypesDialog, type QType } from "@/components/QuestionTypesDialog";
+import { AiQuestionDialog } from "@/components/AiQuestionDialog";
 import { uploadImage } from "@/lib/compress-image";
 
 type Row = { _id: string; section: string; type: string; stem: string; status: string; difficulty: string; issues?: string[] };
@@ -40,6 +41,7 @@ export default function BankSoal() {
   const [form, setForm] = useState<Form | null>(null);
   const [groupDlg, setGroupDlg] = useState(false);
   const [importDlg, setImportDlg] = useState(false);
+  const [aiDlg, setAiDlg] = useState(false);
 
   const load = useCallback(async () => {
     const sp = new URLSearchParams({ page: String(page) });
@@ -85,7 +87,8 @@ export default function BankSoal() {
         <div className="flex flex-wrap gap-2">
           <a href={`/api/admin/questions/export?${new URLSearchParams(Object.entries(f).filter(([k, v]) => v && k !== "q") as [string, string][])}`} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Export CSV</a>
           <button onClick={() => setTypesDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Manage types</button>
-          <button onClick={() => setImportDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Import Excel/CSV</button>
+          <button onClick={() => setAiDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Draft with AI</button>
+          <button onClick={() => setImportDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">Import Excel/CSV/Word</button>
           <button onClick={() => setGroupDlg(true)} className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-navy">+ Audio/passage group</button>
           <button onClick={() => setForm(empty(f.section || "structure"))} className="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white">+ New question</button>
         </div>
@@ -145,6 +148,7 @@ export default function BankSoal() {
       {form && <Editor types={types} onTypesChanged={loadTypes} form={form} onClose={() => setForm(null)} onSaved={() => { setForm(null); load(); }} onNewGroup={() => setGroupDlg(true)} />}
       {typesDlg && <QuestionTypesDialog types={types} onClose={() => setTypesDlg(false)} onChanged={() => { loadTypes(); load(); }} />}
       {groupDlg && <GroupDialog onClose={() => setGroupDlg(false)} />}
+      {aiDlg && <AiQuestionDialog types={types} onClose={() => setAiDlg(false)} onSaved={() => { setAiDlg(false); load(); }} />}
       {importDlg && <ImportDialog onClose={() => { setImportDlg(false); load(); }} />}
     </div>
   );
@@ -271,7 +275,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   async function run(dry: boolean) {
     const f = file.current?.files?.[0];
-    if (!f) return setErr("Choose a CSV or Excel file first");
+    if (!f) return setErr("Choose a CSV, Excel, or Word file first");
     setBusy(true); setErr(""); setRes(null);
     try {
       const fd = new FormData(); fd.append("file", f);
@@ -282,10 +286,10 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   }
   return (
-    <Modal title="Import questions from Excel/CSV" onClose={onClose}>
+    <Modal title="Import questions from Excel, CSV, or Word" onClose={onClose}>
       <div className="flex flex-col gap-4 text-sm">
-        <p className="text-ink-soft">Columns: section, type, stem, A-F (options), answer (A-F), explanation, difficulty (easy/medium/hard), tags (<code>skill:topic; skill:topic</code>), status. Maximum 500 rows. Questions with status <b>published</b> must be tagged. Audio and passages are linked manually after import. <a className="font-semibold text-brand" href="/api/admin/questions/import">Download template</a></p>
-        <input ref={file} type="file" aria-label="Question file" accept=".csv,.xlsx" className="field" />
+        <p className="text-ink-soft">Columns: section, type, stem, A-F (options), answer (A-F), explanation, difficulty (easy/medium/hard), tags (<code>skill:topic; skill:topic</code>), status. Maximum 500 rows. Questions with status <b>published</b> must be tagged. Audio and passages are linked manually after import. <a className="font-semibold text-brand" href="/api/admin/questions/import">Download template</a>. <b>Word (.docx):</b> number each question (<code>1. ...</code>), list options as <code>A. B. C. D.</code>, then <code>Answer: B</code> and optional <code>Explanation:</code>. Lines such as <code>Section:</code>, <code>Type:</code>, <code>Difficulty:</code>, <code>Tags:</code>, <code>Status:</code> apply to the questions below them. <a className="font-semibold text-brand" href="/api/admin/questions/import?format=word">Download Word format example</a></p>
+        <input ref={file} type="file" aria-label="Question file" accept=".csv,.xlsx,.docx" className="field" />
         {err && <p role="alert" className="text-red-700">{err}</p>}
         <div className="flex flex-wrap gap-2"><button className="rounded-lg border border-line-strong px-4 py-2 font-semibold" disabled={busy} onClick={() => run(true)}>Check first (without saving)</button><button className="rounded-lg bg-brand px-4 py-2 font-semibold text-white disabled:opacity-60" disabled={busy} onClick={() => run(false)}>Import</button></div>
         {res && (
