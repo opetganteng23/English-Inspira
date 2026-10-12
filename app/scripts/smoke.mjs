@@ -154,7 +154,7 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(coach, "/api/admin/dashboard"); ok(r.status === 403, "coach tidak bisa API admin");
   r = await req(coach, "/api/home"); ok(r.status === 403, "coach tidak bisa API peserta");
   const ia = await login("ia@test.local", { invite: inviteTokenFor("ia@test.local") }); await req(ia, "/api/me/consent", { method: "POST", json: { consent: true, givenName: "Admin", surname: "Inst" } });
-  r = await req(ia, "/api/inst/participants"); ok(r.status === 200 && r.data.participants.length === 3, "inst_admin A melihat 3 peserta", J(r.data.participants?.length));
+  r = await req(ia, "/api/inst/participants"); ok(r.status === 200 && r.data.participants.length === 3 && r.data.total === 3 && r.data.pages === 1, "inst_admin A melihat 3 peserta (dengan total & halaman)", J(r.data.participants?.length));
   r = await req(ia, `/api/inst/participants?institution=${iB}`); ok(r.data.participants.length === 3, "parameter ?institution diabaikan untuk inst_admin");
   r = await req(ia, "/api/inst/code"); ok(r.status === 200 && r.data.seats === 3 && r.data.used === 3, "info kursi institusi", J(r.data));
   r = await req(ia, "/api/inst/invites", { method: "POST", json: { emails: ["extra@test.local"] } }); ok(r.status === 200 && r.data.failed.length === 1, "undang di luar kursi gagal terlaporkan", J(r.data));

@@ -8,11 +8,18 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   try {
     const { scoped } = await instContext(req);
-    const q = new URL(req.url).searchParams.get("q")?.trim();
+    const sp = new URL(req.url).searchParams;
+    const q = sp.get("q")?.trim();
+    const size = 50, page = Math.max(1, Math.floor(Number(sp.get("page")) || 1));
     const extra = q ? { $or: [{ name: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }, { email: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }] } : {};
-    const members = await User.find(scoped(extra)).sort({ name: 1 }).limit(1000).select("name email targetScore createdAt status currentScoreEst").lean();
+    // Bertahap 50 per halaman (institusi bisa punya ribuan peserta).
+    const [members, total] = await Promise.all([
+      User.find(scoped(extra)).sort({ name: 1, _id: 1 }).skip((page - 1) * size).limit(size).select("name email targetScore createdAt status currentScoreEst").lean(),
+      User.countDocuments(scoped(extra)),
+    ]);
     const results = await memberResults(members.map((m) => m._id));
     return NextResponse.json({
+      total, page, pages: Math.max(1, Math.ceil(total / size)),
       participants: members.map((m) => {
         const l = results.get(String(m._id)) ?? [];
         const last = l[l.length - 1];

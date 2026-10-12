@@ -15,14 +15,15 @@ const SEC: Record<string, string> = { listening: "Listening", structure: "Struct
 export default function InstPeserta() {
   const { url, ready, q: q2 } = useInstQuery();
   const [q, setQ] = useState("");
-  const { data, loading, error, reload } = useApi<{ participants: P[] }>(url(`/api/inst/participants${q ? `?q=${encodeURIComponent(q)}` : ""}`));
+  const [page, setPage] = useState(1);
+  const { data, loading, error, reload } = useApi<{ participants: P[]; total: number; page: number; pages: number }>(url(`/api/inst/participants?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ""}`));
   const [sel, setSel] = useState<string | null>(null);
   if (!ready) return <Loading />;
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Participants & invitations</h1><p className="text-sm text-ink-soft">Add participants and view individual results. Only participants from your institution are shown.</p></div><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Export Excel</a></div>
       <ImportPanel base="/api/inst" query={q2} onDone={reload} />
-      <input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="flex flex-wrap items-center justify-between gap-3"><input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />{data && <span className="text-sm text-ink-soft">{data.total.toLocaleString("en-GB")} participants</span>}</div>
       <ErrorNote text={error} />
       {loading && !data ? <Loading /> : (
         <div className="table-wrap"><table>
@@ -32,6 +33,13 @@ export default function InstPeserta() {
             {data?.participants.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No participants yet.</td></tr>}
           </tbody>
         </table></div>
+      )}
+      {data && data.pages > 1 && (
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <button className="btn-outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
+          <span className="text-ink-soft">Page {data.page} of {data.pages}</span>
+          <button className="btn-outline" disabled={page >= data.pages} onClick={() => setPage(page + 1)}>Next</button>
+        </div>
       )}
       {sel && <Detail url={url(`/api/inst/participants/${sel}`)} onClose={() => setSel(null)} />}
     </div>
