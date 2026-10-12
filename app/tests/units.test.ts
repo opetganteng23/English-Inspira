@@ -358,3 +358,30 @@ describe("blok interaktif rich text (MTS §10.2)", () => {
     expect(sanitizeRich('<audio data-audio-id="aaaaaaaaaaaaaaaaaaaaaaaa" data-transcript="1"></audio>')).toContain('data-transcript="1"');
   });
 });
+
+describe("impor anggota dari Excel", () => {
+  it("mencari sheet dan baris judul otomatis; email kantor lalu pribadi; nama kolom bergaris bawah", async () => {
+    const ExcelJS = (await import("exceljs")).default;
+    const { parseMembersFile } = await import("@/lib/import-parse");
+    const wb = new ExcelJS.Workbook();
+    const rekap = wb.addWorksheet("Rekapan");
+    rekap.addRow([]); rekap.addRow([]); rekap.addRow(["No", "lokasi", "Count"]); rekap.addRow([1, "CABANG A", 2]);
+    const d = wb.addWorksheet("Detail");
+    d.addRow(["no", "nik", "nama", "email_pribadi", "email_kantor", "no_hp"]);
+    d.addRow([1, 111, "Andi", "andi@gmail.com", "Andi@Kantor.co.id", "0811"]);
+    d.addRow([2, 222, "Budi", "budi@gmail.com", "", "0812"]);
+    d.addRow([]);
+    d.addRow([3, 333, "Cici", { richText: [{ text: "cici@" }, { text: "gmail.com" }] }, null, null]);
+    const buf = Buffer.from(await wb.xlsx.writeBuffer());
+    const rows = await parseMembersFile(new File([buf], "data.xlsx"));
+    expect(rows.map((r) => [r.row, r.email, r.name, r.phone])).toEqual([
+      [2, "andi@kantor.co.id", "Andi", "0811"],
+      [3, "budi@gmail.com", "Budi", "0812"],
+      [5, "cici@gmail.com", "Cici", undefined],
+    ]);
+  });
+  it("menolak file tanpa kolom email", async () => {
+    const { parseMembersFile } = await import("@/lib/import-parse");
+    await expect(parseMembersFile(new File(["nama,hp\nA,1\n"], "x.csv"))).rejects.toThrow(/email/);
+  });
+});
