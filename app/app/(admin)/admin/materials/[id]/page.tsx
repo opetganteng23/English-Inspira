@@ -11,7 +11,7 @@ import { PRESETS } from "@/lib/material-presets";
 import { MaterialFrame } from "@/components/MaterialFrame";
 import { useMaterialBase } from "@/lib/use-material-base";
 import { Loading, ErrorNote } from "@/components/Charts";
-import type { HtmlDoc } from "@/lib/material-doc";
+import { splitFullHtml, type HtmlDoc } from "@/lib/material-doc";
 
 // Editor berat dimuat hanya di klien.
 const RichEditor = dynamic(() => import("@/components/RichEditor").then((m) => m.RichEditor), { ssr: false, loading: () => <div className="h-72 animate-pulse rounded-xl bg-canvas" /> });
@@ -33,6 +33,8 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
   const [rich, setRich] = useState<{ json: unknown; html: string }>({ json: null, html: "" });
   const [doc, setDoc] = useState<HtmlDoc>({ html: "", css: "", js: "" });
   const [tab, setTab] = useState<"html" | "css" | "js" | "preview">("html");
+  const [importing, setImporting] = useState(false);
+  const [pasted, setPasted] = useState("");
   const [phone, setPhone] = useState(false);
   const [ready, setReady] = useState(isNew);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -77,6 +79,12 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
     if ((doc.html || doc.js) && !(await askConfirm("The template will overwrite the current HTML/CSS/JS code. Continue?"))) return;
     setDoc(p.doc); setF((x) => ({ ...x, kind: "html", title: x.title || p.name }));
   }
+  async function applyImport() {
+    if (!pasted.trim()) return;
+    if ((doc.html || doc.css || doc.js) && !(await askConfirm("This will overwrite the current HTML/CSS/JS code. Continue?"))) return;
+    setDoc(splitFullHtml(pasted));
+    setPasted(""); setImporting(false); setTab("preview");
+  }
 
   if (!isNew && loading) return <Loading />;
   if (!isNew && !loaded) return <ErrorNote text={error} />;
@@ -110,8 +118,18 @@ export default function MateriEditor({ params }: { params: { id: string } }) {
         <section className="card flex flex-col gap-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div><h2 className="font-display text-lg font-extrabold text-navy">Interactive HTML document</h2><p className="text-xs text-ink-soft">Runs in a sandboxed iframe: it cannot read cookies or call the API. Report the score with <code>EI.complete(score0to100, answers)</code>. Audio: write <code>&lt;audio controls src=&quot;ei-audio:ID&quot;&gt;</code>. Size {sizeKb} KB of max 2048 KB.</p></div>
-            <label className="text-sm font-semibold text-navy">Start from a template<select className="field mt-1 font-normal" value="" onChange={(e) => { applyPreset(e.target.value); e.target.value = ""; }}><option value="">Choose a template…</option>{PRESETS.map((p) => <option key={p.key} value={p.key}>{p.name}: {p.desc}</option>)}</select></label>
+            <div className="flex flex-wrap items-end gap-3">
+              <button type="button" className="btn-outline" onClick={() => setImporting((x) => !x)}>{importing ? "Cancel paste" : "Paste one full file"}</button>
+              <label className="text-sm font-semibold text-navy">Start from a template<select className="field mt-1 font-normal" value="" onChange={(e) => { applyPreset(e.target.value); e.target.value = ""; }}><option value="">Choose a template…</option>{PRESETS.map((p) => <option key={p.key} value={p.key}>{p.name}: {p.desc}</option>)}</select></label>
+            </div>
           </div>
+          {importing && (
+            <div className="flex flex-col gap-2 rounded-xl border border-line-strong bg-canvas p-3">
+              <p className="text-xs text-ink-soft">Paste your whole HTML file here (inline <code>&lt;style&gt;</code>/<code>&lt;script&gt;</code> is fine) — it will be split into the HTML/CSS/JS tabs below automatically.</p>
+              <textarea className="field h-40 font-mono text-xs" value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder="<!doctype html>..." />
+              <div className="flex gap-2"><button type="button" className="btn-solid" disabled={!pasted.trim()} onClick={applyImport}>Split into tabs</button></div>
+            </div>
+          )}
           {!!audios.data?.audio.length && <p className="text-xs text-ink-soft">ID audio: {audios.data.audio.map((a) => `${a.title} = ${a.id}`).join(" · ")}</p>}
           <div className="flex flex-wrap gap-1 rounded-lg bg-canvas p-1 text-sm" role="tablist">{([["html", "HTML"], ["css", "CSS"], ["js", "JavaScript"], ["preview", "Live preview"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`rounded-md px-3 py-2 font-semibold ${tab === k ? "bg-navy text-white" : "text-ink-soft"}`}>{l}</button>)}</div>
           {tab !== "preview" ? (

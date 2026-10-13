@@ -52,3 +52,21 @@ ${bridge}<style>${doc.css ?? ""}</style></head><body>${doc.html ?? ""}<script>${
 
 export const MAX_DOC_BYTES = 2 * 1024 * 1024;
 export const docSize = (d: HtmlDoc) => (d.html?.length ?? 0) + (d.css?.length ?? 0) + (d.js?.length ?? 0);
+
+/** Pecah satu berkas HTML gabungan (boleh berisi <!doctype>/<html>/<head>, <style>, <script> inline) jadi {html, css, js}
+ *  agar admin bisa tempel satu file utuh sekali jalan, bukan menyalin tiga bagian secara manual. */
+export function splitFullHtml(src: string): HtmlDoc {
+  let html = src;
+  let css = "";
+  let js = "";
+  html = html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (_m, c: string) => { css += c + "\n"; return ""; });
+  html = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (_m, c: string) => { js += c + "\n"; return ""; });
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) html = bodyMatch[1];
+  html = html
+    .replace(/<!doctype[^>]*>/gi, "")
+    .replace(/<\/?(html|head|body)[^>]*>/gi, "")
+    .replace(/<meta[^>]*>/gi, "")
+    .replace(/<title[^>]*>[\s\S]*?<\/title>/gi, "");
+  return { html: html.trim(), css: css.trim(), js: js.trim() };
+}

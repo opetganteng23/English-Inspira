@@ -3,7 +3,7 @@ import { scaleSection, estimateTotal, gradeAttempt } from "@/lib/scoring";
 import { itpTotal, validSectionScore } from "@/lib/certificates";
 import { PARAM_DEFAULTS } from "@/lib/config";
 import { encryptField, decryptField, maskName, maskNik } from "@/lib/crypto";
-import { buildSrcdoc, SANDBOX } from "@/lib/material-doc";
+import { buildSrcdoc, SANDBOX, splitFullHtml } from "@/lib/material-doc";
 import { parseBridgeMessage, makeRateGate } from "@/lib/material-bridge";
 import { sanitizePassage, sanitizeRich } from "@/lib/sanitize";
 import { extractJson, detectDistress } from "@/lib/ai";
@@ -80,6 +80,18 @@ describe("keamanan materi", () => {
     expect(d).toContain("removeChild(s)"); // jembatan menghapus dirinya (nonce tak terbaca skrip materi)
     expect(SANDBOX).toBe("allow-scripts allow-forms");
     expect(() => buildSrcdoc({}, "https://app.test", "pendek")).toThrow();
+  });
+  it("splitFullHtml: memecah satu berkas HTML gabungan jadi {html, css, js}", () => {
+    const r = splitFullHtml(`<!doctype html><html><head><title>X</title><style>b{color:red}</style></head><body><p>Hi</p><script>EI.complete(90)</script></body></html>`);
+    expect(r.css).toBe("b{color:red}");
+    expect(r.js).toBe("EI.complete(90)");
+    expect(r.html).toBe("<p>Hi</p>");
+  });
+  it("splitFullHtml: fragmen tanpa wrapper tetap diproses apa adanya", () => {
+    const r = splitFullHtml(`<style>.a{}</style><div>hi</div><script>var x=1;</script>`);
+    expect(r.css).toBe(".a{}");
+    expect(r.js).toBe("var x=1;");
+    expect(r.html).toBe("<div>hi</div>");
   });
   it("jembatan: hanya pesan berversi, bernonce benar, dan bentuk valid yang diterima", () => {
     const ok = (t: string, p: unknown, n = "N0NCE0123456789a") => parseBridgeMessage({ v: 1, n, t, p }, "N0NCE0123456789a");
