@@ -1,4 +1,4 @@
-# TODO English Inspira (repo Edulyfe EPTA) — acuan: English_Inspira_LMS_MTS_V2_4.md (v2.4)
+# TODO English Inspira (repo Edulyfe EPTA) — acuan: English_Inspira_LMS_MTS_V2_8.md (v2.8)
 
 Legenda status: ✅ Sudah · 🔄 Sedang · ⬜ Belum · ⏭️ Sengaja dilewati/ditunda (alasan wajib) · ❌ Dihapus karena bertentangan dengan v2.2
 Prioritas: **P1** fondasi (Fase 1+3) → **P2** belajar & analitik (Fase 4+5) → **P3** coaching (Fase 6) → **P4** PDF/level-up/laporan/hardening (Fase 7+8) → **P5** opsional (Fase 9, sudah ada)
@@ -279,3 +279,16 @@ Acuan: `English_Inspira_LMS_MTS_V2_4.md` bagian 27, mockup `design/ui-v2.4/ui/*.
 | N12 | Media Library (daftar gambar, unggah banyak, cari, ganti nama, salin URL, deteksi pemakaian di soal/materi/cover/pengaturan, hapus hanya bila tidak dipakai); impor soal dari Word (.docx, format bernomor, dipakai ulang validasi CSV); AI Question Authoring (draf soal Structure lewat Claude, ditinjau lalu disimpan sebagai draft); audio WAV (maks 30 MB), gelombang suara, dan timestamp berlabel; jadwal ITP dapat ditautkan ke periode (hanya peserta institusi itu); tabel admin jadi kartu di ponsel; skrip `align-levels` dan `reset-participants` | ✅ 34 uji API + 15 uji klik desktop + 21 ponsel + 11 unit |
 | N13 | Clustering dan kelas: admin mengunggah hasil PURE/OCE (CSV/Excel atau PDF per orang), dicocokkan ke peserta lewat email atau nama (sama persis, urutan terbalik, salah ketik, nama di isi PDF), konfirmasi menetapkan level + kuota + kelas; kelas per level (kapasitas, coach, institusi, periode), penempatan acak ke kelas paling longgar, antrean menunggu kelas, pindah manual dengan riwayat, pantauan siswa aktif 7 hari dan rata-rata skor; padanan TOEFL ITP, CEFR (batas ETS), OCE, PURE di analisis hasil dan tabel padanan yang bisa diatur admin; rentang level baru Basic 310-459, Intermediate 460-559, Advanced 560-677 (skrip `align-levels`) beserta penjelasan level | ✅ 41 uji API + 10 uji klik desktop + 10 ponsel + 14 unit |
 | N14 | Belum: deploy VPS (`npm ci`, jalankan `align-levels --yes`, cek log `[password]`, load test, batas unggah nginx 30 MB); batas kirim Gmail SMTP; isi tabel padanan OCE/PURE dari penyedia tes; AI authoring Listening/Reading; ganti password SSH | ⬜ |
+
+## 20. Notulensi 11/10/2026: quick win dan plotting jadwal (2026-10-13)
+
+| ID | Item | Status |
+|---|---|---|
+| O1 | Tombol Back otomatis di `ShellNav` untuk semua halaman turunan admin/coach/institusi/peserta | ✅ |
+| O2 | Kategori tes baru `final` (Final Test): dinilai dan memicu kenaikan level sama seperti Simulation | ✅ |
+| O3 | Impor bank soal dari Excel dengan kolom `audio`/`instruction`; baris berjudul audio sama digabung satu `question_groups`, dicocokkan ke Audio Library atau dibuat baru | ✅ |
+| O4 | Kuota coaching per kategori placement naik: Basic 8→12, Intermediate 6→8, Advanced tetap 4 (`lib/config.ts`, migrasi `scripts/align-quota-2026-10.ts` dijalankan di produksi, hanya mengubah dokumen yang masih memakai nilai bawaan lama) | ✅ |
+| O5 | Penentuan jadwal coaching massal dari Excel: admin memplot kelas + jadwal sekaligus (`lib/import-schedule.ts`, `/api/admin/coaching/import`), baris coach+waktu sama digabung satu sesi, tiap peserta dibooking lewat `bookSlot` yang sama dengan booking mandiri (kuota/bentrok/kapasitas tetap dicek), baris gagal dilaporkan per baris | ✅ 8 smoke checks baru (301/317 total lulus; 16 gagal pra-ada, tidak terkait) |
+| O6 | Impor peserta dari Excel multi-sheet dan header fleksibel (`email_kantor`/`email_pribadi`/`no_hp`, dst.) dengan pemrosesan paralel untuk ribuan baris | ✅ diuji dengan berkas 1.381 baris, 0 gagal |
+| O7 | MTS diperbarui ke v2.8 (`English_Inspira_LMS_MTS_V2_8.md`, dari acuan v2.7 yang sebenarnya — v2.4/v2.5/v2.6 lama adalah berkas yatim yang sempat salah diacu) mencakup O1-O5 ditambah catatan captcha dan pendaftaran satu langkah yang sudah berjalan di produksi | ✅ |
+| O8 | Terbuka, menunggu pemilik: makna "OSEE", KTP wajib untuk semua peserta atau hanya ITP resmi, konsep dashboard analitik manajemen (Pak Yudha/Pak Azwar), §27 Kenyamanan Belajar dibatalkan (tidak diterapkan) | ⬜ |
