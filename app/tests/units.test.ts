@@ -326,6 +326,23 @@ describe("impor soal (Bank Soal)", () => {
   });
   it("kolom wajib hilang dilaporkan sekali", () => { const r = mapQuestionRows([["foo", "bar"], ["1", "2"]]); expect(r).toHaveLength(1); expect(r[0].ok).toBe(false); });
   it("tag tanpa titik dua memakai section sebagai skill", () => expect(parseTags("modal verbs", "structure")).toEqual([{ skill: "structure", topic: "modal verbs" }]));
+
+  const headAudio = [...head, "audio", "instruction"];
+  it("kolom audio (listening) terbaca sebagai audioTitle + groupInstruction", () => {
+    const [r] = mapQuestionRows([headAudio, ["listening", "detail", "Soal?", "a1", "b1", "", "", "A", "", "", "listening:detail", "published", "Campus Tour", "Listen and answer."]]);
+    expect(r.ok).toBe(true);
+    if (r.ok) { expect(r.audioTitle).toBe("Campus Tour"); expect(r.groupInstruction).toBe("Listen and answer."); }
+  });
+  it("kolom audio diisi untuk section bukan listening ditolak", () => {
+    const [r] = mapQuestionRows([headAudio, ["reading", "detail", "Soal?", "a1", "b1", "", "", "A", "", "", "reading:detail", "published", "Campus Tour", ""]]);
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toMatch(/audio title was given/i);
+  });
+  it("tanpa kolom audio, audioTitle tidak ada (perilaku lama tidak berubah)", () => {
+    const [r] = mapQuestionRows([head, ["reading", "t", "s", "a", "b", "", "", "A", "", "", "", "draft"]]);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.audioTitle).toBeUndefined();
+  });
 });
 
 describe("blok interaktif rich text (MTS §10.2)", () => {

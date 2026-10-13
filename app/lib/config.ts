@@ -100,8 +100,8 @@ export async function setParam(key: ParamKey, value: unknown, by: Types.ObjectId
 // ---------- Level ----------
 export const LEVEL_DEFAULTS = [
   // PLACEHOLDER (MTS §5): ditetapkan pihak yang meminta.
-  { key: "basic", name: "Basic", order: 1, scoreMin: 310, scoreMax: 459, coachingQuota: 8 },
-  { key: "intermediate", name: "Intermediate", order: 2, scoreMin: 460, scoreMax: 559, coachingQuota: 6 },
+  { key: "basic", name: "Basic", order: 1, scoreMin: 310, scoreMax: 459, coachingQuota: 12 },
+  { key: "intermediate", name: "Intermediate", order: 2, scoreMin: 460, scoreMax: 559, coachingQuota: 8 },
   { key: "advanced", name: "Advanced", order: 3, scoreMin: 560, scoreMax: 677, coachingQuota: 4 },
 ];
 

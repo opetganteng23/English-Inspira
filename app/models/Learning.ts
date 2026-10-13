@@ -46,7 +46,7 @@ const analysisSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },
-    sourceKind: { type: String, enum: ["placement", "sim", "practice", "quiz", "pdf"], required: true },
+    sourceKind: { type: String, enum: ["placement", "sim", "final", "practice", "quiz", "pdf"], required: true },
     attemptId: { type: Schema.Types.ObjectId, ref: "Attempt", index: true },
     pdfId: { type: Schema.Types.ObjectId, ref: "PdfImport", index: true },
     status: { type: String, enum: ["calculated", "ready", "failed"], default: "calculated" },

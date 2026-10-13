@@ -31,7 +31,7 @@ export async function GET() {
       ItpRegistration.findOne({ userId: uid, status: { $ne: "cancelled" } }).select("status").lean(),
       Certificate.countDocuments({ userId: uid, type: "itp" }),
     ]);
-    const sims = attempts.filter((a) => a.kind === "sim");
+    const sims = attempts.filter((a) => a.kind === "sim" || a.kind === "final"); // Final Test dihitung sama seperti simulasi
     const placed = !!u?.placementAttemptId || attempts.some((a) => a.kind === "placement");
     const scored = attempts.filter((a) => a.scoreEst != null);
     const gain = scored.length >= 2 ? (scored[scored.length - 1].scoreEst ?? 0) - (scored[0].scoreEst ?? 0) : null;

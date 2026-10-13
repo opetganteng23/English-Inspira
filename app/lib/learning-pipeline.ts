@@ -20,7 +20,7 @@ export async function processAttemptLearning(attempt: HydratedDocument<AttemptDo
 
   const analysis = await Analysis.create({
     userId: attempt.userId, institutionId: attempt.institutionId ?? undefined, attemptId: attempt._id,
-    sourceKind: (attempt.kind ?? "practice") as "placement" | "sim" | "practice" | "quiz", status: "calculated",
+    sourceKind: (attempt.kind ?? "practice") as "placement" | "sim" | "final" | "practice" | "quiz", status: "calculated",
     calculated: {
       scoreEst: attempt.scoreEst, sections: attempt.sectionScores,
       topics: stats.map((s) => ({ skill: s.skill, topic: s.topic, score: s.score, items: s.items, status: s.status, before: s.before })),

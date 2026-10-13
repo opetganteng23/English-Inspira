@@ -90,13 +90,14 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
   // Efek samping setelah submit: tidak boleh menggagalkan submit, dan tidak memblokir respons.
   void (async () => {
     try {
+      const isSimLike = attempt.kind === "sim" || attempt.kind === "final"; // Final Test dinilai dan dilaporkan sama seperti simulasi (MTS §12)
       if (attempt.kind === "placement") await applyPlacement(attempt);
-      else if (attempt.kind === "sim" && attempt.scoreEst != null) await User.updateOne({ _id: attempt.userId }, { currentScoreEst: attempt.scoreEst });
-      if (attempt.kind === "sim") await ensureSimReport(attempt._id);
+      else if (isSimLike && attempt.scoreEst != null) await User.updateOne({ _id: attempt.userId }, { currentScoreEst: attempt.scoreEst });
+      if (isSimLike) await ensureSimReport(attempt._id);
       if (attempt.kind === "quiz") await recordQuizResult(attempt);
     } catch (e) { console.error("[finalize] side effects failed", e); }
     try { await processAttemptLearning(attempt); } catch (e) { console.error("[finalize] learning pipeline failed", e); }
-    try { if (attempt.kind === "sim") await evaluateLevelUp(attempt); } catch (e) { console.error("[finalize] level-up check failed", e); } // setelah pipeline: memakai rencana yang sudah diperbarui
+    try { if (attempt.kind === "sim" || attempt.kind === "final") await evaluateLevelUp(attempt); } catch (e) { console.error("[finalize] level-up check failed", e); } // setelah pipeline: memakai rencana yang sudah diperbarui
     void runAnalysis(attempt._id);
   })();
 }

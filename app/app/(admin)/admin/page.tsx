@@ -18,7 +18,7 @@ type D = {
   expiring: { name: string; contractEnd: string }[];
   upcoming: { id: string; title: string; date: string; place: string; registered: number; quota: number }[];
 };
-const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", practice: "Practice", quiz: "Unit quiz" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice", quiz: "Unit quiz" };
 
 export default function AdminHome() {
   const [days, setDays] = useState(30);

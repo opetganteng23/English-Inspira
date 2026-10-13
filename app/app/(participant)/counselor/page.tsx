@@ -81,7 +81,7 @@ function Chat() {
         <section className="card !p-4">
           <h2 className="text-xs font-semibold tracking-wider text-ink-soft">CONVERSATION BASIS</h2>
           <p className="mt-1 font-display text-3xl font-extrabold text-navy">{t.basis.scoreEst}</p>
-          <p className="text-xs text-ink-soft">{t.basis.kind === "placement" ? "Placement" : t.basis.kind === "sim" ? "Simulation" : "Test"} · {tgl(t.basis.finishedAt)}</p>
+          <p className="text-xs text-ink-soft">{t.basis.kind === "placement" ? "Placement" : t.basis.kind === "sim" ? "Simulation" : t.basis.kind === "final" ? "Final Test" : "Test"} · {tgl(t.basis.finishedAt)}</p>
           <ul className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">{t.basis.sections.map((s) => <li key={s.section} className="rounded-lg bg-canvas p-2"><span className="text-ink-soft">{SEC[s.section]}</span><br /><b className="text-navy">{s.scaled}</b></li>)}</ul>
           <Link href={`/results/${t.basis.attemptId}`} className="mt-3 inline-block text-sm font-semibold text-brand">View full report</Link>
         </section>

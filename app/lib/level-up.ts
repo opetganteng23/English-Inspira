@@ -53,7 +53,7 @@ export async function levelUpStatus(userId: Types.ObjectId | string) {
  */
 export async function evaluateLevelUp(attempt: HydratedDocument<AttemptDoc>) {
   await connectDB();
-  if (attempt.kind !== "sim" || attempt.scoreEst == null) return null;
+  if ((attempt.kind !== "sim" && attempt.kind !== "final") || attempt.scoreEst == null) return null;
   const g = await gather(attempt.userId, attempt.scoreEst);
   if (!g || !g.cur || !g.next) return g ? { up: false, reasons: g.decision.reasons } : null;
   let result: { up: boolean; reasons: string[]; level?: string } = { up: false, reasons: g.decision.reasons };

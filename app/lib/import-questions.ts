@@ -11,15 +11,21 @@ const ALIASES: Record<string, string[]> = {
   difficulty: ["difficulty", "kesulitan", "level kesulitan"],
   tags: ["tags", "tag", "topik"],
   status: ["status"],
+  // Listening: nama persis audio yang SUDAH diunggah di Audio Library. Baris dengan judul audio yang sama
+  // dikelompokkan menjadi satu grup (satu audio dipakai beberapa soal), dicocokkan di route (butuh DB).
+  audio: ["audio", "audio title", "listening audio", "judul audio"],
+  instruction: ["instruction", "group instruction", "audio instruction", "instruksi"],
 };
 const OPTION_LETTERS = ["a", "b", "c", "d", "e", "f"];
 const DIFF: Record<string, "easy" | "medium" | "hard"> = { easy: "easy", mudah: "easy", medium: "medium", sedang: "medium", hard: "hard", sulit: "hard" };
 const SECT: Record<string, (typeof SECTIONS)[number]> = { listening: "listening", structure: "structure", "structure & written expression": "structure", "written expression": "structure", reading: "reading" };
 
-export const QUESTION_TEMPLATE_HEADER = ["section", "type", "stem", "A", "B", "C", "D", "answer", "explanation", "difficulty", "tags", "status"];
-export const QUESTION_TEMPLATE_EXAMPLE = ["structure", "subject-verb", "The results of the study ___ clear.", "is", "are", "was", "be", "B", "The plural subject 'results' takes 'are'.", "medium", "structure:subject-verb agreement", "draft"];
+export const QUESTION_TEMPLATE_HEADER = ["section", "type", "stem", "A", "B", "C", "D", "answer", "explanation", "difficulty", "tags", "status", "audio", "instruction"];
+export const QUESTION_TEMPLATE_EXAMPLE = ["structure", "subject-verb", "The results of the study ___ clear.", "is", "are", "was", "be", "B", "The plural subject 'results' takes 'are'.", "medium", "structure:subject-verb agreement", "draft", "", ""];
+// Exemple baris listening: isi kolom "audio" dengan judul persis sebuah audio yang sudah ada di Audio Library.
+export const QUESTION_TEMPLATE_AUDIO_EXAMPLE = ["listening", "detail", "What does the man want to do this weekend?", "Go hiking", "Go fishing", "Stay home", "Visit family", "A", "", "medium", "listening:detail", "draft", "Campus Tour (sample)", "Listen to the conversation and answer the question."];
 
-export type QuestionRowResult = { row: number; ok: true; data: ReturnType<typeof questionSchema.parse> } | { row: number; ok: false; error: string };
+export type QuestionRowResult = { row: number; ok: true; data: ReturnType<typeof questionSchema.parse>; audioTitle?: string; groupInstruction?: string } | { row: number; ok: false; error: string };
 
 /** Format kolom tag: "skill:topic; skill:topic". Tag tanpa titik dua dianggap topik pada skill = section soal. */
 export function parseTags(raw: string, section: string) {
@@ -47,10 +53,14 @@ export function mapQuestionRows(table: string[][]): QuestionRowResult[] {
     const diff = get("difficulty") ? DIFF[get("difficulty").toLowerCase()] : "medium";
     if (!diff) return { row, ok: false as const, error: `Unknown difficulty "${get("difficulty")}" (easy/medium/hard)` };
     const status = (get("status").toLowerCase() || "draft") as "draft" | "review" | "published";
+    const audioTitle = get("audio").trim();
+    if (audioTitle && section !== "listening") return { row, ok: false as const, error: `An audio title was given but section is "${section}", not listening` };
     const parsed = questionSchema.safeParse({
       section, type: get("type") || "umum", stem: get("stem"), options, answerKey, explanation: get("explanation") || undefined,
       difficulty: diff, tags: parseTags(get("tags"), section), status,
     });
-    return parsed.success ? { row, ok: true as const, data: parsed.data } : { row, ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid row" };
+    return parsed.success
+      ? { row, ok: true as const, data: parsed.data, audioTitle: audioTitle || undefined, groupInstruction: get("instruction").trim() || undefined }
+      : { row, ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid row" };
   });
 }

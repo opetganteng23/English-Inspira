@@ -2,7 +2,7 @@ import mongoose, { Schema, InferSchemaType, Model } from "mongoose";
 import { SECTIONS } from "./Question";
 
 // Jenis tes (MTS §11): placement (sekali), sim (simulasi berkala), practice (latihan bebas ulang), quiz (penilaian unit, dinilai server).
-export const TEST_KINDS = ["placement", "sim", "practice", "quiz"] as const;
+export const TEST_KINDS = ["placement", "sim", "final", "practice", "quiz"] as const;
 
 const testSchema = new Schema(
   {

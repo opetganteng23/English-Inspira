@@ -3,7 +3,7 @@
 import { askConfirm } from "@/components/Feedback";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
 
@@ -14,6 +14,7 @@ export function ShellNav({
   nav, title, user, children,
 }: { nav: NavGroup[]; title?: string; user: { name: string; email: string; role: string; avatarId?: string | null }; children: React.ReactNode }) {
   const path = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]); // tutup drawer saat pindah halaman
   useEffect(() => {
@@ -23,6 +24,8 @@ export function ShellNav({
 
   const all = nav.flatMap((g) => g.items);
   const best = all.filter((i) => path === i.href || path.startsWith(i.href + "/")).sort((a, b) => b.href.length - a.href.length)[0];
+  // Halaman turunan (mis. /admin/materials/:id) menampilkan tombol back; halaman menu utama tidak perlu.
+  const isSubpage = !!best && path !== best.href;
 
   // Kelompok menu berlabel bisa dilipat. Status disimpan di browser; kelompok yang memuat halaman aktif selalu terbuka.
   const [closed, setClosed] = useState<Record<string, boolean>>({});
@@ -114,7 +117,27 @@ export function ShellNav({
       )}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-        {title && <div className="sticky top-0 z-20 hidden border-b border-line bg-white px-6 py-2.5 text-sm text-ink-soft md:block">{title}</div>}
+        {(title || isSubpage) && (
+          <div className="sticky top-0 z-20 hidden items-center gap-3 border-b border-line bg-white px-6 py-2.5 text-sm text-ink-soft md:flex">
+            {isSubpage && (
+              <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push(best!.href))}
+                className="-ml-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1 font-semibold text-ink hover:bg-canvas">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 18l-6-6 6-6" /></svg>
+                Back
+              </button>
+            )}
+            {title}
+          </div>
+        )}
+        {isSubpage && (
+          <div className="flex items-center gap-1 border-b border-line bg-white px-3 py-2 text-sm font-semibold text-ink md:hidden">
+            <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push(best!.href))}
+              className="flex min-h-[44px] items-center gap-1 rounded-lg px-1.5 hover:bg-canvas">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 18l-6-6 6-6" /></svg>
+              Back
+            </button>
+          </div>
+        )}
         <main className="w-full min-w-0 flex-1 p-4 sm:p-5 lg:p-6 xl:px-8 2xl:px-10">{children}</main>
       </div>
     </div>

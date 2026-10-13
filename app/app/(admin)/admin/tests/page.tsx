@@ -9,7 +9,7 @@ type Sec = { name: string; durationSec: number; questionIds: string[] };
 type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; sections: Sec[]; attempts: number; shuffleQuestions?: boolean; shuffleOptions?: boolean; maxAttempts?: number; scoringProfileId?: string };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
-const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", practice: "Practice", quiz: "Unit quiz" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice", quiz: "Unit quiz" };
 const DEFAULT_MIN: Record<string, number> = { listening: 35, structure: 25, reading: 55 };
 
 async function api(url: string, init?: RequestInit) {

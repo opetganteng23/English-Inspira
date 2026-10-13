@@ -9,7 +9,7 @@ import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
 type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null; lastScore: number | null };
 type A = { id: string; name: string; kind: string; status: string; finishedAt: string | null; scoreEst: number | null; sections: Record<string, number>; reportId: string | null };
-const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", practice: "Practice" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice" };
 
 export default function TesSaya() {
   const router = useRouter();
