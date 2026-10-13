@@ -81,6 +81,12 @@ describe("keamanan materi", () => {
     expect(SANDBOX).toBe("allow-scripts allow-forms");
     expect(() => buildSrcdoc({}, "https://app.test", "pendek")).toThrow();
   });
+  it("jembatan iframe mencegat klik anchor dan submit agar tidak menavigasi ke URL halaman induk", () => {
+    const d = buildSrcdoc({ html: '<a href="#x">x</a><form></form>' }, "https://app.test", "abcdef0123456789abcdef");
+    expect(d).toContain('document.addEventListener("click"');
+    expect(d).toContain("scrollIntoView");
+    expect(d).toContain('document.addEventListener("submit"');
+  });
   it("splitFullHtml: memecah satu berkas HTML gabungan jadi {html, css, js}", () => {
     const r = splitFullHtml(`<!doctype html><html><head><title>X</title><style>b{color:red}</style></head><body><p>Hi</p><script>EI.complete(90)</script></body></html>`);
     expect(r.css).toBe("b{color:red}");

@@ -39,6 +39,9 @@ var api={
 };
 api.progress=api.complete;
 Object.defineProperty(window,"EI",{value:Object.freeze(api),writable:false,configurable:false});
+function jump(id){var el=null;try{el=id?document.getElementById(decodeURIComponent(id)):null;}catch(x){}if(el){el.scrollIntoView();}else if(!id){window.scrollTo(0,0);}}
+document.addEventListener("click",function(ev){var t=ev.target;var a=t&&t.closest?t.closest("a"):null;if(!a)return;var h=a.getAttribute("href");if(h===null)return;ev.preventDefault();if(h.charAt(0)==="#"){jump(h.slice(1));}},true);
+document.addEventListener("submit",function(ev){ev.preventDefault();},true);
 addEventListener("load",height);addEventListener("resize",height);
 if(window.ResizeObserver){new ResizeObserver(height).observe(document.documentElement);}else{setInterval(height,500);}
 var s=document.currentScript;if(s&&s.parentNode){s.parentNode.removeChild(s);}
