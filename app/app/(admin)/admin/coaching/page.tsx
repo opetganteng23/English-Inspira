@@ -3,15 +3,17 @@
 import { useApi } from "@/lib/useApi";
 import { tgl } from "@/lib/client";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
+import { ScheduleImportPanel } from "@/components/ScheduleImportPanel";
 
 type I = { id: string; name: string; contractEnd: string | null; coaches: number; participants: number; quotaRemaining: number; openSeats: number; sessionsMarked: number; presentPct: number | null; absent: number; warnings: string[] };
 
 export default function PantauanCoaching() {
-  const { data, loading, error } = useApi<{ institutions: I[] }>("/api/admin/coaching");
+  const { data, loading, error, reload } = useApi<{ institutions: I[] }>("/api/admin/coaching");
   if (loading && !data) return <Loading />;
   return (
     <div className="flex flex-col gap-5">
       <div><h1 className="page-title">Coaching Monitor</h1><p className="text-sm text-ink-soft">Makes sure participants’ quotas can be used up before the contract ends, and monitors attendance per institution.</p></div>
+      <ScheduleImportPanel onDone={reload} />
       <ErrorNote text={error} />
       {data?.institutions.length === 0 && <Empty>No active institutions yet.</Empty>}
       <div className="table-wrap"><table>

@@ -23,7 +23,8 @@ const pickAll = (head: Map<string, number>, k: keyof typeof ALIASES) => ALIASES[
 function cellText(v: ExcelJS.CellValue): string {
   if (v == null) return "";
   if (typeof v !== "object") return String(v);
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  // Sel Excel bertipe "time" (tanpa tanggal) didecode ke epoch 1899/1900: tampilkan sebagai HH:MM, bukan tanggal itu.
+  if (v instanceof Date) return v.getUTCFullYear() <= 1900 ? v.toISOString().slice(11, 16) : v.toISOString().slice(0, 10);
   if ("richText" in v && Array.isArray(v.richText)) return v.richText.map((t) => t.text).join("");
   if ("text" in v && v.text != null) return typeof v.text === "string" ? v.text : cellText(v.text as ExcelJS.CellValue);
   if ("result" in v) return cellText(v.result as ExcelJS.CellValue);

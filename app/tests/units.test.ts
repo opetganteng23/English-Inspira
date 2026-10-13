@@ -13,6 +13,7 @@ import { scopeByInstitution, HttpError } from "@/lib/rbac";
 import { Types } from "mongoose";
 import { validBlock } from "@/lib/blocks";
 import { mapQuestionRows, parseTags } from "@/lib/import-questions";
+import { mapScheduleRows } from "@/lib/import-schedule";
 import { mongoSanitize } from "@/lib/mongo-sanitize";
 import { parseItpScores, verifyScores, isPdf } from "@/lib/pdf-import";
 import { levelUpDecision } from "@/lib/level-up";
@@ -401,4 +402,37 @@ describe("impor anggota dari Excel", () => {
     const { parseMembersFile } = await import("@/lib/import-parse");
     await expect(parseMembersFile(new File(["nama,hp\nA,1\n"], "x.csv"))).rejects.toThrow(/email/);
   });
+});
+
+describe("impor jadwal coaching (plotting dari Excel)", () => {
+  const head = ["coach", "date", "time", "duration", "mode", "location", "capacity", "level", "title", "participant"];
+  it("baris dengan coach + waktu sama digabung jadi satu groupKey", () => {
+    const rows = mapScheduleRows([head,
+      ["coach@x.com", "2026-11-03", "09:00", "60", "online", "https://meet.google.com/x", "", "", "Clinic", "p1@x.com"],
+      ["coach@x.com", "2026-11-03", "09:00", "", "", "", "", "", "", "p2@x.com"],
+      ["coach@x.com", "2026-11-03", "10:00", "", "", "", "", "", "", "p3@x.com"],
+    ]);
+    expect(rows.every((r) => r.ok)).toBe(true);
+    const keys = rows.map((r) => r.ok && r.data.groupKey);
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[0]).not.toBe(keys[2]);
+    if (rows[0].ok) { expect(rows[0].data.startsAt.toISOString()).toBe("2026-11-03T09:00:00.000Z"); expect(rows[0].data.endsAt.toISOString()).toBe("2026-11-03T10:00:00.000Z"); expect(rows[0].data.mode).toBe("online"); }
+    if (rows[1].ok) { expect(rows[1].data.mode).toBe("online"); expect(rows[1].data.endsAt.toISOString()).toBe("2026-11-03T10:00:00.000Z"); } // durasi bawaan 60 menit
+  });
+  it("tanggal, jam, mode, dan kapasitas tidak sah dilaporkan per baris", () => {
+    const rows = mapScheduleRows([head,
+      ["bukan-email", "2026-11-03", "09:00", "", "", "", "", "", "", "p@x.com"],
+      ["coach@x.com", "03/11/2026", "09:00", "", "", "", "", "", "", "p@x.com"],
+      ["coach@x.com", "2026-11-03", "25:99", "", "", "", "", "", "", "p@x.com"],
+      ["coach@x.com", "2026-11-03", "09:00", "", "hybrid", "", "", "", "", "p@x.com"],
+      ["coach@x.com", "2026-11-03", "09:00", "", "", "", "200", "", "", "p@x.com"],
+    ]);
+    expect(rows.map((r) => r.ok)).toEqual([false, false, false, false, false]);
+    expect(!rows[0].ok && rows[0].error).toMatch(/coach email/i);
+    expect(!rows[1].ok && rows[1].error).toMatch(/date/i);
+    expect(!rows[2].ok && rows[2].error).toMatch(/time/i);
+    expect(!rows[3].ok && rows[3].error).toMatch(/mode/i);
+    expect(!rows[4].ok && rows[4].error).toMatch(/capacity/i);
+  });
+  it("kolom wajib hilang dilaporkan sekali", () => { const r = mapScheduleRows([["foo"], ["1"]]); expect(r).toHaveLength(1); expect(r[0].ok).toBe(false); });
 });

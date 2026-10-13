@@ -302,6 +302,32 @@ const csv = (rows) => { const f = new FormData(); f.append("file", new Blob([row
   r = await req(p1, "/api/coaching"); ok(!r.data.bookings.some((b) => b.id === bk1b && b.status === "booked") && !r.data.open.some((o) => o.id === s1), "slot batal hilang dari daftar peserta");
   r = await req(admin, "/api/admin/coaching"); const ci = r.data.institutions?.find((i) => i.id === iA);
   ok(r.status === 200 && ci && ci.coaches >= 1 && typeof ci.quotaRemaining === "number", "pantauan admin: kuota, kursi terbuka, kehadiran", J(ci));
+
+  console.log("\n== Penentuan jadwal coaching dari Excel (plotting) ==");
+  {
+    const dt = (hoursAhead) => { const d = new Date(Date.now() + hoursAhead * 3600000); return [d.toISOString().slice(0, 10), `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`]; };
+    const head = "coach,date,time,duration,mode,location,capacity,level,title,participant";
+    const [d1, t1] = dt(96);
+    r = await req(coach, "/api/admin/coaching/import"); ok(r.status === 403, "impor jadwal hanya admin (coach ditolak)");
+    r = await req(ia, "/api/admin/coaching/import"); ok(r.status === 403, "impor jadwal hanya admin (inst_admin ditolak)");
+    r = await req(admin, "/api/admin/coaching/import?dry=1", { method: "POST", form: csv([head, `coach@test.local,${d1},${t1},45,online,https://meet.example/plot,,,Plotted session,p1@test.local`]) });
+    ok(r.status === 200 && r.data.dry === true && r.data.slots === 1 && r.data.booked === 1 && r.data.failed.length === 0, "pratinjau: 1 sesi, 1 booking, tidak ada yang gagal", J(r.data));
+    const bookableBefore = (await req(p1, "/api/coaching")).data.quota.bookable;
+    r = await req(admin, "/api/admin/coaching/import", { method: "POST", form: csv([head,
+      `coach@test.local,${d1},${t1},45,online,https://meet.example/plot,,,Plotted session,p1@test.local`,
+      `coach@test.local,${d1},${t1},,,,,,,p1@test.local`, // peserta dobel di sesi yang sama -> dilaporkan, tidak membooking dua kali
+      `nocoach@test.local,${d1},${t1},,,,,,,p1@test.local`, // coach tidak ada
+      `coach@test.local,${d1},${t1},,,,,,,noone@test.local`, // peserta tidak ada
+      `coach@test.local,bad-date,${t1},,,,,,,p1@test.local`, // tanggal tidak sah
+    ]) });
+    ok(r.status === 200 && r.data.slots === 1 && r.data.booked === 1 && r.data.failed.length === 4, "impor: 1 sesi dibuat, 1 booking, 4 baris gagal dilaporkan", J(r.data));
+    r = await req(p1, "/api/coaching");
+    ok(r.data.quota.bookable === bookableBefore - 1, "kuota yang bisa dipesan peserta berkurang 1 setelah dibooking lewat impor");
+    ok(r.data.bookings.some((b) => b.status === "booked"), "peserta melihat booking hasil impor di dashboardnya", J(r.data.bookings.map((b) => b.status)));
+    r = await req(admin, "/api/admin/coaching/import", { method: "POST", form: csv([head, `coach@test.local,${d1},${t1},45,online,,,,Bentrok,p1@test.local`]) });
+    ok(r.status === 200 && r.data.slots === 0 && r.data.failed.length === 1 && /overlap/i.test(r.data.failed[0].reason), "sesi bentrok dengan sesi coach itu sendiri ditolak", J(r.data));
+  }
+
   r = await req(null, "/api/cron/hourly"); ok(r.status === 401, "job per jam tanpa rahasia ditolak");
   r = await req(null, "/api/cron/hourly", { headers: { authorization: "Bearer testsecret" } }); ok(r.status === 200 && typeof r.data.reminders?.emails === "number" && typeof r.data.analysis?.retried === "number", "job per jam: pengingat sesi + ulang narasi AI", J(r.data));
 
