@@ -93,6 +93,10 @@ describe("keamanan materi", () => {
     expect(r.js).toBe("var x=1;");
     expect(r.html).toBe("<div>hi</div>");
   });
+  it("splitFullHtml: tag <header>/<title> (mengandung 'head'/'title' sebagai substring) tidak ikut kebuang", () => {
+    const r = splitFullHtml(`<!doctype html><html><head><title>X</title></head><body><header id="h">Hi</header></body></html>`);
+    expect(r.html).toBe('<header id="h">Hi</header>');
+  });
   it("jembatan: hanya pesan berversi, bernonce benar, dan bentuk valid yang diterima", () => {
     const ok = (t: string, p: unknown, n = "N0NCE0123456789a") => parseBridgeMessage({ v: 1, n, t, p }, "N0NCE0123456789a");
     expect(ok("report", { score: 80, answers: [1, 2] })).toEqual({ type: "report", score: 80, answers: [1, 2] });

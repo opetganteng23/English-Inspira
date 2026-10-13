@@ -65,8 +65,8 @@ export function splitFullHtml(src: string): HtmlDoc {
   if (bodyMatch) html = bodyMatch[1];
   html = html
     .replace(/<!doctype[^>]*>/gi, "")
-    .replace(/<\/?(html|head|body)[^>]*>/gi, "")
-    .replace(/<meta[^>]*>/gi, "")
-    .replace(/<title[^>]*>[\s\S]*?<\/title>/gi, "");
+    .replace(/<\/?(?:html|head|body)(?=[\s/>])[^>]*>/gi, "")
+    .replace(/<meta(?=[\s/>])[^>]*>/gi, "")
+    .replace(/<title(?=[\s>])[^>]*>[\s\S]*?<\/title\s*>/gi, "");
   return { html: html.trim(), css: css.trim(), js: js.trim() };
 }
