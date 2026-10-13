@@ -6,7 +6,7 @@ import { GLYPHS } from "./captcha-glyphs";
 // Bila TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY terpasang, dipakai Cloudflare Turnstile.
 // Tanpa kunci itu, dipakai captcha bawaan: gambar SVG berisi 5 karakter, token bertanda tangan HMAC, berlaku 10 menit, sekali pakai.
 
-const CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // tanpa karakter yang mirip (0/O, 1/I/L)
+const CHARS = "ACDEFHJKMNPRTWXY3479"; // tanpa karakter yang mudah tertukar (0/O/Q, 1/I/L, 2/Z, 5/S, 6/G, 8/B, U/V)
 const TTL = 10 * 60_000;
 const used = new Map<string, number>(); // nonce yang sudah dipakai → kedaluwarsa
 
@@ -17,19 +17,20 @@ export const turnstileKeys = () => (process.env.TURNSTILE_SITE_KEY && process.en
 function svgFor(text: string) {
   const w = 170, h = 56;
   const r = (a: number, b: number) => a + Math.random() * (b - a);
-  const noise = Array.from({ length: 6 }, () => `<path d="M${randomInt(0, w)} ${randomInt(0, h)} Q${randomInt(0, w)} ${randomInt(0, h)} ${randomInt(0, w)} ${randomInt(0, h)}" stroke="#${["0B4FA6", "8FA6C8", "C9A227"][randomInt(0, 3)]}" stroke-width="${randomInt(1, 3)}" fill="none" opacity="0.55"/>`).join("");
-  const dots = Array.from({ length: 30 }, () => `<circle cx="${randomInt(0, w)}" cy="${randomInt(0, h)}" r="${randomInt(1, 3)}" fill="#8FA6C8" opacity="0.5"/>`).join("");
-  // Setiap huruf: goresan dengan skala, kemiringan, rotasi, dan getaran titik acak.
+  // Gangguan tipis dan pucat, digambar DI BELAKANG huruf supaya tidak menutupi bentuknya.
+  const noise = Array.from({ length: 3 }, () => `<path d="M${randomInt(0, w)} ${randomInt(0, h)} Q${randomInt(0, w)} ${randomInt(0, h)} ${randomInt(0, w)} ${randomInt(0, h)}" stroke="#${["8FA6C8", "B7C4D9", "D4BE6A"][randomInt(0, 3)]}" stroke-width="1" fill="none" opacity="0.5"/>`).join("");
+  const dots = Array.from({ length: 18 }, () => `<circle cx="${randomInt(0, w)}" cy="${randomInt(0, h)}" r="${randomInt(1, 2)}" fill="#B7C4D9" opacity="0.5"/>`).join("");
+  // Setiap huruf: goresan dengan skala, kemiringan, rotasi, dan getaran titik acak, dalam sel selebar 31 px agar tidak bertumpuk.
   const letters = [...text].map((c, i) => {
-    const sx = r(2, 2.5), sy = r(2.3, 2.8), rot = r(-0.35, 0.35), skew = r(-0.25, 0.25);
-    const ox = 14 + i * 30 + r(-3, 3), oy = 8 + r(-4, 4);
+    const sx = r(1.7, 1.95), sy = r(2.2, 2.45), rot = r(-0.14, 0.14), skew = r(-0.08, 0.08);
+    const ox = 12 + i * 31 + r(-1.5, 1.5), oy = 12 + r(-3, 3);
     const pt = ([x, y]: [number, number]) => {
-      const X = (x + r(-0.5, 0.5)) * sx + (y * skew), Y = (y + r(-0.5, 0.5)) * sy;
+      const X = (x + r(-0.3, 0.3)) * sx + (y * skew), Y = (y + r(-0.3, 0.3)) * sy;
       return `${(ox + X * Math.cos(rot) - Y * Math.sin(rot)).toFixed(1)} ${(oy + X * Math.sin(rot) + Y * Math.cos(rot)).toFixed(1)}`;
     };
-    return GLYPHS[c].map((line) => `<path d="M${line.map(pt).join(" L")}" stroke="#0A2257" stroke-width="${r(2.6, 3.4).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`).join("");
+    return GLYPHS[c].map((line) => `<path d="M${line.map(pt).join(" L")}" stroke="#0A2257" stroke-width="${r(2.8, 3.2).toFixed(1)}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`).join("");
   }).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="100%" height="100%" fill="#EEF3FA"/>${dots}${letters}${noise}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="100%" height="100%" fill="#EEF3FA"/>${dots}${noise}${letters}</svg>`;
 }
 
 /** Tantangan baru untuk captcha bawaan. Jawaban tidak disimpan di server; hanya tanda tangannya. */

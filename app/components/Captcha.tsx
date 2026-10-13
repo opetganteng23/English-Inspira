@@ -44,7 +44,7 @@ export function Captcha({ onChange, reload = 0 }: { onChange: (v: CaptchaValue) 
       <span>Security check</span>
       <div className="flex flex-wrap items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={info.image} alt="Security check: type the characters shown" width={170} height={56} className="rounded-lg border border-line" />
+        <img src={info.image} alt="Security check: type the characters shown" width={204} height={67} className="rounded-lg border border-line" />
         <button type="button" onClick={load} className="min-h-[44px] rounded-lg px-3 text-sm font-semibold text-brand hover:bg-canvas" aria-label="Show different characters">New characters</button>
       </div>
       <input className="field font-normal uppercase tracking-[0.3em]" aria-label="Type the characters in the image" placeholder="Type the 5 characters" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={5} required
