@@ -10,7 +10,7 @@ const NO_ORIGIN_CHECK = ["/api/cron/"];
 
 // Mode pemeliharaan: yang tetap terbuka untuk semua orang (halaman login admin, aset, cek status, cron).
 const MAINT_OPEN_PAGES = ["/admin/login", "/maintenance"];
-const MAINT_OPEN_API = ["/api/maintenance", "/api/health", "/api/cron/", "/api/auth/login", "/api/auth/request-otp", "/api/auth/verify-otp", "/api/auth/logout"];
+const MAINT_OPEN_API = ["/api/maintenance", "/api/health", "/api/cron/", "/api/auth/captcha", "/api/auth/login", "/api/auth/request-otp", "/api/auth/verify-otp", "/api/auth/logout"];
 const MAINT_STATIC = /^\/(fonts|brand)\/|^\/(icon|apple-icon)(\.png)?$|\.(png|jpe?g|svg|webp|ico|woff2?|ttf|css|js|txt)$/;
 // Status dibaca dari /api/maintenance dan disimpan sebentar di memori proses (produksi 10 detik).
 const TTL = process.env.NODE_ENV === "production" ? 10_000 : 0;
