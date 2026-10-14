@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   try {
     await limit("verifyIp", clientIp(req));
     const inv = await findInvite(new URL(req.url).searchParams.get("token") ?? "");
-    const inst = await Institution.findById(inv.institutionId).select("name").lean();
+    const inst = inv.institutionId ? await Institution.findById(inv.institutionId).select("name").lean() : null;
     return NextResponse.json({ email: inv.email, institution: inst?.name ?? null });
   } catch (e) {
     return handleError(e);

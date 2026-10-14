@@ -25,7 +25,7 @@ export default function Pengguna() {
   async function patch(id: string, body: object) { setErr(""); try { await api(`/api/admin/users/${id}`, { method: "PATCH", json: body }); reload(); } catch (e) { setErr((e as Error).message); } }
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Coaches & Admins</h1><p className="text-sm text-ink-soft">Internal accounts. Coaches and institution admins are invited by email; everyone signs in with an OTP. Participants are managed in the Participants menu.</p></div><button className="btn-solid" onClick={() => setAdd(true)}>+ Add user</button></div>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Coaches & Admins</h1><p className="text-sm text-ink-soft">Internal accounts. Everyone you add receives an invitation email with a link to create their password; they can also sign in with an email code. Participants are managed in the Participants menu.</p></div><button className="btn-solid" onClick={() => setAdd(true)}>+ Add user</button></div>
       <div className="flex flex-wrap gap-3">
         <input className="field max-w-xs" placeholder="Search name or email" aria-label="Search users" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="field w-auto" aria-label="Role" value={role} onChange={(e) => setRole(e.target.value)}><option value="">All roles</option>{Object.entries(ROLE).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>

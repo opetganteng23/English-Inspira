@@ -345,6 +345,7 @@ Tidak ada pendaftaran terbuka tanpa institusi. Cara peserta masuk:
 | Impor CSV atau Excel | `inst_admin`, `admin` | Kolom: email, nama, telepon (opsional). Validasi format dan duplikat, tolak bila melebihi `seats`, tampilkan laporan baris gagal |
 | Undangan email | `inst_admin`, `admin` | Tautan berumur 7 hari. Login pertama melengkapi profil dan **persetujuan data (UU PDP)** |
 | Input manual | `admin` | Kasus khusus |
+| Tambah staf pusat (admin, academic admin, question editor) | `admin` | Menu Coaches & Admins. Akun dibuat aktif tanpa institusi dan **langsung dikirimi email undangan** (template `staff_invitation`) berisi tautan membuat password, berlaku 7 hari dan sekali pakai (`Invitation` tanpa `institutionId`). Untuk akun lama tersedia aksi Send reset link |
 | **Daftar mandiri dengan kode institusi** | Peserta | `/register`. Wajib `institutions.code` yang aktif dan kursi tersisa (bagian 8.1) |
 
 - Akun baru berstatus `invited`, menjadi `active` setelah login OTP pertama dan persetujuan data.

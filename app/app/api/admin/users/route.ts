@@ -5,7 +5,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { userCreateInput } from "@/lib/admin-schemas";
-import { createMember } from "@/lib/participants";
+import { createMember, issueStaffInvitation } from "@/lib/participants";
 import { splitName } from "@/lib/person-name";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
@@ -41,7 +41,8 @@ export async function POST(req: Request) {
       if (await User.exists({ email })) throw new HttpError(409, "Email already registered");
       const u = await User.create({ email, name: b.name, role: b.role, status: "active", consentAt: new Date() });
       await audit(admin._id, "user.create", String(u._id), { role: b.role });
-      return NextResponse.json({ id: String(u._id) }, { status: 201 });
+      await issueStaffInvitation({ _id: u._id, email: u.email, name: u.name, role: b.role }, admin._id);
+      return NextResponse.json({ id: String(u._id), invited: true }, { status: 201 });
     }
     if (!b.institutionId) throw new HttpError(400, "Coaches and institution admins must be linked to an institution");
     const out = await createMember(b.institutionId, { email: b.email, name: b.name, role: b.role }, admin._id);

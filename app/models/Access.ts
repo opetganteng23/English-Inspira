@@ -20,7 +20,7 @@ const invitationSchema = new Schema(
   {
     email: { type: String, required: true, lowercase: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: "User" },
-    institutionId: { type: Schema.Types.ObjectId, ref: "Institution", required: true },
+    institutionId: { type: Schema.Types.ObjectId, ref: "Institution" }, // kosong untuk undangan staf pusat (admin, academic admin, question editor)
     tokenHash: { type: String, required: true, unique: true },
     expiresAt: { type: Date, required: true },
     invitedBy: { type: Schema.Types.ObjectId, ref: "User" },

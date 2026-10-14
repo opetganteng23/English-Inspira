@@ -81,6 +81,14 @@ describe("keamanan materi", () => {
     expect(SANDBOX).toBe("allow-scripts allow-forms");
     expect(() => buildSrcdoc({}, "https://app.test", "pendek")).toThrow();
   });
+  it("template staff_invitation memuat peran, tautan buat password, dan meng-escape nama", async () => {
+    const { render } = await import("@/lib/mail-templates");
+    const r = render("staff_invitation", { roleLabel: "Admin", name: "<b>Rizky</b>", link: "https://app.test/sign-in?invite=abc", expiresAt: new Date("2026-10-21T00:00:00Z") });
+    expect(r.subject).toContain("Admin");
+    expect(r.html).toContain("https://app.test/sign-in?invite=abc");
+    expect(r.html).toContain("Create my password");
+    expect(r.html).not.toContain("<b>Rizky</b>");
+  });
   it("jembatan iframe mencegat klik anchor dan submit agar tidak menavigasi ke URL halaman induk", () => {
     const d = buildSrcdoc({ html: '<a href="#x">x</a><form></form>' }, "https://app.test", "abcdef0123456789abcdef");
     expect(d).toContain('document.addEventListener("click"');

@@ -33,6 +33,18 @@ export async function issueInvitation(user: { _id: Types.ObjectId; email: string
   await enqueueMail(user.email, "invitation", { institution: institution.name, name: user.name, link, expiresAt });
 }
 
+const STAFF_LABEL: Record<string, string> = { admin: "Admin", academic_admin: "Academic admin", content_editor: "Question editor" };
+
+/** Undangan untuk staf pusat (tanpa institusi): email berisi tautan membuat password, berlaku sama dengan undangan peserta. */
+export async function issueStaffInvitation(user: { _id: Types.ObjectId; email: string; name?: string | null; role: string }, invitedBy?: Types.ObjectId | string) {
+  await Invitation.updateMany({ userId: user._id, status: "pending" }, { status: "revoked" });
+  const token = randomBytes(24).toString("hex");
+  const expiresAt = new Date(Date.now() + INVITE_DAYS * 86_400_000);
+  await Invitation.create({ email: user.email, userId: user._id, tokenHash: sha256(token), expiresAt, invitedBy });
+  const link = `${process.env.APP_URL ?? "http://localhost:3000"}/sign-in?invite=${token}`;
+  await enqueueMail(user.email, "staff_invitation", { roleLabel: STAFF_LABEL[user.role] ?? user.role, name: user.name, link, expiresAt }, { priority: 2 });
+}
+
 export type MemberInput = { email: string; name?: string; givenName?: string; surname?: string; phone?: string; role?: "participant" | "coach" | "inst_admin" };
 
 /**
