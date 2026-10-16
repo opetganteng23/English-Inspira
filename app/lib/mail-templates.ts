@@ -2,7 +2,8 @@
 const esc = (t: unknown) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const wrap = (title: string, body: string) =>
   `<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><div style="font-family:Poppins,Arial,sans-serif;max-width:480px;color:#1C2B44"><h2 style="color:#0A2257">${esc(title)}</h2>${body}<p style="color:#4B5A70;font-size:12px;margin-top:24px">English Inspira</p></div>`;
-const btn = (href: string, label: string) => `<p><a href="${esc(href)}" style="display:inline-block;background:#0B4FA6;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600">${esc(label)}</a></p>`;
+// Sistem email kantor sering menonaktifkan tombol/tautan pada email dari pengirim luar, jadi alamatnya selalu ditulis juga sebagai teks yang bisa disalin.
+const btn = (href: string, label: string) => `<p><a href="${esc(href)}" style="display:inline-block;background:#0B4FA6;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:600">${esc(label)}</a></p><p style="color:#4B5A70;font-size:12px;word-break:break-all">If the button does not work, copy and paste this link into your browser:<br>${esc(href)}</p>`;
 const fmt = (d: unknown) => new Date(String(d)).toLocaleString("en-GB", { dateStyle: "full", timeStyle: "short", timeZone: "Asia/Jakarta" });
 
 type D = Record<string, unknown>;

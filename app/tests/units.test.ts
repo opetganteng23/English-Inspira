@@ -99,6 +99,17 @@ describe("keamanan materi", () => {
     expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
     expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
   });
+  it("email: tautan juga tertulis sebagai teks dan ada versi teks biasa", async () => {
+    const { render } = await import("@/lib/mail-templates");
+    const { htmlToText } = await import("@/lib/mailer");
+    const link = "https://english.edulyfe.id/sign-in?invite=abc&x=1";
+    const r = render("invitation", { institution: "AirNav", name: "Debora", link, expiresAt: new Date("2026-10-19T00:00:00Z") });
+    expect(r.html).toContain("copy and paste this link");
+    expect(r.html.split("sign-in?invite=abc&amp;x=1").length - 1).toBe(2); // href + teks yang bisa disalin
+    const txt = htmlToText(r.html);
+    expect(txt).toContain("Create my password: " + link);
+    expect(txt).not.toMatch(/<[a-z]/i);
+  });
   it("template staff_invitation memuat peran, tautan buat password, dan meng-escape nama", async () => {
     const { render } = await import("@/lib/mail-templates");
     const r = render("staff_invitation", { roleLabel: "Admin", name: "<b>Rizky</b>", link: "https://app.test/sign-in?invite=abc", expiresAt: new Date("2026-10-21T00:00:00Z") });
