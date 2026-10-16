@@ -41,7 +41,7 @@ export async function GET(req: Request) {
       participants: users.map((u) => {
         const qt = quotas.find((x) => String(x.userId) === String(u._id)), la = lastAt.find((x) => String(x._id) === String(u._id));
         return { id: String(u._id), name: u.name ?? null, email: u.email, status: u.status, institution: u.institutionId ? inst.get(String(u.institutionId)) ?? "-" : null,
-          level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? "-" : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId,
+          level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? "-" : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId, qaTester: !!u.qaTester,
           quota: qt ? { used: qt.used, total: qt.total } : null, tests: la?.n ?? 0, lastAt: la?.at ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt };
       }),
     });

@@ -1,4 +1,5 @@
 import { LIVE, assertUnitAccess } from "@/lib/course-access";
+import { visibleTestFilter } from "@/lib/test-access";
 import { cycleState } from "@/lib/cycles";
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
@@ -19,7 +20,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     await assertUnitAccess(me._id, unit, course);
     const cs = await cycleState(me.institutionId);
     if (cs.blockedReason) throw new HttpError(403, cs.blockedReason);
-    const test = await Test.findOne({ _id: unit.quizTestId, active: true, kind: "quiz" }).lean();
+    const test = await Test.findOne({ _id: unit.quizTestId, kind: "quiz", ...visibleTestFilter(me) }).lean();
     if (!test) throw new HttpError(404, "Quiz not found");
 
     const running = await Attempt.findOne({ userId: me._id, testId: test._id, status: "in_progress" });

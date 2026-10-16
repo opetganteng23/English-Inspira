@@ -43,7 +43,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     await audit(admin._id, "participant.view", params.id);
     return NextResponse.json({
       profile: { id: String(u._id), name: u.name, givenName: u.givenName ?? splitName(u.name).givenName, surname: u.surname ?? splitName(u.name).surname, email: u.email, phone: u.phone, status: u.status, institution: inst?.name ?? null, consentAt: u.consentAt ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt,
-        level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? null : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId, placementRetakeAllowed: u.placementRetakeAllowed },
+        level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? null : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId, placementRetakeAllowed: u.placementRetakeAllowed, qaTester: !!u.qaTester },
       enrollment: enr ? { status: enr.status, startsAt: enr.startsAt, expiresAt: enr.expiresAt ?? null } : null,
       quotas: quotas.map((q) => ({ level: lv.get(String(q.levelId)) ?? "-", used: q.used, total: q.total, active: q.active })),
       attempts: attempts.map((a) => ({ id: String(a._id), kind: a.kind, scoreEst: a.scoreEst, sections: a.sectionScores, finishedAt: a.finishedAt, flags: a.proctorFlags.length })),
@@ -65,6 +65,8 @@ const actions = z.discriminatedUnion("action", [
   z.object({ action: z.literal("temp_password") }),
   z.object({ action: z.literal("disable") }),
   z.object({ action: z.literal("enable") }),
+  z.object({ action: z.literal("qa_on") }),
+  z.object({ action: z.literal("qa_off") }),
   z.object({ action: z.literal("extend_enrollment"), days: z.number().int().min(1).max(730), reason: z.string().trim().min(3).max(300) }),
 ]);
 
@@ -96,6 +98,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       case "temp_password": return NextResponse.json({ ok: true, ...(await setTemporaryPassword(u._id, admin._id)) });
       case "disable": await disableMember(u._id); await audit(admin._id, "participant.disable", params.id); break;
       case "enable": await enableMember(u._id); await audit(admin._id, "participant.enable", params.id); break;
+      case "qa_on": case "qa_off": {
+        if (u.role !== "participant") throw new HttpError(409, "Only participant accounts can be QA testers");
+        u.qaTester = b.action === "qa_on"; await u.save();
+        await audit(admin._id, b.action === "qa_on" ? "participant.qa_on" : "participant.qa_off", params.id); break;
+      }
       case "extend_enrollment": {
         const e = await Enrollment.findOne({ userId: u._id }).sort({ createdAt: -1 });
         if (!e) throw new HttpError(404, "Enrollment not found");

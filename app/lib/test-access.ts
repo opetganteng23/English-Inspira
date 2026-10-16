@@ -8,8 +8,8 @@ import type { TestDoc } from "@/models/Test";
  * - quiz: hanya dari unit belajar (Fase 4).
  */
 /** `ctx` dari Program Cycle: `blocked` = tidak ada periode aktif; `placementNeeded` = placement periode ini belum diambil. */
-export function canStartTest(user: Pick<UserDoc, "role" | "placementAttemptId" | "placementRetakeAllowed" | "currentLevelId">, test: Pick<TestDoc, "kind" | "levelId">, ctx: { blocked?: string | null; placementNeeded?: boolean } = {}): { ok: boolean; reason?: string } {
-  if (user.role === "admin") return { ok: true };
+export function canStartTest(user: Pick<UserDoc, "role" | "placementAttemptId" | "placementRetakeAllowed" | "currentLevelId"> & { qaTester?: boolean | null }, test: Pick<TestDoc, "kind" | "levelId">, ctx: { blocked?: string | null; placementNeeded?: boolean } = {}): { ok: boolean; reason?: string } {
+  if (user.role === "admin" || user.qaTester) return { ok: true }; // admin dan QA tester menguji tanpa aturan placement, level, atau periode
   if (user.role !== "participant") return { ok: false, reason: "Only participants take tests" };
   if (ctx.blocked) return { ok: false, reason: ctx.blocked };
   const done = !!user.placementAttemptId && !ctx.placementNeeded;
@@ -18,4 +18,9 @@ export function canStartTest(user: Pick<UserDoc, "role" | "placementAttemptId" |
   if (test.kind === "quiz") return { ok: false, reason: "Quizzes are taken from learning units" };
   if (test.levelId && String(test.levelId) !== String(user.currentLevelId)) return { ok: false, reason: "This test is for another level" };
   return { ok: true };
+}
+
+/** Tes yang boleh dilihat dan dimulai. Peserta biasa: Active dan bukan Test mode. Admin dan QA tester: juga tes Test mode (tahap uji sebelum diaktifkan). */
+export function visibleTestFilter(user: { role: string; qaTester?: boolean | null }): Record<string, unknown> {
+  return user.role === "admin" || user.qaTester ? { $or: [{ active: true }, { testMode: true }] } : { active: true, testMode: { $ne: true } };
 }

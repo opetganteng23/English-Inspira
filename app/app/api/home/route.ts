@@ -10,6 +10,7 @@ import { CoachingQuota } from "@/models/Config";
 import { Institution } from "@/models/Institution";
 import { PlanItem, TopicStat } from "@/models/Learning";
 import { levelUpStatus } from "@/lib/level-up";
+import { visibleTestFilter } from "@/lib/test-access";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export async function GET() {
 
     const cs = await cycleState(u?.institutionId);
     const needPlace = !u?.placementAttemptId || placementNeeded(u, cs);
-    const placementTest = needPlace ? await Test.findOne({ kind: "placement", active: true }).select("_id").lean() : null;
+    const placementTest = needPlace ? await Test.findOne({ kind: "placement", ...visibleTestFilter(u ?? { role: "participant" }) }).sort({ testMode: -1 }).select("_id").lean() : null;
     // Langkah berikutnya mengikuti kondisi nyata akun (urutan prioritas).
     let step: { title: string; body: string; cta: string; href: string } | null = null;
     if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/test-room/${inProgress._id}` };

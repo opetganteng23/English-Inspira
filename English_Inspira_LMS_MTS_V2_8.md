@@ -111,6 +111,7 @@ Tiga jalur di atas satu fondasi:
 - Satu coach melayani satu institusi. Coach yang melatih dua mitra memakai dua akun.
 - `inst_admin` **tidak** melihat isi analisis individu dan catatan sesi (asumsi privasi, lihat bagian 25).
 - Peserta hanya melihat slot dari coach dan kelas institusinya, sesuai levelnya.
+- **QA tester** (v2.8) adalah penanda pada akun peserta (`users.qaTester`), bukan peran RBAC baru, agar seluruh alur peserta tetap berlaku. Diatur admin di halaman detail peserta (Make QA tester). Akun QA sebaiknya ditempatkan di institusi khusus uji. QA tester boleh melihat dan memulai tes berstatus Test mode, dan tidak terikat aturan placement, level, periode, atau batas percobaan.
 - **Jadwal coaching ditentukan oleh coach.** Peserta tidak membuat jadwal, tidak mengatur jam coach, dan tidak mengirim booking waktu bebas; peserta hanya memilih slot yang telah diterbitkan coach dan masih tersedia.
 
 ## 5. Konfigurasi dan Level (Dapat Diubah Admin)
@@ -435,6 +436,8 @@ Materi di dalam iframe dapat mengirim pesan melalui bridge terbatas yang disedia
 - **Course tiga tingkat**: Course > Modul > Unit (lesson) > Materi (sub-lesson), dengan cover, prasyarat, drip, dan arsip (bagian 10.1).
 
 ## 11. Mesin Tes dan Audio Listening
+
+**Test mode** (v2.8, `tests.testMode`): tes yang sedang diuji. Hanya admin dan QA tester yang melihat dan bisa memulainya, walau Active menyala; peserta biasa tidak pernah melihatnya (daftar tes, mulai tes, kuis unit, dan langkah placement di Home). Tes baru di form admin dimulai dengan Active mati dan Test mode menyala; untuk menayangkan, matikan Test mode lalu nyalakan Active. Filter ada di `visibleTestFilter` (`lib/test-access.ts`).
 
 **Jenis tes** (`tests.kind`): `placement` (sekali, format ITP penuh), `sim` (simulasi penuh berkala), `final` (Final Test, v2.8 — dinilai dan dilaporkan sama seperti `sim`, termasuk memicu evaluasi kenaikan level), `practice` (latihan per section atau topik, bebas ulang), `quiz` (penilaian unit, dinilai server).
 
@@ -907,6 +910,7 @@ node scripts/smoke.mjs   # uji asap end-to-end (dev server :3100, DB in-memory);
 - Analisis Claude tidak jatuh ke template karena JSON rusak (keluaran lewat tool use).
 - Setiap halaman admin/coach/institusi/peserta yang bukan menu utama menampilkan tombol Back yang berfungsi.
 - Kategori tes Final Test dinilai dan dilaporkan sama seperti Simulation, termasuk memicu evaluasi naik level.
+- Tes berstatus Test mode tidak muncul dan tidak bisa dimulai oleh peserta biasa, walau Active; admin dan QA tester bisa melihat dan memulainya, dan QA tester bisa mengulang placement tanpa izin.
 
 ## 25. Asumsi dan Keputusan yang Masih Terbuka
 

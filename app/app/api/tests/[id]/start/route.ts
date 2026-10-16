@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { canStartTest } from "@/lib/test-access";
+import { canStartTest, visibleTestFilter } from "@/lib/test-access";
 import { cycleState, placementNeeded } from "@/lib/cycles";
 import { Test, Attempt } from "@/models/Test";
 
@@ -11,7 +11,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const user = await requireRole(["participant", "admin"]);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Test not found");
     await connectDB();
-    const test = await Test.findOne({ _id: params.id, active: true }).lean();
+    const test = await Test.findOne({ _id: params.id, ...visibleTestFilter(user) }).lean();
     if (!test) throw new HttpError(404, "Test not found");
     if (test.kind === "quiz") throw new HttpError(409, "Quizzes are taken from learning units");
 
@@ -19,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const running = await Attempt.findOne({ userId: user._id, testId: test._id, status: "in_progress" });
     if (running) return NextResponse.json({ attemptId: String(running._id), resumed: true });
 
-    if ((test.maxAttempts ?? 0) > 0) {
+    if ((test.maxAttempts ?? 0) > 0 && !user.qaTester) {
       const taken = await Attempt.countDocuments({ userId: user._id, testId: test._id });
       if (taken >= test.maxAttempts!) throw new HttpError(403, `You have used all ${test.maxAttempts} attempt${test.maxAttempts === 1 ? "" : "s"} for this test.`);
     }

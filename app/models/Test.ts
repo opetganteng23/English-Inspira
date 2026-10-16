@@ -19,6 +19,7 @@ const testSchema = new Schema(
       },
     ],
     active: { type: Boolean, default: true },
+    testMode: { type: Boolean, default: false }, // sedang diuji: hanya admin dan akun QA tester yang melihat dan bisa memulai; peserta biasa tidak, walau Active
     // Aturan tes: acak urutan soal (soal satu passage/audio tetap berurutan), acak pilihan jawaban, batas percobaan (0 = tanpa batas).
     scoringProfileId: { type: Schema.Types.ObjectId, ref: "ScoringProfile" }, // kosong = profil bawaan
     shuffleQuestions: { type: Boolean, default: false },

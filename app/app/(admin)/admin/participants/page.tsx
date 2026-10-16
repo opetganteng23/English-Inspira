@@ -7,9 +7,9 @@ import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { EditAccountDialog, ResetPasswordDialog, DeleteAccountDialog } from "@/components/AccountDialogs";
 
-type Row = { id: string; name: string | null; email: string; status: string; institution: string | null; level: string | null; scoreEst: number | null; placementDone: boolean; quota: { used: number; total: number } | null; tests: number; lastAt: string | null; lastLoginAt: string | null };
+type Row = { id: string; name: string | null; email: string; status: string; institution: string | null; level: string | null; scoreEst: number | null; placementDone: boolean; qaTester?: boolean; quota: { used: number; total: number } | null; tests: number; lastAt: string | null; lastLoginAt: string | null };
 type Detail = {
-  profile: { id: string; name?: string; givenName?: string; surname?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean };
+  profile: { id: string; name?: string; givenName?: string; surname?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean; qaTester?: boolean };
   enrollment: { status: string; startsAt: string; expiresAt: string | null } | null;
   quotas: { level: string; used: number; total: number; active: boolean }[];
   attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number }[];
@@ -38,7 +38,7 @@ export default function Peserta() {
           <tbody>
             {data?.participants.map((p) => (
               <tr key={p.id}>
-                <td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.institution ? ` · ${p.institution}` : ""}</span></td>
+                <td className="font-semibold text-navy">{p.name ?? "(no name yet)"}{p.qaTester && <span className="ml-2 rounded-full bg-accent-tint px-2 py-0.5 text-xs font-semibold text-accent-dark">QA</span>}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.institution ? ` · ${p.institution}` : ""}</span></td>
                 <td><span className={STATUS[p.status]?.[1] ?? "badge-muted"}>{STATUS[p.status]?.[0] ?? p.status}</span></td>
                 <td>{p.level ?? (p.placementDone ? "-" : "No placement yet")}</td><td>{p.scoreEst ?? "-"}</td><td>{p.quota ? `${p.quota.used}/${p.quota.total}` : "-"}</td><td>{p.tests}</td>
                 <td className="text-right"><button className="font-semibold text-brand" onClick={() => setSel(p.id)}>Detail</button></td>
@@ -92,6 +92,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               <button className="btn-outline !min-h-[40px]" onClick={() => setDlg("reset")}>Reset password</button>
               <button className="btn-danger !min-h-[40px]" onClick={() => setDlg("delete")}>Delete account</button>
               {p.status === "invited" && <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "resend_invitation" }, "Invitation resent.")}>Resend invitation</button>}
+              <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: p.qaTester ? "qa_off" : "qa_on" }, p.qaTester ? "QA tester access removed." : "QA tester access granted. This account can now see and run tests in Test mode.")}>{p.qaTester ? "Remove QA tester" : "Make QA tester"}</button>
               {p.status === "disabled" ? <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "enable" }, "Account activated.")}>Activate</button> : <button className="btn-outline !min-h-[40px]" onClick={() => run({ action: "disable" }, "Account deactivated.")}>Deactivate</button>}
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]"><input aria-label="Reason" className="field" placeholder="Reason (required for the actions on the right)" value={reason} onChange={(e) => setReason(e.target.value)} />

@@ -7,7 +7,7 @@ import { useApi } from "@/lib/useApi";
 import { tgl } from "@/lib/client";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
-type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null; lastScore: number | null };
+type T = { id: string; name: string; kind: string; testMode?: boolean; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null; lastScore: number | null };
 type A = { id: string; name: string; kind: string; status: string; finishedAt: string | null; scoreEst: number | null; sections: Record<string, number>; reportId: string | null };
 const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice" };
 
@@ -32,7 +32,7 @@ export default function TesSaya() {
         {tests.data?.tests.map((t) => (
           <div key={t.id} className={`card flex flex-col justify-between gap-4 ${t.unlocked ? "" : "bg-canvas"}`}>
             <div>
-              <div className="flex flex-wrap items-center gap-2"><span className="badge-muted">{KIND[t.kind]}</span>{!t.unlocked && <span className="badge-muted">🔒 Locked</span>}</div>
+              <div className="flex flex-wrap items-center gap-2"><span className="badge-muted">{KIND[t.kind]}</span>{t.testMode && <span className="badge-warn">Test mode</span>}{!t.unlocked && <span className="badge-muted">🔒 Locked</span>}</div>
               <h2 className="mt-2 font-display text-lg font-extrabold text-navy">{t.name}</h2>
               <p className="text-sm text-ink-soft">{t.totalQuestions} questions · about {Math.round(t.totalSec / 60)} minutes{t.lastScore ? ` · last score ${t.lastScore}` : ""}</p>
             </div>

@@ -1,4 +1,5 @@
 import { LIVE, assertUnitAccess } from "@/lib/course-access";
+import { visibleTestFilter } from "@/lib/test-access";
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
@@ -26,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       Material.find({ _id: { $in: unit.materialIds }, status: "published", ...visibleTo(me) }).select("title slug kind summary").lean(),
       UnitProgress.findOne({ userId: me._id, unitId: unit._id }).lean(),
       MaterialProgress.find({ userId: me._id, materialId: { $in: unit.materialIds } }).lean(),
-      unit.quizTestId ? Test.findOne({ _id: unit.quizTestId, active: true }).select("name sections").lean() : null,
+      unit.quizTestId ? Test.findOne({ _id: unit.quizTestId, ...visibleTestFilter(me) }).select("name sections").lean() : null,
       unit.quizTestId ? Attempt.findOne({ userId: me._id, testId: unit.quizTestId, status: "in_progress" }).select("_id").lean() : null,
       getParam("unit_pass_score"),
     ]);

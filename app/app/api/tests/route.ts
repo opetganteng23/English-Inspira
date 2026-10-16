@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
-import { canStartTest } from "@/lib/test-access";
+import { canStartTest, visibleTestFilter } from "@/lib/test-access";
 import { cycleState, placementNeeded } from "@/lib/cycles";
 import { Test, Attempt } from "@/models/Test";
 
@@ -14,7 +14,7 @@ export async function GET() {
     const cs = await cycleState(user.institutionId);
     const ctx = { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs) };
     const [tests, attempts] = await Promise.all([
-      Test.find({ active: true, kind: { $ne: "quiz" } }).sort({ createdAt: 1 }).lean(), // kuis tampil di unit belajar
+      Test.find({ ...visibleTestFilter(user), kind: { $ne: "quiz" } }).sort({ createdAt: 1 }).lean(), // kuis tampil di unit belajar
       Attempt.find({ userId: user._id }).select("testId status scoreEst finishedAt").sort({ createdAt: -1 }).lean(),
     ]);
     return NextResponse.json({
@@ -22,7 +22,7 @@ export async function GET() {
         const mine = attempts.filter((a) => String(a.testId) === String(t._id));
         const gate = canStartTest(user, t, ctx);
         return {
-          id: String(t._id), name: t.name, kind: t.kind,
+          id: String(t._id), name: t.name, kind: t.kind, testMode: !!t.testMode,
           totalQuestions: t.sections.reduce((n, s) => n + s.questionIds.length, 0),
           totalSec: t.sections.reduce((n, s) => n + s.durationSec, 0),
           unlocked: gate.ok, reason: gate.reason ?? null,

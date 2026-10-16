@@ -32,6 +32,7 @@ const userSchema = new Schema(
     currentScoreEst: Number,
     placementAttemptId: { type: Schema.Types.ObjectId, ref: "Attempt" },
     placementRetakeAllowed: { type: Boolean, default: false }, // diizinkan admin/coach
+    qaTester: { type: Boolean, default: false }, // akun penguji: boleh melihat dan menjalankan tes berstatus Test mode; tidak terikat aturan placement/percobaan
     placementCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle" },
     placementSource: { type: String, enum: ["test", "pure", "oce"] }, // asal placement: tes di aplikasi atau hasil luar yang diunggah admin // periode tempat placement terakhir diambil
     levelHistory: [{ _id: false, levelId: { type: Schema.Types.ObjectId, ref: "Level" }, at: Date, reason: String }],

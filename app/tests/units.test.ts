@@ -81,6 +81,24 @@ describe("keamanan materi", () => {
     expect(SANDBOX).toBe("allow-scripts allow-forms");
     expect(() => buildSrcdoc({}, "https://app.test", "pendek")).toThrow();
   });
+  it("Test mode: peserta biasa tidak melihat tes Test mode, admin dan QA tester melihatnya", async () => {
+    const { visibleTestFilter } = await import("@/lib/test-access");
+    expect(visibleTestFilter({ role: "participant" })).toEqual({ active: true, testMode: { $ne: true } });
+    expect(visibleTestFilter({ role: "participant", qaTester: false })).toEqual({ active: true, testMode: { $ne: true } });
+    const open = { $or: [{ active: true }, { testMode: true }] };
+    expect(visibleTestFilter({ role: "participant", qaTester: true })).toEqual(open);
+    expect(visibleTestFilter({ role: "admin" })).toEqual(open);
+    expect(visibleTestFilter({ role: "coach" })).toEqual({ active: true, testMode: { $ne: true } });
+  });
+  it("QA tester menguji tanpa aturan placement/level/periode; peserta biasa tetap terikat", async () => {
+    const { canStartTest } = await import("@/lib/test-access");
+    const base = { placementAttemptId: undefined, placementRetakeAllowed: false, currentLevelId: undefined } as never;
+    const placed = { ...(base as object), placementAttemptId: "a1" } as never;
+    expect(canStartTest({ ...(base as object), role: "participant", qaTester: true } as never, { kind: "sim" } as never, { blocked: "No active period" }).ok).toBe(true);
+    expect(canStartTest({ ...(placed as object), role: "participant", qaTester: true } as never, { kind: "placement" } as never).ok).toBe(true);
+    expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
+    expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
+  });
   it("template staff_invitation memuat peran, tautan buat password, dan meng-escape nama", async () => {
     const { render } = await import("@/lib/mail-templates");
     const r = render("staff_invitation", { roleLabel: "Admin", name: "<b>Rizky</b>", link: "https://app.test/sign-in?invite=abc", expiresAt: new Date("2026-10-21T00:00:00Z") });
