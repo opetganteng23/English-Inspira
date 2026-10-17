@@ -34,6 +34,16 @@ export function scheduleGate(test: { scheduled?: boolean | null }, user: { role:
   return { ...base, ok: true };
 }
 
+/**
+ * Memilih satu tes dari beberapa kandidat (mis. beberapa varian placement) untuk seorang peserta: yang bisa dimulai sekarang,
+ * lalu yang akan dibuka, lalu yang sudah ditutup. Tes terjadwal tanpa kursi tidak terlihat dan tidak dipilih.
+ */
+export function pickGated<T>(items: { test: T; gate: GateResult }[]): { test: T; gate: GateResult } | null {
+  const rank = (g: GateResult) => (!g.visible ? 9 : g.ok ? 0 : g.state === "upcoming" ? 1 : 2);
+  const vis = items.filter((x) => x.gate.visible).sort((a, b) => rank(a.gate) - rank(b.gate) || +(a.gate.window?.opensAt ?? 0) - +(b.gate.window?.opensAt ?? 0));
+  return vis[0] ?? null;
+}
+
 export type Slot = { id: string; capacity: number; filled: number };
 export type SpreadMode = "random" | "sequential" | "balanced";
 export type Person = { id: string; group?: string | null };

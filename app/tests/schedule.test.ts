@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { scheduleGate, spread, windowState, effectiveWindow } from "@/lib/schedule";
+import { scheduleGate, spread, windowState, effectiveWindow, pickGated } from "@/lib/schedule";
 
 const H = 3_600_000;
 const T0 = new Date("2026-10-24T09:00:00+07:00");
@@ -29,6 +29,25 @@ describe("aturan akses tes terjadwal", () => {
     expect(windowState(w, new Date(+T0 + 1 * H))).toBe("upcoming");
     expect(windowState(w, new Date(+T0 + 25 * H))).toBe("open");
     expect(effectiveWindow(win, null)).toEqual(win);
+  });
+});
+
+describe("memilih varian placement untuk peserta", () => {
+  const p = { role: "participant" };
+  const gate = (t: { scheduled: boolean }, seat: { window: typeof win } | null, now = new Date(+T0 + H)) => scheduleGate(t, p, seat, now);
+  it("memilih varian yang dijadwalkan untuk peserta, bukan varian pertama di daftar", () => {
+    const t1 = { id: "T01", scheduled: true }, t2 = { id: "T02", scheduled: true }, t3 = { id: "T03", scheduled: true };
+    const seats: Record<string, { window: typeof win } | null> = { T01: null, T02: { window: win }, T03: null };
+    const picked = pickGated([t1, t2, t3].map((t) => ({ test: t, gate: gate(t, seats[t.id]) })));
+    expect(picked?.test.id).toBe("T02");
+  });
+  it("tidak ada varian untuknya: null; varian terbuka didahulukan dari yang belum buka atau sudah tutup", () => {
+    const a = { id: "A", scheduled: true }, b = { id: "B", scheduled: true }, c = { id: "C", scheduled: false };
+    expect(pickGated([a, b].map((t) => ({ test: t, gate: gate(t, null) })))).toBeNull();
+    const later = { window: { opensAt: new Date(+T0 + 48 * H), closesAt: new Date(+T0 + 51 * H) } };
+    const closed = { window: { opensAt: new Date(+T0 - 48 * H), closesAt: new Date(+T0 - 45 * H) } };
+    expect(pickGated([{ test: a, gate: gate(a, closed) }, { test: b, gate: gate(b, later) }, { test: c, gate: gate(c, null) }])?.test.id).toBe("C"); // tidak terjadwal = terbuka
+    expect(pickGated([{ test: a, gate: gate(a, closed) }, { test: b, gate: gate(b, later) }])?.test.id).toBe("B"); // akan dibuka lebih dulu daripada yang sudah tutup
   });
 });
 

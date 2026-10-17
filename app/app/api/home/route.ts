@@ -14,7 +14,7 @@ import { PlanItem, TopicStat } from "@/models/Learning";
 import { levelUpStatus } from "@/lib/level-up";
 import { visibleTestFilter } from "@/lib/test-access";
 import { seatsFor } from "@/lib/schedule-db";
-import { scheduleGate } from "@/lib/schedule";
+import { scheduleGate, pickGated } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +43,12 @@ export async function GET() {
     // Hasil yang masih ditahan: skor belum terlihat; placement dianggap sudah dikerjakan agar peserta tidak mengulang.
     const held = await Attempt.findOne({ userId: me._id, status: "submitted", ...pendingEffectsFilter }).sort({ releaseAt: 1 }).select("releaseAt kind").lean();
     const needPlace = (!u?.placementAttemptId || placementNeeded(u, cs)) && held?.kind !== "placement";
-    const placementTest = needPlace ? await Test.findOne({ kind: "placement", ...visibleTestFilter(u ?? { role: "participant" }) }).sort({ testMode: -1 }).select("_id scheduled").lean() : null;
-    const placeGate = placementTest?.scheduled ? scheduleGate(placementTest, me, (await seatsFor(me._id, [placementTest._id])).get(String(placementTest._id)) ?? null) : null;
+    // Bisa ada beberapa varian placement (tes terjadwal per kelompok): pilih yang memang dijadwalkan atau terbuka untuk peserta ini.
+    const candidates = needPlace ? await Test.find({ kind: "placement", ...visibleTestFilter(u ?? { role: "participant" }) }).sort({ testMode: -1, createdAt: 1 }).select("_id scheduled").lean() : [];
+    const seats = await seatsFor(me._id, candidates.filter((t) => t.scheduled).map((t) => t._id));
+    const picked = pickGated(candidates.map((t) => ({ test: t, gate: scheduleGate(t, me, seats.get(String(t._id)) ?? null) })));
+    const placementTest = picked?.test ?? null;
+    const placeGate = candidates.length ? (picked?.gate ?? { visible: false, ok: false }) : null; // ada placement, tetapi tidak satupun dijadwalkan untuk peserta ini
     // Langkah berikutnya mengikuti kondisi nyata akun (urutan prioritas).
     let step: { title: string; body: string; cta: string; href: string } | null = null;
     if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/test-room/${inProgress._id}` };
