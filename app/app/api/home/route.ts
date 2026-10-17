@@ -47,7 +47,7 @@ export async function GET() {
     if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/test-room/${inProgress._id}` };
     else if (held) step = { title: held.releaseAt! > new Date() ? "Your result is being prepared" : "Your result is ready", body: held.releaseAt! > new Date() ? `Results are released at ${fmtRelease(held.releaseAt!)}. Come back then to see your score, level, and analysis.` : "Your result is ready. Open it to see your score, level, and analysis.", cta: "View status", href: `/results/${held._id}` };
     else if (cs.blockedReason) step = { title: "Program period closed", body: cs.blockedReason, cta: "Open learning", href: "/learn" };
-    else if (needPlace) step = { title: "Start with the placement test", body: "Taken once per program period, in ITP format. The result sets your level, coaching quota, and initial study plan.", cta: "Start placement", href: placementTest ? `/tests/prepare/${placementTest._id}` : "/tests" };
+    else if (needPlace) step = { title: "Start with the placement test", body: "Taken once per program period, in EPTA format. The result sets your level, coaching quota, and initial study plan.", cta: "Start placement", href: placementTest ? `/tests/prepare/${placementTest._id}` : "/tests" };
     else step = { title: "Keep learning", body: "Do exercises or simulations to track your progress.", cta: "Open tests", href: "/tests" };
 
     return NextResponse.json({

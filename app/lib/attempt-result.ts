@@ -12,6 +12,7 @@ import { ScoringProfile } from "@/models/Scoring";
 import { equivalents } from "@/lib/score-equivalence";
 import { getEquivalence } from "@/lib/clustering";
 import { LEVEL_INFO } from "@/lib/level-info";
+import { isLearningTopic } from "@/lib/topics";
 
 type SnapItem = { qid: import("mongoose").Types.ObjectId; section: string; type: string; groupId?: import("mongoose").Types.ObjectId; stem: string; options: string[]; answerKey: number; explanation?: string; tags: { skill: string; topic: string }[] };
 
@@ -63,20 +64,21 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
     const scoringInfo = { name: sp?.name ?? null, version: attempt.scoringVersion ?? null, basis: attempt.scoreBasis ?? "provisional" };
     const report = await Certificate.findOne({ attemptId: attempt._id, type: "sim_report" }).select("_id").lean();
     // Topik terlemah (cukup data, di bawah 70%) -> unit remedial yang disarankan untuk dipelajari.
-    const weak = (attempt.topicScores ?? [])
+    const learning = (attempt.topicScores ?? []).filter((t) => isLearningTopic({ skill: t.skill ?? "", topic: t.topic ?? "" })); // percobaan lama masih menyimpan label internal
+    const weak = learning
       .map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", score: Math.round(t.score ?? 0), correct: t.correct ?? 0, total: t.total ?? 0 }))
       .filter((t) => t.skill && t.topic && t.total >= 2 && t.score < 70).sort((x, y) => x.score - y.score).slice(0, 5);
     const recommendations = await recommendCourses(attempt.userId, u?.currentLevelId, weak);
     const eq = attempt.scoreEst != null ? equivalents(attempt.scoreEst, await getEquivalence()) : null;
     return {
       recommendations,
-      previous: prev ? { name: prevTest?.name ?? "Previous test", scoreEst: prev.scoreEst, sectionScores: prev.sectionScores, topicScores: prev.topicScores } : null,
+      previous: prev ? { name: prevTest?.name ?? "Previous test", scoreEst: prev.scoreEst, sectionScores: prev.sectionScores, topicScores: (prev.topicScores ?? []).filter((t) => isLearningTopic({ skill: t.skill ?? "", topic: t.topic ?? "" })) } : null,
       reportId: report ? String(report._id) : null,
       scoring: scoringInfo,
       levelUp: calc?.levelUp ?? null, stuck: (calc?.stuck ?? []).map((k) => k.split("|")[1] ?? k),
       kind: attempt.kind, testName: test.name, finishedAt: attempt.finishedAt,
       durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,
-      scoreRaw: attempt.scoreRaw, scoreEst: attempt.scoreEst, sectionScores: attempt.sectionScores, topicScores: attempt.topicScores,
+      scoreRaw: attempt.scoreRaw, scoreEst: attempt.scoreEst, sectionScores: attempt.sectionScores, topicScores: learning,
       flags: attempt.proctorFlags.length, attemptId: String(attempt._id), analysis: attempt.aiAnalysis ?? { status: "pending" },
       level: level ? { name: level.name, quota: level.coachingQuota, scoreMin: level.scoreMin, scoreMax: level.scoreMax, info: LEVEL_INFO[String(level.key)] ?? null } : null,
       equivalents: eq ? { itp: eq.itp, cefr: eq.cefr, cefrLabel: eq.cefrLabel } : null,

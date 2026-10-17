@@ -39,7 +39,7 @@ export function HeroExample() {
         </div>
         <div className="flex items-end gap-3.5">
           <span className="font-display text-[56px] font-extrabold leading-none tabular-nums"><CountUp to={497} /></span>
-          <span className="pb-1.5 text-sm text-[#B9CBE6]">Estimated ITP score · scale 310-677</span>
+          <span className="pb-1.5 text-sm text-[#B9CBE6]">Estimated EPTA score · scale 310-677</span>
         </div>
 
         <div className="relative pb-5" aria-hidden>

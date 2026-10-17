@@ -9,11 +9,11 @@ export type LandingSettings = {
 };
 
 export const LANDING_DEFAULTS: LandingSettings = {
-  badge: "TOEFL ITP Preparation Program 2026",
-  title: "Know your TOEFL ITP score. Know what to do next.",
-  subtitle: "ITP-format tests, AI analysis for every section, and an AI Counselor that plans your next steps, until you are ready to register for the official TOEFL ITP.",
+  badge: "EPTA: English Proficiency Test & Analytics 2026",
+  title: "Know your EPTA score. Know what to do next.",
+  subtitle: "EPTA tests, AI analysis for every section, and an AI Counselor that plans your next steps, until you are ready to register for the official EPTA test.",
   bgImageId: "", overlay: 60, theme: "light", showExample: true,
-  marquee: ["Know your score", "AI analysis per section", "Personal AI Counselor", "Study plan that fits your time", "Official TOEFL ITP registration", "English Intelligence Journey"],
+  marquee: ["Know your score", "AI analysis per section", "Personal AI Counselor", "Study plan that fits your time", "Official EPTA registration", "English Intelligence Journey"],
   partners: [{ name: "Inspira Teknologi", logoId: "" }, { name: "Telkom University", logoId: "" }, { name: "CoE AILO", logoId: "" }],
 };
 

@@ -64,7 +64,7 @@ export async function PATCH(req: Request) {
     const given = b.givenName ?? u.givenName ?? cur.givenName, sur = b.surname ?? u.surname ?? cur.surname;
     const nameChanged = (b.givenName !== undefined || b.surname !== undefined) && composeName(given, sur) !== (u.name ?? "");
     if (nameChanged && (await ItpRegistration.exists({ userId: u._id, status: { $ne: "cancelled" } })))
-      throw new HttpError(409, "Your name is locked after registering for the official ITP test");
+      throw new HttpError(409, "Your name is locked after registering for the official EPTA test");
     const rest: Partial<typeof b> = { ...b };
     delete rest.givenName; delete rest.surname; delete rest.emailPrefs; delete rest.avatarAssetId;
     u.set(rest);

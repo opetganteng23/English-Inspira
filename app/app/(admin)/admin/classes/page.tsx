@@ -25,7 +25,7 @@ export default function Classes() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><h1 className="page-title">Classes</h1><p className="max-w-3xl text-sm text-ink-soft">Participants are grouped by level from their score (TOEFL ITP scale), then placed at random in a class of that level that still has seats, starting with the emptiest class so classes stay balanced. Active means signed in or studied in the last 7 days.</p></div>
+        <div><h1 className="page-title">Classes</h1><p className="max-w-3xl text-sm text-ink-soft">Participants are grouped by level from their score (EPTA scale), then placed at random in a class of that level that still has seats, starting with the emptiest class so classes stay balanced. Active means signed in or studied in the last 7 days.</p></div>
         <div className="flex flex-wrap gap-2">
           {waitingTotal > 0 && <button className="btn-outline" disabled={busy} onClick={() => run(async () => { const r = await api<{ assigned: number; stillWaiting: number }>("/api/admin/classes/assign", { json: { action: "auto" } }); return `${r.assigned} placed in classes.${r.stillWaiting ? ` ${r.stillWaiting} still waiting: add classes or seats for their level.` : ""}`; })}>Place {waitingTotal} waiting</button>}
           <button className="btn-solid" onClick={() => setEdit({ capacity: 25, isActive: true, levelId: data?.levels[0]?.id })}>+ New class</button>

@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     if (!session || session.status !== "open" || session.date <= new Date()) throw new HttpError(404, "Schedule not available");
     if (await ItpRegistration.exists({ userId: me._id, sessionId: session._id, status: { $ne: "cancelled" } })) throw new HttpError(409, "You are already registered for this schedule");
 
-    if (await ItpRegistration.exists({ userId: me._id, status: { $in: ["submitted", "confirmed"] } })) throw new HttpError(409, "You still have an active ITP registration. Cancel it first to choose another schedule.");
+    if (await ItpRegistration.exists({ userId: me._id, status: { $in: ["submitted", "confirmed"] } })) throw new HttpError(409, "You still have an active official test registration. Cancel it first to choose another schedule.");
     const seat = await ItpSession.findOneAndUpdate({ _id: session._id, status: "open", $expr: { $lt: ["$registered", "$quota"] } }, { $inc: { registered: 1 } }, { returnDocument: "after" });
     if (!seat) throw new HttpError(409, "This schedule is full. Choose another schedule.");
 

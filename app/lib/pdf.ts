@@ -34,7 +34,7 @@ export async function certificatePdf(c: {
     doc.rect(24, 24, 547, 794).lineWidth(2).strokeColor(BLUE).stroke();
     brand(doc);
     doc.fillColor(BLUE).font("Bold").fontSize(10).text(c.type === "itp" ? "CERTIFICATE" : "TEST RESULT REPORT", 48, 140, { characterSpacing: 2 });
-    doc.fillColor(NAVY).fontSize(24).text(c.type === "itp" ? "TOEFL ITP" : (c.title ?? "Simulation Test"), 48, 158, { width: 499 });
+    doc.fillColor(NAVY).fontSize(24).text(c.type === "itp" ? "EPTA" : (c.title ?? "Simulation Test"), 48, 158, { width: 499 });
     doc.fillColor(GRAY).font("Regular").fontSize(11).text("Presented to", 48, 215);
     doc.fillColor(NAVY).font("Bold").fontSize(26).text(c.name.toUpperCase(), 48, 233, { width: 499 });
 
@@ -51,7 +51,7 @@ export async function certificatePdf(c: {
     doc.fillColor(GRAY).font("Regular").fontSize(9).text("Scan to verify", 400, 704, { width: 140, align: "center" });
     doc.fontSize(10).text(`Number: ${c.number}`, 48, 580).text(`Issued on: ${fmt(c.issuedAt)}`, 48, 596);
     doc.fontSize(8.5).text(c.note ?? (c.type === "sim_report"
-      ? "This report is proof of practice from a simulation test, not an official TOEFL certificate. The score is an estimate."
+      ? "This report is proof of practice from a simulation test, not an official certificate. The score is an estimate."
       : "Official score from the test organizer. Verify authenticity via the link or QR code."), 48, 640, { width: 320 });
   });
 }

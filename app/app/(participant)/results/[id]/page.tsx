@@ -6,6 +6,7 @@ import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
 import { Loading, ErrorNote, HBars } from "@/components/Charts";
 import { CounselorPanel } from "@/components/CounselorPanel";
+import { buildBreakdown, partLabel } from "@/lib/breakdown";
 
 type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
@@ -24,6 +25,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
   const [releaseAt, setReleaseAt] = useState<Date | null>(null);
   const me = useApi<{ targetScore: number | null }>("/api/me");
   const [filter, setFilter] = useState<"all" | "wrong">("wrong");
+  const [bdTab, setBdTab] = useState("");
 
   useEffect(() => {
     let stop = false, tries = 0;
@@ -72,8 +74,8 @@ export default function Hasil({ params }: { params: { id: string } }) {
     const now = r.sectionScores.find((s) => s.section === section), before = r.previous?.sectionScores.find((s) => s.section === section);
     return now && before ? now.scaled - before.scaled : null;
   };
-  const topicBefore = new Map((r.previous?.topicScores ?? []).map((t) => [`${t.skill}|${t.topic}`, t.score]));
-  const weakTopics = [...(r.topicScores ?? [])].sort((x, y) => x.score - y.score).slice(0, 8);
+  const breakdown = buildBreakdown(r.topicScores ?? [], r.previous?.topicScores);
+  const bd = breakdown.find((g) => g.key === bdTab) ?? breakdown[0];
 
   const pctOf = (v: number) => Math.max(0, Math.min(100, ((v - 310) / (677 - 310)) * 100));
   const levelBanners = (
@@ -100,7 +102,9 @@ export default function Hasil({ params }: { params: { id: string } }) {
           {r.durationSec != null && <p className="text-sm text-ink-soft">Finished in {Math.floor(r.durationSec / 60)} min {r.durationSec % 60} sec{r.flags ? ` · ${r.flags} test activity notes` : " · clean session"}</p>}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <a href={`/api/attempts/${params.id}/pdf`} download className="btn-solid">Export results (PDF)</a>
+          {r.analysis.status === "pending"
+            ? <span className="btn-solid cursor-not-allowed opacity-60" role="note" title="The PDF includes the analysis, so it is available once the analysis is ready">Export results (PDF)<span className="ml-2 text-xs font-normal">analysis preparing…</span></span>
+            : <a href={`/api/attempts/${params.id}/pdf`} download className="btn-solid">Export results (PDF)</a>}
           {r.reportId && <a href={`/api/certificates/${r.reportId}/pdf`} target="_blank" rel="noreferrer" className="btn-outline">Report with QR (PDF)</a>}
         </div>
       </div>
@@ -108,7 +112,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
 
       <section className="grid gap-5 rounded-2xl bg-navy p-5 text-white sm:p-6 md:grid-cols-[auto_1fr] md:items-center md:gap-8">
         <div>
-          <p className="text-sm text-[#B9CBE6]">Estimated TOEFL ITP score</p>
+          <p className="text-sm text-[#B9CBE6]">Estimated EPTA score</p>
           <p className="font-display text-5xl font-extrabold leading-none sm:text-6xl">{r.scoreEst}</p>
           {r.previous && <p className={`mt-2 text-sm font-semibold ${r.scoreEst - r.previous.scoreEst >= 0 ? "text-[#8FE0B0]" : "text-[#FFB4AB]"}`}>{fmtDelta(r.scoreEst - r.previous.scoreEst)} from {r.previous.name} ({r.previous.scoreEst})</p>}
           {target && <p className="mt-1 text-sm font-semibold text-accent">{r.scoreEst >= target ? `Target ${target} reached` : `${target - r.scoreEst} points below the ${target} target`}</p>}
@@ -119,7 +123,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
             {target && <><div className="absolute -top-2 h-6 w-0.5 bg-accent" style={{ left: `${pctOf(target)}%` }} /><span className="absolute -top-6 -translate-x-1/2 text-[11px] font-semibold text-accent" style={{ left: `${pctOf(target)}%` }}>Target {target}</span></>}
           </div>
           <div className="mt-1.5 flex justify-between text-xs text-[#B9CBE6]"><span>310</span><span>677</span></div>
-          <p className="mt-3 text-xs leading-relaxed text-[#DCE7F7]">An estimate from a simulation test, not an official score. Official scores only come from TOEFL ITP tests run by an official organizer.</p>
+          <p className="mt-3 text-xs leading-relaxed text-[#DCE7F7]">An estimate from a simulation test, not an official score. Official scores only come from official EPTA tests run by an official organizer.</p>
           {r.scoring && <p className={`mt-2 inline-block rounded-md px-2 py-1 text-[11px] font-semibold ${r.scoring.basis === "verified" ? "bg-white/15 text-[#DCE7F7]" : "bg-accent text-navy"}`}>{r.scoring.basis === "verified" ? `Scored with a verified conversion${r.scoring.name ? `: ${r.scoring.name}` : ""}` : "Provisional conversion: treat this score as a rough estimate"}</p>}
         </div>
       </section>
@@ -129,10 +133,10 @@ export default function Hasil({ params }: { params: { id: string } }) {
           <h2 className="font-display text-lg font-extrabold text-navy">Score equivalents</h2>
           {r.level?.info && <p className="mt-1 text-sm text-ink"><b>{r.level.name} ({r.level.scoreMin} to {r.level.scoreMax}).</b> {r.level.info.summary} {r.level.info.traits}</p>}
           <dl className="mt-3 grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">TOEFL ITP</dt><dd className="font-display text-2xl font-extrabold text-navy">{r.equivalents.itp}</dd><dd className="text-xs text-ink-soft">estimate, 310 to 677</dd></div>
+            <div className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">EPTA</dt><dd className="font-display text-2xl font-extrabold text-navy">{r.equivalents.itp}</dd><dd className="text-xs text-ink-soft">estimate, 310 to 677</dd></div>
             <div className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">CEFR</dt><dd className="font-display text-2xl font-extrabold text-navy">{r.equivalents.cefr}</dd><dd className="text-xs text-ink-soft">{r.equivalents.cefrLabel.replace(/^\S+ /, "")}</dd></div>
           </dl>
-          <p className="mt-2 text-xs text-ink-soft">CEFR follows the TOEFL ITP mapping published by ETS. Equivalents are guides for placement, not official scores.</p>
+          <p className="mt-2 text-xs text-ink-soft">CEFR follows the standard mapping for the 310-677 scale. Equivalents are guides for placement, not official scores.</p>
         </section>
       )}
 
@@ -153,11 +157,15 @@ export default function Hasil({ params }: { params: { id: string } }) {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        {weakTopics.length > 0 && (
+        {bd && (
           <section className="card">
             <h2 className="font-display text-lg font-extrabold text-navy">Breakdown by question type</h2>
-            <p className="text-sm text-ink-soft">Lowest first. Topics with few questions are not enough to draw conclusions.</p>
-            <div className="mt-3"><HBars max={100} unit="%" rows={weakTopics.map((t) => ({ label: `${t.topic} (${LABEL[t.skill] ?? t.skill})`, value: Math.round(t.score), sub: `${t.correct}/${t.total}${topicBefore.has(`${t.skill}|${t.topic}`) ? ` · ${fmtDelta(Math.round(t.score - topicBefore.get(`${t.skill}|${t.topic}`)!))}% vs previous` : ""}` }))} /></div>
+            <p className="text-sm text-ink-soft">Every question type in each section, lowest first. Types with fewer than 3 questions are marked: too few to draw conclusions.</p>
+            <div className="mt-3 flex flex-wrap gap-1 rounded-lg bg-canvas p-1 text-sm" role="tablist" aria-label="Section">
+              {breakdown.map((g) => <button key={g.key} role="tab" aria-selected={bd.key === g.key} onClick={() => setBdTab(g.key)} className={`rounded-md px-3 py-1.5 font-semibold ${bd.key === g.key ? "bg-white text-navy shadow-sm" : "text-ink-soft"}`}>{g.label}</button>)}
+            </div>
+            {bd.parts.length > 0 && <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-soft"><span className="font-semibold text-navy">By part:</span>{bd.parts.map((p) => <span key={p.topic} className="rounded-full bg-canvas px-3 py-1 font-semibold text-navy">{partLabel(p.topic)} · {p.correct}/{p.total} ({Math.round(p.score)}%)</span>)}</p>}
+            <div className="mt-3"><HBars max={100} unit="%" rows={bd.rows.map((t) => ({ label: `${t.topic}${t.few ? " (few questions)" : ""}`, value: Math.round(t.score), sub: `${t.correct}/${t.total}${t.delta != null ? ` · ${fmtDelta(t.delta)}% vs previous` : ""}` }))} /></div>
           </section>
         )}
         <CounselorPanel attemptId={params.id} />

@@ -19,20 +19,20 @@ const Eyebrow = ({ children, className = "text-accent-dark" }: { children: React
 );
 
 const STEPS = [
-  { n: 1, bg: "bg-brand", t: "ITP-format test", d: "A placement test sets your level. Listening, Structure & Written Expression, and Reading with real section timers." },
+  { n: 1, bg: "bg-brand", t: "EPTA placement test", d: "A placement test sets your level. Listening, Structure & Written Expression, and Reading with real section timers." },
   { n: 2, bg: "bg-brand", t: "Results + AI analysis", d: "Estimated score, score per section, and your error patterns per question type." },
   { n: 3, bg: "bg-success", t: "Learn and get coached", d: "A study plan built from your results, courses for your level, the AI Counselor, and sessions with a coach." },
-  { n: 4, bg: "bg-accent-dark", t: "Official ITP registration", d: "When your simulation score reaches your target, register for the official test right here." },
+  { n: 4, bg: "bg-accent-dark", t: "Official EPTA registration", d: "When your simulation score reaches your target, register for the official test right here." },
 ];
 
 const PHASES = [
-  { no: "01", name: "Discover", tag: "Know where you stand", tool: "Placement test", desc: "An ITP-format test gives your starting score per section and per question type." },
+  { no: "01", name: "Discover", tag: "Know where you stand", tool: "Placement test", desc: "An EPTA test gives your starting score per section and per question type." },
   { no: "02", name: "Learn", tag: "Learn with purpose", tool: "Courses", desc: "Courses, units, and interactive materials matched to your level." },
   { no: "03", name: "Analyze", tag: "Turn results into insight", tool: "AI analysis", desc: "AI analysis explains your error patterns and the reasons behind your score." },
   { no: "04", name: "Improve", tag: "Focus on what matters most", tool: "Study plan", desc: "A study plan and coaching sessions focused on the section furthest from your target." },
   { no: "05", name: "Experience", tag: "Simulate the real test", tool: "Simulation", desc: "A full simulation with section timers, audio played once, and test-room monitoring." },
   { no: "06", name: "Measure", tag: "Validate readiness", tool: "Progress", desc: "Track your progress per section and see when you are ready for the official test." },
-  { no: "07", name: "Certify", tag: "Achieve your goal", tool: "Official ITP", desc: "Take the official TOEFL ITP on a scheduled date and receive your certificate." },
+  { no: "07", name: "Certify", tag: "Achieve your goal", tool: "Official EPTA", desc: "Take the official EPTA test on a scheduled date and receive your certificate." },
 ];
 
 const AUDIENCE = [
@@ -45,7 +45,7 @@ const AUDIENCE = [
 ];
 
 const FAQ = [
-  ["Is this the same as the official TOEFL ITP?", "Our tests follow the TOEFL ITP format (Listening, Structure & Written Expression, Reading) and give an estimated score. Official scores only come from the official TOEFL ITP, which you can register for here when your institution's program includes it."],
+  ["What is EPTA?", "EPTA (English Proficiency Test & Analytics) combines a three-section English test (Listening, Structure & Written Expression, Reading) with detailed analysis. Practice tests give an estimated score. Official scores only come from the official EPTA test, which you can register for here when your institution's program includes it."],
   ["How do I get access?", "Access is provided through partner institutions. Create an account with the institution code you received, or use the invitation email from your institution. You can sign in with your password or with a one-time code sent to your email."],
   ["What can I ask the AI Counselor?", "Anything about your results: why a section score is low, what to do this week, how long until you reach your target, or whether you are ready for the official test."],
   ["What device do I need?", "A laptop or PC with headphones and a stable connection. The test room runs in fullscreen, and leaving the test tab is recorded."],
@@ -104,7 +104,7 @@ export function Landing({ email, whatsapp, settings = LANDING_DEFAULTS }: { emai
                 <a href="#institutions" className={`btn-lift inline-flex h-14 items-center justify-center rounded-xl border-[1.5px] px-7 text-[17px] font-semibold hover:border-brand ${dark ? "border-white/50 bg-white/10 text-white" : "border-line-strong bg-white text-navy"}`}>For institutions</a>
               </div>
               <div className={`fx-fade-up flex flex-wrap gap-x-5 gap-y-1 text-sm ${dark ? "text-[#DCE7F7]" : "text-ink-soft"}`} style={{ "--d": "480ms" } as React.CSSProperties}>
-                <span>Register with your institution code</span><span className="opacity-40" aria-hidden>|</span><span>Password or email code</span><span className="opacity-40" aria-hidden>|</span><span>Official ITP registration</span>
+                <span>Register with your institution code</span><span className="opacity-40" aria-hidden>|</span><span>Password or email code</span><span className="opacity-40" aria-hidden>|</span><span>Official EPTA registration</span>
               </div>
             </div>
             {hero.showExample && <HeroExample />}
@@ -197,12 +197,12 @@ export function Landing({ email, whatsapp, settings = LANDING_DEFAULTS }: { emai
                   <div key={s} className="grid grid-cols-3 border-t border-[#2A5591] px-5 py-3.5 text-[15px] transition-colors hover:bg-navy-700"><span className="font-semibold">{s}</span><span className="text-mist">{q}</span><span>{t}</span></div>
                 ))}
               </div>
-              <p className="text-sm text-[#B9CBE6]">Full TOEFL ITP format simulation, 140 questions.</p>
+              <p className="text-sm text-[#B9CBE6]">Full EPTA simulation, 140 questions.</p>
             </div>
             <Reveal className="w-full max-w-[480px] self-center" delay={150}><div className="hover-lift flex w-full flex-col gap-5 rounded-[20px] bg-white p-8 text-ink">
               <span className="font-display text-[22px] font-extrabold text-navy">What your institution gets</span>
               <ul className="flex flex-col gap-3.5 text-base">
-                {["Bulk participant invites by email or Excel import", "A dashboard of group results and progress", "PDF and Excel reports per participant and per group", "Coaches and coaching session quotas", "Group schedules for the official ITP"].map((t) => <li key={t} className="flex gap-3"><Check color="#0B4FA6" /><span>{t}</span></li>)}
+                {["Bulk participant invites by email or Excel import", "A dashboard of group results and progress", "PDF and Excel reports per participant and per group", "Coaches and coaching session quotas", "Group schedules for the official EPTA test"].map((t) => <li key={t} className="flex gap-3"><Check color="#0B4FA6" /><span>{t}</span></li>)}
               </ul>
               <a href={contact} className="btn-lift inline-flex h-12 items-center justify-center rounded-xl bg-brand px-6 font-semibold text-white hover:bg-brand-dark">Contact us</a>
             </div></Reveal>

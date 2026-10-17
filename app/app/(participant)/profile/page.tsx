@@ -49,11 +49,11 @@ export default function Profil() {
           <label className={label}>Given name<input className="field font-normal" disabled={me.nameLocked} autoComplete="given-name" value={f.givenName} onChange={(e) => setF({ ...f, givenName: e.target.value })} /></label>
           <label className={label}>Surname<input className="field font-normal" disabled={me.nameLocked} autoComplete="family-name" value={f.surname} onChange={(e) => setF({ ...f, surname: e.target.value })} /></label>
         </div>
-        <p className="-mt-2 text-xs text-ink-soft">Enter your name as on your ID card or passport. {me.nameLocked ? "Locked after you register for the official ITP test." : ""}</p>
+        <p className="-mt-2 text-xs text-ink-soft">Enter your name as on your ID card or passport. {me.nameLocked ? "Locked after you register for the official EPTA test." : ""}</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className={label}>Phone number<input className="field font-normal" inputMode="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
           <label className={label}>Highest education<select className="field font-normal" value={f.education} onChange={(e) => setF({ ...f, education: e.target.value })}><option value="">Choose</option><option value="sma">High school</option><option value="d3">Diploma</option><option value="s1">Bachelor&apos;s degree</option><option value="s2">Master&apos;s degree</option></select></label>
-          <label className={label}>ITP target score<select className="field font-normal" value={f.targetScore} onChange={(e) => setF({ ...f, targetScore: e.target.value })}><option value="">Choose</option>{[450, 500, 550, 600].map((n) => <option key={n} value={n}>{n === 600 ? "600+" : n}</option>)}</select></label>
+          <label className={label}>Target score<select className="field font-normal" value={f.targetScore} onChange={(e) => setF({ ...f, targetScore: e.target.value })}><option value="">Choose</option>{[450, 500, 550, 600].map((n) => <option key={n} value={n}>{n === 600 ? "600+" : n}</option>)}</select></label>
           <label className={label}>Goal<select className="field font-normal" value={f.goal} onChange={(e) => setF({ ...f, goal: e.target.value })}><option value="">Choose</option><option value="graduation">Graduation requirement</option><option value="scholarship">Scholarship / Master’s</option><option value="career">Job / Civil service</option><option value="other">Other</option></select></label>
         </div>
         <button className="btn-solid self-start" disabled={busy}>{busy ? "Saving…" : "Save changes"}</button>

@@ -23,7 +23,7 @@ export async function eraseUserData(userId: Types.ObjectId | string, actorId: Ty
   if (!u) throw new HttpError(404, "User not found");
   if (u.role === "admin") throw new HttpError(409, "Admin accounts are not deleted through this procedure");
   if (await ItpRegistration.exists({ userId: u._id, status: { $in: ["submitted", "confirmed"] } }))
-    throw new HttpError(409, "Cancel the active ITP registration first.");
+    throw new HttpError(409, "Cancel the active official test registration first.");
 
   const bucket = await pdfBucket();
   for (const p of await PdfImport.find({ userId: u._id, fileId: { $exists: true } })) await bucket.delete(p.fileId!).catch(() => {});

@@ -44,7 +44,7 @@ export async function GET() {
       { done: planDone > 0 || attended > 0, started: planAny > 0 || booked > 0, detail: `${planDone} of ${planAny} plan items done · ${attended} coaching session${attended === 1 ? "" : "s"} attended.`, href: "/coaching", cta: booked || planAny ? "Open coaching" : "Book coaching" },
       { done: sims.length > 0, started: sims.length > 0, detail: sims.length ? `${sims.length} simulation${sims.length === 1 ? "" : "s"} taken.` : "Take a full simulation with section timers.", href: "/tests", cta: sims.length ? "Take another" : "Open tests" },
       { done: sims.length >= 2, started: scored.length >= 2, detail: gain != null ? `${gain >= 0 ? "+" : ""}${gain} points since your first result.` : "Needs at least two results to measure progress.", href: "/home#progress", cta: "View progress" },
-      { done: itpCert > 0, started: !!itpReg, detail: itpCert ? "Official certificate issued." : itpReg ? `Registration ${itpReg.status}.` : "Register when your simulation score reaches your target.", href: itpCert ? "/certificates" : "/itp", cta: itpCert ? "View certificate" : "Official ITP test" },
+      { done: itpCert > 0, started: !!itpReg, detail: itpCert ? "Official certificate issued." : itpReg ? `Registration ${itpReg.status}.` : "Register when your simulation score reaches your target.", href: itpCert ? "/certificates" : "/itp", cta: itpCert ? "View certificate" : "Official EPTA test" },
     ];
     // Tahap berjalan = tahap pertama yang belum selesai; sisanya "upcoming" kecuali sudah dimulai.
     const firstOpen = raw.findIndex((p) => !p.done);

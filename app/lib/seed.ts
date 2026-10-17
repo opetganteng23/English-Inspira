@@ -91,7 +91,7 @@ export async function seedTests() {
     { name: "reading", durationSec: 17 * 60, questionIds: readingIds },
   ];
   const placement = await Test.create({ name: "Placement Test (sample)", kind: "placement", sections: full });
-  await Test.create({ name: "ITP Simulation (sample)", kind: "sim", sections: full });
+  await Test.create({ name: "EPTA Simulation (sample)", kind: "sim", sections: full });
   await Test.create({ name: "Structure Practice (sample)", kind: "practice", sections: [{ name: "structure", durationSec: 8 * 60, questionIds: structureQs.map((q) => q._id) }] });
   return { placementId: String(placement._id), questions: listeningQs.length + structureQs.length + readingIds.length };
 }

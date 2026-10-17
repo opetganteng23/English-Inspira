@@ -59,7 +59,7 @@ export function EmailChangeCard({ email, locked, onChanged }: { email: string; l
       <p className="text-sm text-ink-soft">Your sign-in email: <b className="text-navy">{email}</b></p>
       {ok && <p role="status" className="rounded-lg bg-success-tint p-3 text-sm text-success">{ok}</p>}
       {step === "idle" && <button type="button" className="btn-outline self-start" disabled={locked} onClick={() => { setStep("new"); setOk(""); }}>Change email</button>}
-      {locked && <p className="text-xs text-ink-soft">Email cannot be changed while an official ITP registration is active.</p>}
+      {locked && <p className="text-xs text-ink-soft">Email cannot be changed while an official EPTA registration is active.</p>}
       {step === "new" && (
         <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); send(); }}>
           <label className={label}>New email<input className="field font-normal" type="email" required autoComplete="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} /></label>
@@ -100,7 +100,7 @@ export function NotificationPrefs({ prefs, onChanged }: { prefs: { reminders: bo
         {row("reminders", "Reminders", "Study plan deadlines, low coaching quota, and tomorrow's coaching session.")}
         {row("progress", "Progress updates", "Placement result, level-ups, and when an analysis is ready.")}
       </div>
-      <p className="mt-2 text-xs text-ink-soft">Sign-in codes, password resets, coaching schedule changes, and ITP registration emails are always sent.</p>
+      <p className="mt-2 text-xs text-ink-soft">Sign-in codes, password resets, coaching schedule changes, and official test registration emails are always sent.</p>
       {err && <p role="alert" className="mt-2 text-sm text-red-700">{err}</p>}
     </section>
   );

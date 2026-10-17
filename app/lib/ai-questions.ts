@@ -48,7 +48,7 @@ export const stemKey = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim(
 export async function generateQuestionDrafts(input: GenerateInput, existingStems: Set<string>) {
   if (!aiEnabled()) throw new Error("AI is not configured on this server (ANTHROPIC_API_KEY is missing).");
   const system = `${GUARDRAILS}
-You write TOEFL ITP Structure and Written Expression practice questions as original items (never copy real test items).
+You write EPTA Structure and Written Expression practice questions as original items (never copy real test items).
 Each question has exactly four options and exactly one correct answer. Options must be plausible, different from each other, and test the requested grammar point.
 Keep sentences natural and academic in tone. Do not include letter labels in options. Submit the result with the provided tool.`;
   const user = `Write ${input.count} multiple-choice questions.

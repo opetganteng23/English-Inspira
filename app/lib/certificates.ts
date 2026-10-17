@@ -11,7 +11,7 @@ export const validSectionScore = (n: unknown) => typeof n === "number" && Number
 export async function certificateNumber(type: "itp" | "sim_report") {
   const y = new Date().getFullYear();
   const seq = await nextSeq(`cert-${type}-${y}`);
-  return type === "itp" ? `EPTA-ITP-${y}-${String(seq).padStart(4, "0")}` : `EPTA-RPT-${y}-${String(seq).padStart(6, "0")}`;
+  return type === "itp" ? `EPTA-OFC-${y}-${String(seq).padStart(4, "0")}` : `EPTA-RPT-${y}-${String(seq).padStart(6, "0")}`;
 }
 
 /** Terbitkan/ perbarui sertifikat ITP resmi. Idempoten per registrasi. */

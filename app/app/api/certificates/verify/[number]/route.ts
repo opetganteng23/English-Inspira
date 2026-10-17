@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request, { params }: { params: { number: string } }) {
   try {
     await limit("verifyIp", clientIp(req));
-    if (!/^EPTA-(ITP|RPT)-\d{4}-\d{4,6}$/.test(params.number)) return NextResponse.json({ valid: false }, { status: 404 });
+    if (!/^EPTA-(ITP|OFC|RPT)-\d{4}-\d{4,6}$/.test(params.number)) return NextResponse.json({ valid: false }, { status: 404 });
     await connectDB();
     const c = await Certificate.findOne({ number: params.number }).lean();
     if (!c) return NextResponse.json({ valid: false }, { status: 404 });
@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: { number: string }
     const name = d.name ?? (await User.findById(c.userId).select("name").lean())?.name ?? "";
     return NextResponse.json({
       valid: true, type: c.type, number: c.number, issuedAt: c.issuedAt, holder: name ? maskName(name) : null, total: d.scores?.total ?? null,
-      official: c.type === "itp", note: c.type === "itp" ? "Official score from the test organizer." : "A practice report from a simulation test, not an official TOEFL certificate.",
+      official: c.type === "itp", note: c.type === "itp" ? "Official score from the test organizer." : "A practice report from a simulation test, not an official certificate.",
     });
   } catch (e) {
     return handleError(e);

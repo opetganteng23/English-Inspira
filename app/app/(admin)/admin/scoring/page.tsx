@@ -33,7 +33,7 @@ export default function ScoringProfiles() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Scoring Profiles</h1>
-          <p className="max-w-3xl text-sm text-ink-soft">How raw scores become TOEFL ITP section scores (31-68) and a total (310-677). Do not turn percentages into official scores directly: use a conversion table from a legitimate source, then mark it verified. Until then, results are labeled as a provisional estimate.</p>
+          <p className="max-w-3xl text-sm text-ink-soft">How raw scores become EPTA section scores (31-68) and a total (310-677). Do not turn percentages into official scores directly: use a conversion table from a legitimate source, then mark it verified. Until then, results are labeled as a provisional estimate.</p>
         </div>
         <button className="btn-solid" onClick={() => setEdit("new")}>+ New profile</button>
       </div>

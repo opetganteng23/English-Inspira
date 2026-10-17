@@ -18,7 +18,7 @@ export function PublicFooter({ email, whatsapp }: { email?: string; whatsapp?: s
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-3">
           <Logo />
-          <p className="text-sm leading-relaxed">A TOEFL ITP preparation platform for partner institutions, with AI analysis and an AI counselor, by Inspira Teknologi, Telkom University, and CoE AILO.</p>
+          <p className="text-sm leading-relaxed">EPTA (English Proficiency Test & Analytics): an English test and analysis platform for partner institutions, with AI analysis and an AI counselor, by Inspira Teknologi, Telkom University, and CoE AILO.</p>
         </div>
         <FooterCol title="PROGRAM" links={[["How it works", "/#how"], ["AI Counselor", "/#counselor"], ["For institutions", "/#institutions"], ["FAQ", "/#faq"]]} />
         <FooterCol title="HELP" links={[["Sign in", "/sign-in"], ["Create account", "/register"], ["Forgot password", "/forgot-password"], ["Privacy Policy", "/privacy"], ["Terms & Conditions", "/terms"]]} />
@@ -31,7 +31,7 @@ export function PublicFooter({ email, whatsapp }: { email?: string; whatsapp?: s
         </div>
       </div>
       <div className="border-t border-navy-700 px-4 py-4 text-center text-xs sm:px-6">
-        © {new Date().getFullYear()} Inspira Teknologi. All rights reserved. TOEFL and TOEFL ITP are registered trademarks of ETS.
+        © {new Date().getFullYear()} Inspira Teknologi. All rights reserved.
       </div>
     </footer>
   );

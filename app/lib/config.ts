@@ -47,8 +47,8 @@ export const PARAM_DEFAULTS: { [K in ParamKey]: z.infer<(typeof PARAM_SCHEMAS)[K
   mail_daily_cap: 400, // di bawah batas Gmail akun biasa (±500); naikkan bila memakai Google Workspace atau SMTP lain
   pdf_retention_days: 180, // placeholder retensi (MTS §25)
   analysis_prompt: {
-    version: "v1",
-    text: "You are a TOEFL ITP learning analyst. Interpret the given numbers: strengths, weaknesses, error patterns, likely causes (concept not yet solid, hesitation from frequently changing answers, or rushing), priorities, and suggestions for next steps. Use ONLY topics from validTopics and ONLY numbers present in the data. Do not invent new numbers. Write in English.",
+    version: "v2",
+    text: "You are an EPTA (English Proficiency Test & Analytics) learning analyst. Interpret the given numbers: strengths, weaknesses, error patterns, likely causes (concept not yet solid, hesitation from frequently changing answers, or rushing), priorities, and suggestions for next steps. Use ONLY topics from validTopics and ONLY numbers present in the data. Do not invent new numbers. Write in English.",
   },
   // Placeholder: {level} {score} {strong} {weak} {gap} {next}
   narrative_template: {

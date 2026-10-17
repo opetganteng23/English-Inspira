@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import path from "node:path";
+import { buildBreakdown, partLabel } from "./breakdown";
 
 // Poppins dan palet sama dengan PDF lain (lib/pdf.ts).
 const FONT = (w: string) => path.join(process.cwd(), "public", "fonts", `poppins-${w}.ttf`);
@@ -63,7 +64,7 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
 
   // Kotak skor
   doc.roundedRect(X, y, W, 92, 12).fill(NAVY);
-  doc.fillColor("#B9CBE6").font("Regular").fontSize(9).text("Estimated TOEFL ITP score", X + 18, y + 14);
+  doc.fillColor("#B9CBE6").font("Regular").fontSize(9).text("Estimated EPTA score", X + 18, y + 14);
   doc.fillColor("#FFFFFF").font("Bold").fontSize(40).text(String(d.scoreEst ?? "-"), X + 18, y + 28);
   const side: string[] = [];
   if (d.level) side.push(`Level: ${d.level.name} (${d.level.scoreMin}-${d.level.scoreMax})`);
@@ -87,17 +88,24 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
   });
   y += 62 + 10;
 
-  // Topik, terlemah dulu
-  const topics = [...d.topics].sort((a, b) => a.score - b.score).slice(0, 8);
-  if (topics.length) {
-    heading("Breakdown by question type (lowest first)");
-    for (const t of topics) {
-      ensure(20);
-      doc.font("Regular").fontSize(9.5).fillColor(NAVY).text(`${t.topic} (${SEC_LABEL[t.skill] ?? t.skill})`, X, y, { width: 280 });
-      doc.roundedRect(X + 290, y + 3, 130, 7, 3.5).fill(LINE);
-      doc.roundedRect(X + 290, y + 3, Math.max(2, 1.3 * Math.max(0, Math.min(100, t.score))), 7, 3.5).fill(BLUE);
-      doc.fillColor(GRAY).fontSize(9).text(`${Math.round(t.score)}% · ${t.correct}/${t.total}`, X + 428, y, { width: 71, align: "right" });
-      y += 19;
+  // Rincian per jenis soal, per section (terlemah dulu). Bagian (Part A/B/C) ditampilkan terpisah.
+  const groups = buildBreakdown(d.topics);
+  if (groups.length) {
+    heading("Breakdown by question type");
+    for (const g of groups) {
+      ensure(40);
+      doc.font("Bold").fontSize(10).fillColor(NAVY).text(g.label, X, y, { width: W }); y = doc.y + 2;
+      if (g.parts.length) para(`By part: ${g.parts.map((p) => `${partLabel(p.topic)} ${p.correct}/${p.total}`).join(" · ")}`, { size: 8.5, color: GRAY });
+      for (const t of g.rows.slice(0, 6)) {
+        ensure(20);
+        doc.font("Regular").fontSize(9.5).fillColor(NAVY).text(`${t.topic}${t.few ? " (few questions)" : ""}`, X, y, { width: 280 });
+        doc.roundedRect(X + 290, y + 3, 130, 7, 3.5).fill(LINE);
+        doc.roundedRect(X + 290, y + 3, Math.max(2, 1.3 * Math.max(0, Math.min(100, t.score))), 7, 3.5).fill(BLUE);
+        doc.fillColor(GRAY).fontSize(9).text(`${Math.round(t.score)}% · ${t.correct}/${t.total}`, X + 428, y, { width: 71, align: "right" });
+        y += 19;
+      }
+      if (g.rows.length > 6) para(`+ ${g.rows.length - 6} more question types, all listed in the app`, { size: 8, color: GRAY });
+      y += 4;
     }
   }
 
@@ -120,5 +128,5 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
   }
 
   y += 10; ensure(30);
-  doc.font("Regular").fontSize(8).fillColor(GRAY).text("An estimate from a simulation test, not an official score. Official scores only come from TOEFL ITP tests run by an official organizer.", X, y, { width: W });
+  doc.font("Regular").fontSize(8).fillColor(GRAY).text("An estimate from a simulation test, not an official score. Official scores only come from official EPTA tests run by an official organizer.", X, y, { width: W });
 }

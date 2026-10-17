@@ -29,7 +29,7 @@ export async function seedDemo() {
 
   const now = Date.now();
   const day = 86_400_000;
-  for (const [i, s] of [{ title: "TOEFL ITP Saturday (sample)", days: 35, quota: 30 }, { title: "TOEFL ITP next Saturday (sample)", days: 63, quota: 40 }].entries()) {
+  for (const [i, s] of [{ title: "EPTA Saturday (sample)", days: 35, quota: 30 }, { title: "EPTA next Saturday (sample)", days: 63, quota: 40 }].entries()) {
     if (!(await ItpSession.exists({ title: s.title }))) await ItpSession.create({ title: s.title, date: new Date(now + s.days * day), place: i === 0 ? "Language Lab, Building A (sample)" : "Main Hall (sample)", quota: s.quota, status: "open" });
   }
 

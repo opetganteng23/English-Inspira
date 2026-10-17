@@ -36,10 +36,10 @@ export default function Pengaturan() {
         </div>
         <label className={label}>Official test partner name<input className="field font-normal" value={v.itpOrganizer} onChange={(e) => set("itpOrganizer", e.target.value)} /></label>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className={label}>ITP reschedule limit (days before the test)<input className="field font-normal" type="number" min={0} max={60} value={v.rescheduleDays} onChange={(e) => set("rescheduleDays", Number(e.target.value))} /></label>
+          <label className={label}>Official test reschedule limit (days before the test)<input className="field font-normal" type="number" min={0} max={60} value={v.rescheduleDays} onChange={(e) => set("rescheduleDays", Number(e.target.value))} /></label>
           <label className={label}>Identity document retention (days)<input className="field font-normal" type="number" min={1} value={v.idRetentionDays} onChange={(e) => set("idRetentionDays", Number(e.target.value))} /></label>
         </div>
-        <label className={label}>ITP reschedule policy text (optional)<textarea className="field font-normal" rows={4} value={v.refundPolicy} onChange={(e) => set("refundPolicy", e.target.value)} placeholder="Leave empty to use the default text." /></label>
+        <label className={label}>Official test reschedule policy text (optional)<textarea className="field font-normal" rows={4} value={v.refundPolicy} onChange={(e) => set("refundPolicy", e.target.value)} placeholder="Leave empty to use the default text." /></label>
         <button className="btn-solid self-start" disabled={busy}>{busy ? "Saving…" : "Save settings"}</button>
       </form>
       <LandingSettingsForm />

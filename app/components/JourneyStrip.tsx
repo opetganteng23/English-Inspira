@@ -12,7 +12,7 @@ const META = [
   { name: "Improve", tool: "Study plan" },
   { name: "Experience", tool: "Simulation" },
   { name: "Measure", tool: "Progress" },
-  { name: "Certify", tool: "Official ITP" },
+  { name: "Certify", tool: "Official EPTA" },
 ];
 const DOT = { done: "bg-success text-white", current: "bg-accent text-navy fx-ring", upcoming: "bg-canvas text-ink-soft" } as const;
 const WORD = { done: "Done", current: "In progress", upcoming: "Up next" } as const;

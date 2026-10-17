@@ -53,7 +53,7 @@ export async function PUT(req: Request) {
     await limit("verifyIp", clientIp(req));
     await connectDB();
     if (await ItpRegistration.exists({ userId: u._id, status: { $in: ["submitted", "confirmed"] } }))
-      throw new HttpError(409, "Your email cannot be changed while an official ITP registration is active. Contact your institution.");
+      throw new HttpError(409, "Your email cannot be changed while an official EPTA registration is active. Contact your institution.");
     await consumeCode(email, code);
     const old = u.email;
     try {

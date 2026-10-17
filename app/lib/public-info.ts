@@ -13,6 +13,6 @@ export async function publicInfo() {
     ...g,
     landing,
     organizerText: g.itpOrganizer || "official partner organizer",
-    rescheduleText: g.refundPolicy || `Schedule changes can be made up to ${g.rescheduleDays} days before the test from the Official ITP Test menu. Full terms will be announced by the admin.`,
+    rescheduleText: g.refundPolicy || `Schedule changes can be made up to ${g.rescheduleDays} days before the test from the Official EPTA Test menu. Full terms will be announced by the admin.`,
   };
 }

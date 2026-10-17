@@ -44,7 +44,7 @@ export default function Cycles() {
             </div>
             <p className="text-sm text-ink">{show(c.startsAt)} to {show(c.endsAt)}{c.closedAt ? ` (closed ${show(c.closedAt)})` : ""}</p>
             {c.durationSource && <p className="text-xs text-ink-soft">Source: {c.durationSource}</p>}
-            {(c.itpDate || c.itpRequired) && <p className="text-xs text-ink-soft">Official ITP: {show(c.itpDate)}{c.itpRequired ? " (required)" : " (optional)"}</p>}
+            {(c.itpDate || c.itpRequired) && <p className="text-xs text-ink-soft">Official EPTA test: {show(c.itpDate)}{c.itpRequired ? " (required)" : " (optional)"}</p>}
             <p className="text-xs text-ink-soft">{c.counts.placed} placements · {c.counts.quotas} quotas · {c.counts.attempts} attempts · {c.counts.bookings} bookings</p>
             <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 pt-1 text-sm font-semibold">
               <button className="text-brand" onClick={() => setEdit(c)}>Edit</button>
@@ -84,8 +84,8 @@ function CycleEditor({ init, institutions, onClose, onSaved }: { init: Partial<C
           <label className={label}>Ends<input className="field font-normal" type="date" value={v.endsAt} onChange={(e) => setV({ ...v, endsAt: e.target.value })} /></label>
         </div>
         <label className={label}>Basis of the dates<input className="field font-normal" placeholder="Contract or academic calendar" value={v.durationSource} onChange={(e) => setV({ ...v, durationSource: e.target.value })} /></label>
-        <label className={label}>Official ITP date (optional)<input className="field font-normal" type="date" value={v.itpDate} onChange={(e) => setV({ ...v, itpDate: e.target.value })} /></label>
-        <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={v.itpRequired} onChange={(e) => setV({ ...v, itpRequired: e.target.checked })} />Official ITP is required for this institution in this period</label>
+        <label className={label}>Official EPTA test date (optional)<input className="field font-normal" type="date" value={v.itpDate} onChange={(e) => setV({ ...v, itpDate: e.target.value })} /></label>
+        <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={v.itpRequired} onChange={(e) => setV({ ...v, itpRequired: e.target.checked })} />Official EPTA test is required for this institution in this period</label>
         <ErrorNote text={err} />
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-outline" onClick={onClose}>Cancel</button><button className="btn-solid" disabled={busy || !v.name.trim() || !v.startsAt || !v.endsAt} onClick={save}>{busy ? "Saving…" : "Save"}</button></div>
       </div>

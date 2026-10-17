@@ -10,7 +10,7 @@ const nav: NavGroup[] = [
     { href: "/upload-result", label: "Upload External Results" },
     { href: "/materials", label: "Materials" },
     { href: "/counselor", label: "AI Counselor" },
-    { href: "/itp", label: "Official ITP Test" },
+    { href: "/itp", label: "Official EPTA Test" },
     { href: "/certificates", label: "Certificates" },
   ] },
   { label: "Account", items: [

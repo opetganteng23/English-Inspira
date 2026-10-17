@@ -6,6 +6,7 @@ import { loadAttempt, ensureReleased } from "@/lib/attempts";
 import { attemptResult } from "@/lib/attempt-result";
 import { resultPdf } from "@/lib/result-pdf";
 import { User } from "@/models/User";
+import { Attempt } from "@/models/Test";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +21,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (!exemptFromDelay(user) && !isReleased(attempt)) return NextResponse.json({ error: "Your results are not released yet.", availableAt: attempt.releaseAt }, { status: 423 });
     await ensureReleased(attempt);
     await connectDB();
-    const [r, owner] = await Promise.all([
-      attemptResult(attempt, test),
-      User.findById(attempt.userId).select("name email targetScore").lean(),
-    ]);
+    const owner = await User.findById(attempt.userId).select("name email targetScore").lean();
+    let r = await attemptResult(attempt, test);
+    // Analisis AI berjalan di latar dan butuh ±1 menit. Tunggu sebentar agar PDF tidak berisi "masih disiapkan".
+    if (r.analysis.status === "pending") {
+      for (let i = 0; i < 20 && r.analysis.status === "pending"; i++) {
+        await new Promise((res) => setTimeout(res, 2000));
+        const a = await Attempt.findById(attempt._id).select("aiAnalysis.status").lean();
+        if (a?.aiAnalysis?.status && a.aiAnalysis.status !== "pending") r = await attemptResult((await Attempt.findById(attempt._id))!, test);
+      }
+    }
     const pdf = await resultPdf({
       name: owner?.name ?? owner?.email ?? "-", testName: r.testName, kindLabel: KIND[r.kind ?? ""] ?? "TEST", finishedAt: r.finishedAt ?? null, durationSec: r.durationSec,
       scoreEst: r.scoreEst ?? null, scoring: r.scoring, level: r.level ? { name: r.level.name, scoreMin: r.level.scoreMin, scoreMax: r.level.scoreMax, quota: r.level.quota } : null,

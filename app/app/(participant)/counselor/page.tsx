@@ -11,7 +11,7 @@ type Plan = { id: string; text: string; done: boolean; dueAt: string | null };
 type Thread = { id: string; title: string; messages: Msg[]; actionPlan: Plan[]; helpful: boolean | null; basis: { kind: string; scoreEst: number; sections: { section: string; scaled: number }[]; finishedAt: string; attemptId: string } | null; access: Access };
 type Item = { id: string; title: string; last: string; open: number };
 const SEC: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
-const SUGGEST = ["What should I do to reach my target?", "Why is my Structure score low?", "When am I ready to register for the official ITP?", "Make me a study plan for 30 minutes a day"];
+const SUGGEST = ["What should I do to reach my target?", "Why is my Structure score low?", "When am I ready to register for the official EPTA test?", "Make me a study plan for 30 minutes a day"];
 
 function Chat() {
   const router = useRouter();

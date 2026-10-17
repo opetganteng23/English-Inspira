@@ -14,7 +14,7 @@ export default function InstJadwal() {
   if (!ready || loading) return <Loading />;
   return (
     <div className="flex flex-col gap-5">
-      <div><h1 className="page-title">Group test schedule</h1><p className="text-sm text-ink-soft">Participants from your institution registered for the official TOEFL ITP test, per session.</p></div>
+      <div><h1 className="page-title">Group test schedule</h1><p className="text-sm text-ink-soft">Participants from your institution registered for the official EPTA test, per session.</p></div>
       <ErrorNote text={error} />
       {data?.sessions.length === 0 && <Empty>No participants registered for the official test yet.</Empty>}
       {data?.sessions.map((s) => (

@@ -20,7 +20,7 @@ export default function JadwalItp() {
   const [roster, setRoster] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Official TOEFL ITP schedule</h1><p className="text-sm text-ink-soft">Quota, roster, document verification, and score input.</p></div><button className="btn-solid" onClick={() => setEdit({ status: "open", quota: 30 })}>+ Add session</button></div>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Official EPTA schedule</h1><p className="text-sm text-ink-soft">Quota, roster, document verification, and score input.</p></div><button className="btn-solid" onClick={() => setEdit({ status: "open", quota: 30 })}>+ Add session</button></div>
       <ErrorNote text={error} />
       {loading && !data ? <Loading /> : (
         <div className="table-wrap"><table>
@@ -53,7 +53,7 @@ function SessionEditor({ init, onClose, onSaved }: { init: Partial<S>; onClose: 
   return (
     <Modal title={init.id ? "Edit session" : "New session"} onClose={onClose}>
       <div className="flex flex-col gap-4">
-        <label className={label}>Title<input className="field font-normal" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="TOEFL ITP Saturday, 21 Nov" /></label>
+        <label className={label}>Title<input className="field font-normal" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="EPTA Saturday, 21 Nov" /></label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className={label}>Date & time<input className="field font-normal" type="datetime-local" value={v.date} onChange={(e) => setV({ ...v, date: e.target.value })} /></label>
           <label className={label}>Quota<input className="field font-normal" type="number" min={1} value={v.quota} onChange={(e) => setV({ ...v, quota: Number(e.target.value) })} /></label>

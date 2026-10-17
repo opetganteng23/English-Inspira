@@ -7,7 +7,7 @@ import { api } from "@/lib/client";
 type Msg = { role: "user" | "assistant"; content: string };
 type Access = { allowed: boolean; remaining: number; quota: number; reason: string | null };
 
-const STARTERS = ["Where should I start?", "How long until I reach my target?", "Am I ready to register for the official ITP?"];
+const STARTERS = ["Where should I start?", "How long until I reach my target?", "Am I ready to register for the official EPTA test?"];
 
 /** Konselor AI di dalam halaman hasil: satu percakapan per hasil tes, memakai API konselor yang sama dengan halaman /counselor. */
 export function CounselorPanel({ attemptId }: { attemptId: string }) {

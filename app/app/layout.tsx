@@ -17,8 +17,8 @@ const poppins = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "English Inspira | TOEFL ITP Preparation",
-  description: "TOEFL ITP preparation: simulation tests, AI analysis, and an AI Counselor.",
+  title: "English Inspira | EPTA: English Proficiency Test & Analytics",
+  description: "EPTA (English Proficiency Test & Analytics): simulation tests, AI analysis, and an AI Counselor.",
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0A2257" };
 

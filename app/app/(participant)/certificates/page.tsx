@@ -21,7 +21,7 @@ export default function Sertifikat() {
   const Card = ({ c }: { c: C }) => (
     <div className="card flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2"><span className={c.type === "itp" ? "badge-ok" : "badge-muted"}>{c.type === "itp" ? "Official certificate" : "Test result report"}</span><span className="text-xs text-ink-soft">{c.number}</span></div>
-      <h2 className="font-display text-lg font-extrabold text-navy">{c.type === "itp" ? "TOEFL ITP" : c.data.testName ?? "Simulation Test"}</h2>
+      <h2 className="font-display text-lg font-extrabold text-navy">{c.type === "itp" ? "EPTA" : c.data.testName ?? "Simulation Test"}</h2>
       <p className="text-sm text-ink-soft">Issued {tgl(c.issuedAt)} · total score <b className="text-navy">{c.data.scores?.total ?? "-"}</b></p>
       <div className="grid grid-cols-3 gap-2 text-center text-sm">{[["Listening", c.data.scores?.listening], ["Structure", c.data.scores?.structure], ["Reading", c.data.scores?.reading]].map(([k, v]) => <div key={String(k)} className="rounded-lg bg-canvas p-2"><p className="text-xs text-ink-soft">{k}</p><b className="text-navy">{v ?? "-"}</b></div>)}</div>
       {c.type === "itp" && (c.officialFile ? (
@@ -37,17 +37,17 @@ export default function Sertifikat() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div><h1 className="page-title">Certificates</h1><p className="mt-1 text-ink-soft">Official TOEFL ITP certificates and simulation test result reports.</p></div>
+      <div><h1 className="page-title">Certificates</h1><p className="mt-1 text-ink-soft">Official EPTA certificates and simulation test result reports.</p></div>
       <ErrorNote text={error} />
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-xl font-extrabold text-navy">Official TOEFL ITP certificates</h2>
+        <h2 className="font-display text-xl font-extrabold text-navy">Official EPTA certificates</h2>
         {itp.length ? <div className="grid gap-4 md:grid-cols-2">{itp.map((c) => <Card key={c.id} c={c} />)}</div> : (
-          <div className="card"><p className="text-sm text-ink-soft">No certificates yet. Certificates appear here after the admin enters official scores.</p><Link href="/itp" className="btn-outline mt-3">View ITP registration</Link></div>
+          <div className="card"><p className="text-sm text-ink-soft">No certificates yet. Certificates appear here after the admin enters official scores.</p><Link href="/itp" className="btn-outline mt-3">View official test registration</Link></div>
         )}
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-xl font-extrabold text-navy">Simulation test result reports</h2>
-        <p className="rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">Simulation test reports are proof of practice, not official TOEFL certificates.</p>
+        <p className="rounded-lg bg-accent-tint p-3 text-sm text-accent-dark">Simulation test reports are proof of practice, not official certificates.</p>
         {reports.length ? <div className="grid gap-4 md:grid-cols-2">{reports.map((c) => <Card key={c.id} c={c} />)}</div> : <p className="text-sm text-ink-soft">A report is created automatically every time you finish a Simulation Test.</p>}
       </section>
     </div>

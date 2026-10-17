@@ -9,7 +9,7 @@ export default async function Privasi() {
   return (
     <Legal title="Privacy Policy">
       <h2>Data we collect</h2>
-      <p>Email, name, phone number, institution, level and scores, test history and answers, learning activity, conversations with the AI Counselor, and coaching session notes. For official ITP test registration: national ID/passport number, date of birth, gender, ID card/passport photo, and a passport photo.</p>
+      <p>Email, name, phone number, institution, level and scores, test history and answers, learning activity, conversations with the AI Counselor, and coaching session notes. For official EPTA test registration: national ID/passport number, date of birth, gender, ID card/passport photo, and a passport photo.</p>
       <h2>Purpose of use</h2>
       <p>Running the test and analysis services, giving study advice, setting your level and coaching quota, reporting group results to your institution, registering official tests, and sending service notifications by email.</p>
       <h2>Protection of sensitive data</h2>

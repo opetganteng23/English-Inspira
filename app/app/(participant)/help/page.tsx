@@ -9,8 +9,8 @@ const TOPICS: [string, string][] = [
   ["I cannot sign in / my access has ended", "Your account is created and managed by your institution. If the message says your access has ended, contact your institution admin because access follows the contract period."],
   ["I did not receive the invitation email", "Check your spam folder. Invitations are valid for 7 days; your institution admin can resend them."],
   ["The OTP code does not arrive", "Check your spam folder, then request a new code after 60 seconds. Codes are valid for 5 minutes and lock after 5 wrong attempts. Always use the code from the latest email."],
-  ["My name on the ITP registration is wrong", "The name is locked after the registration is submitted. Contact the admin before the test date using the contact below."],
-  ["How do I cancel or change my ITP schedule?", "Open Official ITP Test and click “Change schedule / cancel” on your registration. Available until the cut-off before the test."],
+  ["My name on the official test registration is wrong", "The name is locked after the registration is submitted. Contact the admin before the test date using the contact below."],
+  ["How do I cancel or change my official test schedule?", "Open Official EPTA Test and click “Change schedule / cancel” on your registration. Available until the cut-off before the test."],
 ];
 
 export default async function Bantuan() {

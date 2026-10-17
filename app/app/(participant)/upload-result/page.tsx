@@ -35,7 +35,7 @@ export default function UnggahHasil() {
 
   return (
     <div className="page-cols">
-      <div><h1 className="page-title">Upload External Results</h1><p className="mt-1 text-ink-soft">Upload a PDF score report from another test (e.g. TOEFL ITP) to get an analysis. You can correct the scores that were read first. The file is not sent to the AI; only the scores you confirm are analyzed.</p></div>
+      <div><h1 className="page-title">Upload External Results</h1><p className="mt-1 text-ink-soft">Upload a PDF score report from another test (e.g. EPTA or another proficiency test) to get an analysis. You can correct the scores that were read first. The file is not sent to the AI; only the scores you confirm are analyzed.</p></div>
       <section className="card flex flex-col gap-3">
         <input ref={file} type="file" accept="application/pdf,.pdf" aria-label="File PDF" className="field" />
         <p className="text-xs text-ink-soft">PDF, max 10 MB. Scanned PDFs (images) may not be readable; you can enter the scores manually.</p>

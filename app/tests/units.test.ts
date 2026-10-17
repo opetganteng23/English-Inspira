@@ -99,6 +99,30 @@ describe("keamanan materi", () => {
     expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
     expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
   });
+  it("rincian per jenis soal: semua jenis soal tampil per section, bagian dipisah, label internal tersaring (data percobaan nyata)", async () => {
+    const { buildBreakdown, partLabel } = await import("@/lib/breakdown");
+    const mk = (skill: string, spec: string) => spec.split(", ").map((x) => { const [topic, f] = x.split(" "); const [c, t] = f.split("/").map(Number); return { skill, topic, correct: c, total: t, score: (c / t) * 100 }; });
+    const topics = [
+      ...mk("listening", "implication 0/8, restatement 0/4, suggestion 0/5, phrasal-verb 0/3, main-idea 0/5, part-b 0/8, detail 0/14, reason 0/5, inference 0/2, part-c 0/12, purpose 0/1, part-a 5/30, agreement 1/4, idiom 2/7, conditional 1/3, negative 1/3, comparison 1/2"),
+      ...mk("grammar", "reduced-clause 0/3, inversion 0/2, adj-clause 0/2, noun-adverb-clause 0/2, paired-conj 0/1, cleft 0/1, conjunction 0/3, sv-agreement 0/4, verb-form 0/6, parallelism 0/2, plural-noun 0/2, redundancy 0/2, pronoun 0/2, word-form 0/4, article 0/1, comparison 1/4, subject-verb 1/2, infinitive-gerund 1/2"),
+      ...mk("reading", "detail 0/19, vocabulary 0/8, purpose 0/4, reference 0/5, negative-fact 0/3, inference 0/5, reason 0/3, attitude 0/1, main-idea 1/5"),
+      ...mk("oce", "test-01 0/50"), ...mk("grammar", "written-expression 3/25"), // label internal dari percobaan lama
+    ];
+    const g = buildBreakdown(topics, [{ skill: "listening", topic: "detail", correct: 5, total: 14, score: 25 }]);
+    expect(g.map((x) => x.key)).toEqual(["listening", "structure", "reading"]);
+    expect(g[0].label).toBe("Listening"); expect(g[1].label).toBe("Structure & WE");
+    expect(g[0].rows).toHaveLength(14); // 17 topik Listening dikurangi part-a/b/c
+    expect(g[1].rows).toHaveLength(18); // skill "grammar" tampil sebagai Structure & WE, written-expression tersaring
+    expect(g[2].rows).toHaveLength(9);
+    expect(g.flatMap((x) => x.rows).some((r) => /^part-|^test-|written-expression/.test(r.topic))).toBe(false);
+    expect(g[0].parts.map((p) => partLabel(p.topic))).toEqual(["Part A", "Part B", "Part C"]);
+    expect(g[0].rows[0].topic).toBe("detail"); // seri 0%: yang soalnya paling banyak dulu
+    expect(g[0].rows[0].delta).toBe(-25);
+    expect(g[0].rows.find((r) => r.topic === "purpose")!.few).toBe(true);
+    expect(g[0].rows.find((r) => r.topic === "implication")!.few).toBe(false);
+    const order = g[1].rows.map((r) => r.score);
+    expect([...order].sort((a, b) => a - b)).toEqual(order); // terlemah dulu
+  });
   it("PDF hasil dan diagnostic: memuat skor, section, dan analisis, tanpa padanan PURE/OCE maupun pembahasan per soal", async () => {
     const { resultPdf } = await import("@/lib/result-pdf");
     const { PDFParse } = await import("pdf-parse");

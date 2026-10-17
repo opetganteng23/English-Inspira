@@ -18,7 +18,7 @@ export const equivalenceSchema = z.object({ oce: scale, pure: scale }).superRefi
     if (s.sameAsItp) continue;
     if (!(s.max > s.min)) ctx.addIssue({ code: "custom", path: [k, "max"], message: `${s.name}: the highest score must be above the lowest` });
     const pts = (["A2", "B1", "B2", "C1"] as const).map((c) => s.anchors[c]).filter((x): x is number => x !== null);
-    if (pts.length < 1) ctx.addIssue({ code: "custom", path: [k, "anchors"], message: `${s.name}: fill at least one CEFR boundary, or use the TOEFL ITP scale` });
+    if (pts.length < 1) ctx.addIssue({ code: "custom", path: [k, "anchors"], message: `${s.name}: fill at least one CEFR boundary, or use the EPTA scale` });
     if (pts.some((p, i) => p <= s.min || p >= s.max || (i > 0 && p <= pts[i - 1]))) ctx.addIssue({ code: "custom", path: [k, "anchors"], message: `${s.name}: boundaries must rise from A2 to C1 and stay between ${s.min} and ${s.max}` });
   }
 });

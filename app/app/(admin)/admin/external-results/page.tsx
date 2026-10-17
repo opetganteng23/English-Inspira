@@ -48,7 +48,7 @@ export default function ExternalResults() {
         </div>
       )}
       {upload && data && <UploadDialog institutions={data.institutions} onClose={() => setUpload(false)} onDone={(t) => { setUpload(false); setTab("pending"); setMsg(t); reload(); }} />}
-      {eqOpen && data && <EquivalenceDialog init={data.equivalence} onClose={() => setEqOpen(false)} onSaved={() => { setEqOpen(false); setMsg("Score equivalents saved. Confirmed results keep the TOEFL ITP score they had."); reload(); }} />}
+      {eqOpen && data && <EquivalenceDialog init={data.equivalence} onClose={() => setEqOpen(false)} onSaved={() => { setEqOpen(false); setMsg("Score equivalents saved. Confirmed results keep the EPTA score they had."); reload(); }} />}
     </div>
   );
 }
@@ -64,7 +64,7 @@ function Row({ i, tab, busy, run }: { i: Item; tab: string; busy: boolean; run: 
         {tab === "pending"
           ? <input className="field min-h-[38px] w-24 py-1" inputMode="decimal" aria-label={`Score for ${i.rawName}`} value={score} onChange={(e) => setScore(e.target.value)} onBlur={() => { const v = score.trim() === "" ? null : Number(score); if (v !== i.score && (v === null || Number.isFinite(v))) void run(() => api(`/api/admin/external-results/${i.id}`, { method: "PATCH", json: { score: v } })); }} />
           : <b>{i.score ?? "-"}</b>}
-        {i.itpScore != null && <span className="block text-xs text-ink-soft">ITP {i.itpScore} · CEFR {i.cefr}</span>}
+        {i.itpScore != null && <span className="block text-xs text-ink-soft">EPTA {i.itpScore} · CEFR {i.cefr}</span>}
       </td>
       <td>
         {tab === "pending"
@@ -138,11 +138,11 @@ function EquivalenceDialog({ init, onClose, onSaved }: { init: Data["equivalence
   return (
     <Modal title="Score equivalents" onClose={onClose} wide>
       <div className="flex flex-col gap-4 text-sm">
-        <p className="text-ink-soft">TOEFL ITP to CEFR uses the boundaries published by ETS: A2 from 337, B1 from 460, B2 from 543, C1 from 627. For OCE and PURE, either keep the TOEFL ITP scale or enter that test&apos;s own range and the lowest score for each CEFR level. Scores in between are converted proportionally. These conversions are guides for placement, so use figures from the test provider.</p>
+        <p className="text-ink-soft">EPTA to CEFR uses the standard boundaries: A2 from 337, B1 from 460, B2 from 543, C1 from 627. For OCE and PURE, either keep the EPTA scale or enter that test&apos;s own range and the lowest score for each CEFR level. Scores in between are converted proportionally. These conversions are guides for placement, so use figures from the test provider.</p>
         {(["pure", "oce"] as const).map((k) => (
           <fieldset key={k} className="rounded-xl border border-line p-3">
             <legend className="px-1 font-semibold text-navy">{v[k].name}</legend>
-            <label className="flex min-h-[40px] items-center gap-2"><input type="checkbox" className="h-5 w-5" checked={v[k].sameAsItp} onChange={(e) => set(k, { sameAsItp: e.target.checked, ...(e.target.checked ? { min: 310, max: 677 } : {}) })} />Uses the TOEFL ITP scale (310 to 677)</label>
+            <label className="flex min-h-[40px] items-center gap-2"><input type="checkbox" className="h-5 w-5" checked={v[k].sameAsItp} onChange={(e) => set(k, { sameAsItp: e.target.checked, ...(e.target.checked ? { min: 310, max: 677 } : {}) })} />Uses the EPTA scale (310 to 677)</label>
             {!v[k].sameAsItp && (
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-6">
                 <label className={label}>Lowest<input className="field font-normal" inputMode="decimal" value={v[k].min} onChange={(e) => set(k, { min: Number(e.target.value) })} /></label>
