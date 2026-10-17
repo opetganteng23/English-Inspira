@@ -16,8 +16,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const b = courseInput.parse(await req.json());
     await connectDB();
     await checkCourseRefs(b, params.id);
-    const { coverAssetId, ...rest } = b;
-    const r = await Course.updateOne({ _id: params.id }, { ...rest, ...(coverAssetId ? { coverAssetId } : { $unset: { coverAssetId: 1 } }) });
+    const { coverAssetId, part, sectionTestId, ...rest } = b;
+    const unset: Record<string, 1> = {};
+    if (!coverAssetId) unset.coverAssetId = 1;
+    if (!part) unset.part = 1;
+    if (!sectionTestId) unset.sectionTestId = 1;
+    const r = await Course.updateOne({ _id: params.id }, { ...rest, ...(coverAssetId ? { coverAssetId } : {}), ...(part ? { part } : {}), ...(sectionTestId ? { sectionTestId } : {}), ...(Object.keys(unset).length ? { $unset: unset } : {}) });
     if (!r.matchedCount) throw new HttpError(404, "Course not found");
     await audit(admin._id, b.archived ? "course.archive" : "course.update", params.id);
     return NextResponse.json({ ok: true });

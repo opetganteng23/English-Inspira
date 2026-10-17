@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COURSE_PARTS } from "@/models/Course";
 
 const oid = z.string().regex(/^[0-9a-f]{24}$/);
 
@@ -13,6 +14,9 @@ export const courseInput = z.object({
   prerequisiteCourseIds: z.array(oid).max(10).default([]),
   secureMode: z.boolean().default(false),
   previewMode: z.boolean().default(false),
+  part: z.enum(COURSE_PARTS).nullable().optional(),
+  sectionTestId: oid.nullable().optional(),
+  requireSectionTest: z.boolean().default(false),
 });
 
 export const moduleInput = z.object({

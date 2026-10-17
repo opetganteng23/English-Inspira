@@ -31,7 +31,7 @@ export const groupSchema = z.object({
 const oid = z.string().regex(/^[0-9a-f]{24}$/);
 export const testSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  kind: z.enum(["placement", "sim", "final", "practice", "quiz"]),
+  kind: z.enum(["placement", "sim", "final", "practice", "quiz", "section"]),
   levelId: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional(),
   active: z.boolean().default(true),
   testMode: z.boolean().default(false),

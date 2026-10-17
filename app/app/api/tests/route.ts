@@ -18,7 +18,7 @@ export async function GET() {
     const pendingRel = exemptFromDelay(user) ? null : await Attempt.exists({ userId: user._id, kind: "placement", status: "submitted", ...pendingEffectsFilter });
     const ctx = { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs), pendingRelease: pendingRel ? new Date() : null };
     const [tests, attempts] = await Promise.all([
-      Test.find({ ...visibleTestFilter(user), kind: { $ne: "quiz" } }).sort({ createdAt: 1 }).lean(), // kuis tampil di unit belajar
+      Test.find({ ...visibleTestFilter(user), kind: { $nin: ["quiz", "section"] } }).sort({ createdAt: 1 }).lean(), // kuis tampil di unit belajar, ujian per bagian di course
       Attempt.find({ userId: user._id }).select("testId status scoreEst finishedAt releaseAt").sort({ createdAt: -1 }).lean(),
     ]);
     const seats = await seatsFor(user._id, tests.filter((t) => t.scheduled).map((t) => t._id));

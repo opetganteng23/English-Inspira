@@ -5,6 +5,7 @@ import { aiEnabled, askClaudeStructured, GUARDRAILS, AI_MODEL, AI_MODEL_LIGHT, t
 import { getLevels, getParam } from "./config";
 import { aliasFor, analysisResultSchema, checkResult, inputHash, templateResult, toLegacy, type AnalysisResult, type EngineInput } from "./analysis-engine";
 import { Attempt } from "@/models/Test";
+import { courseProgressFor } from "./course-progress";
 import { PdfImport } from "@/models/Pdf";
 import { topicStatus } from "./topic-stats";
 import { notify } from "./notify";
@@ -49,6 +50,7 @@ export async function buildEngineInput(analysis: AnalysisDoc): Promise<EngineInp
       stuckTopics: (calc.stuck ?? []).map((k) => k.split("|")[1] ?? k),
     },
     thresholds: th, validTopics: Array.from(new Set(topicRows.map((t) => t.topic))),
+    courseProgress: (await courseProgressFor(analysis.userId, user?.currentLevelId)).map((c) => ({ part: c.part, title: c.title, unitsDone: c.unitsDone, unitsTotal: c.unitsTotal, quizAvg: c.quizAvg, sectionTestBest: c.sectionTest?.best ?? null, sectionTestPassed: c.sectionTest ? c.sectionTest.passed : null })),
   };
 }
 

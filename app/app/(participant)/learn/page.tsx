@@ -2,17 +2,29 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
 type Unit = { id: string; title: string; description: string; moduleId: string | null; status: "not_started" | "in_progress" | "completed"; done: number; total: number; locked: boolean; opensAt: string | null };
-type Course = { level?: string | null; previewOnly?: boolean; inactive?: boolean; id: string; title: string; description: string; cover: string | null; locked: boolean; missing: string[]; modules: { id: string; title: string; description: string }[]; units: Unit[]; completed: number };
+type SectionTest = { name: string; questions: number; best: number | null; passed: boolean; attempts: number; required: boolean; state: "locked" | "available" | "in_progress"; inProgressAttemptId: string | null };
+const PART_LABEL: Record<string, string> = { listening_a: "Listening Part A", listening_b: "Listening Part B", listening_c: "Listening Part C", structure: "Structure", written_expression: "Written Expression", reading: "Reading" };
+type Course = { part?: string | null; sectionTest?: SectionTest | null; level?: string | null; previewOnly?: boolean; inactive?: boolean; id: string; title: string; description: string; cover: string | null; locked: boolean; missing: string[]; modules: { id: string; title: string; description: string }[]; units: Unit[]; completed: number };
 const day = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const ST = { not_started: ["Not started", "badge-muted"], in_progress: ["In progress", "badge-warn"], completed: ["Completed", "badge-ok"] } as const;
 
 export default function Belajar() {
   const { data, loading, error } = useApi<{ needsPlacement: boolean; preview?: boolean; courses: Course[] }>("/api/courses");
+  const router = useRouter();
   const [picked, setPicked] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [startErr, setStartErr] = useState("");
+  async function startSectionTest(courseId: string) {
+    setBusy(true); setStartErr("");
+    try { const d = await api<{ attemptId: string }>(`/api/courses/${courseId}/section-test`, { json: {} }); router.push(`/test-room/${d.attemptId}`); }
+    catch (e) { setStartErr((e as Error).message); setBusy(false); }
+  }
   if (loading) return <Loading />;
 
   const courses = data?.courses ?? [];
@@ -41,6 +53,7 @@ export default function Belajar() {
                   <button type="button" onClick={() => setPicked(c.id)} aria-pressed={on}
                     className={`flex h-full w-full flex-col gap-2 rounded-2xl border-[1.5px] bg-white p-4 text-left transition sm:p-5 ${on ? "border-brand shadow-[0_0_0_3px_rgba(11,79,166,0.12)]" : "border-line hover:border-line-strong"}`}>
                     {c.cover && <img src={c.cover} alt="" className="-mx-1 -mt-1 mb-1 h-28 w-[calc(100%+0.5rem)] rounded-xl object-cover sm:h-32" />}
+                    {c.part && <span className="text-xs font-semibold text-brand">{PART_LABEL[c.part] ?? c.part}</span>}
                     <span className="flex items-center justify-between gap-2">
                       {c.locked ? <span className="badge-muted">Locked</span> : <span className={pct === 100 ? "badge-ok" : pct > 0 ? "badge-warn" : "badge-muted"}>{pct === 100 ? "Completed" : pct > 0 ? "In progress" : "Not started"}</span>}
                       <span className="text-xs text-ink-soft">{c.units.length} {c.units.length === 1 ? "unit" : "units"}</span>
@@ -93,6 +106,22 @@ export default function Belajar() {
                 );
               })}
               {current.units.length === 0 && <p className="mt-3 text-sm text-ink-soft">No units in this course yet.</p>}
+              {current.sectionTest && (
+                <div className="card mt-4" aria-label="Section test">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold tracking-wider text-brand">SECTION TEST{current.part ? ` · ${PART_LABEL[current.part] ?? ""}` : ""}</p>
+                      <h3 className="font-display text-lg font-extrabold text-navy">{current.sectionTest.name}</h3>
+                      <p className="text-sm text-ink-soft">{current.sectionTest.questions} questions · taken at the end of this course.{current.sectionTest.best != null ? ` Best: ${current.sectionTest.best}%.` : ""}{current.sectionTest.required ? " Passing it is needed to open the courses that follow." : ""}</p>
+                    </div>
+                    {current.sectionTest.passed && <span className="badge-ok">Passed</span>}
+                  </div>
+                  {current.sectionTest.state === "locked"
+                    ? <p className="mt-3 text-sm text-ink-soft">Finish every unit of this course to open the section test.</p>
+                    : <button className="btn-solid mt-3" disabled={busy} onClick={() => startSectionTest(current.id)}>{current.sectionTest.state === "in_progress" ? "Continue section test" : current.sectionTest.attempts > 0 ? "Retake section test" : "Start section test"}</button>}
+                  <ErrorNote text={startErr} />
+                </div>
+              )}
             </section>
           )}
         </>

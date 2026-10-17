@@ -1,6 +1,6 @@
 import type { Types } from "mongoose";
 import { HttpError } from "./rbac";
-import { Course, Unit, UnitProgress } from "@/models/Course";
+import { Course, CourseProgress, Unit, UnitProgress } from "@/models/Course";
 
 /** Course yang terlihat peserta: aktif, tidak diarsipkan, dan bukan mode preview. */
 export const LIVE = { active: true, archived: { $ne: true }, previewMode: { $ne: true } } as const;
@@ -59,15 +59,20 @@ export async function courseLocks(userId: Types.ObjectId | string, courses: Cour
   const ids = [...new Set(courses.flatMap((c) => (c.prerequisiteCourseIds ?? []).map(String)))];
   if (!ids.length) { for (const c of courses) out.set(String(c._id), { locked: false, missing: [] }); return out; }
   const [pre, units] = await Promise.all([
-    Course.find({ _id: { $in: ids }, ...LIVE }).select("title").lean(),
+    Course.find({ _id: { $in: ids }, ...LIVE }).select("title requireSectionTest sectionTestId").lean(),
     Unit.find({ courseId: { $in: ids }, active: true }).select("courseId").lean(),
   ]);
   const prog = await UnitProgress.find({ userId, unitId: { $in: units.map((u) => u._id) }, status: "completed" }).select("unitId").lean();
   const done = new Set(prog.map((p) => String(p.unitId)));
   const title = new Map(pre.map((c) => [String(c._id), c.title]));
+  // Course dengan ujian per bagian wajib: selesai hanya bila semua unit selesai DAN ujiannya lulus.
+  const needTest = pre.filter((c) => c.requireSectionTest && c.sectionTestId).map((c) => c._id);
+  const passedTest = new Set(needTest.length ? (await CourseProgress.find({ userId, courseId: { $in: needTest }, sectionTestPassed: true }).select("courseId").lean()).map((p) => String(p.courseId)) : []);
+  const required = new Set(needTest.map(String));
   const complete = (id: string) => {
     const us = units.filter((u) => String(u.courseId) === id);
-    return us.length === 0 || us.every((u) => done.has(String(u._id)));
+    const unitsOk = us.length === 0 || us.every((u) => done.has(String(u._id)));
+    return unitsOk && (!required.has(id) || passedTest.has(id));
   };
   for (const c of courses) {
     const missing = (c.prerequisiteCourseIds ?? []).map(String).filter((id) => title.has(id) && !complete(id)).map((id) => title.get(id)!);

@@ -2,9 +2,14 @@ import { HttpError } from "./rbac";
 import { hasCycle } from "./course-access";
 import { Course } from "@/models/Course";
 import { Asset } from "@/models/Asset";
+import { Test } from "@/models/Test";
 
 /** Validasi rujukan course: cover berupa gambar publik, prasyarat ada, tidak ke diri sendiri, tidak melingkar. */
-export async function checkCourseRefs(b: { coverAssetId?: string | null; prerequisiteCourseIds: string[] }, selfId?: string) {
+export async function checkCourseRefs(b: { coverAssetId?: string | null; prerequisiteCourseIds: string[]; sectionTestId?: string | null }, selfId?: string) {
+  if (b.sectionTestId) {
+    const t = await Test.findById(b.sectionTestId).select("kind").lean();
+    if (!t || t.kind !== "section") throw new HttpError(400, "The section test must be a test of type Section test");
+  }
   if (b.coverAssetId) {
     const a = await Asset.findById(b.coverAssetId).select("mime sensitive").lean();
     if (!a || a.sensitive || !String(a.mime).startsWith("image/")) throw new HttpError(400, "The cover must be an uploaded image");

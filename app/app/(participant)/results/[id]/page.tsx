@@ -11,12 +11,14 @@ import { buildBreakdown, partLabel, typeLabel } from "@/lib/breakdown";
 type Sec = { section: string; raw: number; total: number; scaled: number };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; summary?: Summary; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; summary?: Summary; courseProgress?: CourseProgressRow[]; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
 import type { Insights } from "@/lib/insights";
 import type { Summary } from "@/lib/summary";
+import type { CourseProgressRow } from "@/lib/course-progress";
+const PART_NAME: Record<string, string> = { listening_a: "Listening Part A", listening_b: "Listening Part B", listening_c: "Listening Part C", structure: "Structure", written_expression: "Written Expression", reading: "Reading" };
 const BD_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
-const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", practice: "PRACTICE" };
+const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", practice: "PRACTICE", final: "FINAL TEST", quiz: "UNIT QUIZ", section: "SECTION TEST" };
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 
 const fmtDelta = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `${n}` : "±0");
@@ -330,6 +332,28 @@ export default function Hasil({ params }: { params: { id: string } }) {
             </div>
           )}
           <ul className="mt-3 flex list-disc flex-col gap-1 pl-5 text-sm text-ink-soft">{r.unanswered.advice.map((t) => <li key={t}>{t}</li>)}</ul>
+        </section>
+      )}
+
+      {r.courseProgress && r.courseProgress.length > 0 && (
+        <section className="card">
+          <h2 className="font-display text-lg font-extrabold text-navy">Course progress by part</h2>
+          <p className="text-sm text-ink-soft">Where you are in your level&apos;s courses: units finished, your unit quiz average, and the section test at the end of each course.</p>
+          <div className="table-wrap mt-3">
+            <table>
+              <thead><tr><th>Part</th><th>Units</th><th>Quiz average</th><th>Section test</th></tr></thead>
+              <tbody>
+                {r.courseProgress.map((c) => (
+                  <tr key={c.title}>
+                    <td className="font-semibold text-navy">{c.part ? PART_NAME[c.part] ?? c.title : c.title}</td>
+                    <td>{c.unitsDone} / {c.unitsTotal}</td>
+                    <td>{c.quizAvg != null ? `${c.quizAvg}% (${c.quizzesTaken}/${c.quizzesTotal} quizzes)` : "-"}</td>
+                    <td>{c.sectionTest ? <span className={c.sectionTest.passed ? "badge-ok" : "badge-warn"}>{c.sectionTest.best}% {c.sectionTest.passed ? "passed" : "not passed yet"}</span> : c.hasSectionTest ? <span className="text-ink-soft">not taken yet</span> : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 

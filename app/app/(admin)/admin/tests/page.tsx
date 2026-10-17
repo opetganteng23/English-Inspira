@@ -10,7 +10,7 @@ type Sec = { name: string; durationSec: number; questionIds: string[] };
 type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; testMode?: boolean; resultDelayMin?: number; sections: Sec[]; attempts: number; shuffleQuestions?: boolean; shuffleWithinParts?: boolean; shuffleOptions?: boolean; secureMode?: boolean; maxAttempts?: number; scoringProfileId?: string };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
-const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice", quiz: "Unit quiz" };
+const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice", quiz: "Unit quiz", section: "Section test" };
 const DEFAULT_MIN: Record<string, number> = { listening: 35, structure: 25, reading: 55 };
 
 async function api(url: string, init?: RequestInit) {
@@ -114,6 +114,7 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
         <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-xs">Target level<select disabled={locked || v.kind === "placement"} className="field font-normal" value={v.kind === "placement" ? "" : v.levelId} onChange={(e) => setV({ ...v, levelId: e.target.value })}><option value="">All levels</option>{levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
         {v.kind === "placement" && <p className="mt-2 text-xs text-ink-soft">Placement is taken once per participant and determines their level, so it is not limited by level.</p>}
         {v.kind === "quiz" && <p className="mt-2 text-xs text-ink-soft">Unit quizzes do not appear in My Tests; they are taken from learning units.</p>}
+        {v.kind === "section" && <p className="mt-2 text-xs text-ink-soft">Section tests (one per TOEFL ITP part) do not appear in My Tests; attach one to a course and learners take it at the end of that course.</p>}
 
         <div className="mt-5 flex flex-col gap-5">
           {v.sections.map((s, i) => <SectionBox key={s.name} s={s} locked={locked} onChange={(n) => setSec(i, n)} />)}

@@ -10,7 +10,7 @@ import { Attempt } from "@/models/Test";
 
 export const dynamic = "force-dynamic";
 
-const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", final: "FINAL TEST", practice: "PRACTICE", quiz: "QUIZ" };
+const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", final: "FINAL TEST", practice: "PRACTICE", quiz: "UNIT QUIZ", section: "SECTION TEST" };
 
 /** Ekspor hasil tes dan diagnostic (analisis AI) satu percobaan sebagai PDF. Hanya pemilik (atau admin); tanpa pembahasan per soal. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -38,7 +38,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       sections: r.sectionScores.map((s) => ({ section: s.section ?? "", scaled: s.scaled ?? 0, raw: s.raw ?? 0, total: s.total ?? 0 })),
       topics: (r.topicScores ?? []).map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", score: t.score ?? 0, correct: t.correct ?? 0, total: t.total ?? 0 })),
       analysis: r.analysis as never,
-      unanswered: r.unanswered, insights: r.insights, summary: r.summary,
+      unanswered: r.unanswered, insights: r.insights, courseProgress: r.courseProgress, summary: r.summary,
       recommendations: r.recommendations.map((x) => ({ course: x.course.title, unit: x.unit.title, topic: x.topic, score: x.score })),
     });
     const slug = r.testName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "result";

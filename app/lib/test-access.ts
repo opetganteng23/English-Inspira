@@ -17,6 +17,7 @@ export function canStartTest(user: Pick<UserDoc, "role" | "placementAttemptId" |
   if (test.kind === "placement") return done && !user.placementRetakeAllowed ? { ok: false, reason: "The placement test has already been taken. A retake is only allowed with coach or admin permission." } : { ok: true };
   if (!done) return { ok: false, reason: "Take the placement test first" };
   if (test.kind === "quiz") return { ok: false, reason: "Quizzes are taken from learning units" };
+  if (test.kind === "section") return { ok: false, reason: "Section tests are taken at the end of a course" };
   if (test.levelId && String(test.levelId) !== String(user.currentLevelId)) return { ok: false, reason: "This test is for another level" };
   return { ok: true };
 }

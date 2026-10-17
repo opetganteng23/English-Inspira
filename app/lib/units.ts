@@ -1,7 +1,7 @@
 import type { HydratedDocument, Types } from "mongoose";
 import { connectDB } from "./db";
 import { getParam } from "./config";
-import { Course, RemedialMap, Unit, UnitProgress } from "@/models/Course";
+import { Course, CourseProgress, RemedialMap, Unit, UnitProgress } from "@/models/Course";
 import { LIVE, PREVIEW_VISIBLE, unitAccess } from "./course-access";
 import { cycleState } from "./cycles";
 import type { AttemptDoc } from "@/models/Test";
@@ -78,6 +78,29 @@ export async function recordQuizResult(attempt: HydratedDocument<AttemptDoc>) {
     { upsert: true }
   );
   return { percent: pct, passed: pct >= pass, unit: await recompute(attempt.userId, unit._id) };
+}
+
+/** Semua unit aktif course sudah selesai oleh peserta ini? (syarat membuka ujian per bagian) */
+export async function courseUnitsComplete(userId: Types.ObjectId | string, courseId: Types.ObjectId | string) {
+  const units = await Unit.find({ courseId, active: true }).select("_id").lean();
+  if (!units.length) return false;
+  const done = await UnitProgress.countDocuments({ userId, unitId: { $in: units.map((u) => u._id) }, status: "completed" });
+  return done >= units.length;
+}
+
+/** Ujian per bagian selesai → simpan skor terbaik, jumlah percobaan, dan status lulus (`unit_pass_score`). */
+export async function recordSectionTestResult(attempt: HydratedDocument<AttemptDoc>) {
+  await connectDB();
+  if (!attempt.courseId) return null;
+  const pass = await getParam("unit_pass_score");
+  const pct = percentCorrect(attempt.sectionScores);
+  const cur = await CourseProgress.findOne({ userId: attempt.userId, courseId: attempt.courseId });
+  await CourseProgress.updateOne(
+    { userId: attempt.userId, courseId: attempt.courseId },
+    { $set: { sectionTestBest: Math.max(cur?.sectionTestBest ?? 0, pct), sectionTestPassed: (cur?.sectionTestPassed ?? false) || pct >= pass, ...(attempt.institutionId ? { institutionId: attempt.institutionId } : {}) }, $inc: { sectionTestAttempts: 1 } },
+    { upsert: true }
+  );
+  return { percent: pct, passed: pct >= pass };
 }
 
 /** Rekomendasi course untuk topik lemah: unit remedial + course-nya (level peserta) dan status belajar peserta. */

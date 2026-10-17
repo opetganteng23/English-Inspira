@@ -15,6 +15,7 @@ import { isLearningTopic } from "@/lib/topics";
 import { buildUnanswered } from "@/lib/unanswered";
 import { buildInsights } from "@/lib/insights";
 import { buildSummary } from "@/lib/summary";
+import { courseProgressFor } from "@/lib/course-progress";
 import { getLevels, getParam } from "@/lib/config";
 import { orderQuestions } from "@/lib/shuffle";
 
@@ -87,6 +88,7 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       level: level ? { name: level.name, quota: level.coachingQuota, scoreMin: level.scoreMin, scoreMax: level.scoreMax, info: LEVEL_INFO[String(level.key)] ?? null } : null,
       equivalents: eq ? { itp: eq.itp, cefr: eq.cefr, cefrLabel: eq.cefrLabel } : null,
       unanswered: buildUnanswered(review),
+      courseProgress: await courseProgressFor(attempt.userId, u?.currentLevelId),
       insights: buildInsights(review),
       summary: buildSummary({
         scoreEst: attempt.scoreEst ?? null,

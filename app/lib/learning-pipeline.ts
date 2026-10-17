@@ -16,12 +16,12 @@ export async function processAttemptLearning(attempt: HydratedDocument<AttemptDo
   await connectDB();
   if (await Analysis.exists({ attemptId: attempt._id })) return null;
 
-  const stats = await updateTopicStats(attempt.userId, attempt.institutionId ?? undefined, attempt._id, attempt.topicScores.map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0, score: t.score ?? 0 })));
+  const stats = await updateTopicStats(attempt.userId, attempt.institutionId ?? undefined, attempt._id, attempt.topicScores.map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0, score: t.score ?? 0 })), attempt.kind);
   const stuck = await detectStuck(attempt._id);
 
   const analysis = await Analysis.create({
     userId: attempt.userId, institutionId: attempt.institutionId ?? undefined, attemptId: attempt._id,
-    sourceKind: (attempt.kind ?? "practice") as "placement" | "sim" | "final" | "practice" | "quiz", status: "calculated",
+    sourceKind: (attempt.kind ?? "practice") as "placement" | "sim" | "final" | "practice" | "quiz" | "section", status: "calculated",
     calculated: {
       scoreEst: attempt.scoreEst, sections: attempt.sectionScores,
       topics: stats.map((s) => ({ skill: s.skill, topic: s.topic, score: s.score, items: s.items, status: s.status, before: s.before })),

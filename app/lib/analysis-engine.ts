@@ -27,6 +27,7 @@ export type EngineInput = {
   behaviour: { answered: number; unanswered: number; answerChanges: number; avgSecPerAnswer: number | null; stuckTopics: string[] };
   thresholds: { weak: number; priority: number; minItems: number };
   validTopics: string[];
+  courseProgress?: { part: string | null; title: string; unitsDone: number; unitsTotal: number; quizAvg: number | null; sectionTestBest: number | null; sectionTestPassed: boolean | null }[];
 };
 
 /** Alias stabil tapi tidak dapat dibalik tanpa data internal. */
@@ -56,6 +57,7 @@ export function allowedNumbers(i: EngineInput) {
   if (i.gapToNextLevel) { add(i.gapToNextLevel.points); add(i.gapToNextLevel.target); }
   add(i.behaviour.answered); add(i.behaviour.unanswered); add(i.behaviour.answerChanges); add(i.behaviour.avgSecPerAnswer);
   add(i.thresholds.weak); add(i.thresholds.priority); add(i.thresholds.minItems);
+  i.courseProgress?.forEach((c) => { add(c.unitsDone); add(c.unitsTotal); add(c.quizAvg); add(c.sectionTestBest); });
   return set;
 }
 
@@ -99,10 +101,13 @@ export function templateResult(i: EngineInput, tpl: NarrativeTemplate): Analysis
   if (strong.length) parts.push(fill(tpl.strong, v));
   if (weak.length) parts.push(fill(tpl.weak, v));
   if (i.gapToNextLevel) parts.push(fill(tpl.gap, v));
+  // Kemajuan course per bagian (bila ada): disebut singkat agar saran merujuk ke course yang sedang dijalani.
+  const cp = (i.courseProgress ?? []).slice(0, 3).map((c) => `${c.title}: ${c.unitsDone} of ${c.unitsTotal} units done${c.quizAvg != null ? `, quiz average ${c.quizAvg}%` : ""}${c.sectionTestBest != null ? `, section test ${c.sectionTestBest}%${c.sectionTestPassed ? " (passed)" : ""}` : ""}`);
+  if (cp.length) parts.push(`Course progress: ${cp.join("; ")}.`);
   return {
     summary: fill(tpl.summary, v).slice(0, 600),
-    strengths: strong.map((t) => ({ topic: t.topic, evidence: `Cumulative score ${norm(t.score)} from ${t.items} items.` })),
-    weaknesses: weak.map((t) => ({ topic: t.topic, severity: t.status === "priority" ? "priority" as const : "weak" as const, evidence: `Cumulative score ${norm(t.score)} from ${t.items} items.`, likelyCause: "The concept needs strengthening with targeted practice." })),
+    strengths: strong.map((t) => ({ topic: t.topic, evidence: `Score ${norm(t.score)} from ${t.items} items.` })),
+    weaknesses: weak.map((t) => ({ topic: t.topic, severity: t.status === "priority" ? "priority" as const : "weak" as const, evidence: `Score ${norm(t.score)} from ${t.items} items.`, likelyCause: "The concept needs strengthening with targeted practice." })),
     ...(i.gapToNextLevel ? { gapToNextLevel: { points: i.gapToNextLevel.points, target: i.gapToNextLevel.target } } : {}),
     recommendations: weak.map((t) => ({ topic: t.topic, priority: t.status === "priority" ? "high" as const : "medium" as const })),
     narrative: parts.join(" ").slice(0, 1500),

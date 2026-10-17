@@ -4,7 +4,9 @@ import { cycleState, placementNeeded } from "@/lib/cycles";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
-import { Course, CourseModule, Unit, UnitProgress } from "@/models/Course";
+import { Course, CourseModule, CourseProgress, Unit, UnitProgress } from "@/models/Course";
+import { Attempt, Test } from "@/models/Test";
+import { visibleTestFilter } from "@/lib/test-access";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,13 @@ export async function GET() {
       CourseModule.find({ courseId: { $in: courses.map((c) => c._id) }, active: true }).sort({ order: 1, createdAt: 1 }).lean(),
       preview ? new Map<string, { locked: boolean; missing: string[] }>() : courseLocks(me._id, courses),
     ]);
+    // Ujian per bagian: nama, skor terbaik, dan apakah sudah bisa dimulai.
+    const tIds = courses.map((c) => c.sectionTestId).filter((x): x is NonNullable<typeof x> => !!x);
+    const [secTests, cprog, running] = await Promise.all([
+      tIds.length ? Test.find({ _id: { $in: tIds }, kind: "section", ...visibleTestFilter(me) }).select("name sections").lean() : [],
+      tIds.length ? CourseProgress.find({ userId: me._id, courseId: { $in: courses.map((c) => c._id) } }).lean() : [],
+      tIds.length ? Attempt.find({ userId: me._id, testId: { $in: tIds }, status: "in_progress" }).select("testId").lean() : [],
+    ]);
     const started = new Map(await Promise.all(courses.map(async (c) => [String(c._id), await courseStartedAt(me._id, c._id)] as const)));
     const prog = new Map((await UnitProgress.find({ userId: me._id, unitId: { $in: units.map((u) => u._id) } }).lean()).map((p) => [String(p.unitId), p]));
     return NextResponse.json({
@@ -38,8 +47,13 @@ export async function GET() {
           return { id: String(u._id), title: u.title, description: u.description ?? "", moduleId, status: p?.status === "completed" ? "completed" : done > 0 ? "in_progress" : "not_started", done, total, locked: drip.locked, opensAt: drip.opensAt };
         });
         const lock = locks.get(String(c._id));
+        const st = c.sectionTestId ? secTests.find((t) => String(t._id) === String(c.sectionTestId)) : null;
+        const cp = cprog.find((p) => String(p.courseId) === String(c._id));
+        const run = st ? running.find((r) => String(r.testId) === String(st._id)) : null;
+        const allDone = us.length > 0 && us.every((u) => u.status === "completed");
+        const sectionTest = st ? { name: st.name, questions: st.sections.reduce((n, s) => n + s.questionIds.length, 0), best: cp?.sectionTestBest ?? null, passed: !!cp?.sectionTestPassed, attempts: cp?.sectionTestAttempts ?? 0, required: !!c.requireSectionTest, state: lock?.locked ? "locked" : run ? "in_progress" : allDone || preview ? "available" : "locked", inProgressAttemptId: run ? String(run._id) : null } : null;
         return {
-          id: String(c._id), title: c.title, description: c.description ?? "", level: preview ? lvl.get(String(c.levelId))?.name ?? null : null, previewOnly: !!c.previewMode, inactive: !c.active, cover: c.coverAssetId ? `/api/assets/${c.coverAssetId}` : null,
+          id: String(c._id), title: c.title, description: c.description ?? "", level: preview ? lvl.get(String(c.levelId))?.name ?? null : null, part: c.part ?? null, sectionTest, previewOnly: !!c.previewMode, inactive: !c.active, cover: c.coverAssetId ? `/api/assets/${c.coverAssetId}` : null,
           locked: !!lock?.locked, missing: lock?.missing ?? [],
           modules: mods.filter((m) => String(m.courseId) === String(c._id)).map((m) => ({ id: String(m._id), title: m.title, description: m.description ?? "" })),
           units: us, completed: us.filter((u) => u.status === "completed").length,

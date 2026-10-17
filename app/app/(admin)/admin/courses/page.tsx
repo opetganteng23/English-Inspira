@@ -1,6 +1,6 @@
 "use client";
 
-import { askConfirm } from "@/components/Feedback";
+import { askConfirm, toast } from "@/components/Feedback";
 import { useState } from "react";
 import Link from "next/link";
 import { useApi } from "@/lib/useApi";
@@ -11,9 +11,20 @@ import { Loading, ErrorNote } from "@/components/Charts";
 
 type Unit = { id: string; title: string; description: string; order: number; active: boolean; materialIds: string[]; quizTestId: string | null; moduleId: string | null; unlockAfterDays: number };
 type Mod = { id: string; title: string; description: string; order: number; active: boolean };
-type Course = { id: string; levelId: string; title: string; description: string; order: number; active: boolean; archived: boolean; previewMode?: boolean; secureMode?: boolean; coverAssetId: string | null; prerequisiteCourseIds: string[]; modules: Mod[]; units: Unit[] };
-type Data = { levels: { id: string; name: string }[]; materials: { id: string; title: string; status: string; kind: string }[]; quizzes: { id: string; name: string; unitId: string | null }[]; courses: Course[] };
+type Course = { id: string; levelId: string; title: string; description: string; order: number; active: boolean; archived: boolean; previewMode?: boolean; part?: string | null; sectionTestId?: string | null; requireSectionTest?: boolean; secureMode?: boolean; coverAssetId: string | null; prerequisiteCourseIds: string[]; modules: Mod[]; units: Unit[] };
+type Data = { levels: { id: string; name: string }[]; materials: { id: string; title: string; status: string; kind: string }[]; quizzes: { id: string; kind?: string; name: string; unitId: string | null }[]; courses: Course[] };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
+
+const PART_LABEL: Record<string, string> = { listening_a: "Listening Part A", listening_b: "Listening Part B", listening_c: "Listening Part C", structure: "Structure", written_expression: "Written Expression", reading: "Reading" };
+/** Yang masih kosong di sebuah course (daftar periksa sebelum dirilis). */
+const todo = (c: Course) => {
+  const out: string[] = [];
+  const activeUnits = c.units.filter((u) => u.active);
+  if (activeUnits.some((u) => u.materialIds.length === 0)) out.push("materials");
+  if (activeUnits.some((u) => !u.quizTestId)) out.push("unit quizzes");
+  if (!c.sectionTestId) out.push("section test");
+  return out;
+};
 
 export default function Kursus() {
   const { data, loading, error, reload } = useApi<Data>("/api/admin/courses");
@@ -23,6 +34,12 @@ export default function Kursus() {
   const [showArchived, setShowArchived] = useState(false);
   const [err, setErr] = useState("");
   const run = async (fn: () => Promise<unknown>) => { setErr(""); try { await fn(); reload(); } catch (e) { setErr((e as Error).message); } };
+
+  const scaffold = async (levelId: string, name: string) => {
+    if (!(await askConfirm(`Create the standard course structure for ${name}? This adds one course per TOEFL ITP part (Listening A, B, C, Structure, Written Expression, Reading) with fixed modules. New courses are Preview only. Parts that already exist are skipped.`, { confirmLabel: "Create" }))) return;
+    await run(async () => { const r = await api<{ created: number; skipped: number }>("/api/admin/courses/scaffold", { json: { levelId }, silent: true }); toast(`${r.created} course(s) created, ${r.skipped} already existed.`); });
+  };
+  const sectionTests = data?.quizzes.filter((q) => q.kind === "section") ?? [];
 
   if (loading && !data) return <Loading />;
   return (
@@ -38,14 +55,15 @@ export default function Kursus() {
         const cs = data.courses.filter((c) => c.levelId === l.id && (showArchived || !c.archived));
         return (
           <section key={l.id} className="flex flex-col gap-3">
-            <h2 className="font-display text-xl font-extrabold text-navy">{l.name}</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-display text-xl font-extrabold text-navy">{l.name}</h2>
+              <button className="btn-outline !min-h-[40px] text-sm" onClick={() => scaffold(l.id, l.name)}>Create standard structure</button></div>
             {cs.length === 0 && <p className="text-sm text-ink-soft">No courses for this level yet.</p>}
             {cs.map((c) => (
               <div key={c.id} className="card">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-3">
                     {c.coverAssetId ? <img src={`/api/assets/${c.coverAssetId}`} alt="" className="h-12 w-20 shrink-0 rounded-lg object-cover" /> : <span className="h-12 w-20 shrink-0 rounded-lg bg-canvas" aria-hidden />}
-                    <div className="min-w-0"><b className="text-navy">{c.title}</b> {c.previewMode && <span className="badge-warn ml-1" title="Only admins and QA testers can see this course">preview only</span>}{!c.active && <span className="badge-muted ml-1">inactive</span>}{c.archived && <span className="badge-warn ml-1">archived</span>}{c.secureMode && <span className="badge-muted ml-1">secure</span>}{c.prerequisiteCourseIds.length > 0 && <span className="badge-muted ml-1">needs {c.prerequisiteCourseIds.length} prerequisite{c.prerequisiteCourseIds.length > 1 ? "s" : ""}</span>}{c.description && <p className="text-sm text-ink-soft">{c.description}</p>}</div>
+                    <div className="min-w-0"><b className="text-navy">{c.title}</b> {c.part && <span className="badge-muted ml-1">{PART_LABEL[c.part] ?? c.part}</span>}{c.previewMode && <span className="badge-warn ml-1" title="Only admins and QA testers can see this course">preview only</span>}{todo(c).length > 0 && <span className="badge-warn ml-1" title={todo(c).join("; ")}>needs: {todo(c).join(", ")}</span>}{!c.active && <span className="badge-muted ml-1">inactive</span>}{c.archived && <span className="badge-warn ml-1">archived</span>}{c.secureMode && <span className="badge-muted ml-1">secure</span>}{c.prerequisiteCourseIds.length > 0 && <span className="badge-muted ml-1">needs {c.prerequisiteCourseIds.length} prerequisite{c.prerequisiteCourseIds.length > 1 ? "s" : ""}</span>}{c.description && <p className="text-sm text-ink-soft">{c.description}</p>}</div>
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold"><button className="text-brand" onClick={() => setMod({ courseId: c.id, active: true, order: c.modules.length })}>+ Module</button><button className="text-brand" onClick={() => setUnit({ courseId: c.id, active: true, order: c.units.length, materialIds: [], unlockAfterDays: 0 })}>+ Unit</button><button className="text-brand" onClick={() => setCourse(c)}>Edit</button><button className="text-brand" onClick={() => run(() => api(`/api/admin/courses/${c.id}`, { method: "PATCH", json: { levelId: c.levelId, title: c.title, description: c.description || undefined, order: c.order, active: c.active, archived: !c.archived, secureMode: !!c.secureMode, coverAssetId: c.coverAssetId, prerequisiteCourseIds: c.prerequisiteCourseIds } }))}>{c.archived ? "Restore" : "Archive"}</button><button className="text-red-700" onClick={() => void askConfirm("Delete this course?").then((ok) => { if (ok) run(() => api(`/api/admin/courses/${c.id}`, { method: "DELETE" })); })}>Delete</button></div>
                 </div>
@@ -76,7 +94,7 @@ export default function Kursus() {
       <RemedialMapSection />
 
       {mod && <ModuleEditor init={mod} onClose={() => setMod(null)} onSaved={() => { setMod(null); reload(); }} />}
-      {course && data && <CourseEditor init={course} levels={data.levels} others={data.courses.filter((x) => x.id !== course.id)} onClose={() => setCourse(null)} onSaved={() => { setCourse(null); reload(); }} />}
+      {course && data && <CourseEditor init={course} levels={data.levels} sectionTests={sectionTests} others={data.courses.filter((x) => x.id !== course.id)} onClose={() => setCourse(null)} onSaved={() => { setCourse(null); reload(); }} />}
       {unit && data && <UnitEditor init={unit} data={data} onClose={() => setUnit(null)} onSaved={() => { setUnit(null); reload(); }} />}
     </div>
   );
@@ -111,8 +129,8 @@ function RemedialMapSection() {
   );
 }
 
-function CourseEditor({ init, levels, others, onClose, onSaved }: { init: Partial<Course>; levels: Data["levels"]; others: Course[]; onClose: () => void; onSaved: () => void }) {
-  const [v, setV] = useState({ levelId: init.levelId ?? levels[0]?.id ?? "", title: init.title ?? "", description: init.description ?? "", order: init.order ?? 0, active: init.active ?? true, archived: init.archived ?? false, previewMode: init.previewMode ?? false, secureMode: init.secureMode ?? false, coverAssetId: init.coverAssetId ?? null as string | null, prerequisiteCourseIds: init.prerequisiteCourseIds ?? [] as string[] });
+function CourseEditor({ init, levels, others, sectionTests, onClose, onSaved }: { init: Partial<Course>; levels: Data["levels"]; others: Course[]; sectionTests: Data["quizzes"]; onClose: () => void; onSaved: () => void }) {
+  const [v, setV] = useState({ levelId: init.levelId ?? levels[0]?.id ?? "", title: init.title ?? "", description: init.description ?? "", order: init.order ?? 0, active: init.active ?? true, archived: init.archived ?? false, previewMode: init.previewMode ?? false, part: init.part ?? "", sectionTestId: init.sectionTestId ?? "", requireSectionTest: init.requireSectionTest ?? false, secureMode: init.secureMode ?? false, coverAssetId: init.coverAssetId ?? null as string | null, prerequisiteCourseIds: init.prerequisiteCourseIds ?? [] as string[] });
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   async function pickCover(f: File | undefined) {
@@ -122,13 +140,14 @@ function CourseEditor({ init, levels, others, onClose, onSaved }: { init: Partia
     setBusy(false);
   }
   async function save() {
-    try { await api(init.id ? `/api/admin/courses/${init.id}` : "/api/admin/courses", { method: init.id ? "PATCH" : "POST", json: { ...v, order: Number(v.order), description: v.description || undefined } }); onSaved(); }
+    try { await api(init.id ? `/api/admin/courses/${init.id}` : "/api/admin/courses", { method: init.id ? "PATCH" : "POST", json: { ...v, part: v.part || null, sectionTestId: v.sectionTestId || null, order: Number(v.order), description: v.description || undefined } }); onSaved(); }
     catch (e) { setErr((e as Error).message); }
   }
   return (
     <Modal title={init.id ? "Edit course" : "New course"} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <label className={label}>Level<select className="field font-normal" value={v.levelId} onChange={(e) => setV({ ...v, levelId: e.target.value })}>{levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
+        <label className={label}>TOEFL ITP part<select className="field font-normal" value={v.part} onChange={(e) => setV({ ...v, part: e.target.value })}><option value="">Not tied to a part</option>{Object.entries(PART_LABEL).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
         <label className={label}>Title<input className="field font-normal" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} /></label>
         <label className={label}>Description<textarea className="field h-20 py-2 font-normal" value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} /></label>
         <label className={label}>Order<input className="field font-normal" type="number" min={0} value={v.order} onChange={(e) => setV({ ...v, order: Number(e.target.value) })} /></label>
@@ -145,6 +164,8 @@ function CourseEditor({ init, levels, others, onClose, onSaved }: { init: Partia
           </ul>
           <p className="mt-1 text-xs text-ink-soft">Participants can open this course after finishing every unit of the courses ticked here.</p>
         </fieldset>
+        <label className={label}>Section test (end of course)<select className="field font-normal" value={v.sectionTestId} onChange={(e) => setV({ ...v, sectionTestId: e.target.value })}><option value="">None</option>{sectionTests.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}</select></label>
+        <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 h-5 w-5" checked={v.requireSectionTest} disabled={!v.sectionTestId} onChange={(e) => setV({ ...v, requireSectionTest: e.target.checked })} /><span><b>Require passing the section test</b><br /><span className="text-xs text-ink-soft">When on, courses that list this one as a prerequisite open only after its section test is passed. Off by default: the score is shown as progress only.</span></span></label>
         <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Active</label>
         <label className="flex items-start gap-2 rounded-lg bg-brand-tint p-2 text-sm"><input type="checkbox" className="mt-0.5 h-5 w-5" checked={v.previewMode} onChange={(e) => setV({ ...v, previewMode: e.target.checked })} /><span><b>Preview only</b><br /><span className="text-xs text-ink-soft">While this is on, participants (including AirNav) cannot see this course or the materials used only in it, even if Active is on. Admins and QA testers can open it from Learn, at every level, without prerequisites or unlock days. Turn it off to release the course.</span></span></label>
         <label className="flex items-start gap-2 rounded-lg bg-accent-tint p-2 text-sm"><input type="checkbox" className="mt-0.5 h-5 w-5" checked={v.secureMode} onChange={(e) => setV({ ...v, secureMode: e.target.checked })} /><span><b>Secure mode</b><br /><span className="text-xs text-ink-soft">In this course&apos;s units and materials, copying, pasting, right-click, and the browser Back button are turned off.</span></span></label>
@@ -185,7 +206,7 @@ function UnitEditor({ init, data, onClose, onSaved }: { init: Partial<Unit> & { 
     try { await api(init.id ? `/api/admin/units/${init.id}` : "/api/admin/units", { method: init.id ? "PATCH" : "POST", json: { courseId: init.courseId, ...v, order: Number(v.order), description: v.description || undefined, quizTestId: v.quizTestId || null, moduleId: v.moduleId || null, unlockAfterDays: Number(v.unlockAfterDays) || 0 } }); onSaved(); }
     catch (e) { setErr((e as Error).message); }
   }
-  const freeQuizzes = data.quizzes.filter((q) => !q.unitId || q.unitId === init.id);
+  const freeQuizzes = data.quizzes.filter((q) => (q.kind ?? "quiz") === "quiz" && (!q.unitId || q.unitId === init.id));
   return (
     <Modal title={init.id ? "Edit unit" : "New unit"} onClose={onClose} wide>
       <div className="flex flex-col gap-4">

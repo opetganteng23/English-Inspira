@@ -17,6 +17,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const test = await Test.findOne({ _id: params.id, ...visibleTestFilter(user) }).lean();
     if (!test) throw new HttpError(404, "Test not found");
     if (test.kind === "quiz") throw new HttpError(409, "Quizzes are taken from learning units");
+    if (test.kind === "section") throw new HttpError(409, "Section tests are taken at the end of a course");
 
     // Lanjutkan attempt yang berjalan (tahan refresh); tidak perlu cek ulang aturan.
     const running = await Attempt.findOne({ userId: user._id, testId: test._id, status: "in_progress" });

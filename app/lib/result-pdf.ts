@@ -20,8 +20,10 @@ export type ResultPdfData = {
   unanswered?: import("./unanswered").UnansweredReport;
   insights?: import("./insights").Insights;
   summary?: import("./summary").Summary;
+  courseProgress?: import("./course-progress").CourseProgressRow[];
 };
 
+const PART_NAMES: Record<string, string> = { listening_a: "Listening Part A", listening_b: "Listening Part B", listening_c: "Listening Part C", structure: "Structure", written_expression: "Written Expression", reading: "Reading" };
 const SEC_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 
 /** Hasil tes dan diagnostic satu percobaan (PDF): ringkasan skor, topik, dan analisis. Tanpa pembahasan per soal. */
@@ -172,6 +174,17 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
     if (a.strengths?.length) { y += 4; para("Already strong", { bold: true, size: 10.5, keep: 60 }); for (const s of a.strengths) para(`- ${s.topic}: ${s.evidence}`, { indent: 8, color: GRAY }); }
     if (a.weaknesses?.length) { y += 4; para("Needs strengthening", { bold: true, size: 10.5, keep: 60 }); for (const w of a.weaknesses) para(`- ${w.title}: ${w.detail}`, { indent: 8, color: GRAY }); }
     if (a.nextSteps?.length) { y += 4; para("Next steps", { bold: true, size: 10.5, keep: 60 }); a.nextSteps.forEach((s, i) => para(`${i + 1}. ${s}`, { indent: 8, color: GRAY })); }
+  }
+
+  if (d.courseProgress?.length) {
+    heading("Course progress by part");
+    for (const r of d.courseProgress) {
+      const parts = [`units ${r.unitsDone}/${r.unitsTotal}`];
+      if (r.quizAvg != null) parts.push(`quiz average ${r.quizAvg}% (${r.quizzesTaken}/${r.quizzesTotal} quizzes taken)`);
+      if (r.sectionTest) parts.push(`section test ${r.sectionTest.best}%${r.sectionTest.passed ? " (passed)" : " (not passed yet)"}`);
+      else if (r.hasSectionTest) parts.push("section test not taken yet");
+      para(`${r.part ? PART_NAMES[r.part] ?? r.title : r.title}: ${parts.join(" · ")}`, { indent: 8, color: GRAY });
+    }
   }
 
   if (d.insights) {

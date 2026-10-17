@@ -9,7 +9,7 @@ import { applyPlacement } from "./placement";
 import { User } from "@/models/User";
 import { runAnalysis } from "./analysis";
 import { processAttemptLearning } from "./learning-pipeline";
-import { recordQuizResult } from "./units";
+import { recordQuizResult, recordSectionTestResult } from "./units";
 import { evaluateLevelUp } from "./level-up";
 import { ensureSimReport } from "./certificates";
 import { Attempt, Test, type AttemptDoc, AttemptSnapshot } from "@/models/Test";
@@ -131,6 +131,7 @@ export async function runAttemptEffects(attempt: AttemptHydrated) {
     else if (isSimLike && attempt.scoreEst != null) await User.updateOne({ _id: attempt.userId }, { currentScoreEst: attempt.scoreEst });
     if (isSimLike) await ensureSimReport(attempt._id);
     if (attempt.kind === "quiz") await recordQuizResult(attempt);
+    if (attempt.kind === "section") await recordSectionTestResult(attempt);
   } catch (e) { console.error("[finalize] side effects failed", e); }
   try { await processAttemptLearning(attempt); } catch (e) { console.error("[finalize] learning pipeline failed", e); }
   try { if (attempt.kind === "sim" || attempt.kind === "final") await evaluateLevelUp(attempt); } catch (e) { console.error("[finalize] level-up check failed", e); } // setelah pipeline: memakai rencana yang sudah diperbarui

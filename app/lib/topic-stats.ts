@@ -22,7 +22,7 @@ export function topicStatus(score: number, items: number, th: { weak: number; pr
 type Scored = { skill: string; topic: string; correct: number; total: number; score: number };
 
 /** Gabungkan skor satu pengerjaan ke statistik akumulatif peserta; kembalikan status sebelum/sesudah per topik. */
-export async function updateTopicStats(userId: Types.ObjectId | string, institutionId: Types.ObjectId | string | undefined, attemptId: Types.ObjectId | string | null, scores: Scored[]) {
+export async function updateTopicStats(userId: Types.ObjectId | string, institutionId: Types.ObjectId | string | undefined, attemptId: Types.ObjectId | string | null, scores: Scored[], kind?: string | null) {
   await connectDB();
   const [alpha, th] = await Promise.all([getParam("alpha"), getParam("weakness")]);
   const out: { skill: string; topic: string; score: number; items: number; status: TopicStatus; before: TopicStatus | null }[] = [];
@@ -30,7 +30,9 @@ export async function updateTopicStats(userId: Types.ObjectId | string, institut
     if (!s.total) continue;
     const cur = await TopicStat.findOne({ userId, skill: s.skill, topic: s.topic });
     const items = (cur?.items ?? 0) + s.total;
-    const score = nextTopicScore(cur?.score ?? null, s.score, alpha);
+    // Quiz unit kecil (beberapa soal) tidak boleh menggeser statistik sekuat ujian penuh: bobot sebanding dengan jumlah soal sampai batas minItems. Ujian per bagian dan tes lain berbobot penuh.
+    const weight = kind === "quiz" ? Math.min(1, s.total / th.minItems) : 1;
+    const score = nextTopicScore(cur?.score ?? null, s.score, alpha * weight);
     const status = topicStatus(score, items, th);
     await TopicStat.updateOne(
       { userId, skill: s.skill, topic: s.topic },

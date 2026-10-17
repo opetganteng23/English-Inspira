@@ -1,5 +1,7 @@
 import mongoose, { Schema, InferSchemaType, Model } from "mongoose";
 
+export const COURSE_PARTS = ["listening_a", "listening_b", "listening_c", "structure", "written_expression", "reading"] as const;
+
 // Level → Course → Unit (MTS §10.1). Course milik satu level; peserta hanya melihat course levelnya.
 const courseSchema = new Schema(
   {
@@ -8,6 +10,9 @@ const courseSchema = new Schema(
     description: String,
     order: { type: Number, default: 0 },
     active: { type: Boolean, default: true },
+    part: { type: String, enum: COURSE_PARTS }, // bagian TOEFL ITP yang dilatih course ini (kerangka baku)
+    sectionTestId: { type: Schema.Types.ObjectId, ref: "Test" }, // ujian per bagian (Test.kind = section), diambil di akhir course
+    requireSectionTest: { type: Boolean, default: false }, // bila menyala, course dianggap selesai (untuk prasyarat course lain) hanya setelah ujian per bagian lulus
     previewMode: { type: Boolean, default: false }, // sedang disiapkan: hanya admin dan QA tester yang melihat course dan materinya; peserta tidak, walau Active
     archived: { type: Boolean, default: false, index: true }, // diarsipkan: hilang dari peserta, progres tetap tersimpan, bisa dipulihkan
     coverAssetId: { type: Schema.Types.ObjectId, ref: "Asset" },
@@ -44,6 +49,20 @@ const unitSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Hasil ujian per bagian (satu baris per peserta per course): skor terbaik dan status lulus.
+const courseProgressSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    courseId: { type: Schema.Types.ObjectId, ref: "Course", required: true },
+    institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },
+    sectionTestBest: Number, // persen benar terbaik (0-100)
+    sectionTestPassed: { type: Boolean, default: false },
+    sectionTestAttempts: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+courseProgressSchema.index({ userId: 1, courseId: 1 }, { unique: true });
 
 const unitProgressSchema = new Schema(
   {
@@ -109,3 +128,4 @@ export const UnitProgress = (mongoose.models.UnitProgress as Model<InferSchemaTy
 export const RemedialMap = (mongoose.models.RemedialMap as Model<InferSchemaType<typeof remedialSchema>>) || mongoose.model("RemedialMap", remedialSchema);
 export const BlockEvent = (mongoose.models.BlockEvent as Model<InferSchemaType<typeof blockEventSchema>>) || mongoose.model("BlockEvent", blockEventSchema);
 export const LearningEvent = (mongoose.models.LearningEvent as Model<InferSchemaType<typeof learningEventSchema>>) || mongoose.model("LearningEvent", learningEventSchema);
+export const CourseProgress = (mongoose.models.CourseProgress as Model<InferSchemaType<typeof courseProgressSchema>>) || mongoose.model("CourseProgress", courseProgressSchema);

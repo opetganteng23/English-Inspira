@@ -2,7 +2,7 @@ import mongoose, { Schema, InferSchemaType, Model } from "mongoose";
 import { SECTIONS } from "./Question";
 
 // Jenis tes (MTS §11): placement (sekali), sim (simulasi berkala), practice (latihan bebas ulang), quiz (penilaian unit, dinilai server).
-export const TEST_KINDS = ["placement", "sim", "final", "practice", "quiz"] as const;
+export const TEST_KINDS = ["placement", "sim", "final", "practice", "quiz", "section"] as const; // section = ujian per bagian di akhir course (quiz = per unit)
 
 const testSchema = new Schema(
   {
@@ -39,6 +39,7 @@ const attemptSchema = new Schema(
     institutionId: { type: Schema.Types.ObjectId, ref: "Institution", index: true },
     testId: { type: Schema.Types.ObjectId, ref: "Test", required: true },
     unitId: { type: Schema.Types.ObjectId, ref: "Unit" },
+    courseId: { type: Schema.Types.ObjectId, ref: "Course" }, // ujian per bagian: course pemiliknya
     programCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle", index: true }, // periode saat attempt dimulai
     kind: String, // salinan Test.kind
     startedAt: { type: Date, required: true },
