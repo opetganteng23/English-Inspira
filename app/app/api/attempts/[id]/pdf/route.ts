@@ -38,7 +38,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       sections: r.sectionScores.map((s) => ({ section: s.section ?? "", scaled: s.scaled ?? 0, raw: s.raw ?? 0, total: s.total ?? 0 })),
       topics: (r.topicScores ?? []).map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", score: t.score ?? 0, correct: t.correct ?? 0, total: t.total ?? 0 })),
       analysis: r.analysis as never,
-      unanswered: r.unanswered,
+      unanswered: r.unanswered, insights: r.insights,
       recommendations: r.recommendations.map((x) => ({ course: x.course.title, unit: x.unit.title, topic: x.topic, score: x.score })),
     });
     const slug = r.testName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "result";

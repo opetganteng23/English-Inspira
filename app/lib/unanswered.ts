@@ -1,6 +1,6 @@
 import { isLearningTopic } from "./topics";
 
-type ReviewItem = { no: number; section: string; answered: boolean; tags?: { skill?: string | null; topic?: string | null }[]; timeSpentSec?: number | null };
+type ReviewItem = { no: number; seq?: number; section: string; answered: boolean; tags?: { skill?: string | null; topic?: string | null }[]; timeSpentSec?: number | null };
 export type UnansweredReport = {
   total: number; unanswered: number; pct: number;
   sections: { section: string; total: number; unanswered: number; trailing: number }[];
@@ -21,7 +21,7 @@ export function buildUnanswered(review: ReviewItem[]): UnansweredReport {
   const unanswered = review.filter((r) => !r.answered).length;
   const order = Array.from(new Set(review.map((r) => r.section)));
   const sections = order.map((section) => {
-    const items = review.filter((r) => r.section === section).sort((a, b) => a.no - b.no);
+    const items = review.filter((r) => r.section === section).sort((a, b) => (a.seq ?? a.no) - (b.seq ?? b.no));
     let trailing = 0;
     for (let i = items.length - 1; i >= 0 && !items[i].answered; i--) trailing++;
     return { section, total: items.length, unanswered: items.filter((r) => !r.answered).length, trailing };

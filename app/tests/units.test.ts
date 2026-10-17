@@ -624,3 +624,38 @@ describe("analisis soal tidak dijawab", () => {
     expect(buildUnanswered([mk(1, "reading", true)]).advice[0]).toMatch(/answered every/);
   });
 });
+
+describe("wawasan jawaban", () => {
+  const mk = (seq: number, section: string, o: Partial<{ correct: boolean; answered: boolean; sec: number; first: number; yours: number; key: number; changes: number; topic: string }> = {}) => ({
+    no: seq, seq, section, correct: o.correct ?? true, answered: o.answered ?? true, timeSpentSec: o.sec ?? 30, firstChoice: o.first ?? 1, yourChoice: o.yours ?? 1, answerKey: o.key ?? 1, changes: o.changes ?? 0,
+    tags: [{ skill: "reading", topic: o.topic ?? "inference" }],
+  });
+  it("urutan memakai seq (urutan peserta), stamina dan perubahan jawaban akurat", async () => {
+    const { buildInsights } = await import("@/lib/insights");
+    // 9 soal reading: sepertiga awal benar semua, tengah 1/3, akhir 0/3.
+    const items = [1, 2, 3].map((n) => mk(n, "reading")).concat([4, 5, 6].map((n) => mk(n, "reading", { correct: n === 4, yours: n === 4 ? 1 : 0 })), [7, 8, 9].map((n) => mk(n, "reading", { correct: false, yours: 0 }))[0] as never, mk(8, "reading", { correct: false, yours: 0 }), mk(9, "reading", { correct: false, answered: false }));
+    // acak urutan input: hasil harus tetap diurutkan menurut seq
+    const r = buildInsights([...items].reverse());
+    expect(r.order[0].marks.slice(0, 3)).toEqual(["c", "c", "c"]);
+    expect(r.stamina[0].thirds).toEqual([100, 33, 0]);
+    expect(r.stamina[0].drop).toBe(100);
+    expect(r.outcome.total).toEqual({ correct: 4, wrong: 4, blank: 1 });
+    // perubahan: benar->salah (pertama = kunci) dan salah->benar
+    const c = buildInsights([mk(1, "reading", { first: 1, yours: 0, correct: false, changes: 1 }), mk(2, "reading", { first: 0, yours: 1, correct: true, changes: 1 }), mk(3, "reading", { first: 2, yours: 0, correct: false, changes: 1 })]).changes!;
+    expect(c).toEqual({ changed: 3, toRight: 1, toWrong: 1, stillWrong: 1 });
+  });
+  it("waktu: tersembunyi bila data tak cukup; kuadran dan tebakan akurat", async () => {
+    const { buildInsights } = await import("@/lib/insights");
+    expect(buildInsights([mk(1, "reading", { sec: 0 }), mk(2, "reading", { sec: 0 })]).time).toBeNull();
+    const rows = [
+      ...[1, 2, 3].map((n) => mk(n, "reading", { topic: "fast-ok", sec: 10 })),
+      ...[4, 5, 6].map((n) => mk(n, "reading", { topic: "fast-bad", sec: 3, correct: false, yours: 0 })),
+      ...[7, 8, 9].map((n) => mk(n, "reading", { topic: "slow-bad", sec: 90, correct: false, yours: 0 })),
+      ...[10, 11, 12].map((n) => mk(n, "reading", { topic: "slow-ok", sec: 80 })),
+    ];
+    const r = buildInsights(rows);
+    const kind = (t: string) => r.quadrants.find((q) => q.topic === t)!.kind;
+    expect([kind("fast-ok"), kind("fast-bad"), kind("slow-bad"), kind("slow-ok")]).toEqual(["solid", "rushed", "concept", "slow"]);
+    expect(r.guessing).toEqual({ count: 3, pct: 25 });
+  });
+});

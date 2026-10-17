@@ -14,6 +14,8 @@ import { getEquivalence } from "@/lib/clustering";
 import { LEVEL_INFO } from "@/lib/level-info";
 import { isLearningTopic } from "@/lib/topics";
 import { buildUnanswered } from "@/lib/unanswered";
+import { buildInsights } from "@/lib/insights";
+import { orderQuestions } from "@/lib/shuffle";
 
 type SnapItem = { qid: import("mongoose").Types.ObjectId; section: string; type: string; groupId?: import("mongoose").Types.ObjectId; stem: string; options: string[]; answerKey: number; explanation?: string; tags: { skill: string; topic: string }[] };
 
@@ -35,12 +37,19 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
     const byId = new Map(qs.map((q) => [String(q._id), q]));
     const mine = new Map(attempt.answers.map((a) => [String(a.qid), a]));
 
+    // Posisi soal menurut urutan yang benar-benar dilihat peserta (urutan acak per percobaan), dipakai untuk analisis "soal terakhir kosong" dan stamina.
+    const seqOf = new Map<string, number>();
+    test.sections.forEach((sec, si) => {
+      const items = sec.questionIds.map((id) => byId.get(String(id))).filter((q): q is NonNullable<typeof q> => !!q);
+      orderQuestions(test, items, `${String(attempt._id)}:q:${si}`).forEach((q, k) => seqOf.set(String(q._id), k + 1));
+    });
     const review = ids.map((id, i) => {
       const q = byId.get(String(id));
       const a = mine.get(String(id));
-      if (!q) return { no: i + 1, section: "listening", type: "-", tags: [], groupId: null, correct: false, answered: a?.choice != null, changes: 0, timeSpentSec: a?.timeSpentSec ?? null, stem: "This question is no longer available.", options: [] as string[], yourChoice: a?.choice ?? null, answerKey: -1, explanation: "" };
+      const seq = seqOf.get(String(id)) ?? i + 1;
+      if (!q) return { no: i + 1, seq, firstChoice: null as number | null, section: "listening", type: "-", tags: [], groupId: null, correct: false, answered: a?.choice != null, changes: 0, timeSpentSec: a?.timeSpentSec ?? null, stem: "This question is no longer available.", options: [] as string[], yourChoice: a?.choice ?? null, answerKey: -1, explanation: "" };
       return {
-        no: i + 1, section: q.section, type: q.type, tags: q.tags, groupId: q.groupId ? String(q.groupId) : null,
+        no: i + 1, seq, firstChoice: a?.firstChoice ?? null, section: q.section, type: q.type, tags: q.tags, groupId: q.groupId ? String(q.groupId) : null,
         correct: a?.choice === q.answerKey, answered: a?.choice != null, changes: a?.changes ?? 0, timeSpentSec: a?.timeSpentSec ?? null,
         stem: q.stem, options: q.options, yourChoice: a?.choice ?? null, answerKey: q.answerKey, explanation: q.explanation,
       };
@@ -85,5 +94,6 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       equivalents: eq ? { itp: eq.itp, cefr: eq.cefr, cefrLabel: eq.cefrLabel } : null,
       review, transcripts,
       unanswered: buildUnanswered(review),
+      insights: buildInsights(review),
     };
 }

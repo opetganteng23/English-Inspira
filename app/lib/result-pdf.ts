@@ -18,6 +18,7 @@ export type ResultPdfData = {
   analysis: { status: string; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; nextSteps?: string[]; error?: string };
   recommendations: { course: string; unit: string; topic: string; score: number }[];
   unanswered?: import("./unanswered").UnansweredReport;
+  insights?: import("./insights").Insights;
 };
 
 const SEC_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -121,6 +122,16 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
     if (a.strengths?.length) { y += 4; para("Already strong", { bold: true, size: 10.5, keep: 60 }); for (const s of a.strengths) para(`- ${s.topic}: ${s.evidence}`, { indent: 8, color: GRAY }); }
     if (a.weaknesses?.length) { y += 4; para("Needs strengthening", { bold: true, size: 10.5, keep: 60 }); for (const w of a.weaknesses) para(`- ${w.title}: ${w.detail}`, { indent: 8, color: GRAY }); }
     if (a.nextSteps?.length) { y += 4; para("Next steps", { bold: true, size: 10.5, keep: 60 }); a.nextSteps.forEach((s, i) => para(`${i + 1}. ${s}`, { indent: 8, color: GRAY })); }
+  }
+
+  if (d.insights) {
+    const i = d.insights, t = i.outcome.total;
+    heading("How you answered");
+    para(`${t.correct} correct · ${t.wrong} wrong · ${t.blank} blank`);
+    if (i.stamina.length) para(`Accuracy start, middle, end: ${i.stamina.map((x) => `${SEC_LABEL[x.section] ?? x.section} ${x.thirds.join("% / ")}%`).join(" · ")}`, { size: 9, color: GRAY });
+    if (i.time) para(`Average time per question: ${i.time.sections.map((x) => `${SEC_LABEL[x.section] ?? x.section} ${x.avgSec}s`).join(" · ")}`, { size: 9, color: GRAY });
+    if (i.changes) para(i.changes.changed === 0 ? "You did not change any answer." : `Changed answers: ${i.changes.changed} (${i.changes.toRight} became right, ${i.changes.toWrong} became wrong, ${i.changes.stillWrong} stayed wrong).`, { size: 9, color: GRAY });
+    for (const a of i.advice) para(`- ${a}`, { indent: 8, color: GRAY });
   }
 
   if (d.unanswered) {

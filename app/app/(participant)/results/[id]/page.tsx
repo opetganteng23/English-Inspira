@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
-import { Loading, ErrorNote, HBars } from "@/components/Charts";
+import { Loading, ErrorNote, HBars, Donut, OrderMap, SpeedScatter, ThirdsBars, LineChart } from "@/components/Charts";
 import { CounselorPanel } from "@/components/CounselorPanel";
 import { buildBreakdown, partLabel } from "@/lib/breakdown";
 
@@ -12,8 +12,9 @@ type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
+import type { Insights } from "@/lib/insights";
 const BD_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", practice: "PRACTICE" };
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -25,6 +26,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
   const [err, setErr] = useState("");
   const [releaseAt, setReleaseAt] = useState<Date | null>(null);
   const me = useApi<{ targetScore: number | null }>("/api/me");
+  const hist = useApi<{ attempts: { id: string; name: string; status: string; finishedAt: string | null; scoreEst: number | null; availableAt?: string | null }[] }>("/api/attempts");
   const [filter, setFilter] = useState<"all" | "wrong">("wrong");
   const [bdTab, setBdTab] = useState("");
 
@@ -188,6 +190,45 @@ export default function Hasil({ params }: { params: { id: string } }) {
           </div>
         )}
       </section>
+
+      {(() => {
+        const pts = (hist.data?.attempts ?? []).filter((x) => x.status === "submitted" && !x.availableAt && x.scoreEst != null).reverse();
+        return pts.length >= 2 ? (
+          <section className="card">
+            <h2 className="font-display text-lg font-extrabold text-navy">Your score over time</h2>
+            <p className="text-sm text-ink-soft">Every finished test, oldest to newest.</p>
+            <LineChart points={pts.map((x) => ({ label: x.name, value: x.scoreEst as number }))} target={target} />
+          </section>
+        ) : null;
+      })()}
+
+      {r.insights && (
+        <section className="card">
+          <h2 className="font-display text-lg font-extrabold text-navy">How you answered</h2>
+          <div className="mt-3 grid gap-5 lg:grid-cols-[auto_1fr] lg:items-center">
+            <div className="flex items-center gap-4">
+              <Donut parts={[{ label: "Correct", value: r.insights.outcome.total.correct, color: "#1E8E5A" }, { label: "Wrong", value: r.insights.outcome.total.wrong, color: "#C0392B" }, { label: "Blank", value: r.insights.outcome.total.blank, color: "#9AA8BC" }]} />
+              <ul className="text-sm text-ink-soft"><li><b className="text-success">{r.insights.outcome.total.correct}</b> correct</li><li><b className="text-red-700">{r.insights.outcome.total.wrong}</b> wrong</li><li><b className="text-navy">{r.insights.outcome.total.blank}</b> blank</li></ul>
+            </div>
+            <OrderMap rows={r.insights.order.map((o) => ({ label: `${BD_LABEL[o.section] ?? o.section}, in the order you saw the questions`, marks: o.marks }))} />
+          </div>
+          {r.insights.stamina.length > 0 && <div className="mt-5"><h3 className="font-semibold text-navy">Stamina: accuracy through each section</h3><div className="mt-2"><ThirdsBars rows={r.insights.stamina.map((x) => ({ label: BD_LABEL[x.section] ?? x.section, thirds: x.thirds }))} /></div></div>}
+          {r.insights.quadrants.length > 0 && (
+            <div className="mt-5">
+              <h3 className="font-semibold text-navy">Speed versus accuracy by question type</h3>
+              <p className="text-xs text-ink-soft">Each dot is a question type (at least 3 questions). Dashed lines mark the median time and 70% accuracy.</p>
+              <SpeedScatter points={r.insights.quadrants.map((q) => ({ label: q.topic, ...q }))} />
+              <ul className="mt-2 grid gap-1 text-sm text-ink-soft sm:grid-cols-2">{r.insights.quadrants.filter((q) => q.kind !== "solid").slice(0, 6).map((q) => <li key={`${q.skill}|${q.topic}`}><b className="text-navy">{q.topic}</b> · {q.kind === "concept" ? "slow and often wrong: review the concept" : q.kind === "rushed" ? "quick but often wrong: slow down" : "accurate but slow: practise under time"} ({q.avgSec}s, {q.accuracy}%)</li>)}</ul>
+            </div>
+          )}
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {r.insights.time && <div className="rounded-xl bg-canvas p-3 text-sm"><p className="font-semibold text-navy">Time per question</p><ul className="mt-1 text-ink-soft">{r.insights.time.sections.map((x) => <li key={x.section}>{BD_LABEL[x.section] ?? x.section}: {x.avgSec}s on average</li>)}</ul></div>}
+            {r.insights.changes && <div className="rounded-xl bg-canvas p-3 text-sm"><p className="font-semibold text-navy">Changed answers</p><p className="mt-1 text-ink-soft">{r.insights.changes.changed === 0 ? "You did not change any answer." : `${r.insights.changes.changed} changed: ${r.insights.changes.toRight} became right, ${r.insights.changes.toWrong} became wrong, ${r.insights.changes.stillWrong} stayed wrong.`}</p></div>}
+            {r.insights.guessing && <div className="rounded-xl bg-canvas p-3 text-sm"><p className="font-semibold text-navy">Likely guesses</p><p className="mt-1 text-ink-soft">{r.insights.guessing.count} questions answered in under 5 seconds and missed ({r.insights.guessing.pct}%).</p></div>}
+          </div>
+          {r.insights.advice.length > 0 && <ul className="mt-4 flex list-disc flex-col gap-1 pl-5 text-sm text-ink-soft">{r.insights.advice.map((t) => <li key={t}>{t}</li>)}</ul>}
+        </section>
+      )}
 
       {r.unanswered && (
         <section className="card">
