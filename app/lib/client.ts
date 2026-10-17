@@ -12,7 +12,7 @@ export async function api<T = any>(url: string, init?: RequestInit & { json?: un
   const { json, silent, ...rest } = init ?? {};
   const r = await fetch(url, json !== undefined ? { ...rest, method: rest.method ?? "POST", headers: { "Content-Type": "application/json", ...rest.headers }, body: JSON.stringify(json) } : rest);
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(d.error ?? "Something went wrong"), { status: r.status });
+  if (!r.ok) throw Object.assign(new Error(d.error ?? "Something went wrong"), { status: r.status, data: d });
   notifySaved(url, String(rest.method ?? (json !== undefined ? "POST" : "GET")).toUpperCase(), silent);
   return d as T;
 }

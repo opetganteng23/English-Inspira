@@ -19,6 +19,7 @@ const testSchema = new Schema(
       },
     ],
     active: { type: Boolean, default: true },
+    resultDelayMin: { type: Number, default: 0, min: 0, max: 1440 }, // hasil baru keluar sekian menit setelah peserta MULAI tes (0 = langsung); admin dan QA tester dikecualikan
     testMode: { type: Boolean, default: false }, // sedang diuji: hanya admin dan akun QA tester yang melihat dan bisa memulai; peserta biasa tidak, walau Active
     // Aturan tes: acak urutan soal (soal satu passage/audio tetap berurutan), acak pilihan jawaban, batas percobaan (0 = tanpa batas).
     scoringProfileId: { type: Schema.Types.ObjectId, ref: "ScoringProfile" }, // kosong = profil bawaan
@@ -40,6 +41,8 @@ const attemptSchema = new Schema(
     programCycleId: { type: Schema.Types.ObjectId, ref: "ProgramCycle", index: true }, // periode saat attempt dimulai
     kind: String, // salinan Test.kind
     startedAt: { type: Date, required: true },
+    releaseAt: Date, // hasil ditahan sampai waktu ini; kosong = langsung. Disalin dari Test.resultDelayMin saat tes dimulai
+    releasedAt: Date, // efek hasil (level, kuota, email, analisis) sudah dijalankan oleh pelepasan tertunda
     finishedAt: Date,
     // Timer dipegang server: section aktif dan kapan ia dimulai.
     sectionIdx: { type: Number, default: 0 },

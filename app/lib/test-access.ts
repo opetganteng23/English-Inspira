@@ -8,10 +8,11 @@ import type { TestDoc } from "@/models/Test";
  * - quiz: hanya dari unit belajar (Fase 4).
  */
 /** `ctx` dari Program Cycle: `blocked` = tidak ada periode aktif; `placementNeeded` = placement periode ini belum diambil. */
-export function canStartTest(user: Pick<UserDoc, "role" | "placementAttemptId" | "placementRetakeAllowed" | "currentLevelId"> & { qaTester?: boolean | null }, test: Pick<TestDoc, "kind" | "levelId">, ctx: { blocked?: string | null; placementNeeded?: boolean } = {}): { ok: boolean; reason?: string } {
+export function canStartTest(user: Pick<UserDoc, "role" | "placementAttemptId" | "placementRetakeAllowed" | "currentLevelId"> & { qaTester?: boolean | null }, test: Pick<TestDoc, "kind" | "levelId">, ctx: { blocked?: string | null; placementNeeded?: boolean; pendingRelease?: Date | null } = {}): { ok: boolean; reason?: string } {
   if (user.role === "admin" || user.qaTester) return { ok: true }; // admin dan QA tester menguji tanpa aturan placement, level, atau periode
   if (user.role !== "participant") return { ok: false, reason: "Only participants take tests" };
   if (ctx.blocked) return { ok: false, reason: ctx.blocked };
+  if (test.kind === "placement" && ctx.pendingRelease) return { ok: false, reason: "Your placement test is finished. The result will be released at the scheduled time." };
   const done = !!user.placementAttemptId && !ctx.placementNeeded;
   if (test.kind === "placement") return done && !user.placementRetakeAllowed ? { ok: false, reason: "The placement test has already been taken. A retake is only allowed with coach or admin permission." } : { ok: true };
   if (!done) return { ok: false, reason: "Take the placement test first" };

@@ -21,7 +21,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   try {
     const user = await requireRole(["participant", "admin"]);
     const t = await mine(params.id, user._id);
-    const a = t.attemptId ? await Attempt.findById(t.attemptId).select("kind scoreEst sectionScores finishedAt").lean() : null;
+    const a0 = t.attemptId ? await Attempt.findById(t.attemptId).select("kind scoreEst sectionScores finishedAt releaseAt").lean() : null;
+    const a = a0 && (!a0.releaseAt || a0.releaseAt <= new Date()) ? a0 : null; // hasil yang masih ditahan tidak dibuka lewat konselor
     return NextResponse.json({
       id: String(t._id), title: t.title, helpful: t.helpful ?? null,
       messages: t.messages.map((m) => ({ role: m.role, content: m.content, at: m.at })),

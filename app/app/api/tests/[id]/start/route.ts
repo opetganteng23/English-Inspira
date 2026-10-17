@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { canStartTest, visibleTestFilter } from "@/lib/test-access";
 import { cycleState, placementNeeded } from "@/lib/cycles";
+import { releaseAtFor, exemptFromDelay } from "@/lib/attempt-release";
 import { Test, Attempt } from "@/models/Test";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -24,11 +25,12 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       if (taken >= test.maxAttempts!) throw new HttpError(403, `You have used all ${test.maxAttempts} attempt${test.maxAttempts === 1 ? "" : "s"} for this test.`);
     }
     const cs = await cycleState(user.institutionId);
-    const gate = canStartTest(user, test, { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs) });
+    const pending = test.kind === "placement" && !exemptFromDelay(user) ? await Attempt.exists({ userId: user._id, kind: "placement", status: "submitted", releaseAt: { $gt: new Date() } }) : null;
+    const gate = canStartTest(user, test, { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs), pendingRelease: pending ? new Date() : null });
     if (!gate.ok) throw new HttpError(403, gate.reason ?? "This test cannot be taken yet");
 
     const now = new Date();
-    const attempt = await Attempt.create({ userId: user._id, institutionId: user.institutionId, testId: test._id, kind: test.kind, programCycleId: cs.active?._id, startedAt: now, sectionStartedAt: now });
+    const attempt = await Attempt.create({ userId: user._id, institutionId: user.institutionId, testId: test._id, kind: test.kind, programCycleId: cs.active?._id, startedAt: now, sectionStartedAt: now, releaseAt: releaseAtFor(test, user, now) });
     return NextResponse.json({ attemptId: String(attempt._id) }, { status: 201 });
   } catch (e) {
     return handleError(e);

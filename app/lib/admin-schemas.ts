@@ -35,6 +35,7 @@ export const testSchema = z.object({
   levelId: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional(),
   active: z.boolean().default(true),
   testMode: z.boolean().default(false),
+  resultDelayMin: z.number().int().min(0).max(1440).default(0),
   scoringProfileId: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional(),
   shuffleQuestions: z.boolean().default(false),
   shuffleWithinParts: z.boolean().default(false),

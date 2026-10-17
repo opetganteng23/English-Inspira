@@ -45,6 +45,8 @@ const certificateSchema = new Schema(
     registrationId: { type: Schema.Types.ObjectId, ref: "ItpRegistration" },
     attemptId: { type: Schema.Types.ObjectId, ref: "Attempt" },
     issuedAt: { type: Date, default: Date.now },
+    // Berkas sertifikat TOEFL resmi dari pihak ketiga (PDF/JPG/PNG), disimpan di GridFS bucket `certfiles`.
+    officialFile: { type: new Schema({ fileId: Schema.Types.ObjectId, name: String, mime: String, size: Number, uploadedAt: Date, uploadedBy: Schema.Types.ObjectId }, { _id: false }), default: undefined },
   },
   { timestamps: true }
 );

@@ -21,6 +21,7 @@ const fmtDelta = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `${n}` : "±0");
 export default function Hasil({ params }: { params: { id: string } }) {
   const [r, setR] = useState<R | null>(null);
   const [err, setErr] = useState("");
+  const [releaseAt, setReleaseAt] = useState<Date | null>(null);
   const me = useApi<{ targetScore: number | null }>("/api/me");
   const [filter, setFilter] = useState<"all" | "wrong">("wrong");
 
@@ -33,7 +34,13 @@ export default function Hasil({ params }: { params: { id: string } }) {
         setR(d);
         // Analisis AI berjalan async dan diantre bila banyak peserta mengirim bersamaan: cek ulang sampai siap (maks ±3 menit).
         if (d.analysis.status === "pending" && tries++ < 60) setTimeout(load, 3000);
-      } catch (e) { if (!stop) setErr((e as Error).message); }
+      } catch (e) {
+        if (stop) return;
+        const x = e as { status?: number; data?: { availableAt?: string } };
+        // Hasil ditahan sampai waktu rilis: tampilkan penantian dan cek lagi berkala.
+        if (x.status === 423 && x.data?.availableAt) { setReleaseAt(new Date(x.data.availableAt)); setTimeout(load, 30000); }
+        else setErr((e as Error).message);
+      }
     };
     load();
     return () => { stop = true; };
@@ -43,6 +50,17 @@ export default function Hasil({ params }: { params: { id: string } }) {
     try { await api(`/api/attempts/${params.id}/analysis`, { json: {} }); setR((x) => x && { ...x, analysis: { status: "pending" } }); setTimeout(() => location.reload(), 4000); } catch (e) { setErr((e as Error).message); }
   }
 
+  if (releaseAt && !r) {
+    const mins = Math.max(0, Math.ceil((+releaseAt - Date.now()) / 60000));
+    return (
+      <div className="mx-auto flex max-w-xl flex-col gap-4 py-10 text-center">
+        <p className="text-xs font-semibold tracking-wider text-brand">TEST SUBMITTED</p>
+        <h1 className="page-title">Your result is being prepared</h1>
+        <p className="text-ink-soft">Your answers have been saved. Results are released together at <b className="text-navy">{releaseAt.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB</b>{mins > 0 ? `, in about ${mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} min` : `${mins} min`}` : ""}. This page checks automatically, so you can leave it open or come back later.</p>
+        <div className="flex justify-center gap-2"><Link href="/home" className="btn-outline">Back to Home</Link></div>
+      </div>
+    );
+  }
   if (err && !r) return <ErrorNote text={err} />;
   if (!r) return <Loading text="Loading results…" />;
   const target = me.data?.targetScore ?? null;

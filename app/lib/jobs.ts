@@ -7,14 +7,17 @@ import { markLatePlanItems } from "./study-plan";
 import { planDeadlineReminders, quotaWarnings, contractWarnings } from "./reminders";
 import { sendSessionReminders } from "./coaching";
 import { retryFallbackAnalyses } from "./analysis";
+import { releaseDueResults } from "./attempts";
 import { PdfImport, pdfBucket } from "@/models/Pdf";
 
 // Job terjadwal (MTS §18). Dipanggil oleh instrumentation.ts (node-cron, PM2) atau /api/cron/[job] (cron sistem/Vercel).
 // Job berikutnya (reminder sesi, status plan, peringatan kuota) ditambahkan di sini pada Fase 5-6.
 
-/** Tiap menit: kirim email di antrean (retry bertahap, batas undangan per jam). */
+/** Tiap menit: kirim email di antrean (retry bertahap, batas undangan per jam) dan lepas hasil tes yang ditahan dan sudah jatuh tempo. */
 export async function mailJob() {
-  return processMailQueue(50);
+  const mail = await processMailQueue(50);
+  const released = await releaseDueResults().catch((e) => { console.error("[release]", e); return 0; });
+  return { ...mail, released };
 }
 
 /** Per jam: pengingat sesi coaching H-1, dan ulangi narasi AI yang jatuh ke template. */

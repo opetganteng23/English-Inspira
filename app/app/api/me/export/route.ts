@@ -1,4 +1,5 @@
 import { connectDB } from "@/lib/db";
+import { releasedFilter } from "@/lib/attempt-release";
 import { requireRole, handleError } from "@/lib/rbac";
 import { decryptField } from "@/lib/crypto";
 import { User } from "@/models/User";
@@ -16,7 +17,7 @@ export async function GET() {
     await connectDB();
     const [user, attempts, threads, regs, certs, progress] = await Promise.all([
       User.findById(me._id).lean(),
-      Attempt.find({ userId: me._id }).select("-aiAnalysis.error").lean(),
+      Attempt.find({ userId: me._id, ...releasedFilter() }).select("-aiAnalysis.error").lean(),
       CounselorThread.find({ userId: me._id }).lean(),
       ItpRegistration.find({ userId: me._id }).lean(),
       Certificate.find({ userId: me._id }).lean(),

@@ -11,7 +11,7 @@ export async function GET() {
     await connectDB();
     const list = await Certificate.find({ userId: user._id }).sort({ issuedAt: -1 }).lean();
     return NextResponse.json({
-      certificates: list.map((c) => ({ id: String(c._id), type: c.type, number: c.number, issuedAt: c.issuedAt, data: c.data, verifyUrl: `/verify/${c.number}` })),
+      certificates: list.map((c) => ({ id: String(c._id), type: c.type, number: c.number, issuedAt: c.issuedAt, data: c.data, verifyUrl: `/verify/${c.number}`, officialFile: c.officialFile?.fileId ? { name: c.officialFile.name, mime: c.officialFile.mime, size: c.officialFile.size, uploadedAt: c.officialFile.uploadedAt } : null })),
     });
   } catch (e) {
     return handleError(e);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { releasedFilter, exemptFromDelay } from "@/lib/attempt-release";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { canStartTest, visibleTestFilter } from "@/lib/test-access";
@@ -12,10 +13,11 @@ export async function GET() {
     const user = await requireRole(["participant", "admin"]);
     await connectDB();
     const cs = await cycleState(user.institutionId);
-    const ctx = { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs) };
+    const pendingRel = exemptFromDelay(user) ? null : await Attempt.exists({ userId: user._id, kind: "placement", status: "submitted", releaseAt: { $gt: new Date() } });
+    const ctx = { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs), pendingRelease: pendingRel ? new Date() : null };
     const [tests, attempts] = await Promise.all([
       Test.find({ ...visibleTestFilter(user), kind: { $ne: "quiz" } }).sort({ createdAt: 1 }).lean(), // kuis tampil di unit belajar
-      Attempt.find({ userId: user._id }).select("testId status scoreEst finishedAt").sort({ createdAt: -1 }).lean(),
+      Attempt.find({ userId: user._id }).select("testId status scoreEst finishedAt releaseAt").sort({ createdAt: -1 }).lean(),
     ]);
     return NextResponse.json({
       tests: tests.map((t) => {
@@ -27,7 +29,7 @@ export async function GET() {
           totalSec: t.sections.reduce((n, s) => n + s.durationSec, 0),
           unlocked: gate.ok, reason: gate.reason ?? null,
           inProgressAttemptId: String(mine.find((a) => a.status === "in_progress")?._id ?? "") || null,
-          lastScore: mine.find((a) => a.status === "submitted")?.scoreEst ?? null,
+          lastScore: mine.find((a) => a.status === "submitted" && (!a.releaseAt || a.releaseAt <= new Date()))?.scoreEst ?? null,
         };
       }),
     });

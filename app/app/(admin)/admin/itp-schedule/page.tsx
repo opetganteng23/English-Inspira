@@ -8,7 +8,7 @@ import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
 
 type S = { id: string; title: string; date: string; place: string; organizer?: string; quota: number; registered: number; status: "open" | "closed" | "done"; docsValid: number; docsPending: number; scored: number; total: number; programCycleId?: string | null; cycleName?: string | null };
-type Row = { id: string; fullName: string; nikLast4: string; email?: string; phone: string | null; docStatus: "pending" | "valid" | "rejected"; docNote: string | null; status: string; score: { listening: number; structure: number; reading: number; total: number } | null; idPhotoAssetId: string; facePhotoAssetId: string };
+type Row = { id: string; fullName: string; nikLast4: string; email?: string; phone: string | null; docStatus: "pending" | "valid" | "rejected"; docNote: string | null; status: string; score: { listening: number; structure: number; reading: number; total: number } | null; certificateId?: string | null; officialFile?: { name: string; size: number } | null; idPhotoAssetId: string; facePhotoAssetId: string };
 type Roster = { session: { id: string; title: string; date: string; place: string; quota: number; registered: number }; roster: Row[] };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 const DOC = { pending: ["Needs verification", "badge-warn"], valid: ["Valid", "badge-ok"], rejected: ["Rejected", "badge-bad"] } as const;
@@ -94,7 +94,7 @@ function RosterModal({ id, onClose }: { id: string; onClose: () => void }) {
           <p className="rounded-lg bg-canvas p-3 text-xs text-ink-soft">The export includes full national ID numbers, and every export, ID display, or document photo view is recorded in the audit log. The total score is calculated automatically from the 3 section scores (31-68).</p>
           {msg && <p role="status" className={`rounded-lg p-3 ${msg.ok ? "bg-success-tint text-success" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
           <div className="table-wrap"><table>
-            <thead><tr><th>Participant (as on ID card)</th><th>Documents</th><th>Score L / S / R</th><th>Total</th></tr></thead>
+            <thead><tr><th>Participant (as on ID card)</th><th>Documents</th><th>Score L / S / R</th><th>Total</th><th>Official certificate</th></tr></thead>
             <tbody>
               {data.roster.map((r) => {
                 const sc = scores[r.id] ?? { l: r.score?.listening?.toString() ?? "", s: r.score?.structure?.toString() ?? "", r: r.score?.reading?.toString() ?? "" };
@@ -109,6 +109,18 @@ function RosterModal({ id, onClose }: { id: string; onClose: () => void }) {
                     <td><span className="flex gap-1">{(["l", "s", "r"] as const).map((k) => <input key={k} aria-label={k === "l" ? "Listening" : k === "s" ? "Structure" : "Reading"} className="field !h-9 !w-16 !px-2 text-center" inputMode="numeric" value={sc[k]} onChange={(e) => setScores({ ...scores, [r.id]: { ...sc, [k]: e.target.value } })} />)}</span>
                       <button className="mt-1 text-xs font-semibold text-brand" disabled={!sc.l || !sc.s || !sc.r} onClick={() => run(() => api(`/api/admin/itp-registrations/${r.id}`, { method: "PUT", json: { listening: Number(sc.l), structure: Number(sc.s), reading: Number(sc.r) } }), "Scores saved and certificate issued.")}>Save scores</button></td>
                     <td className="font-display text-lg font-extrabold text-navy">{r.score?.total ?? "-"}</td>
+                    <td className="text-xs">
+                      {!r.certificateId ? <span className="text-ink-soft">Save the scores first</span> : (
+                        <span className="flex flex-col gap-1">
+                          {r.officialFile ? <span className="font-semibold text-success">Attached: {r.officialFile.name}</span> : <span className="text-ink-soft">No file yet</span>}
+                          <span className="flex flex-wrap gap-2 font-semibold">
+                            <label className="cursor-pointer text-brand">{r.officialFile ? "Replace" : "Upload"} PDF/JPG/PNG<input type="file" accept="application/pdf,image/jpeg,image/png" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) run(async () => { const fd = new FormData(); fd.append("file", f); const x = await fetch(`/api/admin/itp-registrations/${r.id}/certificate`, { method: "POST", body: fd }); const d = await x.json().catch(() => ({})); if (!x.ok) throw new Error(d.error ?? "Upload failed"); }, "Official certificate attached. The participant can now view and download it."); }} /></label>
+                            {r.officialFile && <a className="text-brand" href={`/api/certificates/${r.certificateId}/official`} target="_blank" rel="noreferrer">View</a>}
+                            {r.officialFile && <button className="text-red-700" onClick={() => run(() => api(`/api/admin/itp-registrations/${r.id}/certificate`, { method: "DELETE" }), "Official certificate removed.")}>Remove</button>}
+                          </span>
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 type T = { id: string; name: string; kind: string; active: boolean; testMode?: boolean; questions: number; durationSec: number; attempts: number };
 type QRow = { _id: string; section: string; type: string; stem: string };
 type Sec = { name: string; durationSec: number; questionIds: string[] };
-type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; testMode?: boolean; sections: Sec[]; attempts: number; shuffleQuestions?: boolean; shuffleWithinParts?: boolean; shuffleOptions?: boolean; secureMode?: boolean; maxAttempts?: number; scoringProfileId?: string };
+type Draft = { id?: string; name: string; kind: string; levelId: string; active: boolean; testMode?: boolean; resultDelayMin?: number; sections: Sec[]; attempts: number; shuffleQuestions?: boolean; shuffleWithinParts?: boolean; shuffleOptions?: boolean; secureMode?: boolean; maxAttempts?: number; scoringProfileId?: string };
 
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice", quiz: "Unit quiz" };
@@ -28,7 +28,7 @@ export default function TesAdmin() {
   useEffect(() => { load(); }, [load]);
 
   async function open(id: string) {
-    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, levelId: t.levelId ? String(t.levelId) : "", active: t.active, testMode: !!t.testMode, attempts: t.attempts, scoringProfileId: t.scoringProfileId ? String(t.scoringProfileId) : "", shuffleQuestions: !!t.shuffleQuestions, shuffleWithinParts: !!t.shuffleWithinParts, secureMode: !!t.secureMode, shuffleOptions: !!t.shuffleOptions, maxAttempts: t.maxAttempts ?? 0, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
+    try { const t = await api(`/api/admin/tests/${id}`); setDraft({ id, name: t.name, kind: t.kind, levelId: t.levelId ? String(t.levelId) : "", active: t.active, testMode: !!t.testMode, resultDelayMin: t.resultDelayMin ?? 0, attempts: t.attempts, scoringProfileId: t.scoringProfileId ? String(t.scoringProfileId) : "", shuffleQuestions: !!t.shuffleQuestions, shuffleWithinParts: !!t.shuffleWithinParts, secureMode: !!t.secureMode, shuffleOptions: !!t.shuffleOptions, maxAttempts: t.maxAttempts ?? 0, sections: t.sections.map((s: Sec) => ({ name: s.name, durationSec: s.durationSec, questionIds: s.questionIds.map(String) })) }); }
     catch (e) { setErr((e as Error).message); }
   }
   async function remove(id: string) {
@@ -80,7 +80,7 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
   async function save() {
     setBusy(true); setErr("");
     try {
-      const body = { name: v.name, kind: v.kind, levelId: v.levelId || null, active: v.active, testMode: !!v.testMode, scoringProfileId: v.scoringProfileId || null, shuffleQuestions: !!v.shuffleQuestions, shuffleWithinParts: !!v.shuffleWithinParts, shuffleOptions: !!v.shuffleOptions, secureMode: !!v.secureMode, maxAttempts: Number(v.maxAttempts) || 0, sections: v.sections.filter((s) => s.questionIds.length) };
+      const body = { name: v.name, kind: v.kind, levelId: v.levelId || null, active: v.active, testMode: !!v.testMode, resultDelayMin: Math.max(0, Math.min(1440, Number(v.resultDelayMin) || 0)), scoringProfileId: v.scoringProfileId || null, shuffleQuestions: !!v.shuffleQuestions, shuffleWithinParts: !!v.shuffleWithinParts, shuffleOptions: !!v.shuffleOptions, secureMode: !!v.secureMode, maxAttempts: Number(v.maxAttempts) || 0, sections: v.sections.filter((s) => s.questionIds.length) };
       await api(v.id ? `/api/admin/tests/${v.id}` : "/api/admin/tests", { method: v.id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       onSaved();
     } catch (e) { setErr((e as Error).message); setBusy(false); }
@@ -98,6 +98,7 @@ function Builder({ draft, onClose, onSaved }: { draft: Draft; onClose: () => voi
         </div>
         <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Active (shown in the test list)</label>
         <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={!!v.testMode} onChange={(e) => setV({ ...v, testMode: e.target.checked })} /><span><b className="text-navy">Test mode</b> (for QA only). Only admins and QA testers can see and start this test, even when Active is on. Turn it off when the test has been checked and is ready for participants.</span></label>
+        <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-md">Release results after (minutes)<input type="number" min={0} max={1440} className="field w-32 font-normal" value={v.resultDelayMin ?? 0} onChange={(e) => setV({ ...v, resultDelayMin: Math.max(0, Number(e.target.value) || 0) })} /><span className="text-xs font-normal text-ink-soft">Counted from when each participant starts. 0 = results appear right after submitting; 120 = two hours after they start, so early finishers cannot share answers with people still taking the test. Until then the score, review, and analysis stay hidden and nothing is emailed. Admins and QA testers always see results immediately.</span></label>
         <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold text-navy sm:max-w-md">Scoring profile<select className="field font-normal" value={v.scoringProfileId ?? ""} onChange={(e) => setV({ ...v, scoringProfileId: e.target.value })}><option value="">Default profile{profiles.find((p) => p.isDefault) ? ` (${profiles.find((p) => p.isDefault)!.name})` : ""}</option>{profiles.filter((p) => p.status === "active" && !p.isDefault).map((p) => <option key={p.id} value={p.id}>{p.name}{p.verified ? " · verified" : " · provisional"}</option>)}</select><span className="text-xs font-normal text-ink-soft">How raw scores become section and total scores. Manage profiles in Scoring Profiles.</span></label>
         {(
           <fieldset className="mt-3 rounded-xl border border-line p-4">

@@ -115,16 +115,37 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
   } catch (e) { console.error("[finalize] snapshot failed", e); }
 
   // Efek samping setelah submit: tidak boleh menggagalkan submit, dan tidak memblokir respons.
-  void (async () => {
-    try {
-      const isSimLike = attempt.kind === "sim" || attempt.kind === "final"; // Final Test dinilai dan dilaporkan sama seperti simulasi (MTS §12)
-      if (attempt.kind === "placement") await applyPlacement(attempt);
-      else if (isSimLike && attempt.scoreEst != null) await User.updateOne({ _id: attempt.userId }, { currentScoreEst: attempt.scoreEst });
-      if (isSimLike) await ensureSimReport(attempt._id);
-      if (attempt.kind === "quiz") await recordQuizResult(attempt);
-    } catch (e) { console.error("[finalize] side effects failed", e); }
-    try { await processAttemptLearning(attempt); } catch (e) { console.error("[finalize] learning pipeline failed", e); }
-    try { if (attempt.kind === "sim" || attempt.kind === "final") await evaluateLevelUp(attempt); } catch (e) { console.error("[finalize] level-up check failed", e); } // setelah pipeline: memakai rencana yang sudah diperbarui
-    void runAnalysis(attempt._id);
-  })();
+  // Bila hasil ditahan (releaseAt di masa depan), efek (level, kuota, email, analisis) ditunda sampai dilepas oleh releaseDueResults.
+  if (attempt.releaseAt) {
+    if (attempt.releaseAt > new Date()) return;
+    await Attempt.updateOne({ _id: attempt._id }, { $set: { releasedAt: new Date() } }); // sudah lewat waktu rilis: jalankan sekarang, jangan diulang oleh cron
+  }
+  void runAttemptEffects(attempt);
+}
+
+/** Efek hasil tes: level dan kuota (placement), laporan, pipeline belajar, naik level, dan analisis AI. */
+export async function runAttemptEffects(attempt: AttemptHydrated) {
+  try {
+    const isSimLike = attempt.kind === "sim" || attempt.kind === "final"; // Final Test dinilai dan dilaporkan sama seperti simulasi (MTS §12)
+    if (attempt.kind === "placement") await applyPlacement(attempt);
+    else if (isSimLike && attempt.scoreEst != null) await User.updateOne({ _id: attempt.userId }, { currentScoreEst: attempt.scoreEst });
+    if (isSimLike) await ensureSimReport(attempt._id);
+    if (attempt.kind === "quiz") await recordQuizResult(attempt);
+  } catch (e) { console.error("[finalize] side effects failed", e); }
+  try { await processAttemptLearning(attempt); } catch (e) { console.error("[finalize] learning pipeline failed", e); }
+  try { if (attempt.kind === "sim" || attempt.kind === "final") await evaluateLevelUp(attempt); } catch (e) { console.error("[finalize] level-up check failed", e); } // setelah pipeline: memakai rencana yang sudah diperbarui
+  void runAnalysis(attempt._id);
+}
+
+/** Tiap menit: lepas hasil yang sudah jatuh tempo (jalankan efeknya). Klaim atomik agar dua proses tidak menjalankan efek yang sama. */
+export async function releaseDueResults(limit = 30) {
+  await connectDB();
+  let n = 0;
+  for (let i = 0; i < limit; i++) {
+    const a = await Attempt.findOneAndUpdate({ status: "submitted", releaseAt: { $lte: new Date() }, releasedAt: { $exists: false } }, { $set: { releasedAt: new Date() } }, { returnDocument: "after" });
+    if (!a) break;
+    await runAttemptEffects(a);
+    n++;
+  }
+  return n;
 }
