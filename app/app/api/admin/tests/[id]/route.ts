@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import type { Types } from "mongoose";
+import { User } from "@/models/User";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
@@ -21,11 +23,17 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   try {
     await requireRole(ACADEMIC_ROLES);
     const t = await find(params.id);
-    const attempts = await Attempt.countDocuments({ testId: t._id });
+    const attempts = await realAttemptCount(t._id);
     return NextResponse.json({ ...t.toObject(), attempts });
   } catch (e) {
     return handleError(e);
   }
+}
+
+/** Percobaan peserta sungguhan. Percobaan QA tester dan admin (uji coba di Test mode) tidak mengunci susunan tes. */
+async function realAttemptCount(testId: Types.ObjectId) {
+  const staff = await User.find({ $or: [{ qaTester: true }, { role: "admin" }] }).select("_id").lean();
+  return Attempt.countDocuments({ testId, userId: { $nin: staff.map((u) => u._id) } });
 }
 
 const sameStructure = (a: { name: string; durationSec: number; questionIds: unknown[] }[], b: typeof a) =>
@@ -37,7 +45,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const admin = await requireRole(ACADEMIC_ROLES);
     const t = await find(params.id);
     const body = testSchema.parse(await req.json());
-    const attempts = await Attempt.countDocuments({ testId: t._id });
+    const attempts = await realAttemptCount(t._id);
     // Tes yang sudah dikerjakan: susunan soal dan durasi dikunci agar skor/pembahasan lama tetap valid.
     if (attempts > 0 && (t.kind !== body.kind || !sameStructure(t.sections, body.sections)))
       throw new HttpError(409, `This test has been taken ${attempts} times. The question set cannot be changed; deactivate it and create a new test.`);
