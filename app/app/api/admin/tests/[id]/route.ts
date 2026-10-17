@@ -9,6 +9,7 @@ import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac"
 import { testSchema } from "@/lib/admin-schemas";
 import { validateTestQuestions } from "@/lib/test-validate";
 import { Test, Attempt } from "@/models/Test";
+import { TestSeat, TestSession } from "@/models/Schedule";
 import { AuditLog } from "@/models/AuditLog";
 
 async function find(id: string) {
@@ -76,6 +77,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     const t = await find(params.id);
     if (await Attempt.exists({ testId: t._id })) throw new HttpError(409, "This test has been taken. Deactivate it instead of deleting it.");
     await t.deleteOne();
+    await Promise.all([TestSeat.deleteMany({ testId: t._id }), TestSession.deleteMany({ testId: t._id })]); // jadwal dan kursi tes yang dihapus ikut dibersihkan
     await AuditLog.create({ actorId: admin._id, action: "test.delete", target: params.id });
     return NextResponse.json({ ok: true });
   } catch (e) {

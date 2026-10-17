@@ -137,10 +137,10 @@ describe.skipIf(!safe)("jadwal tes (database in-memory)", () => {
     expect((await A.eligiblePool(tid)).length).toBe(1);
 
     // Undangan: tiap kursi menerima tepat satu email; mengirim lagi tidak menggandakan.
-    expect(await A.pendingInvites(tid)).toEqual({ invite: 4, reschedule: 0 });
-    expect(await A.sendInvites(tid)).toEqual({ invited: 4, rescheduled: 0 });
+    expect(await A.pendingInvites(tid)).toEqual({ invite: 4, reschedule: 0, skipped: 0 });
+    expect(await A.sendInvites(tid)).toEqual({ invited: 4, rescheduled: 0, skipped: 0 });
     expect(await MailJob.countDocuments({ template: "test_invitation" })).toBe(4);
-    expect(await A.sendInvites(tid)).toEqual({ invited: 0, rescheduled: 0 });
+    expect(await A.sendInvites(tid)).toEqual({ invited: 0, rescheduled: 0, skipped: 0 });
 
     // Perpanjangan satu peserta: hanya dia yang berubah, dan dia menerima email jadwal baru.
     const who = (await TestSeat.findOne({ testId: test._id }).lean())!;
@@ -151,7 +151,7 @@ describe.skipIf(!safe)("jadwal tes (database in-memory)", () => {
     expect(await MailJob.countDocuments({ template: "test_reschedule" })).toBe(1);
     const others = (await TestSeat.find({ testId: test._id, userId: { $ne: who.userId } }).lean());
     for (const o of others) expect(o.override?.at).toBeUndefined();
-    expect(await A.pendingInvites(tid)).toEqual({ invite: 0, reschedule: 0 }); // email jadwal baru sudah dikirim saat perpanjangan
+    expect(await A.pendingInvites(tid)).toEqual({ invite: 0, reschedule: 0, skipped: 0 }); // email jadwal baru sudah dikirim saat perpanjangan
     await expect(A.extendSeat(tid, String(users[5]._id), { opensAt: newOpen, closesAt: newClose }, "x y z", String(admin._id))).rejects.toThrow(/no seat/);
     await expect(A.extendSeat(tid, String(who.userId), { opensAt: newClose, closesAt: newOpen }, "bad window", String(admin._id))).rejects.toThrow(/after the opening/);
 

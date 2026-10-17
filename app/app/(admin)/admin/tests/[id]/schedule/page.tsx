@@ -10,7 +10,7 @@ import { askConfirm } from "@/components/Feedback";
 type Seat = { userId: string; name: string | null; email: string; institution: string | null; invited: boolean; extended: boolean; opensAt: string; closesAt: string; status: "done" | "running" | null };
 type Sess = { id: string; label: string; opensAt: string; closesAt: string; capacity: number; seats: Seat[] };
 type Person = { id: string; name: string | null; email: string; institutionId: string | null; institution: string | null };
-type Board = { test: { id: string; name: string; scheduled: boolean }; institutions: { id: string; name: string }[]; pending: { invite: number; reschedule: number }; sessions: Sess[]; pool: Person[] };
+type Board = { test: { id: string; name: string; scheduled: boolean }; institutions: { id: string; name: string }[]; pending: { invite: number; reschedule: number; skipped: number }; sessions: Sess[]; pool: Person[] };
 type Chip = { id: string; name: string | null; email: string; institution: string | null; seat?: Seat };
 
 const wib = (d: string) => new Date(d).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
@@ -101,6 +101,7 @@ export default function JadwalTes({ params }: { params: { id: string } }) {
         </label>
       </div>
       <ErrorNote text={err || error} />
+      {data.pending.skipped > 0 && <p role="note" className="rounded-lg bg-accent-tint p-3 text-sm text-navy"><b>Test mode safety.</b> This test is still in Test mode, so invitation emails go only to QA tester accounts. {data.pending.skipped} other {data.pending.skipped === 1 ? "person on a card will" : "people on cards will"} not be emailed until Test mode is turned off.</p>}
       {note && <p role="status" className="rounded-lg bg-brand-tint p-3 text-sm text-navy">{note}</p>}
 
       <section className="card flex flex-wrap items-end gap-3">
@@ -122,7 +123,7 @@ export default function JadwalTes({ params }: { params: { id: string } }) {
         <button className="btn-outline" onClick={() => setForm({ label: `Session ${data.sessions.length + 1}`, opensAt: "", closesAt: "", capacity: 100 })}>+ Add session</button>
         {undo && <button className="btn-outline" onClick={undoMove} disabled={busy}>Undo last move</button>}
         <button className="btn-solid ml-auto" disabled={busy || (!data.pending.invite && !data.pending.reschedule)}
-          onClick={async () => { if (await askConfirm(`Send ${data.pending.invite} invitation${data.pending.invite === 1 ? "" : "s"}${data.pending.reschedule ? ` and ${data.pending.reschedule} new-schedule email${data.pending.reschedule === 1 ? "" : "s"}` : ""}? Emails go out gradually through the mail queue.`, { confirmLabel: "Send" })) run(async () => { const r = await api<{ invited: number; rescheduled: number }>(`${base}/send`, { json: {}, silent: true }); setNote(`Queued ${r.invited} invitation(s) and ${r.rescheduled} schedule change email(s).`); }); }}>
+          onClick={async () => { if (await askConfirm(`Send ${data.pending.invite} invitation${data.pending.invite === 1 ? "" : "s"}${data.pending.reschedule ? ` and ${data.pending.reschedule} new-schedule email${data.pending.reschedule === 1 ? "" : "s"}` : ""}? Emails go out gradually through the mail queue.`, { confirmLabel: "Send" })) run(async () => { const r = await api<{ invited: number; rescheduled: number; skipped: number }>(`${base}/send`, { json: {}, silent: true }); setNote(`Queued ${r.invited} invitation(s) and ${r.rescheduled} schedule change email(s).${r.skipped ? ` ${r.skipped} people were skipped because this test is still in Test mode: only QA tester accounts get emails.` : ""}`); }); }}>
           Send invites ({data.pending.invite + data.pending.reschedule})
         </button>
       </section>

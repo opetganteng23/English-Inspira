@@ -84,17 +84,18 @@ export async function autoSpread(testId: string, o: { mode: SpreadMode; seed: st
 /** Kirim undangan ke peserta yang belum diberi tahu, dan email jadwal baru ke yang jendelanya berubah sejak diundang. */
 export async function sendInvites(testId: string) {
   await connectDB();
-  const test = await Test.findById(testId).select("name sections").lean();
+  const test = await Test.findById(testId).select("name sections testMode").lean();
   if (!test) throw new HttpError(404, "Test not found");
   const sessions = new Map((await TestSession.find({ testId }).lean()).map((s) => [String(s._id), s]));
   const seats = await TestSeat.find({ testId }).lean();
-  const users = new Map((await User.find({ _id: { $in: seats.map((s) => s.userId) } }).select("name email").lean()).map((u) => [String(u._id), u]));
+  const users = new Map((await User.find({ _id: { $in: seats.map((s) => s.userId) } }).select("name email qaTester").lean()).map((u) => [String(u._id), u]));
   const minutes = Math.round(test.sections.reduce((a, s) => a + s.durationSec, 0) / 60);
   const hasAudio = test.sections.some((s) => s.name === "listening");
-  let invited = 0, rescheduled = 0;
+  let invited = 0, rescheduled = 0, skipped = 0;
   for (const seat of seats) {
     const s = sessions.get(String(seat.sessionId)), u = users.get(String(seat.userId));
     if (!s || !u) continue;
+    if (test.testMode && !u.qaTester) { skipped++; continue; } // tes yang masih diuji: email hanya untuk akun QA tester, jangan sampai peserta asli menerima undangan
     const w = effectiveWindow({ opensAt: s.opensAt, closesAt: s.closesAt }, seat.override);
     const data = { name: u.name, test: test.name, opensAt: w.opensAt, closesAt: w.closesAt, minutes, hasAudio, link: LINK() };
     if (!seat.invitedAt) { await enqueueMail(u.email, "test_invitation", data); invited++; }
@@ -102,22 +103,26 @@ export async function sendInvites(testId: string) {
     else continue;
     await TestSeat.updateOne({ _id: seat._id }, { $set: { invitedAt: seat.invitedAt ?? new Date(), invitedOpensAt: w.opensAt, invitedClosesAt: w.closesAt }, $unset: { remindedOpenAt: "", remindedCloseAt: "" } });
   }
-  return { invited, rescheduled };
+  return { invited, rescheduled, skipped };
 }
 
 /** Berapa orang akan menerima email bila admin menekan "kirim" sekarang (untuk pratinjau). */
 export async function pendingInvites(testId: string) {
   await connectDB();
   const sessions = new Map((await TestSession.find({ testId }).lean()).map((s) => [String(s._id), s]));
-  let invite = 0, reschedule = 0;
-  for (const seat of await TestSeat.find({ testId }).lean()) {
+  const test = await Test.findById(testId).select("testMode").lean();
+  const seats = await TestSeat.find({ testId }).lean();
+  const qa = test?.testMode ? new Set((await User.find({ _id: { $in: seats.map((x) => x.userId) }, qaTester: true }).select("_id").lean()).map((u) => String(u._id))) : null;
+  let invite = 0, reschedule = 0, skipped = 0;
+  for (const seat of seats) {
     const s = sessions.get(String(seat.sessionId));
     if (!s) continue;
+    if (qa && !qa.has(String(seat.userId))) { skipped++; continue; }
     const w = effectiveWindow({ opensAt: s.opensAt, closesAt: s.closesAt }, seat.override);
     if (!seat.invitedAt) invite++;
     else if (+(seat.invitedOpensAt ?? 0) !== +w.opensAt || +(seat.invitedClosesAt ?? 0) !== +w.closesAt) reschedule++;
   }
-  return { invite, reschedule };
+  return { invite, reschedule, skipped };
 }
 
 /** Perpanjangan atau jadwal ulang untuk SATU peserta; peserta langsung menerima email jadwal baru (lewat antrean). */
@@ -128,8 +133,8 @@ export async function extendSeat(testId: string, userId: string, w: { opensAt: D
   if (!seat) throw new HttpError(404, "This participant has no seat in this test. Move them into a session first.");
   seat.override = { opensAt: w.opensAt, closesAt: w.closesAt, reason: reason.slice(0, 300), by: oid(byId), at: new Date() } as never;
   await seat.save();
-  const [test, user] = await Promise.all([Test.findById(testId).select("name").lean(), User.findById(userId).select("name email").lean()]);
-  if (user && seat.invitedAt) { await enqueueMail(user.email, "test_reschedule", { name: user.name, test: test?.name, opensAt: w.opensAt, closesAt: w.closesAt, reason, link: LINK() }); await TestSeat.updateOne({ _id: seat._id }, { $set: { invitedOpensAt: w.opensAt, invitedClosesAt: w.closesAt }, $unset: { remindedOpenAt: "", remindedCloseAt: "" } }); }
+  const [test, user] = await Promise.all([Test.findById(testId).select("name testMode").lean(), User.findById(userId).select("name email qaTester").lean()]);
+  if (user && seat.invitedAt && (!test?.testMode || user.qaTester)) { await enqueueMail(user.email, "test_reschedule", { name: user.name, test: test?.name, opensAt: w.opensAt, closesAt: w.closesAt, reason, link: LINK() }); await TestSeat.updateOne({ _id: seat._id }, { $set: { invitedOpensAt: w.opensAt, invitedClosesAt: w.closesAt }, $unset: { remindedOpenAt: "", remindedCloseAt: "" } }); }
   return { ok: true, emailed: !!seat.invitedAt };
 }
 
@@ -139,17 +144,18 @@ export async function extendSeat(testId: string, userId: string, w: { opensAt: D
  */
 export async function sendTestReminders(now = new Date()) {
   await connectDB();
-  const tests = await Test.find({ scheduled: true, active: true }).select("name").lean();
+  const tests = await Test.find({ scheduled: true, active: true }).select("name testMode").lean();
   let opening = 0, closing = 0;
   for (const t of tests) {
     const sessions = new Map((await TestSession.find({ testId: t._id }).lean()).map((s) => [String(s._id), s]));
     const seats = await TestSeat.find({ testId: t._id, invitedAt: { $exists: true } }).lean();
     if (!seats.length) continue;
     const started = new Set((await Attempt.find({ testId: t._id, userId: { $in: seats.map((s) => s.userId) } }).distinct("userId")).map(String));
-    const users = new Map((await User.find({ _id: { $in: seats.map((s) => s.userId) } }).select("name email").lean()).map((u) => [String(u._id), u]));
+    const users = new Map((await User.find({ _id: { $in: seats.map((s) => s.userId) } }).select("name email qaTester").lean()).map((u) => [String(u._id), u]));
     for (const seat of seats) {
       const s = sessions.get(String(seat.sessionId)), u = users.get(String(seat.userId));
       if (!s || !u || started.has(String(seat.userId))) continue;
+      if (t.testMode && !u.qaTester) continue; // tes yang masih diuji: pengingat hanya untuk akun QA tester
       const w = effectiveWindow({ opensAt: s.opensAt, closesAt: s.closesAt }, seat.override);
       const data = { name: u.name, test: t.name, opensAt: w.opensAt, closesAt: w.closesAt, link: LINK() };
       const hoursToOpen = (+w.opensAt - +now) / 3_600_000, hoursToClose = (+w.closesAt - +now) / 3_600_000;
