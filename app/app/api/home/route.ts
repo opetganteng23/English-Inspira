@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { releasedFilter, fmtRelease } from "@/lib/attempt-release";
+import { releasedFilter, fmtRelease, pendingEffectsFilter } from "@/lib/attempt-release";
 import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { cycleState, placementNeeded } from "@/lib/cycles";
 import { connectDB } from "@/lib/db";
@@ -39,13 +39,13 @@ export async function GET() {
 
     const cs = await cycleState(u?.institutionId);
     // Hasil yang masih ditahan: skor belum terlihat; placement dianggap sudah dikerjakan agar peserta tidak mengulang.
-    const held = await Attempt.findOne({ userId: me._id, status: "submitted", releaseAt: { $gt: new Date() } }).sort({ releaseAt: 1 }).select("releaseAt kind").lean();
+    const held = await Attempt.findOne({ userId: me._id, status: "submitted", ...pendingEffectsFilter }).sort({ releaseAt: 1 }).select("releaseAt kind").lean();
     const needPlace = (!u?.placementAttemptId || placementNeeded(u, cs)) && held?.kind !== "placement";
     const placementTest = needPlace ? await Test.findOne({ kind: "placement", ...visibleTestFilter(u ?? { role: "participant" }) }).sort({ testMode: -1 }).select("_id").lean() : null;
     // Langkah berikutnya mengikuti kondisi nyata akun (urutan prioritas).
     let step: { title: string; body: string; cta: string; href: string } | null = null;
     if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/test-room/${inProgress._id}` };
-    else if (held) step = { title: "Your result is being prepared", body: `Results are released at ${fmtRelease(held.releaseAt!)}. Come back then to see your score, level, and analysis.`, cta: "View status", href: `/results/${held._id}` };
+    else if (held) step = { title: held.releaseAt! > new Date() ? "Your result is being prepared" : "Your result is ready", body: held.releaseAt! > new Date() ? `Results are released at ${fmtRelease(held.releaseAt!)}. Come back then to see your score, level, and analysis.` : "Your result is ready. Open it to see your score, level, and analysis.", cta: "View status", href: `/results/${held._id}` };
     else if (cs.blockedReason) step = { title: "Program period closed", body: cs.blockedReason, cta: "Open learning", href: "/learn" };
     else if (needPlace) step = { title: "Start with the placement test", body: "Taken once per program period, in ITP format. The result sets your level, coaching quota, and initial study plan.", cta: "Start placement", href: placementTest ? `/tests/prepare/${placementTest._id}` : "/tests" };
     else step = { title: "Keep learning", body: "Do exercises or simulations to track your progress.", cta: "Open tests", href: "/tests" };

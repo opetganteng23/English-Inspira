@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { exemptFromDelay } from "@/lib/attempt-release";
+import { exemptFromDelay, pendingEffectsFilter } from "@/lib/attempt-release";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { canStartTest, visibleTestFilter } from "@/lib/test-access";
@@ -13,7 +13,7 @@ export async function GET() {
     const user = await requireRole(["participant", "admin"]);
     await connectDB();
     const cs = await cycleState(user.institutionId);
-    const pendingRel = exemptFromDelay(user) ? null : await Attempt.exists({ userId: user._id, kind: "placement", status: "submitted", releaseAt: { $gt: new Date() } });
+    const pendingRel = exemptFromDelay(user) ? null : await Attempt.exists({ userId: user._id, kind: "placement", status: "submitted", ...pendingEffectsFilter });
     const ctx = { blocked: cs.blockedReason, placementNeeded: placementNeeded(user, cs), pendingRelease: pendingRel ? new Date() : null };
     const [tests, attempts] = await Promise.all([
       Test.find({ ...visibleTestFilter(user), kind: { $ne: "quiz" } }).sort({ createdAt: 1 }).lean(), // kuis tampil di unit belajar

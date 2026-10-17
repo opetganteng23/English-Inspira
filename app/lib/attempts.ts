@@ -138,7 +138,7 @@ export async function runAttemptEffects(attempt: AttemptHydrated) {
 }
 
 /** Tiap menit: lepas hasil yang sudah jatuh tempo (jalankan efeknya). Klaim atomik agar dua proses tidak menjalankan efek yang sama. */
-export async function releaseDueResults(limit = 30) {
+export async function releaseDueResults(limit = 100) {
   await connectDB();
   let n = 0;
   for (let i = 0; i < limit; i++) {
@@ -148,4 +148,11 @@ export async function releaseDueResults(limit = 30) {
     n++;
   }
   return n;
+}
+
+/** Peserta membuka hasilnya setelah waktu rilis tetapi cron belum memprosesnya: jalankan efek miliknya sekarang (klaim atomik, tidak ganda dengan cron). */
+export async function ensureReleased(attempt: AttemptHydrated) {
+  if (!attempt.releaseAt || attempt.releasedAt || attempt.releaseAt > new Date()) return;
+  const claimed = await Attempt.findOneAndUpdate({ _id: attempt._id, releasedAt: { $exists: false } }, { $set: { releasedAt: new Date() } }, { returnDocument: "after" });
+  if (claimed) await runAttemptEffects(claimed);
 }

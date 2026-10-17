@@ -12,4 +12,7 @@ export function releaseAtFor(test: { resultDelayMin?: number | null }, user: { r
   return min > 0 && !exemptFromDelay(user) ? new Date(+startedAt + min * 60_000) : undefined;
 }
 
+/** Percobaan yang hasilnya ditahan dan efeknya (level, kuota, email) belum dijalankan, termasuk yang sudah lewat waktu rilis tetapi belum diproses. */
+export const pendingEffectsFilter = { releaseAt: { $exists: true }, releasedAt: { $exists: false } };
+
 export const fmtRelease = (d: Date | string) => new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) + " WIB";

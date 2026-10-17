@@ -21,7 +21,8 @@ describe.skipIf(!safe)("penahanan hasil tes (database in-memory)", () => {
     process.env.MONGODB_URI = server.getUri("release_test");
     const { connectDB } = await import("@/lib/db");
     const { seedTests } = await import("@/lib/seed");
-    const { finalize, releaseDueResults } = await import("@/lib/attempts");
+    const { finalize, releaseDueResults, ensureReleased } = await import("@/lib/attempts");
+    const { pendingEffectsFilter } = await import("@/lib/attempt-release");
     const { User } = await import("@/models/User");
     const { Attempt, Test } = await import("@/models/Test");
     const { MailJob } = await import("@/models/Access");
@@ -74,6 +75,20 @@ describe.skipIf(!safe)("penahanan hasil tes (database in-memory)", () => {
     expect(await waitFor(async () => !!(await User.findById(late._id).lean())?.placementAttemptId)).toBe(true);
     expect(await releaseDueResults()).toBe(0);
     expect(await MailJob.countDocuments({ to: "terlambat@test.id", template: "placement_result" })).toBe(1);
+
+    // 5. Waktu rilis lewat tetapi cron belum memproses: tetap dianggap tertunda (placement tidak boleh diulang),
+    //    dan peserta yang membuka hasilnya memicu pelepasan miliknya sendiri, tanpa ganda dengan cron.
+    const opener = await mkUser("buka@test.id");
+    const a4 = await start(opener._id, new Date(Date.now() + 3600_000));
+    await finalize((await Attempt.findById(a4._id))!, test!);
+    await Attempt.updateOne({ _id: a4._id }, { releaseAt: new Date(Date.now() - 1000) });
+    expect(await Attempt.exists({ _id: a4._id, ...pendingEffectsFilter })).toBeTruthy();
+    await ensureReleased((await Attempt.findById(a4._id))!);
+    expect(String((await User.findById(opener._id).lean())!.placementAttemptId)).toBe(String(a4._id));
+    expect(await Attempt.exists({ _id: a4._id, ...pendingEffectsFilter })).toBeFalsy();
+    await ensureReleased((await Attempt.findById(a4._id))!); // dipanggil lagi: tidak mengulang efek
+    expect(await releaseDueResults()).toBe(0);
+    expect(await MailJob.countDocuments({ to: "buka@test.id", template: "placement_result" })).toBe(1);
     expect(seeded).toBeTruthy();
   }, 240_000);
 
