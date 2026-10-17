@@ -24,6 +24,7 @@ const seatSchema = new Schema(
     invitedOpensAt: Date,
     invitedClosesAt: Date,
     remindedOpenAt: Date, // pengingat H-1 sebelum dibuka
+    remindedNowAt: Date, // pengingat saat sesi dibuka
     remindedCloseAt: Date, // pengingat sebelum ditutup
   },
   { timestamps: true }

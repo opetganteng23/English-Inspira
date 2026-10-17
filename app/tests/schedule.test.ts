@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { scheduleGate, spread, windowState, effectiveWindow, pickGated } from "@/lib/schedule";
+import { scheduleGate, spread, windowState, effectiveWindow, pickGated, fmtWindow } from "@/lib/schedule";
 
 const H = 3_600_000;
 const T0 = new Date("2026-10-24T09:00:00+07:00");
@@ -29,6 +29,17 @@ describe("aturan akses tes terjadwal", () => {
     expect(windowState(w, new Date(+T0 + 1 * H))).toBe("upcoming");
     expect(windowState(w, new Date(+T0 + 25 * H))).toBe("open");
     expect(effectiveWindow(win, null)).toEqual(win);
+  });
+});
+
+describe("tulisan jadwal untuk peserta", () => {
+  it("satu hari: tanggal, lalu jam buka sampai jam tutup (WIB); lintas hari: tanggal di kedua ujung", () => {
+    expect(fmtWindow(win)).toBe("Sat, 24 Oct 2026, 09:00 to 12:00 WIB");
+    expect(fmtWindow({ opensAt: T0, closesAt: new Date(+T0 + 30 * H) })).toBe("Sat, 24 Oct 2026, 09:00 to Sun, 25 Oct 2026, 15:00 WIB");
+  });
+  it("yang belum terbuka melihat 'Available on …' dengan jamnya", () => {
+    const g = scheduleGate({ scheduled: true }, { role: "participant" }, { window: win }, new Date(+T0 - H));
+    expect(g.reason).toBe("Available on Sat, 24 Oct 2026, 09:00 to 12:00 WIB.");
   });
 });
 
@@ -169,5 +180,14 @@ describe.skipIf(!safe)("jadwal tes (database in-memory)", () => {
     const r1 = await A.sendTestReminders();
     expect(r1.opening).toBe(4); // 4 kursi, semuanya belum mulai
     expect((await A.sendTestReminders()).opening).toBe(0); // tidak diulang
+
+    // Sesi sudah dibuka: tiap peserta yang belum mulai menerima email "sedang dibuka" satu kali; menjelang tutup, email "segera tutup" satu kali.
+    await TestSession.updateMany({ testId: test._id }, { opensAt: new Date(Date.now() - 1 * H), closesAt: new Date(Date.now() + 6 * H) });
+    expect((await A.sendTestReminders()).now).toBe(4);
+    expect((await A.sendTestReminders()).now).toBe(0);
+    await TestSession.updateMany({ testId: test._id }, { closesAt: new Date(Date.now() + 1 * H) });
+    expect((await A.sendTestReminders()).closing).toBe(4);
+    expect((await A.sendTestReminders()).closing).toBe(0);
+    expect(await MailJob.countDocuments({ template: "test_reminder" })).toBe(12); // 4 orang x 3 jenis, tanpa duplikat
   }, 240_000);
 });

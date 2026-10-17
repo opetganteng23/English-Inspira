@@ -101,7 +101,7 @@ export async function sendInvites(testId: string) {
     if (!seat.invitedAt) { await enqueueMail(u.email, "test_invitation", data); invited++; }
     else if (+(seat.invitedOpensAt ?? 0) !== +w.opensAt || +(seat.invitedClosesAt ?? 0) !== +w.closesAt) { await enqueueMail(u.email, "test_reschedule", { ...data, reason: seat.override?.reason }); rescheduled++; }
     else continue;
-    await TestSeat.updateOne({ _id: seat._id }, { $set: { invitedAt: seat.invitedAt ?? new Date(), invitedOpensAt: w.opensAt, invitedClosesAt: w.closesAt }, $unset: { remindedOpenAt: "", remindedCloseAt: "" } });
+    await TestSeat.updateOne({ _id: seat._id }, { $set: { invitedAt: seat.invitedAt ?? new Date(), invitedOpensAt: w.opensAt, invitedClosesAt: w.closesAt }, $unset: { remindedOpenAt: "", remindedNowAt: "", remindedCloseAt: "" } });
   }
   return { invited, rescheduled, skipped };
 }
@@ -134,7 +134,7 @@ export async function extendSeat(testId: string, userId: string, w: { opensAt: D
   seat.override = { opensAt: w.opensAt, closesAt: w.closesAt, reason: reason.slice(0, 300), by: oid(byId), at: new Date() } as never;
   await seat.save();
   const [test, user] = await Promise.all([Test.findById(testId).select("name testMode").lean(), User.findById(userId).select("name email qaTester").lean()]);
-  if (user && seat.invitedAt && (!test?.testMode || user.qaTester)) { await enqueueMail(user.email, "test_reschedule", { name: user.name, test: test?.name, opensAt: w.opensAt, closesAt: w.closesAt, reason, link: LINK() }); await TestSeat.updateOne({ _id: seat._id }, { $set: { invitedOpensAt: w.opensAt, invitedClosesAt: w.closesAt }, $unset: { remindedOpenAt: "", remindedCloseAt: "" } }); }
+  if (user && seat.invitedAt && (!test?.testMode || user.qaTester)) { await enqueueMail(user.email, "test_reschedule", { name: user.name, test: test?.name, opensAt: w.opensAt, closesAt: w.closesAt, reason, link: LINK() }); await TestSeat.updateOne({ _id: seat._id }, { $set: { invitedOpensAt: w.opensAt, invitedClosesAt: w.closesAt }, $unset: { remindedOpenAt: "", remindedNowAt: "", remindedCloseAt: "" } }); }
   return { ok: true, emailed: !!seat.invitedAt };
 }
 
@@ -144,8 +144,8 @@ export async function extendSeat(testId: string, userId: string, w: { opensAt: D
  */
 export async function sendTestReminders(now = new Date()) {
   await connectDB();
-  const tests = await Test.find({ scheduled: true, active: true }).select("name testMode").lean();
-  let opening = 0, closing = 0;
+  const tests = await Test.find({ scheduled: true, $or: [{ active: true }, { testMode: true }] }).select("name testMode").lean(); // tes yang sedang diuji ikut, agar QA bisa memeriksa pengingatnya (email tetap hanya ke akun QA)
+  let opening = 0, closing = 0, now_ = 0;
   for (const t of tests) {
     const sessions = new Map((await TestSession.find({ testId: t._id }).lean()).map((s) => [String(s._id), s]));
     const seats = await TestSeat.find({ testId: t._id, invitedAt: { $exists: true } }).lean();
@@ -160,8 +160,9 @@ export async function sendTestReminders(now = new Date()) {
       const data = { name: u.name, test: t.name, opensAt: w.opensAt, closesAt: w.closesAt, link: LINK() };
       const hoursToOpen = (+w.opensAt - +now) / 3_600_000, hoursToClose = (+w.closesAt - +now) / 3_600_000;
       if (!seat.remindedOpenAt && hoursToOpen > 0 && hoursToOpen <= 24) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "opening" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedOpenAt: now } }); opening++; }
+      else if (!seat.remindedNowAt && windowState(w, now) === "open" && hoursToClose > 2) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "now" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedNowAt: now } }); now_++; }
       else if (!seat.remindedCloseAt && windowState(w, now) === "open" && hoursToClose <= 2) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "closing" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedCloseAt: now } }); closing++; }
     }
   }
-  return { opening, closing };
+  return { opening, now: now_, closing };
 }

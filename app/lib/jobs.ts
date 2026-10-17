@@ -15,8 +15,11 @@ import { PdfImport, pdfBucket } from "@/models/Pdf";
 // Job berikutnya (reminder sesi, status plan, peringatan kuota) ditambahkan di sini pada Fase 5-6.
 
 /** Tiap menit: kirim email di antrean (retry bertahap, batas undangan per jam) dan lepas hasil tes yang ditahan dan sudah jatuh tempo. */
+let lastTestReminders = 0;
 export async function mailJob() {
   const mail = await processMailQueue(50);
+  // Pengingat tes terjadwal dicek tiap ±10 menit (selain per jam), agar email "sedang dibuka" tidak terlambat lama. Tiap pengingat hanya terkirim sekali per kursi.
+  if (Date.now() - lastTestReminders >= 10 * 60_000) { lastTestReminders = Date.now(); await sendTestReminders().catch((e) => console.error("[test-reminders]", e)); }
   const released = await releaseDueResults().catch((e) => { console.error("[release]", e); return 0; });
   return { ...mail, released };
 }

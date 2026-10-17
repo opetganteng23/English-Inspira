@@ -14,6 +14,14 @@ export function effectiveWindow(session: Window, override?: { opensAt?: Date | n
 
 export type GateResult = { visible: boolean; ok: boolean; reason?: string; window?: Window; state?: SeatState; label?: string };
 
+const DAYFMT = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
+const HOUR = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" });
+/** Jendela dalam satu kalimat: "Sat, 24 Oct 2026, 09:00 to 12:00 WIB" (satu hari), atau dengan tanggal di kedua ujung bila melewati hari. */
+export function fmtWindow(w: Window): string {
+  const sameDay = DAYFMT(w.opensAt) === DAYFMT(w.closesAt);
+  return sameDay ? `${DAYFMT(w.opensAt)}, ${HOUR(w.opensAt)} to ${HOUR(w.closesAt)} WIB` : `${DAYFMT(w.opensAt)}, ${HOUR(w.opensAt)} to ${DAYFMT(w.closesAt)}, ${HOUR(w.closesAt)} WIB`;
+}
+
 const WIB = (d: Date) => d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) + " WIB";
 export const fmtWib = WIB;
 
@@ -29,7 +37,7 @@ export function scheduleGate(test: { scheduled?: boolean | null }, user: { role:
   if (!seat) return { visible: false, ok: false, reason: "This test is not scheduled for you." };
   const state = windowState(seat.window, now);
   const base = { visible: true, window: seat.window, state, label: seat.label };
-  if (state === "upcoming") return { ...base, ok: false, reason: `Opens on ${WIB(seat.window.opensAt)}.` };
+  if (state === "upcoming") return { ...base, ok: false, reason: `Available on ${fmtWindow(seat.window)}.` };
   if (state === "closed") return { ...base, ok: false, reason: `Your session closed on ${WIB(seat.window.closesAt)}. Contact the administrator if you could not attend.` };
   return { ...base, ok: true };
 }

@@ -6,7 +6,7 @@ import { canStartTest, visibleTestFilter } from "@/lib/test-access";
 import { cycleState, placementNeeded } from "@/lib/cycles";
 import { Test, Attempt } from "@/models/Test";
 import { seatsFor } from "@/lib/schedule-db";
-import { scheduleGate } from "@/lib/schedule";
+import { scheduleGate, fmtWindow } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export async function GET() {
           totalQuestions: t.sections.reduce((n, s) => n + s.questionIds.length, 0),
           totalSec: t.sections.reduce((n, s) => n + s.durationSec, 0),
           unlocked: gate.ok, reason: gate.reason ?? null,
-          schedule: t.scheduled && sched.window ? { state: sched.state, label: sched.label ?? null, opensAt: sched.window.opensAt, closesAt: sched.window.closesAt } : null,
+          schedule: t.scheduled && sched.window ? { state: sched.state, label: sched.label ?? null, opensAt: sched.window.opensAt, closesAt: sched.window.closesAt, text: fmtWindow(sched.window) } : null,
           inProgressAttemptId: String(mine.find((a) => a.status === "in_progress")?._id ?? "") || null,
           lastScore: mine.find((a) => a.status === "submitted" && (!a.releaseAt || a.releaseAt <= new Date()))?.scoreEst ?? null,
         };
