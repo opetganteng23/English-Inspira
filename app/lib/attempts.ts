@@ -27,9 +27,20 @@ export async function loadAttempt(id: string, user: Pick<UserDoc, "_id" | "role"
     throw new HttpError(404, "Attempt not found");
   const test = await Test.findById(attempt.testId).lean();
   if (!test) throw new HttpError(500, "Test not found");
-  await syncTimer(attempt, test);
+  try {
+    await syncTimer(attempt, test);
+  } catch (e) {
+    // Dua permintaan memajukan/menyelesaikan percobaan yang sama bersamaan: yang kalah memuat ulang keadaan terbaru, bukan gagal.
+    if (!isVersionError(e)) throw e;
+    const fresh = await Attempt.findById(id);
+    if (!fresh) throw e;
+    await syncTimer(fresh, test);
+    return { attempt: fresh, test };
+  }
   return { attempt, test };
 }
+
+export const isVersionError = (e: unknown) => (e as { name?: string } | null)?.name === "VersionError";
 
 export function sectionDeadline(attempt: AttemptHydrated, test: { sections: { durationSec: number }[] }) {
   return attempt.sectionStartedAt.getTime() + test.sections[attempt.sectionIdx].durationSec * 1000;
@@ -51,6 +62,20 @@ export async function syncTimer(attempt: AttemptHydrated, test: { sections: { na
     changed = true;
   }
   if (changed) await attempt.save();
+}
+
+/** `advance` yang tahan balapan: bila permintaan lain sudah memajukan atau men-submit percobaan ini, hasilnya dianggap berhasil. Mengembalikan status terbaru. */
+export async function advanceSafely(attempt: AttemptHydrated, test: Parameters<typeof syncTimer>[1]): Promise<"in_progress" | "submitted"> {
+  const idx = attempt.sectionIdx;
+  try {
+    await advance(attempt, test);
+    return attempt.status as "in_progress" | "submitted";
+  } catch (e) {
+    if (!isVersionError(e)) throw e;
+    const fresh = await Attempt.findById(attempt._id).select("status sectionIdx");
+    if (fresh && (fresh.status === "submitted" || fresh.sectionIdx > idx)) return fresh.status as "in_progress" | "submitted";
+    throw e;
+  }
 }
 
 export async function advance(attempt: AttemptHydrated, test: Parameters<typeof syncTimer>[1]) {

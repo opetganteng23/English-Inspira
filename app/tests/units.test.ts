@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { scaleSection, estimateTotal, gradeAttempt } from "@/lib/scoring";
 import { itpTotal, validSectionScore } from "@/lib/certificates";
 import { PARAM_DEFAULTS } from "@/lib/config";
@@ -98,6 +98,20 @@ describe("keamanan materi", () => {
     expect(canStartTest({ ...(placed as object), role: "participant", qaTester: true } as never, { kind: "placement" } as never).ok).toBe(true);
     expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
     expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
+  });
+  it("advance tahan balapan: permintaan yang kalah dianggap berhasil bila percobaan sudah maju atau terkirim", async () => {
+    const { advanceSafely } = await import("@/lib/attempts");
+    const { Attempt } = await import("@/models/Test");
+    const mk = () => ({ _id: "a1", status: "in_progress", sectionIdx: 0, secureReached: 0, sectionStartedAt: new Date(), save: async () => { throw Object.assign(new Error("No matching document"), { name: "VersionError" }); } });
+    const test = { sections: [{ name: "listening", durationSec: 60, questionIds: [] }, { name: "structure", durationSec: 60, questionIds: [] }] };
+    const fresh = (v: { status: string; sectionIdx: number }) => vi.spyOn(Attempt, "findById").mockReturnValue({ select: async () => v } as never);
+    fresh({ status: "in_progress", sectionIdx: 1 });
+    expect(await advanceSafely(mk() as never, test)).toBe("in_progress");
+    fresh({ status: "submitted", sectionIdx: 1 });
+    expect(await advanceSafely(mk() as never, test)).toBe("submitted");
+    fresh({ status: "in_progress", sectionIdx: 0 });
+    await expect(advanceSafely(mk() as never, test)).rejects.toMatchObject({ name: "VersionError" });
+    vi.restoreAllMocks();
   });
   it("pemutar audio tes diberi key per audio, agar status \"sudah diputar\" tidak terbawa ke soal berikutnya", async () => {
     const { GroupAudio } = await import("@/components/TestAudio");
