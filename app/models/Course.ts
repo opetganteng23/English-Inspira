@@ -8,6 +8,7 @@ const courseSchema = new Schema(
     description: String,
     order: { type: Number, default: 0 },
     active: { type: Boolean, default: true },
+    previewMode: { type: Boolean, default: false }, // sedang disiapkan: hanya admin dan QA tester yang melihat course dan materinya; peserta tidak, walau Active
     archived: { type: Boolean, default: false, index: true }, // diarsipkan: hilang dari peserta, progres tetap tersimpan, bisa dipulihkan
     coverAssetId: { type: Schema.Types.ObjectId, ref: "Asset" },
     prerequisiteCourseIds: [{ type: Schema.Types.ObjectId, ref: "Course" }],

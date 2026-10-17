@@ -32,7 +32,7 @@ export async function GET() {
       quizzes: quizzes.map((q) => ({ id: String(q._id), name: q.name, unitId: q.unitId ? String(q.unitId) : null, active: q.active })),
       courses: courses.map((c) => ({
         id: String(c._id), levelId: String(c.levelId), title: c.title, description: c.description ?? "", order: c.order, active: c.active,
-        archived: !!c.archived, secureMode: !!c.secureMode, coverAssetId: c.coverAssetId ? String(c.coverAssetId) : null, prerequisiteCourseIds: (c.prerequisiteCourseIds ?? []).map(String),
+        archived: !!c.archived, previewMode: !!c.previewMode, secureMode: !!c.secureMode, coverAssetId: c.coverAssetId ? String(c.coverAssetId) : null, prerequisiteCourseIds: (c.prerequisiteCourseIds ?? []).map(String),
         modules: modules.filter((m) => String(m.courseId) === String(c._id)).map((m) => ({ id: String(m._id), title: m.title, description: m.description ?? "", order: m.order, active: m.active })),
         units: units.filter((u) => String(u.courseId) === String(c._id)).map((u) => ({
           id: String(u._id), title: u.title, description: u.description ?? "", order: u.order, active: u.active,

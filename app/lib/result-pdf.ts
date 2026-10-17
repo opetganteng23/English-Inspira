@@ -85,6 +85,18 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
     para(`Reliability: ${sm.reliability.level.toUpperCase()}. ${sm.reliability.headline}.`, { bold: true, keep: 30 });
     para(sm.reliability.detail, { color: GRAY });
     if (sm.pace.avgSec != null && sm.pace.realSec != null) para(`Average ${sm.pace.avgSec}s per answer; the real test pace is about ${sm.pace.realSec}s per question.`, { size: 9, color: GRAY });
+    // Statistik tes: tabel per section dan total.
+    para("Test statistics", { bold: true, keep: 90 });
+    const cols = [0, 130, 190, 255, 335, 390, 445], head = ["Section", "Questions", "Answered", "Not answered", "Correct", "Wrong", "Score"];
+    ensure(20); doc.font("Bold").fontSize(8.5).fillColor(GRAY); head.forEach((h, k) => doc.text(h, X + cols[k], y, { width: (cols[k + 1] ?? W) - cols[k] - 4 })); y += 14;
+    for (const r of [...sm.stats.rows, sm.stats.total]) {
+      ensure(16);
+      const vals = [r.section === "total" ? "Total" : SEC_LABEL[r.section] ?? r.section, r.total, r.answered, r.unanswered, r.correct, r.wrong, r.scaled ?? "-"];
+      doc.font(r.section === "total" ? "Bold" : "Regular").fontSize(9.5).fillColor(r.unanswered > 0 && r.section !== "total" ? "#B3261E" : NAVY);
+      vals.forEach((v, k) => doc.fillColor(k === 3 && r.unanswered > 0 ? "#B3261E" : NAVY).text(String(v), X + cols[k], y, { width: (cols[k + 1] ?? W) - cols[k] - 4 }));
+      y += 15;
+    }
+    y += 4;
     if (sm.level.next) {
       para(`Gap to ${sm.level.next.name} (${sm.level.next.scoreMin}): needs a section average of ${sm.level.next.avgNeeded}.`, { bold: true, keep: 40 });
       for (const g of sm.gap) para(`- ${SEC_LABEL[g.section] ?? g.section}: ${g.scaled}${g.gap > 0 ? ` (+${g.gap} needed)` : " (on target)"}`, { indent: 8, color: GRAY });

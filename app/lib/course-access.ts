@@ -2,8 +2,30 @@ import type { Types } from "mongoose";
 import { HttpError } from "./rbac";
 import { Course, Unit, UnitProgress } from "@/models/Course";
 
-/** Course yang terlihat peserta: aktif dan tidak diarsipkan. */
-export const LIVE = { active: true, archived: { $ne: true } } as const;
+/** Course yang terlihat peserta: aktif, tidak diarsipkan, dan bukan mode preview. */
+export const LIVE = { active: true, archived: { $ne: true }, previewMode: { $ne: true } } as const;
+
+/** Admin dan QA tester boleh melihat course mode preview (semua level, tanpa prasyarat dan drip) untuk mensimulasikannya sebelum dirilis. */
+export const isPreviewer = (u: { role: string; qaTester?: boolean | null }) => u.role === "admin" || !!u.qaTester;
+/** Course yang dilihat pemeriksa: aktif atau mode preview, tidak diarsipkan, semua level. */
+export const PREVIEW_VISIBLE = { archived: { $ne: true }, $or: [{ active: true }, { previewMode: true }] };
+
+/**
+ * Materi yang hanya dipakai course mode preview (tidak ada di course yang sudah tayang). Disembunyikan dari peserta di perpustakaan
+ * materi dan lewat tautan langsung, supaya isi course yang belum dirilis tidak terlihat lebih awal.
+ */
+export async function previewOnlyMaterialIds(): Promise<Types.ObjectId[]> {
+  const [prev, live] = await Promise.all([Course.find({ previewMode: true, archived: { $ne: true } }).select("_id").lean(), Course.find(LIVE).select("_id").lean()]);
+  if (!prev.length) return [];
+  const [pu, lu] = await Promise.all([
+    Unit.find({ courseId: { $in: prev.map((c) => c._id) } }).select("materialIds").lean(),
+    live.length ? Unit.find({ courseId: { $in: live.map((c) => c._id) } }).select("materialIds").lean() : [],
+  ]);
+  const inLive = new Set(lu.flatMap((u) => u.materialIds.map(String)));
+  const ids = new Map<string, Types.ObjectId>();
+  for (const u of pu) for (const m of u.materialIds) if (!inLive.has(String(m))) ids.set(String(m), m);
+  return [...ids.values()];
+}
 
 const DAY = 86_400_000;
 

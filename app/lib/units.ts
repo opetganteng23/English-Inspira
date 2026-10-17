@@ -2,7 +2,7 @@ import type { HydratedDocument, Types } from "mongoose";
 import { connectDB } from "./db";
 import { getParam } from "./config";
 import { Course, RemedialMap, Unit, UnitProgress } from "@/models/Course";
-import { LIVE, unitAccess } from "./course-access";
+import { LIVE, PREVIEW_VISIBLE, unitAccess } from "./course-access";
 import { cycleState } from "./cycles";
 import type { AttemptDoc } from "@/models/Test";
 
@@ -42,16 +42,17 @@ export async function findRemedialUnit(levelId: Types.ObjectId | string | null |
 }
 
 /** Materi selesai → tandai di semua unit aktif yang mensyaratkannya (hanya course di level peserta). */
-export async function markMaterialDone(user: { _id: Types.ObjectId; institutionId?: Types.ObjectId | null; currentLevelId?: Types.ObjectId | null }, materialId: Types.ObjectId | string) {
+export async function markMaterialDone(user: { _id: Types.ObjectId; institutionId?: Types.ObjectId | null; currentLevelId?: Types.ObjectId | null; qaTester?: boolean | null }, materialId: Types.ObjectId | string) {
   await connectDB();
-  if (!user.currentLevelId) return;
-  if ((await cycleState(user.institutionId)).blockedReason) return; // periode ditutup: materi hanya dibaca, progres tidak berubah
-  const courses = await Course.find({ levelId: user.currentLevelId, ...LIVE }).select("_id prerequisiteCourseIds").lean();
+  const qa = !!user.qaTester; // QA tester menguji semua level dan course mode preview, tanpa prasyarat dan drip
+  if (!user.currentLevelId && !qa) return;
+  if (!qa && (await cycleState(user.institutionId)).blockedReason) return; // periode ditutup: materi hanya dibaca, progres tidak berubah
+  const courses = await Course.find(qa ? { ...PREVIEW_VISIBLE } : { levelId: user.currentLevelId, ...LIVE }).select("_id prerequisiteCourseIds").lean();
   const units = await Unit.find({ courseId: { $in: courses.map((c) => c._id) }, materialIds: materialId, active: true }).lean();
   for (const u of units) {
     // Unit yang masih terkunci (prasyarat/drip) tidak mencatat progres.
     const course = courses.find((c) => String(c._id) === String(u.courseId))!;
-    if (!(await unitAccess(user._id, u, course)).ok) continue;
+    if (!qa && !(await unitAccess(user._id, u, course)).ok) continue;
     await UnitProgress.updateOne(
       { userId: user._id, unitId: u._id },
       { $addToSet: { materialsDone: materialId }, $setOnInsert: { courseId: u.courseId, ...(user.institutionId ? { institutionId: user.institutionId } : {}) } },

@@ -6,7 +6,7 @@ export type Zone = "priority" | "developing" | "strong" | "few";
 export type SummaryInput = {
   scoreEst: number | null;
   sections: { section: string; scaled: number }[];
-  review: { answered: boolean; timeSpentSec?: number | null }[];
+  review: { answered: boolean; timeSpentSec?: number | null; section?: string; correct?: boolean }[];
   topics: TopicRow[];
   levels: { name: string; order: number; scoreMin: number; scoreMax: number }[];
   th: { weak: number; priority: number; minItems: number };
@@ -14,9 +14,11 @@ export type SummaryInput = {
   allottedSec: number;
   hasPrevious: boolean;
 };
+export type StatRow = { section: string; total: number; answered: number; unanswered: number; correct: number; wrong: number; pctCorrect: number; scaled: number | null };
 export type Summary = {
   reliability: { level: Reliability; headline: string; detail: string };
   answered: { done: number; total: number; pct: number };
+  stats: { rows: StatRow[]; total: StatRow };
   pace: { avgSec: number | null; realSec: number | null };
   level: { name: string; next: { name: string; scoreMin: number; avgNeeded: number } | null };
   gap: { section: string; scaled: number; gap: number }[];
@@ -90,9 +92,18 @@ export function buildSummary(i: SummaryInput): Summary {
   const slots = ["Weeks 1-2", "Weeks 3-4", "Weeks 5-6"];
   priorities.forEach((p, k) => plan.push({ when: slots[k], focus: p.topic, action: PRACTICE[p.skill] ?? "10 practice items a day, then review each error.", topic: { skill: p.skill, topic: p.topic } }));
 
+  // Statistik tes: per section dan total (terjawab, tidak terjawab, benar, salah, skor skala).
+  const row = (section: string, items: SummaryInput["review"], scaled: number | null): StatRow => {
+    const answeredN = items.filter((r) => r.answered).length, correct = items.filter((r) => r.answered && r.correct).length;
+    return { section, total: items.length, answered: answeredN, unanswered: items.length - answeredN, correct, wrong: answeredN - correct, pctCorrect: items.length ? Math.round((correct / items.length) * 1000) / 10 : 0, scaled };
+  };
+  const secOrder = ["listening", "structure", "reading"];
+  const present = secOrder.filter((k) => i.review.some((r) => r.section === k));
+  const stats = { rows: present.map((k) => row(k, i.review.filter((r) => r.section === k), i.sections.find((x) => x.section === k)?.scaled ?? null)), total: row("total", i.review, i.scoreEst) };
+
   return {
     reliability: { level, headline, detail },
-    answered: { done, total, pct },
+    answered: { done, total, pct }, stats,
     pace: { avgSec, realSec },
     level: { name: cur?.name ?? "-", next: nxt && avgNeeded != null ? { name: nxt.name, scoreMin: nxt.scoreMin, avgNeeded } : null },
     gap, priorities, zones, plan,

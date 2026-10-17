@@ -6,12 +6,12 @@ import { useApi } from "@/lib/useApi";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
 type Unit = { id: string; title: string; description: string; moduleId: string | null; status: "not_started" | "in_progress" | "completed"; done: number; total: number; locked: boolean; opensAt: string | null };
-type Course = { id: string; title: string; description: string; cover: string | null; locked: boolean; missing: string[]; modules: { id: string; title: string; description: string }[]; units: Unit[]; completed: number };
+type Course = { level?: string | null; previewOnly?: boolean; inactive?: boolean; id: string; title: string; description: string; cover: string | null; locked: boolean; missing: string[]; modules: { id: string; title: string; description: string }[]; units: Unit[]; completed: number };
 const day = (d: string) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const ST = { not_started: ["Not started", "badge-muted"], in_progress: ["In progress", "badge-warn"], completed: ["Completed", "badge-ok"] } as const;
 
 export default function Belajar() {
-  const { data, loading, error } = useApi<{ needsPlacement: boolean; courses: Course[] }>("/api/courses");
+  const { data, loading, error } = useApi<{ needsPlacement: boolean; preview?: boolean; courses: Course[] }>("/api/courses");
   const [picked, setPicked] = useState<string | null>(null);
   if (loading) return <Loading />;
 
@@ -26,6 +26,7 @@ export default function Belajar() {
     <div className="flex flex-col gap-5">
       <div><h1 className="page-title">Learn</h1><p className="mt-1 text-sm text-ink-soft sm:text-base">Pick a course for your level. Finish the required materials and pass the quiz to complete a unit.</p></div>
       <ErrorNote text={error} />
+      {data?.preview && <p role="note" className="rounded-xl border border-accent bg-accent-tint p-3 text-sm text-navy"><b>Preview mode.</b> You see courses of every level, including courses marked Preview only, with no prerequisites or unlock days. Participants only see their own level, and never see Preview only courses. Your progress here does not appear in participant reports (admin) or counts as a test account (QA).</p>}
       {data?.needsPlacement && <Empty>Take the placement test first to unlock courses for your level. <Link href="/tests" className="font-semibold text-brand">Go to My Tests</Link></Empty>}
       {data && !data.needsPlacement && courses.length === 0 && <Empty>No courses for your level yet.</Empty>}
 
@@ -44,6 +45,7 @@ export default function Belajar() {
                       {c.locked ? <span className="badge-muted">Locked</span> : <span className={pct === 100 ? "badge-ok" : pct > 0 ? "badge-warn" : "badge-muted"}>{pct === 100 ? "Completed" : pct > 0 ? "In progress" : "Not started"}</span>}
                       <span className="text-xs text-ink-soft">{c.units.length} {c.units.length === 1 ? "unit" : "units"}</span>
                     </span>
+                    {data?.preview && <span className="flex flex-wrap gap-1.5 text-xs">{c.level && <span className="badge-muted">{c.level}</span>}{c.previewOnly && <span className="badge-warn">Preview only</span>}{c.inactive && <span className="badge-muted">Inactive</span>}</span>}
                     <span className="font-display text-lg font-extrabold leading-snug text-navy">{c.title}</span>
                     {c.locked ? <span className="text-sm text-ink-soft">Finish {c.missing.join(", ")} to open this course.</span> : c.description && <span className="line-clamp-2 text-sm text-ink-soft">{c.description}</span>}
                     <span className="mt-auto flex items-center gap-3 pt-1">

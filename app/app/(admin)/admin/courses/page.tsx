@@ -2,6 +2,7 @@
 
 import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
+import Link from "next/link";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
 import { Modal } from "@/components/Modal";
@@ -10,7 +11,7 @@ import { Loading, ErrorNote } from "@/components/Charts";
 
 type Unit = { id: string; title: string; description: string; order: number; active: boolean; materialIds: string[]; quizTestId: string | null; moduleId: string | null; unlockAfterDays: number };
 type Mod = { id: string; title: string; description: string; order: number; active: boolean };
-type Course = { id: string; levelId: string; title: string; description: string; order: number; active: boolean; archived: boolean; secureMode?: boolean; coverAssetId: string | null; prerequisiteCourseIds: string[]; modules: Mod[]; units: Unit[] };
+type Course = { id: string; levelId: string; title: string; description: string; order: number; active: boolean; archived: boolean; previewMode?: boolean; secureMode?: boolean; coverAssetId: string | null; prerequisiteCourseIds: string[]; modules: Mod[]; units: Unit[] };
 type Data = { levels: { id: string; name: string }[]; materials: { id: string; title: string; status: string; kind: string }[]; quizzes: { id: string; name: string; unitId: string | null }[]; courses: Course[] };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 
@@ -29,7 +30,8 @@ export default function Kursus() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><h1 className="page-title">Courses & Units</h1><p className="text-sm text-ink-soft">Build Level, Course, Module, then Unit (lesson) with its required materials (sub-lessons). A unit is complete when all required materials are done and its quiz is passed (pass mark in System Parameters).</p></div>
         <div className="flex items-center gap-4"><label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />Show archived</label>
-        <button className="btn-solid" onClick={() => setCourse({ active: true, order: 0, levelId: data?.levels[0]?.id })}>+ New course</button></div>
+        <Link href="/learn" className="btn-outline">Preview as learner</Link>
+        <button className="btn-solid" onClick={() => setCourse({ active: true, previewMode: true, order: 0, levelId: data?.levels[0]?.id })}>+ New course</button></div>
       </div>
       <ErrorNote text={error || err} />
       {data?.levels.map((l) => {
@@ -43,7 +45,7 @@ export default function Kursus() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-3">
                     {c.coverAssetId ? <img src={`/api/assets/${c.coverAssetId}`} alt="" className="h-12 w-20 shrink-0 rounded-lg object-cover" /> : <span className="h-12 w-20 shrink-0 rounded-lg bg-canvas" aria-hidden />}
-                    <div className="min-w-0"><b className="text-navy">{c.title}</b> {!c.active && <span className="badge-muted ml-1">inactive</span>}{c.archived && <span className="badge-warn ml-1">archived</span>}{c.secureMode && <span className="badge-muted ml-1">secure</span>}{c.prerequisiteCourseIds.length > 0 && <span className="badge-muted ml-1">needs {c.prerequisiteCourseIds.length} prerequisite{c.prerequisiteCourseIds.length > 1 ? "s" : ""}</span>}{c.description && <p className="text-sm text-ink-soft">{c.description}</p>}</div>
+                    <div className="min-w-0"><b className="text-navy">{c.title}</b> {c.previewMode && <span className="badge-warn ml-1" title="Only admins and QA testers can see this course">preview only</span>}{!c.active && <span className="badge-muted ml-1">inactive</span>}{c.archived && <span className="badge-warn ml-1">archived</span>}{c.secureMode && <span className="badge-muted ml-1">secure</span>}{c.prerequisiteCourseIds.length > 0 && <span className="badge-muted ml-1">needs {c.prerequisiteCourseIds.length} prerequisite{c.prerequisiteCourseIds.length > 1 ? "s" : ""}</span>}{c.description && <p className="text-sm text-ink-soft">{c.description}</p>}</div>
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm font-semibold"><button className="text-brand" onClick={() => setMod({ courseId: c.id, active: true, order: c.modules.length })}>+ Module</button><button className="text-brand" onClick={() => setUnit({ courseId: c.id, active: true, order: c.units.length, materialIds: [], unlockAfterDays: 0 })}>+ Unit</button><button className="text-brand" onClick={() => setCourse(c)}>Edit</button><button className="text-brand" onClick={() => run(() => api(`/api/admin/courses/${c.id}`, { method: "PATCH", json: { levelId: c.levelId, title: c.title, description: c.description || undefined, order: c.order, active: c.active, archived: !c.archived, secureMode: !!c.secureMode, coverAssetId: c.coverAssetId, prerequisiteCourseIds: c.prerequisiteCourseIds } }))}>{c.archived ? "Restore" : "Archive"}</button><button className="text-red-700" onClick={() => void askConfirm("Delete this course?").then((ok) => { if (ok) run(() => api(`/api/admin/courses/${c.id}`, { method: "DELETE" })); })}>Delete</button></div>
                 </div>
@@ -110,7 +112,7 @@ function RemedialMapSection() {
 }
 
 function CourseEditor({ init, levels, others, onClose, onSaved }: { init: Partial<Course>; levels: Data["levels"]; others: Course[]; onClose: () => void; onSaved: () => void }) {
-  const [v, setV] = useState({ levelId: init.levelId ?? levels[0]?.id ?? "", title: init.title ?? "", description: init.description ?? "", order: init.order ?? 0, active: init.active ?? true, archived: init.archived ?? false, secureMode: init.secureMode ?? false, coverAssetId: init.coverAssetId ?? null as string | null, prerequisiteCourseIds: init.prerequisiteCourseIds ?? [] as string[] });
+  const [v, setV] = useState({ levelId: init.levelId ?? levels[0]?.id ?? "", title: init.title ?? "", description: init.description ?? "", order: init.order ?? 0, active: init.active ?? true, archived: init.archived ?? false, previewMode: init.previewMode ?? false, secureMode: init.secureMode ?? false, coverAssetId: init.coverAssetId ?? null as string | null, prerequisiteCourseIds: init.prerequisiteCourseIds ?? [] as string[] });
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   async function pickCover(f: File | undefined) {
@@ -144,6 +146,7 @@ function CourseEditor({ init, levels, others, onClose, onSaved }: { init: Partia
           <p className="mt-1 text-xs text-ink-soft">Participants can open this course after finishing every unit of the courses ticked here.</p>
         </fieldset>
         <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Active</label>
+        <label className="flex items-start gap-2 rounded-lg bg-brand-tint p-2 text-sm"><input type="checkbox" className="mt-0.5 h-5 w-5" checked={v.previewMode} onChange={(e) => setV({ ...v, previewMode: e.target.checked })} /><span><b>Preview only</b><br /><span className="text-xs text-ink-soft">While this is on, participants (including AirNav) cannot see this course or the materials used only in it, even if Active is on. Admins and QA testers can open it from Learn, at every level, without prerequisites or unlock days. Turn it off to release the course.</span></span></label>
         <label className="flex items-start gap-2 rounded-lg bg-accent-tint p-2 text-sm"><input type="checkbox" className="mt-0.5 h-5 w-5" checked={v.secureMode} onChange={(e) => setV({ ...v, secureMode: e.target.checked })} /><span><b>Secure mode</b><br /><span className="text-xs text-ink-soft">In this course&apos;s units and materials, copying, pasting, right-click, and the browser Back button are turned off.</span></span></label>
         <ErrorNote text={err} />
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-outline" onClick={onClose}>Cancel</button><button className="btn-solid" disabled={!v.title.trim() || busy} onClick={save}>Save</button></div>

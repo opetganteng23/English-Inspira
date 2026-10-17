@@ -1,4 +1,4 @@
-import { LIVE, assertUnitAccess } from "@/lib/course-access";
+import { LIVE, PREVIEW_VISIBLE, isPreviewer, assertUnitAccess } from "@/lib/course-access";
 import { visibleTestFilter } from "@/lib/test-access";
 import { cycleState } from "@/lib/cycles";
 import { NextResponse } from "next/server";
@@ -11,15 +11,16 @@ import { Attempt, Test } from "@/models/Test";
 /** Mulai (atau lanjutkan) kuis unit. Kuis hanya bisa dimulai dari unit pemiliknya, pada course di level peserta. */
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const me = await requireRole(["participant"]);
+    const me = await requireRole(["participant", "admin"]);
+    const preview = isPreviewer(me);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Unit not found");
     await connectDB();
     const unit = await Unit.findOne({ _id: params.id, active: true }).lean();
-    const course = unit ? await Course.findOne({ _id: unit.courseId, ...LIVE, levelId: me.currentLevelId ?? undefined }).lean() : null;
+    const course = unit ? await Course.findOne(preview ? { _id: unit.courseId, ...PREVIEW_VISIBLE } : { _id: unit.courseId, ...LIVE, levelId: me.currentLevelId ?? undefined }).lean() : null;
     if (!unit || !course || !unit.quizTestId) throw new HttpError(404, "Quiz not found");
-    await assertUnitAccess(me._id, unit, course);
+    if (!preview) await assertUnitAccess(me._id, unit, course);
     const cs = await cycleState(me.institutionId);
-    if (cs.blockedReason) throw new HttpError(403, cs.blockedReason);
+    if (cs.blockedReason && !preview) throw new HttpError(403, cs.blockedReason);
     const test = await Test.findOne({ _id: unit.quizTestId, kind: "quiz", ...visibleTestFilter(me) }).lean();
     if (!test) throw new HttpError(404, "Quiz not found");
 

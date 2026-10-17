@@ -12,6 +12,7 @@ export const courseInput = z.object({
   coverAssetId: oid.nullable().optional(),
   prerequisiteCourseIds: z.array(oid).max(10).default([]),
   secureMode: z.boolean().default(false),
+  previewMode: z.boolean().default(false),
 });
 
 export const moduleInput = z.object({

@@ -6,7 +6,7 @@ import { injectAudio } from "@/lib/materials";
 import { sanitizeRich } from "@/lib/sanitize";
 import { Material, MaterialProgress } from "@/models/Material";
 import { Course, Unit } from "@/models/Course";
-import { LIVE } from "@/lib/course-access";
+import { LIVE, isPreviewer, previewOnlyMaterialIds } from "@/lib/course-access";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     await connectDB();
     const m = await Material.findOne({ slug: params.slug, ...(user.role === "admin" ? {} : { status: "published", ...visibleTo(user) }) }).lean();
     if (!m) throw new HttpError(404, "Material not found");
+    if (!isPreviewer(user) && (await previewOnlyMaterialIds()).some((x) => String(x) === String(m._id))) throw new HttpError(404, "Material not found");
 
     const id = String(m._id);
     // Materi dalam course bermode aman: salin/tempel dan tombol Kembali dimatikan di halaman materi.

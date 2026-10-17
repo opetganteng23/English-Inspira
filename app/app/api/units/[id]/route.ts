@@ -1,4 +1,4 @@
-import { LIVE, assertUnitAccess } from "@/lib/course-access";
+import { LIVE, PREVIEW_VISIBLE, isPreviewer, assertUnitAccess } from "@/lib/course-access";
 import { visibleTestFilter } from "@/lib/test-access";
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
@@ -15,16 +15,17 @@ export const dynamic = "force-dynamic";
 /** Detail unit: materi wajib (dengan status), kuis (skor terbaik, lulus, attempt berjalan). Hanya untuk unit di level peserta. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const me = await requireRole(["participant"]);
+    const me = await requireRole(["participant", "admin"]);
+    const preview = isPreviewer(me);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Unit not found");
     await connectDB();
     const unit = await Unit.findOne({ _id: params.id, active: true }).lean();
-    const course = unit ? await Course.findOne({ _id: unit.courseId, ...LIVE, levelId: me.currentLevelId ?? undefined }).lean() : null;
+    const course = unit ? await Course.findOne(preview ? { _id: unit.courseId, ...PREVIEW_VISIBLE } : { _id: unit.courseId, ...LIVE, levelId: me.currentLevelId ?? undefined }).lean() : null;
     if (!unit || !course) throw new HttpError(404, "Unit not found");
-    await assertUnitAccess(me._id, unit, course);
+    if (!preview) await assertUnitAccess(me._id, unit, course);
 
     const [mats, prog, mprog, quiz, running, pass] = await Promise.all([
-      Material.find({ _id: { $in: unit.materialIds }, status: "published", ...visibleTo(me) }).select("title slug kind summary").lean(),
+      Material.find({ _id: { $in: unit.materialIds }, ...(me.role === "admin" ? {} : { status: "published", ...visibleTo(me) }) }).select("title slug kind summary").lean(),
       UnitProgress.findOne({ userId: me._id, unitId: unit._id }).lean(),
       MaterialProgress.find({ userId: me._id, materialId: { $in: unit.materialIds } }).lean(),
       unit.quizTestId ? Test.findOne({ _id: unit.quizTestId, ...visibleTestFilter(me) }).select("name sections").lean() : null,

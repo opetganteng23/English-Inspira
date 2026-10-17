@@ -144,6 +144,24 @@ export default function Hasil({ params }: { params: { id: string } }) {
               <p className="mt-1 text-sm text-ink-soft">{sm.reliability.detail}</p>
               {sm.pace.avgSec != null && sm.pace.realSec != null && <p className="mt-1 text-xs text-ink-soft">Your average was {sm.pace.avgSec}s per answer; the real test pace is about {sm.pace.realSec}s per question.</p>}
             </div>
+            <div className="card">
+              <h2 className="font-display text-lg font-extrabold text-navy">Test statistics</h2>
+              <p className="text-sm text-ink-soft">How many questions you answered and left blank, and your score, per section.</p>
+              <div className="table-wrap mt-3">
+                <table>
+                  <thead><tr><th>Section</th><th>Questions</th><th>Answered</th><th>Not answered</th><th>Correct</th><th>Wrong</th><th>% correct</th><th>Score</th></tr></thead>
+                  <tbody>
+                    {[...sm.stats.rows, sm.stats.total].map((x) => (
+                      <tr key={x.section} className={x.section === "total" ? "font-bold text-navy" : ""}>
+                        <td>{x.section === "total" ? "Total" : BD_LABEL[x.section] ?? x.section}</td><td>{x.total}</td><td>{x.answered}</td>
+                        <td className={x.unanswered > 0 ? "font-semibold text-red-700" : ""}>{x.unanswered}</td><td>{x.correct}</td><td>{x.wrong}</td><td>{x.pctCorrect}%</td>
+                        <td className="font-semibold text-navy">{x.scaled ?? "-"}{x.section === "total" ? "" : <span className="ml-1 text-xs font-normal text-ink-soft">/ 68</span>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
             {sm.level.next && (
               <div className="card">
                 <h2 className="font-display text-lg font-extrabold text-navy">Gap to {sm.level.next.name} ({sm.level.next.scoreMin})</h2>
