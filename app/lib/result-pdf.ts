@@ -24,6 +24,14 @@ export type ResultPdfData = {
   partial?: { percent: number; passScore: number; passed: boolean };
 };
 
+/**
+ * PDF placement hanya memuat placement itu sendiri: tanpa perbandingan dengan tes lain dan tanpa kemajuan course
+ * (yang berasal dari aktivitas lain dan bisa berubah setelah placement dikerjakan). Jenis lain tidak berubah.
+ */
+export function scopeForKind<T extends { previous: unknown; courseProgress?: unknown }>(d: T, kind?: string | null): T {
+  return kind === "placement" ? { ...d, previous: null, courseProgress: undefined } : d;
+}
+
 const PART_NAMES: Record<string, string> = { listening_a: "Listening Part A", listening_b: "Listening Part B", listening_c: "Listening Part C", structure: "Structure", written_expression: "Written Expression", reading: "Reading" };
 const SEC_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildSummary } from "@/lib/summary";
+import { scopeForKind } from "@/lib/result-pdf";
 
 describe("ringkasan diagnostic", () => {
   const levels = [{ name: "Basic", order: 1, scoreMin: 310, scoreMax: 459 }, { name: "Intermediate", order: 2, scoreMin: 460, scoreMax: 549 }];
@@ -35,5 +36,15 @@ describe("ringkasan diagnostic", () => {
     expect(ok.reliability.detail).not.toMatch(/not reliable/);
     expect(ok.level.next).toBeNull(); // 520 sudah level tertinggi dalam contoh ini
     expect(ok.plan[0].action).toMatch(/Keep your pacing/);
+  });
+});
+
+describe("cakupan PDF", () => {
+  const d = { previous: { name: "T00", scoreEst: 390 }, courseProgress: [{ title: "Structure" }], scoreEst: 413 };
+  it("placement: tanpa pembanding dengan tes lain dan tanpa kemajuan course; jenis lain tidak berubah", () => {
+    const p = scopeForKind(d, "placement");
+    expect(p.previous).toBeNull(); expect(p.courseProgress).toBeUndefined(); expect(p.scoreEst).toBe(413);
+    expect(scopeForKind(d, "sim")).toBe(d);
+    expect(scopeForKind(d, "quiz")).toBe(d);
   });
 });

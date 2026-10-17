@@ -4,7 +4,7 @@ import { isReleased, exemptFromDelay } from "@/lib/attempt-release";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { loadAttempt, ensureReleased } from "@/lib/attempts";
 import { attemptResult } from "@/lib/attempt-result";
-import { resultPdf } from "@/lib/result-pdf";
+import { resultPdf, scopeForKind } from "@/lib/result-pdf";
 import { User } from "@/models/User";
 import { Attempt } from "@/models/Test";
 
@@ -31,7 +31,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         if (a?.aiAnalysis?.status && a.aiAnalysis.status !== "pending") r = await attemptResult((await Attempt.findById(attempt._id))!, test);
       }
     }
-    const pdf = await resultPdf({
+    const pdf = await resultPdf(scopeForKind({
       name: owner?.name ?? owner?.email ?? "-", testName: r.testName, kindLabel: KIND[r.kind ?? ""] ?? "TEST", finishedAt: r.finishedAt ?? null, durationSec: r.durationSec,
       scoreEst: r.scoreEst ?? null, scoring: r.scoring, level: r.level ? { name: r.level.name, scoreMin: r.level.scoreMin, scoreMax: r.level.scoreMax, quota: r.level.quota } : null,
       equivalents: r.equivalents, previous: r.previous && r.previous.scoreEst != null ? { name: r.previous.name, scoreEst: r.previous.scoreEst } : null, target: owner?.targetScore ?? null,
@@ -41,7 +41,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       unanswered: r.unanswered, insights: r.insights, courseProgress: r.courseProgress,
       partial: r.partial && r.percent != null && r.passScore != null ? { percent: r.percent, passScore: r.passScore, passed: !!r.passed } : undefined, summary: r.summary,
       recommendations: r.recommendations.map((x) => ({ course: x.course.title, unit: x.unit.title, topic: x.topic, score: x.score })),
-    });
+    }, r.kind));
     const slug = r.testName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "result";
     return new Response(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="english-inspira-${slug}.pdf"`, "Cache-Control": "private, no-store" } });
   } catch (e) {
