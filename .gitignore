@@ -18,3 +18,7 @@ Thumbs.db
 
 # berkas sementara pengembangan
 *.tmp.*
+
+# Data pribadi peserta (jangan pernah di-commit)
+Data Personel*.xlsx
+*.personel.xlsx

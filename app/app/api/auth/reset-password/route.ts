@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const user = await User.findOneAndUpdate(
       { resetTokenHash: sha256(b.token), resetExpiresAt: { $gt: new Date() } },
       { $set: { passwordHash: await hashPassword(b.password) }, $unset: { resetTokenHash: 1, resetExpiresAt: 1, pendingPasswordHash: 1 } },
-      { new: true }
+      { returnDocument: "after" }
     );
     if (!user) throw new HttpError(400, "This reset link is invalid or has expired. Request a new one.");
     if (!user.emailVerifiedAt) await User.updateOne({ _id: user._id }, { emailVerifiedAt: new Date() });

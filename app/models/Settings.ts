@@ -4,7 +4,7 @@ import mongoose, { Schema, Model } from "mongoose";
 const counterSchema = new Schema({ key: { type: String, unique: true }, seq: { type: Number, default: 0 } });
 export const Counter = (mongoose.models.Counter as Model<{ key: string; seq: number }>) || mongoose.model<{ key: string; seq: number }>("Counter", counterSchema);
 export async function nextSeq(key: string) {
-  const c = await Counter.findOneAndUpdate({ key }, { $inc: { seq: 1 } }, { upsert: true, new: true });
+  const c = await Counter.findOneAndUpdate({ key }, { $inc: { seq: 1 } }, { upsert: true, returnDocument: "after" });
   return c.seq;
 }
 

@@ -18,7 +18,7 @@ export async function issueCode(email: string, template: TemplateName) {
 
 /** Cek kode: percobaan dinaikkan atomik sebelum dibandingkan; kode sekali pakai. Melempar HttpError bila salah. */
 export async function consumeCode(email: string, code: string) {
-  const otp = await Otp.findOneAndUpdate({ email, expiresAt: { $gt: new Date() }, attempts: { $lt: MAX_ATTEMPTS } }, { $inc: { attempts: 1 } }, { new: true });
+  const otp = await Otp.findOneAndUpdate({ email, expiresAt: { $gt: new Date() }, attempts: { $lt: MAX_ATTEMPTS } }, { $inc: { attempts: 1 } }, { returnDocument: "after" });
   if (!otp) throw new HttpError(400, CODE_BAD);
   if (!(await bcrypt.compare(code, otp.codeHash))) {
     const left = MAX_ATTEMPTS - otp.attempts;

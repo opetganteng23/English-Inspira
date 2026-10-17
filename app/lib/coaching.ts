@@ -130,7 +130,7 @@ export async function bookSlot(user: Actor & { currentLevelId?: Types.ObjectId |
   if (bookableLeft(q.total, q.used, upcomingSlots.length) <= 0) throw new HttpError(409, "Coaching quota used up (including sessions you have already booked)");
   if (upcomingSlots.some((x) => overlaps(x.startsAt, x.endsAt, s.startsAt, s.endsAt))) throw new HttpError(409, "You already have a session at the same time");
 
-  const got = await CoachSlot.findOneAndUpdate({ _id: s._id, status: "published", $expr: { $lt: ["$booked", "$capacity"] } }, { $inc: { booked: 1 } }, { new: true });
+  const got = await CoachSlot.findOneAndUpdate({ _id: s._id, status: "published", $expr: { $lt: ["$booked", "$capacity"] } }, { $inc: { booked: 1 } }, { returnDocument: "after" });
   if (!got) throw new HttpError(409, "The slot is full");
   try {
     const b = await Booking.create({ slotId: s._id, userId: user._id, coachId: s.coachId, institutionId: s.institutionId, programCycleId: cs.active?._id });

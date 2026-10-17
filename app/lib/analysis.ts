@@ -118,7 +118,7 @@ export async function runAnalysis(attemptId: Types.ObjectId | string) {
 
 export async function runAnalysisById(analysisId: Types.ObjectId | string) {
   await connectDB();
-  const a = await Analysis.findOneAndUpdate({ _id: analysisId, status: "calculated", claimedAt: { $exists: false } }, { claimedAt: new Date() }, { new: true });
+  const a = await Analysis.findOneAndUpdate({ _id: analysisId, status: "calculated", claimedAt: { $exists: false } }, { claimedAt: new Date() }, { returnDocument: "after" });
   if (!a) return;
   const attemptId = a.attemptId;
   if (attemptId) await Attempt.updateOne({ _id: attemptId }, { aiAnalysis: { status: "pending", startedAt: new Date() } });

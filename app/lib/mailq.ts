@@ -39,7 +39,10 @@ export async function processMailQueue(limit = 20) {
 
   const cap = await getParam("invite_hourly_cap");
   const sentInvites = await MailJob.countDocuments({ template: "invitation", status: "sent", sentAt: { $gte: new Date(Date.now() - 3_600_000) } });
-  let inviteBudget = Math.max(0, cap - sentInvites);
+  // Batas harian dihitung dari SEMUA email keluar (Gmail membatasi total), tetapi hanya undangan massal yang berhenti saat habis.
+  const dailyCap = await getParam("mail_daily_cap");
+  const sentToday = await MailJob.countDocuments({ status: "sent", sentAt: { $gte: new Date(Date.now() - 86_400_000) } });
+  let inviteBudget = Math.max(0, Math.min(cap - sentInvites, dailyCap - sentToday));
 
   let sent = 0, failed = 0, deferred = 0, taken = 0;
   // 3 pekerja paralel (sama dengan maxConnections pool SMTP): 100 kode OTP serentak selesai dalam hitungan detik, bukan menit.
@@ -49,7 +52,7 @@ export async function processMailQueue(limit = 20) {
       // Klaim atomik: dua pekerja/proses tidak mengirim email yang sama dua kali.
       const job = await MailJob.findOneAndUpdate(
         { status: "queued", nextTryAt: { $lte: new Date() }, ...(inviteBudget <= 0 ? { template: { $ne: "invitation" } } : {}) },
-        { status: "sending" }, { sort: { priority: 1, nextTryAt: 1 }, new: true }
+        { status: "sending" }, { sort: { priority: 1, nextTryAt: 1 }, returnDocument: "after" }
       );
       if (!job) return;
       try {

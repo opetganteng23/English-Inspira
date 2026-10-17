@@ -30,7 +30,7 @@ export async function ensureDefaultProfile() {
   const doc = await ScoringProfile.findOneAndUpdate(
     { name: DEFAULT_NAME },
     { $setOnInsert: { name: DEFAULT_NAME, description: "Provisional linear conversion. Replace it with a verified table before relying on the scores.", mode: legacy.mode, scaledMin: legacy.scaledMin, scaledMax: legacy.scaledMax, tables: legacy.tables, verified: false, isDefault: true, version: 1 } },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
   return doc!;
 }

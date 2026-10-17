@@ -81,7 +81,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (typeof body.description === "string") set.description = body.description.trim().slice(0, 500);
     if (typeof body.source === "string") set.source = body.source.trim().slice(0, 200);
     await connectDB();
-    const a = await Audio.findByIdAndUpdate(params.id, { $set: set }, { new: true });
+    const a = await Audio.findByIdAndUpdate(params.id, { $set: set }, { returnDocument: "after" });
     if (!a) throw new HttpError(404, "Audio not found");
     return NextResponse.json({ ok: true });
   } catch (e) {

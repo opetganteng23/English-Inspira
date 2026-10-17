@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
       { userId: user._id, materialId: m._id },
       // Laporan sementara (final=false) hanya menyimpan skor terakhir; penyelesaian menandai selesai dan menambah percobaan.
       b.final ? { $set: { score: b.score, answers: mongoSanitize(b.answers ?? null), completedAt: new Date() }, $inc: { attempts: 1 } } : { $set: { score: b.score, answers: mongoSanitize(b.answers ?? null) }, $setOnInsert: { attempts: 0 } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
     if (b.final && user.role === "participant") await markMaterialDone(user, m._id); // memajukan unit yang mensyaratkan materi ini
     return NextResponse.json({ ok: true, attempts: p.attempts });

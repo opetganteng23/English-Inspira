@@ -43,7 +43,7 @@ const classSchema = new Schema(
 const memberSchema = new Schema(
   {
     classId: { type: Schema.Types.ObjectId, ref: "ClassGroup", required: true, index: true },
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     method: { type: String, enum: ["auto", "manual"], required: true },
     assignedBy: { type: Schema.Types.ObjectId, ref: "User" },
     active: { type: Boolean, default: true },
@@ -51,7 +51,8 @@ const memberSchema = new Schema(
   },
   { timestamps: true }
 );
-memberSchema.index({ userId: 1 }, { unique: true, partialFilterExpression: { active: true } });
+// Nama eksplisit: di produksi sudah ada indeks biasa bernama userId_1, sehingga indeks unik parsial dengan nama bawaan tidak pernah terbentuk.
+memberSchema.index({ userId: 1 }, { name: "userId_one_active", unique: true, partialFilterExpression: { active: true } });
 
 export type ExternalResultDoc = InferSchemaType<typeof resultSchema> & { _id: mongoose.Types.ObjectId };
 export type ClassDoc = InferSchemaType<typeof classSchema> & { _id: mongoose.Types.ObjectId };
