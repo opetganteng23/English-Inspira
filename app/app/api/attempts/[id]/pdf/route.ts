@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (!exemptFromDelay(user) && !isReleased(attempt)) return NextResponse.json({ error: "Your results are not released yet.", availableAt: attempt.releaseAt }, { status: 423 });
     await connectDB();
     const [r, owner] = await Promise.all([
-      attemptResult(attempt, test, user.role),
+      attemptResult(attempt, test),
       User.findById(attempt.userId).select("name email targetScore").lean(),
     ]);
     const pdf = await resultPdf({

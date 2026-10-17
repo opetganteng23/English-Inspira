@@ -13,7 +13,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const { attempt, test } = await loadAttempt(params.id, user);
     if (attempt.status !== "submitted") throw new HttpError(409, "The test is not finished yet");
     if (!exemptFromDelay(user) && !isReleased(attempt)) return NextResponse.json({ error: "Your results are not released yet.", availableAt: attempt.releaseAt }, { status: 423 });
-    return NextResponse.json(await attemptResult(attempt, test, user.role));
+    return NextResponse.json(await attemptResult(attempt, test));
   } catch (e) {
     return handleError(e);
   }

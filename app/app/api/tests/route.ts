@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { releasedFilter, exemptFromDelay } from "@/lib/attempt-release";
+import { exemptFromDelay } from "@/lib/attempt-release";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { canStartTest, visibleTestFilter } from "@/lib/test-access";

@@ -20,7 +20,7 @@ type SnapItem = { qid: import("mongoose").Types.ObjectId; section: string; type:
  * - Pembahasan per soal dan transkrip baru dibuka setelah tes selesai dan waktu rilis hasil lewat (lib/attempt-release.ts); tidak ada umpan balik di dalam tes.
  * - Padanan skor hanya TOEFL ITP dan CEFR (tanpa padanan PURE/OCE).
  */
-export async function attemptResult(attempt: AttemptHydrated, test: Awaited<ReturnType<typeof loadAttempt>>["test"], _viewerRole: string) {
+export async function attemptResult(attempt: AttemptHydrated, test: Awaited<ReturnType<typeof loadAttempt>>["test"]) {
     await connectDB();
 
     const ids = test.sections.flatMap((s) => s.questionIds);
