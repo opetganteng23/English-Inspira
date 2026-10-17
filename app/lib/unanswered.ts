@@ -1,4 +1,5 @@
 import { isLearningTopic } from "./topics";
+import { typeLabel } from "./breakdown";
 
 type ReviewItem = { no: number; seq?: number; section: string; answered: boolean; tags?: { skill?: string | null; topic?: string | null }[]; timeSpentSec?: number | null };
 export type UnansweredReport = {
@@ -42,7 +43,7 @@ export function buildUnanswered(review: ReviewItem[]): UnansweredReport {
     advice.push(`${unanswered} of ${total} questions were left blank and counted as wrong. There is no penalty for a wrong answer, so always pick an option, even if you are guessing.`);
     for (const s of sections.filter((x) => x.trailing >= 3)) advice.push(`${LABEL[s.section] ?? s.section}: the last ${s.trailing} questions were not answered, which usually means time ran out. Practise pacing and, when time is short, mark an answer for every remaining question.`);
     for (const s of sections.filter((x) => x.unanswered - x.trailing >= 3)) advice.push(`${LABEL[s.section] ?? s.section}: ${s.unanswered - s.trailing} questions earlier in the section were skipped. Answer a hard question with your best guess and move on instead of leaving it blank.`);
-    if (types[0]) advice.push(`Most blanks were in ${types[0].topic}: ${types[0].unanswered} of ${types[0].total} questions of that type. Practise this type first.`);
+    if (types[0]) advice.push(`Most blanks were in ${typeLabel(types[0].skill, types[0].topic)}: ${types[0].unanswered} of ${types[0].total} questions of that type. Practise this type first.`);
   }
   return { total, unanswered, pct: total ? Math.round((unanswered / total) * 1000) / 10 : 0, sections, types, advice };
 }

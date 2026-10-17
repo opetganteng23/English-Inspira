@@ -1,6 +1,6 @@
 import PDFDocument from "pdfkit";
 import path from "node:path";
-import { buildBreakdown, partLabel } from "./breakdown";
+import { buildBreakdown, partLabel, typeLabel } from "./breakdown";
 
 // Poppins dan palet sama dengan PDF lain (lib/pdf.ts).
 const FONT = (w: string) => path.join(process.cwd(), "public", "fonts", `poppins-${w}.ttf`);
@@ -103,7 +103,7 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
     }
     if (sm.priorities.length) {
       para(`Top ${sm.priorities.length} priorities`, { bold: true, keep: 40 });
-      sm.priorities.forEach((p, k) => para(`${k + 1}. ${p.topic} (${p.score}%, ${p.correct}/${p.total}, about ${p.recoverable} questions to win back). ${p.tip}`, { indent: 8, color: GRAY }));
+      sm.priorities.forEach((p, k) => para(`${k + 1}. ${p.label} (${p.score}%, ${p.correct}/${p.total}, about ${p.recoverable} questions to win back). ${p.tip}`, { indent: 8, color: GRAY }));
     }
     para("Recommended next steps (about 20 minutes a day)", { bold: true, keep: 40 });
     for (const x of sm.plan) para(`${x.when} - ${x.focus}: ${x.action}`, { indent: 8, color: GRAY });
@@ -191,7 +191,7 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
     if (u.unanswered > 0) {
       const rows = u.sections.filter((s) => s.unanswered > 0).map((s) => `${SEC_LABEL[s.section] ?? s.section} ${s.unanswered}/${s.total}${s.trailing >= 3 ? ` (last ${s.trailing} blank)` : ""}`);
       if (rows.length) para(`By section: ${rows.join(" · ")}`, { size: 9, color: GRAY });
-      if (u.types.length) para(`By question type: ${u.types.map((t) => `${t.topic} ${t.unanswered}/${t.total}`).join(" · ")}`, { size: 9, color: GRAY });
+      if (u.types.length) para(`By question type: ${u.types.map((t) => `${typeLabel(t.skill, t.topic)} ${t.unanswered}/${t.total}`).join(" · ")}`, { size: 9, color: GRAY });
     }
     for (const t of u.advice) para(`- ${t}`, { indent: 8, color: GRAY });
   }

@@ -1,4 +1,5 @@
 import { isLearningTopic } from "./topics";
+import { typeLabel } from "./breakdown";
 
 type Item = {
   no: number; seq?: number; section: string; correct: boolean; answered: boolean;
@@ -91,9 +92,9 @@ export function buildInsights(review: Item[]): Insights {
 
   const advice: string[] = [];
   for (const s of stamina.filter((x) => x.drop >= 20)) advice.push(`${LABEL[s.section] ?? s.section}: accuracy fell from ${s.thirds[0]}% at the start to ${s.thirds[2]}% at the end. Practise full-length sections to build stamina.`);
-  for (const q of quadrants.filter((x) => x.kind === "concept").slice(0, 2)) advice.push(`${q.topic}: slow and often wrong (${q.accuracy}%). This needs concept review before more practice.`);
-  for (const q of quadrants.filter((x) => x.kind === "rushed").slice(0, 2)) advice.push(`${q.topic}: quick but only ${q.accuracy}% correct. Slow down and re-read the question.`);
-  for (const q of quadrants.filter((x) => x.kind === "slow").slice(0, 1)) advice.push(`${q.topic}: accurate but slow (${q.avgSec}s on average). Practise it under time limits.`);
+  for (const q of quadrants.filter((x) => x.kind === "concept").slice(0, 2)) advice.push(`${typeLabel(q.skill, q.topic)}: slow and often wrong (${q.accuracy}%). This needs concept review before more practice.`);
+  for (const q of quadrants.filter((x) => x.kind === "rushed").slice(0, 2)) advice.push(`${typeLabel(q.skill, q.topic)}: quick but only ${q.accuracy}% correct. Slow down and re-read the question.`);
+  for (const q of quadrants.filter((x) => x.kind === "slow").slice(0, 1)) advice.push(`${typeLabel(q.skill, q.topic)}: accurate but slow (${q.avgSec}s on average). Practise it under time limits.`);
   if (changes && changes.toWrong > changes.toRight && changes.toWrong >= 2) advice.push(`You changed ${changes.toWrong} right answers to wrong ones and fixed only ${changes.toRight}. Trust your first answer unless you find a clear reason to change it.`);
   else if (changes && changes.toRight > changes.toWrong && changes.toRight >= 2) advice.push(`Changing answers helped you: ${changes.toRight} wrong answers became right and ${changes.toWrong} right ones became wrong.`);
   if (guessing && guessing.count >= 5 && guessing.pct >= 8) advice.push(`${guessing.count} questions were answered in under ${GUESS_SEC} seconds and missed (${guessing.pct}%). These look like guesses.`);

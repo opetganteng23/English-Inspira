@@ -98,7 +98,7 @@ export function SpeedScatter({ points }: { points: { label: string; avgSec: numb
       {[0, 50, 100].map((t) => <g key={t}><line x1={P.l} x2={W - P.r} y1={y(t)} y2={y(t)} stroke="#DCE3ED" /><text x={P.l - 6} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#4B5A70">{t}%</text></g>)}
       <line x1={P.l} x2={W - P.r} y1={y(70)} y2={y(70)} stroke="#9AA8BC" strokeDasharray="4 4" />
       <line x1={x(mid)} x2={x(mid)} y1={P.t} y2={H - P.b} stroke="#9AA8BC" strokeDasharray="4 4" />
-      {points.map((p) => <g key={p.label}><circle cx={x(p.avgSec)} cy={y(p.accuracy)} r={5 + Math.min(5, p.n / 4)} fill={color[p.kind] ?? "#0B4FA6"} fillOpacity=".85" stroke="#fff" strokeWidth="1.5"><title>{`${p.label}: ${p.avgSec}s average, ${p.accuracy}% correct, ${p.n} questions`}</title></circle><text x={x(p.avgSec) + (x(p.avgSec) > W - 120 ? -10 : 10)} y={y(p.accuracy) - 8} textAnchor={x(p.avgSec) > W - 120 ? "end" : "start"} fontSize="10" fontWeight="600" fill="#0A2257">{p.label.length > 16 ? p.label.slice(0, 15) + "…" : p.label}</text></g>)}
+      {points.map((p, i) => <g key={p.label}><circle cx={x(p.avgSec)} cy={y(p.accuracy)} r="10" fill={color[p.kind] ?? "#0B4FA6"} fillOpacity=".9" stroke="#fff" strokeWidth="1.5"><title>{`${p.label}: ${p.avgSec}s average, ${p.accuracy}% correct, ${p.n} questions`}</title></circle><text x={x(p.avgSec)} y={y(p.accuracy) + 3.5} textAnchor="middle" fontSize="10" fontWeight="700" fill="#fff" pointerEvents="none">{i + 1}</text></g>)}
       <text x={(P.l + W - P.r) / 2} y={H - 8} textAnchor="middle" fontSize="11" fill="#4B5A70">Average seconds per question (slower to the right)</text>
       <text x={P.l + 4} y={P.t + 10} fontSize="10" fill="#4B5A70">fast, accurate</text>
       <text x={W - P.r - 4} y={P.t + 10} textAnchor="end" fontSize="10" fill="#4B5A70">slow, accurate</text>
@@ -127,14 +127,14 @@ export function ThirdsBars({ rows }: { rows: { label: string; thirds: number[] }
 
 /** Radar 3 sumbu (skala section 31-68): skor ini, tes sebelumnya (opsional), dan target level berikutnya (opsional). */
 export function RadarChart({ axes, now, previous, target, min = 31, max = 68 }: { axes: string[]; now: number[]; previous?: number[] | null; target?: number | null; min?: number; max?: number }) {
-  const W = 320, H = 280, cx = W / 2, cy = 140, R = 95;
+  const W = 320, H = 262, cx = W / 2, cy = 130, R = 112;
   const ang = (i: number) => (-90 + (360 / axes.length) * i) * (Math.PI / 180);
   const pt = (i: number, v: number) => { const r = (Math.max(min, Math.min(max, v)) - min) / (max - min) * R; return [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))] as const; };
   const poly = (vals: number[]) => vals.map((v, i) => pt(i, v).map((n) => n.toFixed(1)).join(",")).join(" ");
   const rings = [40, 50, 60];
   const tgt = target != null ? axes.map(() => target) : null;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Score profile: ${axes.map((a, i) => `${a} ${now[i]}`).join(", ")}${target != null ? `, target ${target} in each section` : ""}`} className="h-auto w-full max-w-[340px]">
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Score profile: ${axes.map((a, i) => `${a} ${now[i]}`).join(", ")}${target != null ? `, target ${target} in each section` : ""}`} className="h-auto w-full min-w-[260px] max-w-[340px]">
       {rings.map((v) => <g key={v}><polygon points={poly(axes.map(() => v))} fill="none" stroke="#DCE3ED" /><text x={cx + 3} y={cy - ((v - min) / (max - min)) * R - 2} fontSize="9" fill="#4B5A70">{v}</text></g>)}
       {axes.map((a, i) => { const [x, y] = pt(i, max); const [lx, ly] = pt(i, max + 9); return <g key={a}><line x1={cx} y1={cy} x2={x} y2={y} stroke="#DCE3ED" /><text x={lx} y={ly + 4} textAnchor={Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end"} fontSize="11" fontWeight="600" fill="#0A2257">{a}</text></g>; })}
       {tgt && <polygon points={poly(tgt)} fill="none" stroke="#D9A02F" strokeWidth="1.5" strokeDasharray="5 4" />}

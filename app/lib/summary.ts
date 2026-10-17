@@ -1,4 +1,4 @@
-import { buildBreakdown, type TopicRow } from "./breakdown";
+import { buildBreakdown, typeLabel, type TopicRow } from "./breakdown";
 import { levelForScore } from "./config";
 
 export type Reliability = "high" | "medium" | "low";
@@ -22,7 +22,7 @@ export type Summary = {
   pace: { avgSec: number | null; realSec: number | null };
   level: { name: string; next: { name: string; scoreMin: number; avgNeeded: number } | null };
   gap: { section: string; scaled: number; gap: number }[];
-  priorities: { skill: string; topic: string; score: number; correct: number; total: number; recoverable: number; tip: string }[];
+  priorities: { label: string; skill: string; topic: string; score: number; correct: number; total: number; recoverable: number; tip: string }[];
   zones: { priority: number; developing: number; strong: number; few: number };
   plan: { when: string; focus: string; action: string; topic?: { skill: string; topic: string } }[];
 };
@@ -81,7 +81,7 @@ export function buildSummary(i: SummaryInput): Summary {
   for (const r of rows) zones[zoneOf(r, i.th)]++;
   const priorities = rows
     .filter((r) => r.total >= i.th.minItems && r.score < i.th.weak)
-    .map((r) => ({ skill: r.skill, topic: r.topic, score: Math.round(r.score), correct: r.correct, total: r.total, recoverable: Math.round(r.total * ((i.th.weak - r.score) / 100) * 10) / 10, tip: TIP[r.skill] ?? "Review the rule, then practise under time." }))
+    .map((r) => ({ label: typeLabel(r.skill, r.topic), skill: r.skill, topic: r.topic, score: Math.round(r.score), correct: r.correct, total: r.total, recoverable: Math.round(r.total * ((i.th.weak - r.score) / 100) * 10) / 10, tip: TIP[r.skill] ?? "Review the rule, then practise under time." }))
     .sort((a, b) => b.recoverable - a.recoverable || a.score - b.score || a.topic.localeCompare(b.topic))
     .slice(0, 3);
 
@@ -90,7 +90,7 @@ export function buildSummary(i: SummaryInput): Summary {
     action: pct < 100 ? "Use the full time and answer every question: a wrong answer carries no penalty." : "Keep your pacing and use spare time to re-check the questions you were unsure about.",
   }];
   const slots = ["Weeks 1-2", "Weeks 3-4", "Weeks 5-6"];
-  priorities.forEach((p, k) => plan.push({ when: slots[k], focus: p.topic, action: PRACTICE[p.skill] ?? "10 practice items a day, then review each error.", topic: { skill: p.skill, topic: p.topic } }));
+  priorities.forEach((p, k) => plan.push({ when: slots[k], focus: p.label, action: PRACTICE[p.skill] ?? "10 practice items a day, then review each error.", topic: { skill: p.skill, topic: p.topic } }));
 
   // Statistik tes: per section dan total (terjawab, tidak terjawab, benar, salah, skor skala).
   const row = (section: string, items: SummaryInput["review"], scaled: number | null): StatRow => {

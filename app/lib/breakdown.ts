@@ -8,6 +8,8 @@ export const SECTION_LABEL = { listening: "Listening", structure: "Structure & W
 // Soal Structure dan Written Expression ditandai skill "grammar"; ketiganya dipetakan ke section tampilannya.
 const SECTION_OF: Record<string, BreakdownGroup["key"]> = { listening: "listening", grammar: "structure", structure: "structure", reading: "reading" };
 const isPart = (topic: string) => /^part-[abc]$/.test(topic);
+/** Nama jenis soal dengan sectionnya, karena jenis yang sama (mis. detail, inference) ada di beberapa section. */
+export const typeLabel = (skill: string, topic: string) => `${topic} (${SECTION_LABEL[SECTION_OF[skill] ?? "reading"]})`;
 export const partLabel = (topic: string) => `Part ${topic.slice(-1).toUpperCase()}`;
 
 /**

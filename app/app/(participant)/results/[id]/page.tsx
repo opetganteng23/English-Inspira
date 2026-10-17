@@ -6,7 +6,7 @@ import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
 import { Loading, ErrorNote, HBars, Donut, OutcomeBars, RadarChart, SpeedScatter, ThirdsBars, LineChart } from "@/components/Charts";
 import { CounselorPanel } from "@/components/CounselorPanel";
-import { buildBreakdown, partLabel } from "@/lib/breakdown";
+import { buildBreakdown, partLabel, typeLabel } from "@/lib/breakdown";
 
 type Sec = { section: string; raw: number; total: number; scaled: number };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
@@ -181,7 +181,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
                 <ol className="mt-3 grid gap-3 md:grid-cols-3">
                   {sm.priorities.map((p, k) => (
                     <li key={`${p.skill}|${p.topic}`} className="rounded-xl border-t-4 border-red-600 bg-canvas p-3 text-sm">
-                      <p className="font-semibold text-navy">{k + 1}. {p.topic}</p>
+                      <p className="font-semibold text-navy">{k + 1}. {p.label}</p>
                       <p className="text-xs text-ink-soft">{BD_LABEL[p.skill === "grammar" ? "structure" : p.skill] ?? p.skill} · {p.score}% · {p.correct}/{p.total} · about {p.recoverable} questions to win back</p>
                       <p className="mt-1 text-ink-soft">{p.tip}</p>
                     </li>
@@ -235,7 +235,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
         return (
           <section className="card">
             <h2 className="font-display text-lg font-extrabold text-navy">Score profile</h2>
-            <div className="mt-2 grid items-center gap-4 sm:grid-cols-[auto_1fr]">
+            <div className="mt-2 grid items-center gap-4 sm:grid-cols-[340px_1fr]">
               <RadarChart axes={order.map((k) => BD_LABEL[k])} now={val(r.sectionScores)} previous={r.previous ? val(r.previous.sectionScores) : null} target={tgt} />
               <ul className="flex flex-col gap-2 text-sm text-ink-soft">
                 <li><i className="mr-2 inline-block h-2.5 w-6 rounded bg-brand align-middle" />This test</li>
@@ -306,8 +306,8 @@ export default function Hasil({ params }: { params: { id: string } }) {
             <div className="mt-5">
               <h3 className="font-semibold text-navy">Speed versus accuracy by question type</h3>
               <p className="text-xs text-ink-soft">Each dot is a question type (at least 3 questions). Dashed lines mark the median time and 70% accuracy.</p>
-              <SpeedScatter points={r.insights.quadrants.map((q) => ({ label: q.topic, ...q }))} />
-              <ul className="mt-2 grid gap-1 text-sm text-ink-soft sm:grid-cols-2">{r.insights.quadrants.filter((q) => q.kind !== "solid").slice(0, 6).map((q) => <li key={`${q.skill}|${q.topic}`}><b className="text-navy">{q.topic}</b> · {q.kind === "concept" ? "slow and often wrong: review the concept" : q.kind === "rushed" ? "quick but often wrong: slow down" : "accurate but slow: practise under time"} ({q.avgSec}s, {q.accuracy}%)</li>)}</ul>
+              <SpeedScatter points={r.insights.quadrants.map((q) => ({ ...q, label: typeLabel(q.skill, q.topic) }))} />
+              <ol className="mt-2 grid gap-x-6 gap-y-1 text-sm text-ink-soft sm:grid-cols-2">{r.insights.quadrants.map((q, i) => <li key={`${q.skill}|${q.topic}`}><b className="mr-1 inline-block min-w-[1.4rem] text-navy">{i + 1}.</b><b className="text-navy">{typeLabel(q.skill, q.topic)}</b> · {q.kind === "concept" ? "slow and often wrong: review the concept" : q.kind === "rushed" ? "quick but often wrong: slow down" : q.kind === "slow" ? "accurate but slow: practise under time" : "fast and accurate"} ({q.avgSec}s, {q.accuracy}%)</li>)}</ol>
             </div>
           )}
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -326,7 +326,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
           {r.unanswered.unanswered > 0 && (
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               {r.unanswered.sections.filter((s) => s.unanswered > 0).map((s) => <span key={s.section} className="rounded-full bg-canvas px-3 py-1 font-semibold text-navy">{BD_LABEL[s.section] ?? s.section} · {s.unanswered}/{s.total}{s.trailing >= 3 ? ` · last ${s.trailing} blank` : ""}</span>)}
-              {r.unanswered.types.map((t) => <span key={`${t.skill}|${t.topic}`} className="rounded-full bg-canvas px-3 py-1 text-ink-soft">{t.topic} · {t.unanswered}/{t.total}</span>)}
+              {r.unanswered.types.map((t) => <span key={`${t.skill}|${t.topic}`} className="rounded-full bg-canvas px-3 py-1 text-ink-soft">{typeLabel(t.skill, t.topic)} · {t.unanswered}/{t.total}</span>)}
             </div>
           )}
           <ul className="mt-3 flex list-disc flex-col gap-1 pl-5 text-sm text-ink-soft">{r.unanswered.advice.map((t) => <li key={t}>{t}</li>)}</ul>
