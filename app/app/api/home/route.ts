@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { cycleState, placementNeeded } from "@/lib/cycles";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
@@ -27,7 +28,7 @@ export async function GET() {
       me.institutionId ? Institution.findById(me.institutionId).select("name contractEnd").lean() : null,
       counselorAccess(me._id),
       PlanItem.find({ userId: me._id, status: { $in: ["active", "late"] } }).sort({ priority: 1, dueAt: 1 }).lean(),
-      TopicStat.find({ userId: me._id, status: { $in: ["priority", "weak"] } }).sort({ score: 1 }).limit(5).lean(),
+      TopicStat.find({ userId: me._id, status: { $in: ["priority", "weak"] }, ...LEARNING_TOPIC_FILTER }).sort({ score: 1 }).limit(5).lean(),
       levelUpStatus(me._id),
     ]);
     const tests = new Map((await Test.find({ _id: { $in: attempts.map((a) => a.testId) } }).select("name").lean()).map((t) => [String(t._id), t.name]));

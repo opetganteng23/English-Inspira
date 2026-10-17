@@ -73,13 +73,29 @@ export default function Ruang({ params }: { params: { id: string } }) {
       if (d.status === "submitted") return router.replace(`/results/${params.id}`);
       if (typeof d.idleTimeoutSec === "number") idleSec.current = d.idleTimeoutSec;
       reachedRef.current = d.secure ? d.reached ?? 0 : 0; reachedDirty.current = false;
-      setSt(d); setCur(d.secure ? reachedRef.current : 0); setLeft(d.remainingSec); setConfirm(false); spent.current = {};
+      // Setelah refresh, kembali ke soal terakhir yang dibuka (disimpan per section di browser); bila tidak ada, ke soal pertama yang belum dijawab.
+      const answered = new Set(d.answers.filter((x) => x.choice != null).map((x) => x.qid));
+      let start = 0;
+      if (d.secure) start = reachedRef.current;
+      else {
+        let saved = NaN;
+        try { saved = Number(sessionStorage.getItem(`ei-pos:${params.id}:${d.section.index}`)); } catch { /* penyimpanan tidak tersedia */ }
+        const firstOpen = d.questions.findIndex((x) => !answered.has(x.id));
+        start = Number.isInteger(saved) && saved >= 0 && saved < d.questions.length ? saved : Math.max(0, firstOpen);
+      }
+      setSt(d); setCur(start); setLeft(d.remainingSec); setConfirm(false); spent.current = {};
       for (const a of d.answers) if (a.timeSpentSec) spent.current[a.qid] = a.timeSpentSec;
       setAns(Object.fromEntries(d.answers.filter((a) => a.choice != null).map((a) => [a.qid, a.choice as number])));
       setFlagged(Object.fromEntries(d.answers.map((a) => [a.qid, a.flagged])));
     } catch (e) { setErr((e as Error).message); }
   }, [params.id, router]);
   useEffect(() => { load(); }, [load]);
+
+  // Simpan nomor soal yang sedang dibuka agar refresh tidak mengembalikan ke soal 1.
+  useEffect(() => {
+    if (!st || st.secure) return;
+    try { sessionStorage.setItem(`ei-pos:${params.id}:${st.section.index}`, String(cur)); } catch { /* penyimpanan tidak tersedia */ }
+  }, [st, cur, params.id]);
 
   // Lacak soal yang sedang tampil.
   useEffect(() => {
@@ -209,7 +225,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
       <div ref={scrollArea} className="min-h-0 flex-1 overflow-y-auto overscroll-contain"><div className="mx-auto grid w-full max-w-6xl gap-4 p-3 sm:p-5 lg:grid-cols-[1fr_280px] lg:items-start">
         <main className="flex min-w-0 flex-col gap-4">
-          {group?.audio && (st.kind === "practice" ? <PracticeAudio key={group.audio.id} attemptId={params.id} audioId={group.audio.id} instruction={group.instruction} /> : <AudioBox attemptId={params.id} audioId={group.audio.id} finished={group.audio.finished} instruction={group.instruction} />)}
+          {group?.audio && (st.kind === "practice" ? <PracticeAudio key={group.audio.id} attemptId={params.id} audioId={group.audio.id} instruction={group.instruction} /> : <AudioBox key={group.audio.id} attemptId={params.id} audioId={group.audio.id} finished={group.audio.finished} instruction={group.instruction} />)}
           {group?.passageHtml && (
             <article ref={passageBox} className="card max-h-[40dvh] overflow-y-auto lg:max-h-[60dvh]">
               <h3 className="mb-2 font-display font-extrabold text-navy">{group.passageTitle}</h3>

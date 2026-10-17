@@ -99,6 +99,17 @@ describe("keamanan materi", () => {
     expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
     expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
   });
+  it("tag label batch (oce, test-NN) dan format (written-expression) tidak dihitung sebagai topik belajar", async () => {
+    const { computeTopicScores, isLearningTopic, LEARNING_TOPIC_FILTER } = await import("@/lib/topics");
+    expect(isLearningTopic({ skill: "oce", topic: "test-01" })).toBe(false);
+    expect(isLearningTopic({ skill: "grammar", topic: "written-expression" })).toBe(false);
+    expect(isLearningTopic({ skill: "grammar", topic: "verb-form" })).toBe(true);
+    expect(isLearningTopic({ skill: "listening", topic: "part-a" })).toBe(true);
+    const qs = [{ _id: "a", tags: [{ skill: "oce", topic: "test-01" }, { skill: "grammar", topic: "written-expression" }, { skill: "grammar", topic: "verb-form" }] }];
+    const out = computeTopicScores(qs, new Map([["a", 1]]), new Map([["a", 1]]));
+    expect(out).toEqual([{ skill: "grammar", topic: "verb-form", correct: 1, total: 1, score: 100 }]);
+    expect(LEARNING_TOPIC_FILTER.$nor).toHaveLength(3);
+  });
   it("email: tautan juga tertulis sebagai teks dan ada versi teks biasa", async () => {
     const { render } = await import("@/lib/mail-templates");
     const { htmlToText } = await import("@/lib/mailer");

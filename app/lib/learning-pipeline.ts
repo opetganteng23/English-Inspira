@@ -1,4 +1,5 @@
 import type { HydratedDocument } from "mongoose";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { connectDB } from "./db";
 import { updateTopicStats } from "./topic-stats";
 import { detectStuck } from "./stuck";
@@ -30,7 +31,7 @@ export async function processAttemptLearning(attempt: HydratedDocument<AttemptDo
   await Attempt.updateOne({ _id: attempt._id }, { analysisId: analysis._id });
 
   // Study plan memakai seluruh statistik peserta (bukan hanya topik pengerjaan ini).
-  const all = await TopicStat.find({ userId: attempt.userId }).lean();
+  const all = await TopicStat.find({ userId: attempt.userId, ...LEARNING_TOPIC_FILTER }).lean();
   const plan = await refreshStudyPlan(attempt.userId, attempt.institutionId ?? undefined, all.map((t) => ({ skill: t.skill, topic: t.topic, score: t.score, status: t.status })), analysis._id);
   return { analysisId: analysis._id, plan };
 }

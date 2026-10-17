@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
@@ -30,7 +31,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const coach = await requireRole(["coach"]);
     const u = await participantFor(coach, params.id);
     const [levels, quota, topics, plan, attempts, lastAnalysis, bookings, notes] = await Promise.all([
-      getLevels(), CoachingQuota.findOne({ userId: u._id, active: true }).lean(), TopicStat.find({ userId: u._id }).sort({ score: 1 }).lean(),
+      getLevels(), CoachingQuota.findOne({ userId: u._id, active: true }).lean(), TopicStat.find({ userId: u._id, ...LEARNING_TOPIC_FILTER }).sort({ score: 1 }).lean(),
       PlanItem.find({ userId: u._id }).sort({ createdAt: -1 }).limit(30).lean(),
       Attempt.find({ userId: u._id, status: "submitted" }).sort({ finishedAt: -1 }).limit(8).select("kind scoreEst sectionScores finishedAt").lean(),
       Analysis.findOne({ userId: u._id }).sort({ createdAt: -1 }).select("calculated createdAt").lean(),

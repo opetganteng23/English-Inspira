@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { PlanItem, TopicStat } from "@/models/Learning";
@@ -12,7 +13,7 @@ export async function GET() {
     await connectDB();
     const [items, topics] = await Promise.all([
       PlanItem.find({ userId: me._id }).sort({ status: 1, priority: 1, dueAt: 1 }).limit(100).lean(),
-      TopicStat.find({ userId: me._id }).sort({ score: 1 }).lean(),
+      TopicStat.find({ userId: me._id, ...LEARNING_TOPIC_FILTER }).sort({ score: 1 }).lean(),
     ]);
     return NextResponse.json({
       items: items.map((p) => ({ id: String(p._id), title: p.title, skill: p.skill, topic: p.topic, priority: p.priority, source: p.source, status: p.status, dueAt: p.dueAt ?? null })),

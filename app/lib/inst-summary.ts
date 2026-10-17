@@ -1,4 +1,5 @@
 import type { Types } from "mongoose";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { memberResults } from "./inst";
 import { getLevels } from "./config";
 import { User } from "@/models/User";
@@ -20,7 +21,7 @@ export async function buildInstSummary(inst: { _id: Types.ObjectId; name: string
     memberResults(ids),
     Booking.find({ institutionId: inst._id, active: true, status: { $in: ["present", "absent", "excused"] } }).select("status").lean(),
     CoachingQuota.find({ institutionId: inst._id, active: true }).select("total used").lean(),
-    TopicStat.aggregate([{ $match: { userId: { $in: ids }, status: { $in: ["weak", "priority"] } } }, { $group: { _id: "$topic", n: { $sum: 1 } } }, { $sort: { n: -1 } }, { $limit: 6 }]),
+    TopicStat.aggregate([{ $match: { userId: { $in: ids }, status: { $in: ["weak", "priority"] }, ...LEARNING_TOPIC_FILTER } }, { $group: { _id: "$topic", n: { $sum: 1 } } }, { $sort: { n: -1 } }, { $limit: 6 }]),
     PlanItem.distinct("userId", { userId: { $in: ids }, status: "late" }),
   ]);
 

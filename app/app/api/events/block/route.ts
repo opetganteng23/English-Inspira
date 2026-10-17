@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { z } from "zod";
 import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 import { connectDB } from "@/lib/db";
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     const counted = ins.upsertedCount > 0;
     if (counted) {
       await updateTopicStats(me._id, me.institutionId ?? undefined, null, [{ skill, topic, correct: b.correct ? 1 : 0, total: 1, score: b.correct ? 100 : 0 }]);
-      const all = await TopicStat.find({ userId: me._id }).lean();
+      const all = await TopicStat.find({ userId: me._id, ...LEARNING_TOPIC_FILTER }).lean();
       await refreshStudyPlan(me._id, me.institutionId ?? undefined, all.map((t) => ({ skill: t.skill, topic: t.topic, score: t.score, status: t.status })));
     }
     return NextResponse.json({ ok: true, counted });

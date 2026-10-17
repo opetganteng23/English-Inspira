@@ -1,4 +1,5 @@
 import type { HydratedDocument, Types } from "mongoose";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { connectDB } from "./db";
 import { getLevels, getParam } from "./config";
 import { audit } from "./audit";
@@ -68,7 +69,7 @@ export async function evaluateLevelUp(attempt: HydratedDocument<AttemptDoc>) {
       if (g.user.institutionId) await CoachingQuota.create({ userId: g.user._id, institutionId: g.user.institutionId, levelId: g.next._id, total: g.next.coachingQuota });
       // Rencana lama milik level sebelumnya ditutup; rencana baru dari topik yang masih lemah.
       await PlanItem.updateMany({ userId: g.user._id, status: { $in: ["active", "late"] }, source: "auto" }, { status: "resolved", doneAt: new Date() });
-      const topics = await TopicStat.find({ userId: g.user._id }).lean();
+      const topics = await TopicStat.find({ userId: g.user._id, ...LEARNING_TOPIC_FILTER }).lean();
       await refreshStudyPlan(g.user._id, g.user.institutionId ?? undefined, topics.map((t) => ({ skill: t.skill, topic: t.topic, score: t.score, status: t.status })));
       await enqueueMail(g.user.email, "level_up", { level: g.next.name, quota: g.next.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/home` });
       await notify(g.user._id, "level_up", { title: `Congratulations, you are now at the ${g.next.name} level`, body: `New coaching quota: ${g.next.coachingQuota} sessions.`, href: "/home" }, String(attempt._id));

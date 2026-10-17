@@ -1,4 +1,5 @@
 import { RateLimiterMemory } from "rate-limiter-flexible";
+import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { connectDB } from "./db";
 import { aiEnabled, askClaudeStructured, GUARDRAILS, AI_MODEL, AI_MODEL_LIGHT, type CounselorContext } from "./ai";
 import { getLevels, getParam } from "./config";
@@ -22,7 +23,7 @@ export async function buildEngineInput(analysis: AnalysisDoc): Promise<EngineInp
   if (analysis.sourceKind === "pdf") return buildPdfEngineInput(analysis);
   const attempt = await Attempt.findById(analysis.attemptId).lean();
   if (!attempt || attempt.status !== "submitted") return null;
-  const [user, levels, th, stats] = await Promise.all([User.findById(analysis.userId).select("currentLevelId currentScoreEst").lean(), getLevels(), getParam("weakness"), TopicStat.find({ userId: analysis.userId }).lean()]);
+  const [user, levels, th, stats] = await Promise.all([User.findById(analysis.userId).select("currentLevelId currentScoreEst").lean(), getLevels(), getParam("weakness"), TopicStat.find({ userId: analysis.userId, ...LEARNING_TOPIC_FILTER }).lean()]);
   const calc = (analysis.calculated ?? {}) as { stuck?: string[] };
   const cur = levels.find((l) => String(l._id) === String(user?.currentLevelId));
   const next = cur ? levels.find((l) => l.order === cur.order + 1) : undefined;
@@ -171,7 +172,7 @@ export async function buildCounselorContext(userId: Types.ObjectId | string): Pr
     CounselorThread.find({ userId }).select("actionPlan").lean(),
     ItpRegistration.findOne({ userId, status: { $in: ["submitted", "confirmed"] } }).sort({ createdAt: -1 }).lean(),
     PlanItem.find({ userId, status: { $in: ["active", "late"] } }).sort({ priority: 1, dueAt: 1 }).limit(8).lean(),
-    TopicStat.find({ userId, status: { $in: ["weak", "priority"] } }).sort({ score: 1 }).limit(6).lean(),
+    TopicStat.find({ userId, status: { $in: ["weak", "priority"] }, ...LEARNING_TOPIC_FILTER }).sort({ score: 1 }).limit(6).lean(),
   ]);
   const session = reg ? await ItpSession.findById(reg.sessionId).select("date").lean() : null;
   const latest = await Analysis.findOne({ userId, status: "ready" }).sort({ createdAt: -1 }).select("narrative").lean();
