@@ -1,7 +1,6 @@
 import { connectDB } from "@/lib/db";
 import type { AttemptHydrated, loadAttempt } from "@/lib/attempts";
-import { Question, QuestionGroup } from "@/models/Question";
-import { Audio } from "@/models/Audio";
+import { Question } from "@/models/Question";
 import { Level } from "@/models/Config";
 import { User } from "@/models/User";
 import { Analysis } from "@/models/Learning";
@@ -23,7 +22,7 @@ type SnapItem = { qid: import("mongoose").Types.ObjectId; section: string; type:
 
 /**
  * Data hasil tes yang sudah selesai: skor, topik, analisis, level, rekomendasi. Dipakai bersama oleh halaman hasil dan ekspor PDF.
- * - Pembahasan per soal dan transkrip baru dibuka setelah tes selesai dan waktu rilis hasil lewat (lib/attempt-release.ts); tidak ada umpan balik di dalam tes.
+ * - TIDAK ada teks soal, opsi, kunci, penjelasan, maupun transkrip yang dikembalikan: soal tidak boleh bocor lewat laporan. `review` hanya dipakai di server untuk menghitung agregat (benar/salah/kosong per section dan jenis soal).
  * - Padanan skor hanya TOEFL ITP dan CEFR (tanpa padanan PURE/OCE).
  */
 export async function attemptResult(attempt: AttemptHydrated, test: Awaited<ReturnType<typeof loadAttempt>>["test"]) {
@@ -57,13 +56,6 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       };
     });
 
-    // Transkrip audio dibuka setelah tes selesai sebagai pembahasan (tidak pernah sebelum itu).
-    const groupIds = Array.from(new Set(qs.map((q) => q.groupId).filter((g): g is NonNullable<typeof g> => !!g).map(String)));
-    const groups = await QuestionGroup.find({ _id: { $in: groupIds }, audioId: { $exists: true } }).select("audioId").lean();
-    const audios = await Audio.find({ _id: { $in: groups.map((g) => g.audioId) } }).select("title transcript").lean();
-    const aById = new Map(audios.map((a) => [String(a._id), a]));
-    const transcripts = groups.filter((g) => g.audioId && aById.get(String(g.audioId))?.transcript).map((g) => ({ groupId: String(g._id), title: aById.get(String(g.audioId))!.title, text: aById.get(String(g.audioId))!.transcript }));
-
     const u = await User.findById(attempt.userId).select("currentLevelId targetScore").lean();
     const level = attempt.kind === "placement" && u?.currentLevelId ? await Level.findById(u.currentLevelId).select("name coachingQuota scoreMin scoreMax").lean() : null;
 
@@ -94,7 +86,6 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       flags: attempt.proctorFlags.length, attemptId: String(attempt._id), analysis: attempt.aiAnalysis ?? { status: "pending" },
       level: level ? { name: level.name, quota: level.coachingQuota, scoreMin: level.scoreMin, scoreMax: level.scoreMax, info: LEVEL_INFO[String(level.key)] ?? null } : null,
       equivalents: eq ? { itp: eq.itp, cefr: eq.cefr, cefrLabel: eq.cefrLabel } : null,
-      review, transcripts,
       unanswered: buildUnanswered(review),
       insights: buildInsights(review),
       summary: buildSummary({

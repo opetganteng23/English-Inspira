@@ -9,10 +9,9 @@ import { CounselorPanel } from "@/components/CounselorPanel";
 import { buildBreakdown, partLabel } from "@/lib/breakdown";
 
 type Sec = { section: string; raw: number; total: number; scaled: number };
-type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; summary?: Summary; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; summary?: Summary; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
 import type { Insights } from "@/lib/insights";
 import type { Summary } from "@/lib/summary";
@@ -28,7 +27,6 @@ export default function Hasil({ params }: { params: { id: string } }) {
   const [releaseAt, setReleaseAt] = useState<Date | null>(null);
   const me = useApi<{ targetScore: number | null }>("/api/me");
   const hist = useApi<{ attempts: { id: string; name: string; status: string; finishedAt: string | null; scoreEst: number | null; availableAt?: string | null }[] }>("/api/attempts");
-  const [filter, setFilter] = useState<"all" | "wrong">("wrong");
   const [bdTab, setBdTab] = useState("");
 
   useEffect(() => {
@@ -73,7 +71,6 @@ export default function Hasil({ params }: { params: { id: string } }) {
   const a = r.analysis;
   // Mode template: narasi diawali ringkasan yang sama; tampilkan hanya kelanjutannya.
   const extra = a.narrative ? (a.summary && a.narrative.startsWith(a.summary) ? a.narrative.slice(a.summary.length).trim() : a.narrative) : "";
-  const shown = r.review.filter((x) => (filter === "wrong" ? !x.correct : true));
   const secDelta = (section: string) => {
     const now = r.sectionScores.find((s) => s.section === section), before = r.previous?.sectionScores.find((s) => s.section === section);
     return now && before ? now.scaled - before.scaled : null;
@@ -353,28 +350,6 @@ export default function Hasil({ params }: { params: { id: string } }) {
           </div>
         </section>
       )}
-
-      {r.review.length > 0 && <section className="card">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div><h2 className="font-display text-lg font-extrabold text-navy">Answer review</h2><p className="text-sm text-ink-soft">{r.review.length} questions · {r.review.filter((x) => x.correct).length} correct</p></div>
-          <div className="flex gap-1 rounded-lg bg-canvas p-1 text-sm" role="tablist">
-            {(["wrong", "all"] as const).map((f) => <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)} className={`rounded-md px-3 py-1.5 font-semibold ${filter === f ? "bg-white text-navy shadow-sm" : "text-ink-soft"}`}>{f === "wrong" ? "Incorrect" : "All"}</button>)}
-          </div>
-        </div>
-        <ul className="mt-3 grid items-start gap-3 lg:grid-cols-2">
-          {shown.map((x) => (
-            <li key={x.no} className="rounded-xl border border-line p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span className="font-semibold text-navy">Question {x.no} · {LABEL[x.section]} · {x.type}</span><span className={x.correct ? "badge-ok" : "badge-bad"}>{x.correct ? "Correct" : x.answered ? "Incorrect" : "Unanswered"}</span></div>
-              <div className="mt-2 text-sm"><p>{x.stem}</p><p className="mt-1 text-ink-soft">Your answer: {x.yourChoice != null ? x.options?.[x.yourChoice] : "-"} · Correct: <b className="text-navy">{x.options?.[x.answerKey!]}</b></p>{x.explanation && <p className="mt-1">{x.explanation}</p>}
-                {x.groupId && r.transcripts.some((t) => t.groupId === x.groupId) && (
-                  <details className="mt-2 rounded-lg bg-canvas p-3"><summary className="cursor-pointer font-semibold text-navy">Audio transcript</summary><p className="mt-2 whitespace-pre-wrap text-ink-soft">{r.transcripts.find((t) => t.groupId === x.groupId)!.text}</p></details>
-                )}
-              </div>
-            </li>
-          ))}
-          {shown.length === 0 && <li className="text-sm text-ink-soft">No questions to show.</li>}
-        </ul>
-      </section>}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Link href="/tests" className="btn-solid">Back to My Tests</Link>
