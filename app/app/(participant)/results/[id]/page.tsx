@@ -11,7 +11,7 @@ type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string; oce: { name: string; score: number; estimated: boolean }; pure: { name: string; score: number; estimated: boolean } } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
 const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", practice: "PRACTICE" };
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -81,7 +81,10 @@ export default function Hasil({ params }: { params: { id: string } }) {
           <h1 className="page-title">{r.testName}</h1>
           {r.durationSec != null && <p className="text-sm text-ink-soft">Finished in {Math.floor(r.durationSec / 60)} min {r.durationSec % 60} sec{r.flags ? ` · ${r.flags} test activity notes` : " · clean session"}</p>}
         </div>
-        {r.reportId && <a href={`/api/certificates/${r.reportId}/pdf`} target="_blank" rel="noreferrer" className="btn-outline shrink-0">Download PDF</a>}
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <a href={`/api/attempts/${params.id}/pdf`} download className="btn-solid">Export results (PDF)</a>
+          {r.reportId && <a href={`/api/certificates/${r.reportId}/pdf`} target="_blank" rel="noreferrer" className="btn-outline">Report with QR (PDF)</a>}
+        </div>
       </div>
       <ErrorNote text={err} />
 
@@ -107,12 +110,9 @@ export default function Hasil({ params }: { params: { id: string } }) {
         <section className="card" aria-label="Score equivalents">
           <h2 className="font-display text-lg font-extrabold text-navy">Score equivalents</h2>
           {r.level?.info && <p className="mt-1 text-sm text-ink"><b>{r.level.name} ({r.level.scoreMin} to {r.level.scoreMax}).</b> {r.level.info.summary} {r.level.info.traits}</p>}
-          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <dl className="mt-3 grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">TOEFL ITP</dt><dd className="font-display text-2xl font-extrabold text-navy">{r.equivalents.itp}</dd><dd className="text-xs text-ink-soft">estimate, 310 to 677</dd></div>
             <div className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">CEFR</dt><dd className="font-display text-2xl font-extrabold text-navy">{r.equivalents.cefr}</dd><dd className="text-xs text-ink-soft">{r.equivalents.cefrLabel.replace(/^\S+ /, "")}</dd></div>
-            {[r.equivalents.oce, r.equivalents.pure].map((x) => (
-              <div key={x.name} className="rounded-xl bg-canvas p-3"><dt className="text-xs font-semibold uppercase text-ink-soft">{x.name}</dt><dd className="font-display text-2xl font-extrabold text-navy">{x.estimated ? "≈ " : ""}{x.score}</dd><dd className="text-xs text-ink-soft">{x.estimated ? "converted estimate" : "same scale as TOEFL ITP"}</dd></div>
-            ))}
           </dl>
           <p className="mt-2 text-xs text-ink-soft">CEFR follows the TOEFL ITP mapping published by ETS. Equivalents are guides for placement, not official scores.</p>
         </section>
@@ -180,7 +180,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
         </section>
       )}
 
-      <section className="card">
+      {r.review.length > 0 && <section className="card">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><h2 className="font-display text-lg font-extrabold text-navy">Answer review</h2><p className="text-sm text-ink-soft">{r.review.length} questions · {r.review.filter((x) => x.correct).length} correct</p></div>
           <div className="flex gap-1 rounded-lg bg-canvas p-1 text-sm" role="tablist">
@@ -200,7 +200,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
           ))}
           {shown.length === 0 && <li className="text-sm text-ink-soft">No questions to show.</li>}
         </ul>
-      </section>
+      </section>}
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <Link href="/tests" className="btn-solid">Back to My Tests</Link>

@@ -21,10 +21,15 @@ export default function HasilList() {
           <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Score progress</h2><LineChart points={done.map((a) => ({ label: a.name, value: a.scoreEst ?? 0 }))} target={me.data?.targetScore} /></section>
           <div className="grid gap-3 md:grid-cols-2">
             {[...done].reverse().map((a) => (
-              <Link key={a.id} href={`/results/${a.id}`} className="card flex items-center justify-between gap-3 hover:border-brand">
-                <div className="min-w-0"><p className="truncate font-semibold text-navy">{a.name}</p><p className="text-sm text-ink-soft">{a.finishedAt ? tgl(a.finishedAt) : ""}</p></div>
-                <div className="text-right"><p className="font-display text-2xl font-extrabold text-navy">{a.scoreEst}</p><p className="text-xs text-ink-soft">L {a.sections.listening ?? "-"} · S {a.sections.structure ?? "-"} · R {a.sections.reading ?? "-"}</p></div>
-              </Link>
+              <div key={a.id} className="card flex items-center justify-between gap-3 hover:border-brand">
+                <Link href={`/results/${a.id}`} className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-navy">{a.name}</p><p className="text-sm text-ink-soft">{a.finishedAt ? tgl(a.finishedAt) : ""}</p>
+                </Link>
+                <div className="flex items-center gap-3">
+                  <Link href={`/results/${a.id}`} className="text-right"><p className="font-display text-2xl font-extrabold text-navy">{a.scoreEst}</p><p className="text-xs text-ink-soft">L {a.sections.listening ?? "-"} · S {a.sections.structure ?? "-"} · R {a.sections.reading ?? "-"}</p></Link>
+                  <a href={`/api/attempts/${a.id}/pdf`} download className="btn-outline !min-h-[40px] !px-3 text-sm" aria-label={`Export ${a.name} as PDF`}>PDF</a>
+                </div>
+              </div>
             ))}
           </div>
         </>

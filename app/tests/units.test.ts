@@ -99,6 +99,30 @@ describe("keamanan materi", () => {
     expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
     expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
   });
+  it("PDF hasil dan diagnostic: memuat skor, section, dan analisis, tanpa padanan PURE/OCE maupun pembahasan per soal", async () => {
+    const { resultPdf } = await import("@/lib/result-pdf");
+    const { PDFParse } = await import("pdf-parse");
+    const pdf = await resultPdf({
+      name: "Peserta Uji", testName: "Placement Test T01", kindLabel: "PLACEMENT TEST", finishedAt: new Date("2026-10-17T05:00:00Z"), durationSec: 6600,
+      scoreEst: 593, scoring: { basis: "provisional", name: null }, level: { name: "Advanced", scoreMin: 560, scoreMax: 677, quota: 4 },
+      equivalents: { itp: 593, cefr: "B2", cefrLabel: "B2 Upper intermediate" }, previous: null, target: 600,
+      sections: [{ section: "listening", scaled: 58, raw: 40, total: 50 }, { section: "structure", scaled: 57, raw: 30, total: 40 }, { section: "reading", scaled: 62, raw: 42, total: 50 }],
+      topics: [{ skill: "grammar", topic: "verb-form", score: 40, correct: 4, total: 10 }],
+      analysis: { status: "ready", summary: "Ringkasan analisis.", strengths: [{ topic: "detail", evidence: "100% benar" }], weaknesses: [{ title: "Verb forms", detail: "Sering salah." }], nextSteps: ["Latihan verb form"] },
+      recommendations: [],
+    });
+    expect(Buffer.from(pdf.subarray(0, 5)).toString()).toBe("%PDF-");
+    const parser = new PDFParse({ data: new Uint8Array(pdf) });
+    const text = (await parser.getText()).text;
+    await parser.destroy?.();
+    expect(text).toContain("593");
+    expect(text).toContain("Advanced");
+    expect(text).toContain("Listening");
+    expect(text).toContain("Ringkasan analisis.");
+    expect(text).toContain("Verb forms");
+    expect(text).not.toMatch(/pure|oce/i);
+    expect(text).not.toMatch(/answer review|your answer/i);
+  });
   it("shuffleWithinParts: urutan beda per peserta, tetapi bagian dan blok audio/bacaan terjaga (struktur T01)", async () => {
     const { shuffleWithinParts, orderQuestions } = await import("@/lib/shuffle");
     const mk = (id: string, part: string | null, groupId?: string) => ({ id, groupId, tags: part ? [{ topic: part }] : [{ topic: "other" }] });
