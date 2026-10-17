@@ -99,6 +99,14 @@ describe("keamanan materi", () => {
     expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
     expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
   });
+  it("pemutar audio tes diberi key per audio, agar status \"sudah diputar\" tidak terbawa ke soal berikutnya", async () => {
+    const { GroupAudio } = await import("@/components/TestAudio");
+    const el = (id: string, kind?: string) => GroupAudio({ kind, attemptId: "att", group: { audio: { id, finished: false } } }) as unknown as { key: string | null } | null;
+    expect(el("a1")?.key).toBe("a1");
+    expect(el("a2")?.key).toBe("a2");
+    expect(el("a1", "practice")?.key).toBe("a1");
+    expect(GroupAudio({ attemptId: "att", group: { audio: null } })).toBeNull();
+  });
   it("tag label batch (oce, test-NN) dan format (written-expression) tidak dihitung sebagai topik belajar", async () => {
     const { computeTopicScores, isLearningTopic, LEARNING_TOPIC_FILTER } = await import("@/lib/topics");
     expect(isLearningTopic({ skill: "oce", topic: "test-01" })).toBe(false);

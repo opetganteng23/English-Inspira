@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
 import { SecureZone } from "@/components/SecureZone";
+import { GroupAudio } from "@/components/TestAudio";
 
 type Q = { id: string; groupId: string | null; stem: string; options: string[]; assetIds?: string[] };
 type G = { id: string; instruction?: string; passageTitle?: string; passageHtml?: string; audio: { id: string; finished: boolean } | null };
@@ -225,7 +226,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
       <div ref={scrollArea} className="min-h-0 flex-1 overflow-y-auto overscroll-contain"><div className="mx-auto grid w-full max-w-6xl gap-4 p-3 sm:p-5 lg:grid-cols-[1fr_280px] lg:items-start">
         <main className="flex min-w-0 flex-col gap-4">
-          {group?.audio && (st.kind === "practice" ? <PracticeAudio key={group.audio.id} attemptId={params.id} audioId={group.audio.id} instruction={group.instruction} /> : <AudioBox key={group.audio.id} attemptId={params.id} audioId={group.audio.id} finished={group.audio.finished} instruction={group.instruction} />)}
+          {group && <GroupAudio kind={st.kind} attemptId={params.id} group={group} />}
           {group?.passageHtml && (
             <article ref={passageBox} className="card max-h-[40dvh] overflow-y-auto lg:max-h-[60dvh]">
               <h3 className="mb-2 font-display font-extrabold text-navy">{group.passageTitle}</h3>
@@ -307,72 +308,3 @@ export default function Ruang({ params }: { params: { id: string } }) {
 }
 
 const Center = ({ children }: { children: React.ReactNode }) => <div className="flex min-h-dvh items-center justify-center p-6 text-ink-soft">{children}</div>;
-
-/** Mode tes: sekali putar, tanpa seek/jeda. Progres dilaporkan agar refresh melanjutkan, bukan mengulang. */
-function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: string; audioId: string; finished: boolean; instruction?: string }) {
-  const el = useRef<HTMLAudioElement>(null);
-  const [phase, setPhase] = useState<"idle" | "playing" | "done" | "error">(finished ? "done" : "idle");
-  const [msg, setMsg] = useState("");
-  const lastPos = useRef(0);
-  const base = `/api/attempts/${attemptId}/audio/${audioId}`;
-
-  async function start() {
-    setMsg("");
-    try {
-      const d = await api(base, { json: {} });
-      const a = el.current!; a.src = d.url; a.currentTime = d.startAtSec || 0;
-      await a.play(); setPhase("playing");
-    } catch (e) {
-      const status = (e as { status?: number }).status;
-      setPhase(status === 403 ? "done" : "error");
-      setMsg(e instanceof DOMException ? "The browser blocked playback. Click “Start audio” again." : (e as Error).message);
-    }
-  }
-
-  useEffect(() => {
-    if (phase !== "playing") return;
-    const iv = setInterval(() => {
-      const a = el.current; if (!a) return;
-      lastPos.current = Math.max(lastPos.current, a.currentTime);
-      api(base, { method: "PATCH", json: { posSec: lastPos.current } }).catch(() => {});
-    }, 5000);
-    return () => clearInterval(iv);
-  }, [phase, base]);
-
-  return (
-    <div className="card">
-      <p className="text-sm font-semibold text-navy">{instruction ?? "Listen to the audio"}</p>
-      <audio ref={el} preload="auto" controlsList="nodownload noplaybackrate"
-        onEnded={() => { setPhase("done"); api(base, { method: "PATCH", json: { posSec: el.current?.duration ?? lastPos.current, done: true } }).catch(() => {}); }}
-        onSeeking={() => { const a = el.current; if (a && a.currentTime > lastPos.current + 1) a.currentTime = lastPos.current; }}
-        onError={() => { if (phase === "playing") { setPhase("error"); setMsg("Audio failed to load. Click “Reload audio”; this does not count as replaying."); } }} />
-      {phase === "idle" && <button onClick={start} className="btn-solid mt-3">Start audio (once only)</button>}
-      {phase === "playing" && <p className="mt-3 text-sm text-success" role="status">Audio is playing. It cannot be paused or replayed.</p>}
-      {phase === "done" && <p className="mt-3 text-sm text-ink-soft">Audio has been played.</p>}
-      {phase === "error" && <button onClick={start} className="btn-outline mt-3">Reload audio</button>}
-      {msg && <p role="alert" className="mt-2 text-sm text-red-700">{msg}</p>}
-    </div>
-  );
-}
-
-/** Mode latihan: pemutar penuh (jeda, ulang, geser) dengan kecepatan 0.75×–1.25×. Tidak berlaku di placement/simulasi/kuis. */
-function PracticeAudio({ attemptId, audioId, instruction }: { attemptId: string; audioId: string; instruction?: string }) {
-  const el = useRef<HTMLAudioElement>(null);
-  const [src, setSrc] = useState("");
-  const [rate, setRate] = useState(1);
-  const [err, setErr] = useState("");
-  useEffect(() => {
-    api(`/api/attempts/${attemptId}/audio/${audioId}`, { json: {} }).then((d) => setSrc(d.url)).catch((e) => setErr((e as Error).message));
-  }, [attemptId, audioId]);
-  useEffect(() => { if (el.current) el.current.playbackRate = rate; }, [rate, src]);
-  return (
-    <div className="card">
-      <p className="text-sm font-semibold text-navy">{instruction ?? "Listen to the audio"} <span className="font-normal text-ink-soft">(practice mode: replay allowed)</span></p>
-      {err && <p role="alert" className="mt-2 text-sm text-red-700">{err}</p>}
-      <audio ref={el} src={src || undefined} controls preload="auto" controlsList="nodownload" className="mt-3 w-full" />
-      <label className="mt-2 flex items-center gap-2 text-sm text-ink-soft">Kecepatan
-        <select aria-label="Audio speed" className="field !min-h-[36px] w-auto" value={rate} onChange={(e) => setRate(Number(e.target.value))}>{[0.75, 1, 1.25].map((r) => <option key={r} value={r}>{r}×</option>)}</select>
-      </label>
-    </div>
-  );
-}
