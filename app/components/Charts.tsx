@@ -66,20 +66,21 @@ export function Donut({ parts, centerLabel }: { parts: { label: string; value: n
   );
 }
 
-/** Peta urutan soal: satu kotak per soal menurut urutan yang dilihat peserta. c=benar, w=salah, b=kosong. */
-export function OrderMap({ rows }: { rows: { label: string; marks: ("c" | "w" | "b")[] }[] }) {
-  const fill = { c: "#1E8E5A", w: "#C0392B", b: "#FFFFFF" } as const;
+/** Batang bertumpuk benar/salah/kosong per section (agregat; tidak menampilkan hasil per soal). */
+export function OutcomeBars({ rows }: { rows: { label: string; correct: number; wrong: number; blank: number }[] }) {
   return (
     <div className="flex flex-col gap-3">
-      {rows.map((r) => (
-        <div key={r.label}>
-          <p className="mb-1 text-xs font-semibold text-navy">{r.label}</p>
-          <div className="flex flex-wrap gap-[3px]" role="img" aria-label={`${r.label}: ${r.marks.filter((m) => m === "c").length} correct, ${r.marks.filter((m) => m === "w").length} wrong, ${r.marks.filter((m) => m === "b").length} blank, in the order you saw them`}>
-            {r.marks.map((m, i) => <span key={i} title={`Question ${i + 1}: ${m === "c" ? "correct" : m === "w" ? "wrong" : "blank"}`} className="inline-block h-4 w-4 rounded-[3px] border" style={{ background: fill[m], borderColor: m === "b" ? "#9AA8BC" : fill[m] }} />)}
+      {rows.map((r) => {
+        const t = Math.max(1, r.correct + r.wrong + r.blank);
+        return (
+          <div key={r.label}>
+            <p className="mb-1 flex justify-between text-xs"><span className="font-semibold text-navy">{r.label}</span><span className="text-ink-soft">{r.correct} correct · {r.wrong} wrong · {r.blank} blank</span></p>
+            <div className="flex h-3 overflow-hidden rounded-full bg-canvas" role="img" aria-label={`${r.label}: ${r.correct} correct, ${r.wrong} wrong, ${r.blank} blank`}>
+              <span style={{ width: `${(r.correct / t) * 100}%`, background: "#1E8E5A" }} /><span style={{ width: `${(r.wrong / t) * 100}%`, background: "#C0392B" }} /><span style={{ width: `${(r.blank / t) * 100}%`, background: "#9AA8BC" }} />
+            </div>
           </div>
-        </div>
-      ))}
-      <p className="flex flex-wrap gap-3 text-xs text-ink-soft"><span><i className="mr-1 inline-block h-3 w-3 rounded-[3px] align-middle" style={{ background: "#1E8E5A" }} />Correct</span><span><i className="mr-1 inline-block h-3 w-3 rounded-[3px] align-middle" style={{ background: "#C0392B" }} />Wrong</span><span><i className="mr-1 inline-block h-3 w-3 rounded-[3px] border align-middle" style={{ borderColor: "#9AA8BC" }} />Blank</span></p>
+        );
+      })}
     </div>
   );
 }

@@ -8,9 +8,8 @@ type Item = {
 export type Mark = "c" | "w" | "b";
 export type Insights = {
   outcome: { total: { correct: number; wrong: number; blank: number }; sections: { section: string; total: number; correct: number; wrong: number; blank: number }[] };
-  order: { section: string; marks: Mark[] }[];
   stamina: { section: string; thirds: number[]; drop: number }[];
-  time: null | { sections: { section: string; avgSec: number; items: number }[]; slowest: { no: number; section: string; sec: number; correct: boolean }[] };
+  time: null | { sections: { section: string; avgSec: number; items: number }[] };
   quadrants: { skill: string; topic: string; avgSec: number; accuracy: number; n: number; kind: "solid" | "slow" | "rushed" | "concept" }[];
   changes: { changed: number; toRight: number; toWrong: number; stillWrong: number } | null;
   guessing: { count: number; pct: number } | null;
@@ -29,7 +28,8 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 /**
  * Wawasan dari SATU percobaan, murni dihitung dari jawaban yang tersimpan (tanpa AI).
  * Aturan akurasi:
- * - Urutan memakai `seq` (urutan yang dilihat peserta, termasuk acak per percobaan), bukan nomor soal tes.
+ * - Hanya agregat (per section dan per jenis soal): tidak ada hasil per nomor soal, agar bank soal tidak bocor lewat laporan.
+ * - Urutan stamina memakai `seq` (urutan yang dilihat peserta, termasuk acak per percobaan), bukan nomor soal tes.
  * - Data waktu hanya dipakai bila terekam untuk minimal separuh soal yang dijawab (min. 10); bila tidak, bagian waktu disembunyikan, bukan ditebak.
  * - Perubahan jawaban memakai pilihan pertama yang disimpan server; percobaan lama tanpa itu tidak menampilkan bagian ini.
  */
@@ -40,7 +40,6 @@ export function buildInsights(review: Item[]): Insights {
 
   const count = (items: Item[]) => ({ correct: items.filter((r) => mark(r) === "c").length, wrong: items.filter((r) => mark(r) === "w").length, blank: items.filter((r) => mark(r) === "b").length });
   const outcome = { total: count(review), sections: bySection.map((s) => ({ section: s.section, total: s.items.length, ...count(s.items) })) };
-  const order = bySection.map((s) => ({ section: s.section, marks: s.items.map(mark) }));
 
   // Stamina: akurasi (benar dari seluruh soal) per sepertiga section menurut urutan pengerjaan.
   const stamina = bySection.filter((s) => s.items.length >= MIN_STAMINA_N).map((s) => {
@@ -56,7 +55,6 @@ export function buildInsights(review: Item[]): Insights {
   const hasTime = timed.length >= 10 && timed.length >= answered.length / 2;
   const time: Insights["time"] = hasTime ? {
     sections: sections.map((section) => { const t = timed.filter((r) => r.section === section); return { section, items: t.length, avgSec: t.length ? Math.round(t.reduce((a, r) => a + r.timeSpentSec!, 0) / t.length) : 0 }; }).filter((s) => s.items > 0),
-    slowest: [...timed].sort((a, b) => b.timeSpentSec! - a.timeSpentSec!).slice(0, 3).map((r) => ({ no: r.seq ?? r.no, section: r.section, sec: r.timeSpentSec!, correct: r.correct })),
   } : null;
 
   // Kecepatan vs akurasi per jenis soal (hanya yang punya data waktu). Batas "lambat" = median waktu antar jenis; batas "akurat" = 70%.
@@ -100,5 +98,5 @@ export function buildInsights(review: Item[]): Insights {
   else if (changes && changes.toRight > changes.toWrong && changes.toRight >= 2) advice.push(`Changing answers helped you: ${changes.toRight} wrong answers became right and ${changes.toWrong} right ones became wrong.`);
   if (guessing && guessing.count >= 5 && guessing.pct >= 8) advice.push(`${guessing.count} questions were answered in under ${GUESS_SEC} seconds and missed (${guessing.pct}%). These look like guesses.`);
 
-  return { outcome, order, stamina, time, quadrants, changes, guessing, advice };
+  return { outcome, stamina, time, quadrants, changes, guessing, advice };
 }

@@ -636,7 +636,8 @@ describe("wawasan jawaban", () => {
     const items = [1, 2, 3].map((n) => mk(n, "reading")).concat([4, 5, 6].map((n) => mk(n, "reading", { correct: n === 4, yours: n === 4 ? 1 : 0 })), [7, 8, 9].map((n) => mk(n, "reading", { correct: false, yours: 0 }))[0] as never, mk(8, "reading", { correct: false, yours: 0 }), mk(9, "reading", { correct: false, answered: false }));
     // acak urutan input: hasil harus tetap diurutkan menurut seq
     const r = buildInsights([...items].reverse());
-    expect(r.order[0].marks.slice(0, 3)).toEqual(["c", "c", "c"]);
+    expect(r.outcome.sections[0]).toMatchObject({ section: "reading", total: 9, correct: 4, wrong: 4, blank: 1 });
+    expect(JSON.stringify(r)).not.toMatch(/marks|slowest/); // tidak ada hasil per nomor soal
     expect(r.stamina[0].thirds).toEqual([100, 33, 0]);
     expect(r.stamina[0].drop).toBe(100);
     expect(r.outcome.total).toEqual({ correct: 4, wrong: 4, blank: 1 });

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
-import { Loading, ErrorNote, HBars, Donut, OrderMap, SpeedScatter, ThirdsBars, LineChart } from "@/components/Charts";
+import { Loading, ErrorNote, HBars, Donut, OutcomeBars, SpeedScatter, ThirdsBars, LineChart } from "@/components/Charts";
 import { CounselorPanel } from "@/components/CounselorPanel";
 import { buildBreakdown, partLabel } from "@/lib/breakdown";
 
@@ -264,7 +264,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
               <Donut parts={[{ label: "Correct", value: r.insights.outcome.total.correct, color: "#1E8E5A" }, { label: "Wrong", value: r.insights.outcome.total.wrong, color: "#C0392B" }, { label: "Blank", value: r.insights.outcome.total.blank, color: "#9AA8BC" }]} />
               <ul className="text-sm text-ink-soft"><li><b className="text-success">{r.insights.outcome.total.correct}</b> correct</li><li><b className="text-red-700">{r.insights.outcome.total.wrong}</b> wrong</li><li><b className="text-navy">{r.insights.outcome.total.blank}</b> blank</li></ul>
             </div>
-            <OrderMap rows={r.insights.order.map((o) => ({ label: `${BD_LABEL[o.section] ?? o.section}, in the order you saw the questions`, marks: o.marks }))} />
+            <OutcomeBars rows={r.insights.outcome.sections.map((o) => ({ label: BD_LABEL[o.section] ?? o.section, correct: o.correct, wrong: o.wrong, blank: o.blank }))} />
           </div>
           {r.insights.stamina.length > 0 && <div className="mt-5"><h3 className="font-semibold text-navy">Stamina: accuracy through each section</h3><div className="mt-2"><ThirdsBars rows={r.insights.stamina.map((x) => ({ label: BD_LABEL[x.section] ?? x.section, thirds: x.thirds }))} /></div></div>}
           {r.insights.quadrants.length > 0 && (
