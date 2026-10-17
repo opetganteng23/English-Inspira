@@ -6,6 +6,8 @@ import { canStartTest, visibleTestFilter } from "@/lib/test-access";
 import { cycleState, placementNeeded } from "@/lib/cycles";
 import { releaseAtFor, exemptFromDelay, pendingEffectsFilter } from "@/lib/attempt-release";
 import { Test, Attempt } from "@/models/Test";
+import { seatsFor } from "@/lib/schedule-db";
+import { scheduleGate } from "@/lib/schedule";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   try {
@@ -19,6 +21,11 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     // Lanjutkan attempt yang berjalan (tahan refresh); tidak perlu cek ulang aturan.
     const running = await Attempt.findOne({ userId: user._id, testId: test._id, status: "in_progress" });
     if (running) return NextResponse.json({ attemptId: String(running._id), resumed: true });
+
+    // Tes terjadwal: harus punya kursi dan berada di dalam jam sesi (pengerjaan yang sedang berjalan sudah dilanjutkan di atas).
+    const sched = scheduleGate(test, user, (await seatsFor(user._id, [test._id])).get(String(test._id)) ?? null);
+    if (!sched.visible) throw new HttpError(404, "Test not found");
+    if (!sched.ok) throw new HttpError(403, sched.reason ?? "This test is not open for you right now");
 
     if ((test.maxAttempts ?? 0) > 0 && !user.qaTester) {
       const taken = await Attempt.countDocuments({ userId: user._id, testId: test._id });

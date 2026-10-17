@@ -20,6 +20,7 @@ const testSchema = new Schema(
     ],
     active: { type: Boolean, default: true },
     resultDelayMin: { type: Number, default: 0, min: 0, max: 1440 }, // hasil baru keluar sekian menit setelah peserta MULAI tes (0 = langsung); admin dan QA tester dikecualikan
+    scheduled: { type: Boolean, default: false }, // tes terjadwal: hanya peserta yang punya kursi di sesi, dan hanya di dalam jam sesi, yang melihat dan memulai
     testMode: { type: Boolean, default: false }, // sedang diuji: hanya admin dan akun QA tester yang melihat dan bisa memulai; peserta biasa tidak, walau Active
     // Aturan tes: acak urutan soal (soal satu passage/audio tetap berurutan), acak pilihan jawaban, batas percobaan (0 = tanpa batas).
     scoringProfileId: { type: Schema.Types.ObjectId, ref: "ScoringProfile" }, // kosong = profil bawaan

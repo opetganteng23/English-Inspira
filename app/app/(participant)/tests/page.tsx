@@ -7,7 +7,7 @@ import { useApi } from "@/lib/useApi";
 import { tgl } from "@/lib/client";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
 
-type T = { id: string; name: string; kind: string; testMode?: boolean; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null; lastScore: number | null };
+type T = { id: string; name: string; kind: string; testMode?: boolean; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null; lastScore: number | null; schedule?: { state: "upcoming" | "open" | "closed"; label: string | null; opensAt: string; closesAt: string } | null };
 type A = { id: string; name: string; kind: string; status: string; finishedAt: string | null; scoreEst: number | null; sections: Record<string, number>; reportId: string | null };
 const KIND: Record<string, string> = { placement: "Placement", sim: "Simulation", final: "Final Test", practice: "Practice" };
 
@@ -34,6 +34,7 @@ export default function TesSaya() {
             <div>
               <div className="flex flex-wrap items-center gap-2"><span className="badge-muted">{KIND[t.kind]}</span>{t.testMode && <span className="badge-warn">Test mode</span>}{!t.unlocked && <span className="badge-muted">🔒 Locked</span>}</div>
               <h2 className="mt-2 font-display text-lg font-extrabold text-navy">{t.name}</h2>
+              {t.schedule && <p className={`mt-1 rounded-lg px-3 py-2 text-sm ${t.schedule.state === "open" ? "bg-success-tint text-success" : t.schedule.state === "upcoming" ? "bg-brand-tint text-navy" : "bg-canvas text-ink-soft"}`}><b>{t.schedule.state === "open" ? "Open now" : t.schedule.state === "upcoming" ? "Scheduled" : "Session closed"}</b>{t.schedule.label ? ` · ${t.schedule.label}` : ""}<br />{tgl(t.schedule.opensAt, true)} to {tgl(t.schedule.closesAt, true)}</p>}
               <p className="text-sm text-ink-soft">{t.totalQuestions} questions · about {Math.round(t.totalSec / 60)} minutes{t.lastScore ? ` · last score ${t.lastScore}` : ""}</p>
             </div>
             {t.unlocked

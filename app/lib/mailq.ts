@@ -6,6 +6,8 @@ import { render, type TemplateName } from "./mail-templates";
 import { MailJob } from "@/models/Access";
 
 const BACKOFF_MIN = [1, 5, 15, 60, 240]; // percobaan ulang bertahap
+// Undangan massal (peserta baru dan jadwal tes) dibatasi per jam dan per hari; OTP dan email transaksional tidak.
+const THROTTLED = ["invitation", "test_invitation", "test_reschedule", "test_reminder"];
 const MAX_TRIES = BACKOFF_MIN.length;
 
 /** Masukkan email ke antrean. OTP berprioritas tertinggi. Tidak pernah memblokir request. */
@@ -38,7 +40,7 @@ export async function processMailQueue(limit = 20) {
   await MailJob.updateMany({ status: "sending", updatedAt: { $lt: new Date(Date.now() - 5 * 60_000) } }, { status: "queued" });
 
   const cap = await getParam("invite_hourly_cap");
-  const sentInvites = await MailJob.countDocuments({ template: "invitation", status: "sent", sentAt: { $gte: new Date(Date.now() - 3_600_000) } });
+  const sentInvites = await MailJob.countDocuments({ template: { $in: THROTTLED }, status: "sent", sentAt: { $gte: new Date(Date.now() - 3_600_000) } });
   // Batas harian dihitung dari SEMUA email keluar (Gmail membatasi total), tetapi hanya undangan massal yang berhenti saat habis.
   const dailyCap = await getParam("mail_daily_cap");
   const sentToday = await MailJob.countDocuments({ status: "sent", sentAt: { $gte: new Date(Date.now() - 86_400_000) } });
@@ -51,7 +53,7 @@ export async function processMailQueue(limit = 20) {
       taken++;
       // Klaim atomik: dua pekerja/proses tidak mengirim email yang sama dua kali.
       const job = await MailJob.findOneAndUpdate(
-        { status: "queued", nextTryAt: { $lte: new Date() }, ...(inviteBudget <= 0 ? { template: { $ne: "invitation" } } : {}) },
+        { status: "queued", nextTryAt: { $lte: new Date() }, ...(inviteBudget <= 0 ? { template: { $nin: THROTTLED } } : {}) },
         { status: "sending" }, { sort: { priority: 1, nextTryAt: 1 }, returnDocument: "after" }
       );
       if (!job) return;
@@ -59,7 +61,7 @@ export async function processMailQueue(limit = 20) {
         const { subject, html } = render(job.template as TemplateName, (job.data ?? {}) as Record<string, unknown>);
         await sendMail(job.to, subject, html);
         job.status = "sent"; job.sentAt = new Date(); job.lastError = undefined;
-        if (job.template === "invitation") inviteBudget--;
+        if (THROTTLED.includes(job.template)) inviteBudget--;
         sent++;
       } catch (e) {
         job.tries += 1; job.lastError = (e as Error).message.slice(0, 300);

@@ -8,6 +8,7 @@ import { planDeadlineReminders, quotaWarnings, contractWarnings } from "./remind
 import { sendSessionReminders } from "./coaching";
 import { retryFallbackAnalyses } from "./analysis";
 import { releaseDueResults } from "./attempts";
+import { sendTestReminders } from "./schedule-admin";
 import { PdfImport, pdfBucket } from "@/models/Pdf";
 
 // Job terjadwal (MTS §18). Dipanggil oleh instrumentation.ts (node-cron, PM2) atau /api/cron/[job] (cron sistem/Vercel).
@@ -22,7 +23,7 @@ export async function mailJob() {
 
 /** Per jam: pengingat sesi coaching H-1, dan ulangi narasi AI yang jatuh ke template. */
 export async function hourlyJob() {
-  return { reminders: await sendSessionReminders(), analysis: await retryFallbackAnalyses() };
+  return { reminders: await sendSessionReminders(), analysis: await retryFallbackAnalyses(), testReminders: await sendTestReminders() };
 }
 
 /** Harian: akhiri enrollment yang kontraknya habis, bersihkan undangan/email lama. */

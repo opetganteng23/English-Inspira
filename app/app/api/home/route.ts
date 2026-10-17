@@ -13,6 +13,8 @@ import { Institution } from "@/models/Institution";
 import { PlanItem, TopicStat } from "@/models/Learning";
 import { levelUpStatus } from "@/lib/level-up";
 import { visibleTestFilter } from "@/lib/test-access";
+import { seatsFor } from "@/lib/schedule-db";
+import { scheduleGate } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -41,12 +43,15 @@ export async function GET() {
     // Hasil yang masih ditahan: skor belum terlihat; placement dianggap sudah dikerjakan agar peserta tidak mengulang.
     const held = await Attempt.findOne({ userId: me._id, status: "submitted", ...pendingEffectsFilter }).sort({ releaseAt: 1 }).select("releaseAt kind").lean();
     const needPlace = (!u?.placementAttemptId || placementNeeded(u, cs)) && held?.kind !== "placement";
-    const placementTest = needPlace ? await Test.findOne({ kind: "placement", ...visibleTestFilter(u ?? { role: "participant" }) }).sort({ testMode: -1 }).select("_id").lean() : null;
+    const placementTest = needPlace ? await Test.findOne({ kind: "placement", ...visibleTestFilter(u ?? { role: "participant" }) }).sort({ testMode: -1 }).select("_id scheduled").lean() : null;
+    const placeGate = placementTest?.scheduled ? scheduleGate(placementTest, me, (await seatsFor(me._id, [placementTest._id])).get(String(placementTest._id)) ?? null) : null;
     // Langkah berikutnya mengikuti kondisi nyata akun (urutan prioritas).
     let step: { title: string; body: string; cta: string; href: string } | null = null;
     if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/test-room/${inProgress._id}` };
     else if (held) step = { title: held.releaseAt! > new Date() ? "Your result is being prepared" : "Your result is ready", body: held.releaseAt! > new Date() ? `Results are released at ${fmtRelease(held.releaseAt!)}. Come back then to see your score, level, and analysis.` : "Your result is ready. Open it to see your score, level, and analysis.", cta: "View status", href: `/results/${held._id}` };
     else if (cs.blockedReason) step = { title: "Program period closed", body: cs.blockedReason, cta: "Open learning", href: "/learn" };
+    else if (needPlace && placeGate && !placeGate.visible) step = { title: "Your placement test is not scheduled yet", body: "Your placement test is taken in a scheduled session. You will receive an email with the date and time.", cta: "Open learning", href: "/learn" };
+    else if (needPlace && placeGate && !placeGate.ok) step = { title: placeGate.state === "upcoming" ? "Your placement test is scheduled" : "Your placement session has closed", body: placeGate.reason ?? "", cta: "Open tests", href: "/tests" };
     else if (needPlace) step = { title: "Start with the placement test", body: "Taken once per program period, in EPTA format. The result sets your level, coaching quota, and initial study plan.", cta: "Start placement", href: placementTest ? `/tests/prepare/${placementTest._id}` : "/tests" };
     else step = { title: "Keep learning", body: "Do exercises or simulations to track your progress.", cta: "Open tests", href: "/tests" };
 

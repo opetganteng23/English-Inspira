@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { askConfirm } from "@/components/Feedback";
 import { useCallback, useEffect, useState } from "react";
 
@@ -55,7 +56,7 @@ export default function TesAdmin() {
               <tr key={t.id} className="border-t border-line">
                 <td className="p-3 font-semibold text-navy">{t.name}</td><td>{KIND[t.kind]}</td><td>{t.questions}</td><td>{Math.round(t.durationSec / 60)} min</td><td>{t.attempts}×</td>
                 <td><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${t.active ? "bg-success-tint text-success" : "bg-canvas text-ink-soft"}`}>{t.active ? "active" : "inactive"}</span>{t.testMode && <span className="ml-1.5 rounded-full bg-accent-tint px-2.5 py-1 text-xs font-semibold text-accent-dark">test mode</span>}</td>
-                <td className="whitespace-nowrap p-3 text-right"><button className="mr-3 font-semibold text-brand" onClick={() => open(t.id)}>Edit</button><button className="font-semibold text-red-700" onClick={() => remove(t.id)}>Delete</button></td>
+                <td className="whitespace-nowrap p-3 text-right"><Link href={`/admin/tests/${t.id}/schedule`} className="mr-3 font-semibold text-brand">Schedule</Link><button className="mr-3 font-semibold text-brand" onClick={() => open(t.id)}>Edit</button><button className="font-semibold text-red-700" onClick={() => remove(t.id)}>Delete</button></td>
               </tr>
             ))}
             {tests.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No tests yet.</td></tr>}
