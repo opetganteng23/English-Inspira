@@ -10,7 +10,8 @@ const courseSchema = new Schema(
     active: { type: Boolean, default: true },
     archived: { type: Boolean, default: false, index: true }, // diarsipkan: hilang dari peserta, progres tetap tersimpan, bisa dipulihkan
     coverAssetId: { type: Schema.Types.ObjectId, ref: "Asset" },
-    prerequisiteCourseIds: [{ type: Schema.Types.ObjectId, ref: "Course" }], // terbuka setelah semua unit course prasyarat selesai
+    prerequisiteCourseIds: [{ type: Schema.Types.ObjectId, ref: "Course" }],
+    secureMode: { type: Boolean, default: false }, // materi course ini: salin/tempel dan tombol Kembali dimatikan // terbuka setelah semua unit course prasyarat selesai
   },
   { timestamps: true }
 );

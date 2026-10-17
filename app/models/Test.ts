@@ -23,6 +23,7 @@ const testSchema = new Schema(
     // Aturan tes: acak urutan soal (soal satu passage/audio tetap berurutan), acak pilihan jawaban, batas percobaan (0 = tanpa batas).
     scoringProfileId: { type: Schema.Types.ObjectId, ref: "ScoringProfile" }, // kosong = profil bawaan
     shuffleQuestions: { type: Boolean, default: false },
+    secureMode: { type: Boolean, default: false }, // tidak bisa kembali ke soal sebelumnya, salin/tempel diblokir
     shuffleOptions: { type: Boolean, default: false },
     maxAttempts: { type: Number, default: 0, min: 0, max: 50 },
   },
@@ -41,6 +42,7 @@ const attemptSchema = new Schema(
     finishedAt: Date,
     // Timer dipegang server: section aktif dan kapan ia dimulai.
     sectionIdx: { type: Number, default: 0 },
+    secureReached: { type: Number, default: 0 }, // mode aman: nomor terjauh yang sudah dicapai di section aktif
     sectionStartedAt: { type: Date, required: true },
     status: { type: String, enum: ["in_progress", "submitted"], default: "in_progress" },
     // firstChoice = pilihan pertama, changes = berapa kali jawaban diganti (indikator ragu-ragu)

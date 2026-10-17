@@ -1,5 +1,6 @@
 "use client";
 
+import { SecureZone } from "@/components/SecureZone";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,6 +10,7 @@ import { useActiveTime } from "@/lib/use-active-time";
 import { Loading, ErrorNote } from "@/components/Charts";
 
 type U = {
+  secure?: boolean;
   id: string; title: string; description: string; courseTitle: string; status: string; passScore: number;
   materials: { id: string; slug: string; title: string; kind: "rich" | "html"; summary: string; done: boolean; score: number | null }[];
   quiz: { name: string; questions: number; best: number | null; passed: boolean; inProgressAttemptId: string | null } | null;
@@ -32,6 +34,7 @@ export default function UnitPage({ params }: { params: { id: string } }) {
   const allMaterials = data.materials.every((m) => m.done);
 
   return (
+    <SecureZone active={!!data.secure} allowBackHint="Going back is turned off in this course.">
     <div className="page-cols">
       <Link href="/learn" className="text-sm font-semibold text-brand">{data.courseTitle}</Link>
       <div><h1 className="page-title">{data.title}</h1>{data.description && <p className="mt-1 text-ink-soft">{data.description}</p>}{data.status === "completed" && <p className="mt-2 inline-block rounded-lg bg-success-tint px-3 py-1.5 text-sm font-semibold text-success">Unit completed</p>}</div>
@@ -64,5 +67,6 @@ export default function UnitPage({ params }: { params: { id: string } }) {
         </section>
       )}
     </div>
+    </SecureZone>
   );
 }

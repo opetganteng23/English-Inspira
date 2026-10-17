@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
+import { SecureZone } from "@/components/SecureZone";
 
 type Q = { id: string; groupId: string | null; stem: string; options: string[]; assetIds?: string[] };
 type G = { id: string; instruction?: string; passageTitle?: string; passageHtml?: string; audio: { id: string; finished: boolean } | null };
 type State = {
   status: "in_progress" | "submitted"; testName: string;
   section: { index: number; total: number; name: string };
-  kind?: string; idleTimeoutSec?: number; remainingSec: number; groups: G[]; questions: Q[]; answers: { qid: string; choice: number | null; flagged: boolean; timeSpentSec?: number }[];
+  kind?: string; secure?: boolean; reached?: number; idleTimeoutSec?: number; remainingSec: number; groups: G[]; questions: Q[]; answers: { qid: string; choice: number | null; flagged: boolean; timeSpentSec?: number }[];
 };
 
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & Written Expression", reading: "Reading" };
@@ -27,6 +28,14 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const scrollArea = useRef<HTMLDivElement>(null);
+  const passageBox = useRef<HTMLElement>(null);
+  // Pindah nomor soal: area soal dan teks bacaan kembali ke paling atas (QA: posisi gulir tidak boleh tertinggal).
+  useEffect(() => {
+    scrollArea.current?.scrollTo({ top: 0 });
+    passageBox.current?.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
+  }, [cur]);
 
   const dirty = useRef<Set<string>>(new Set());
   const pendingFlags = useRef<string[]>([]);
@@ -36,6 +45,9 @@ export default function Ruang({ params }: { params: { id: string } }) {
   // Waktu per soal: akumulasi detik saat soal tampil (dipakai analisis AI).
   const spent = useRef<Record<string, number>>({});
   const viewSince = useRef<{ qid: string; at: number } | null>(null);
+  // Mode aman: nomor terjauh yang sudah dicapai; nomor sebelumnya terkunci (juga ditegakkan server).
+  const reachedRef = useRef(0);
+  const reachedDirty = useRef(false);
 
   // Waktu aktif saja (MTS §13.1): detik dihitung per 1 dtk hanya bila tab terlihat dan ada interaksi dalam `idleTimeoutSec`
   // terakhir, atau audio sedang diputar. Waktu diam tidak dihitung ke soal.
@@ -60,7 +72,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
       const d: State = await api(`/api/attempts/${params.id}`);
       if (d.status === "submitted") return router.replace(`/results/${params.id}`);
       if (typeof d.idleTimeoutSec === "number") idleSec.current = d.idleTimeoutSec;
-      setSt(d); setCur(0); setLeft(d.remainingSec); setConfirm(false); spent.current = {};
+      reachedRef.current = d.secure ? d.reached ?? 0 : 0; reachedDirty.current = false;
+      setSt(d); setCur(d.secure ? reachedRef.current : 0); setLeft(d.remainingSec); setConfirm(false); spent.current = {};
       for (const a of d.answers) if (a.timeSpentSec) spent.current[a.qid] = a.timeSpentSec;
       setAns(Object.fromEntries(d.answers.filter((a) => a.choice != null).map((a) => [a.qid, a.choice as number])));
       setFlagged(Object.fromEntries(d.answers.map((a) => [a.qid, a.flagged])));
@@ -79,7 +92,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const flush = useCallback(async () => {
     stopView();
     if (st) viewSince.current = { qid: st.questions[cur]?.id, at: Date.now() };
-    if (!dirty.current.size && !pendingFlags.current.length) return true;
+    if (!dirty.current.size && !pendingFlags.current.length && !reachedDirty.current) return true;
+    const sendReached = reachedDirty.current; reachedDirty.current = false;
     const ids = Array.from(dirty.current); dirty.current.clear();
     const flags = pendingFlags.current.splice(0);
     setSaved("saving");
@@ -89,12 +103,13 @@ export default function Ruang({ params }: { params: { id: string } }) {
         json: {
           answers: ids.map((qid) => ({ qid, choice: ansRef.current[qid] ?? null, flagged: !!flagRef.current[qid], timeSpentSec: Math.min(3600, Math.round(spent.current[qid] ?? 0)) })),
           flags,
+          ...(sendReached ? { reached: reachedRef.current } : {}),
         },
       });
       setSaved("ok"); return true;
     } catch (e) {
       if ((e as { status?: number }).status === 409) { await load(); return false; } // section habis di server
-      ids.forEach((i) => dirty.current.add(i)); flags.forEach((f) => pendingFlags.current.push(f)); setSaved("fail"); return false;
+      ids.forEach((i) => dirty.current.add(i)); flags.forEach((f) => pendingFlags.current.push(f)); if (sendReached) reachedDirty.current = true; setSaved("fail"); return false;
     }
   }, [params.id, load, stopView, st, cur]);
 
@@ -152,20 +167,32 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const toggleFlag = () => { setFlagged((f) => ({ ...f, [q.id]: !f[q.id] })); queue(q.id); };
   const answered = Object.keys(ans).filter((id) => st.questions.some((x) => x.id === id)).length;
   const finishLabel = last ? "Submit test" : "Finish section";
+  const secure = !!st.secure;
+  // Pindah soal. Mode aman: hanya maju; soal yang dilewati terkunci, jawaban yang tertunda disimpan sekarang.
+  const goTo = (i: number) => {
+    if (i < 0 || i >= st.questions.length) return;
+    if (secure) {
+      if (i < reachedRef.current) return;
+      if (i > reachedRef.current) { reachedRef.current = i; reachedDirty.current = true; void flush(); }
+    }
+    setCur(i);
+  };
+  const firstOpen = st.questions.findIndex((x, i) => ans[x.id] == null && (!secure || i >= reachedRef.current));
 
   const navigator = (
     <>
       <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-6">
         {st.questions.map((x, i) => (
-          <button key={x.id} onClick={() => { setCur(i); setNavOpen(false); }} aria-label={`Question ${i + 1}${ans[x.id] != null ? ", answered" : ""}${flagged[x.id] ? ", flagged" : ""}`} aria-current={i === cur}
+          <button key={x.id} disabled={secure && i !== cur} onClick={() => { goTo(i); setNavOpen(false); }} aria-label={`Question ${i + 1}${ans[x.id] != null ? ", answered" : ""}${flagged[x.id] ? ", flagged" : ""}`} aria-current={i === cur}
             className={`h-10 rounded-lg text-sm font-semibold ${i === cur ? "ring-2 ring-brand " : ""}${flagged[x.id] ? "bg-accent-tint text-accent-dark" : ans[x.id] != null ? "bg-brand text-white" : "bg-canvas text-ink-soft"}`}>{i + 1}</button>
         ))}
       </div>
-      <p className="mt-3 text-xs text-ink-soft">{answered} of {st.questions.length} answered · blue = answered, orange = flagged</p>
+      <p className="mt-3 text-xs text-ink-soft">{answered} of {st.questions.length} answered · blue = answered, orange = flagged{secure ? " · secure mode: use Next to move on" : ""}</p>
     </>
   );
 
   return (
+    <SecureZone active={secure}>
     <div className="relative flex h-dvh flex-col overflow-clip">
       <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
         <div className="min-w-0">
@@ -180,11 +207,11 @@ export default function Ruang({ params }: { params: { id: string } }) {
         {saved === "fail" && <p className="basis-full text-xs text-orange-300 sm:hidden">Save failed, retrying…</p>}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain"><div className="mx-auto grid w-full max-w-6xl gap-4 p-3 sm:p-5 lg:grid-cols-[1fr_280px] lg:items-start">
+      <div ref={scrollArea} className="min-h-0 flex-1 overflow-y-auto overscroll-contain"><div className="mx-auto grid w-full max-w-6xl gap-4 p-3 sm:p-5 lg:grid-cols-[1fr_280px] lg:items-start">
         <main className="flex min-w-0 flex-col gap-4">
           {group?.audio && (st.kind === "practice" ? <PracticeAudio key={group.audio.id} attemptId={params.id} audioId={group.audio.id} instruction={group.instruction} /> : <AudioBox attemptId={params.id} audioId={group.audio.id} finished={group.audio.finished} instruction={group.instruction} />)}
           {group?.passageHtml && (
-            <article className="card max-h-[40dvh] overflow-y-auto lg:max-h-[60dvh]">
+            <article ref={passageBox} className="card max-h-[40dvh] overflow-y-auto lg:max-h-[60dvh]">
               <h3 className="mb-2 font-display font-extrabold text-navy">{group.passageTitle}</h3>
               {/* passageHtml disanitasi di server saat disimpan */}
               <div className="prose-ei" dangerouslySetInnerHTML={{ __html: group.passageHtml }} />
@@ -210,7 +237,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
               <button className="btn-outline hidden lg:inline-flex" onClick={() => setConfirm(true)}>{finishLabel}</button>
             </div>
           </section>
-          <p className="text-xs text-ink-soft">After finishing a section, you cannot return to it.</p>
+          <p className="text-xs text-ink-soft">{secure ? "Secure mode: you cannot go back to previous questions. Answer each question before pressing Next." : "After finishing a section, you cannot return to it."}</p>
         </main>
 
         <aside className="sticky top-3 hidden max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-2xl border border-line bg-white p-4 lg:block">
@@ -223,16 +250,16 @@ export default function Ruang({ params }: { params: { id: string } }) {
       <div className="z-20 shrink-0 border-t border-line bg-white lg:hidden">
         {navOpen && <div className="max-h-[45vh] overflow-y-auto border-b border-line p-4">{navigator}<button className="btn-outline mt-3 w-full" onClick={() => { setNavOpen(false); setConfirm(true); }}>{finishLabel}</button></div>}
         <div className="flex items-center gap-2 p-3">
-          <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => setCur(cur - 1)} aria-label="Previous question">Previous</button>
+          {!secure && <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => goTo(cur - 1)} aria-label="Previous question">Previous</button>}
           <button className="btn-outline flex-1" onClick={() => setNavOpen(!navOpen)} aria-expanded={navOpen}>{cur + 1}/{st.questions.length} · {answered} answered</button>
           {cur < st.questions.length - 1
-            ? <button className="btn-solid !px-5" onClick={() => setCur(cur + 1)} aria-label="Next question">Next</button>
+            ? <button className="btn-solid !px-5" onClick={() => goTo(cur + 1)} aria-label="Next question">Next</button>
             : <button className="btn-accent !px-4" onClick={() => setConfirm(true)}>Done</button>}
         </div>
       </div>
       <div className="mx-auto hidden w-full max-w-6xl shrink-0 items-center justify-between border-t border-line bg-white px-6 py-3 lg:flex">
-        <button className="btn-outline" disabled={cur === 0} onClick={() => setCur(cur - 1)}>Previous</button>
-        {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => setCur(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => setConfirm(true)}>{finishLabel}</button>}
+        {secure ? <span className="text-sm text-ink-soft">Secure mode: no going back</span> : <button className="btn-outline" disabled={cur === 0} onClick={() => goTo(cur - 1)}>Previous</button>}
+        {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => goTo(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => setConfirm(true)}>{finishLabel}</button>}
       </div>
 
       {confirm && (
@@ -240,17 +267,26 @@ export default function Ruang({ params }: { params: { id: string } }) {
           <div role="dialog" aria-modal="true" aria-label="Confirm" className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
             <h3 className="font-display text-xl font-extrabold text-navy">{last ? "Submit the test?" : "Finish this section?"}</h3>
             <p className="mt-2 text-sm text-ink-soft">
-              {st.questions.length - answered > 0 ? `${st.questions.length - answered} questions unanswered. ` : "All questions answered. "}
+              {st.questions.length - answered > 0 ? `${st.questions.length - answered} question${st.questions.length - answered === 1 ? " is" : "s are"} still unanswered and will be scored as wrong. ` : "All questions answered. "}
               {last ? "After submitting, your answers cannot be changed." : "You cannot return to this section."}
             </p>
+            {st.questions.length - answered > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold uppercase text-ink-soft">Unanswered</p>
+                <div className="mt-1.5 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
+                  {st.questions.map((x, i) => (ans[x.id] == null ? <button key={x.id} type="button" disabled={secure && i < reachedRef.current} onClick={() => { goTo(i); setConfirm(false); setNavOpen(false); }} className="h-9 min-w-[36px] rounded-lg border border-accent bg-accent-tint px-2 text-sm font-semibold text-accent-dark disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Go to question ${i + 1}`}>{i + 1}</button> : null))}
+                </div>
+              </div>
+            )}
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button onClick={() => setConfirm(false)} className="btn-outline">Back</button>
+              <button onClick={() => { if (firstOpen >= 0) goTo(firstOpen); setConfirm(false); }} className="btn-outline">{firstOpen >= 0 ? "Answer the rest" : "Back"}</button>
               <button disabled={busy} onClick={() => next()} className="btn-solid">{busy ? "Processing…" : "Yes, continue"}</button>
             </div>
           </div>
         </div>
       )}
     </div>
+    </SecureZone>
   );
 }
 

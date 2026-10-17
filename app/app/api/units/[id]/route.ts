@@ -34,7 +34,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const done = new Set((prog?.materialsDone ?? []).map(String));
     const byId = new Map(mats.map((m) => [String(m._id), m]));
     return NextResponse.json({
-      id: String(unit._id), title: unit.title, description: unit.description ?? "", courseTitle: course.title,
+      id: String(unit._id), title: unit.title, description: unit.description ?? "", courseTitle: course.title, secure: !!course.secureMode,
       status: prog?.status ?? "not_started", passScore: pass,
       materials: unit.materialIds.map(String).filter((id) => byId.has(id)).map((id) => {
         const m = byId.get(id)!;

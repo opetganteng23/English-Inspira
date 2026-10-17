@@ -46,6 +46,7 @@ export async function syncTimer(attempt: AttemptHydrated, test: { sections: { na
       return;
     }
     attempt.sectionIdx += 1;
+    attempt.secureReached = 0;
     attempt.sectionStartedAt = new Date(expiredAt);
     changed = true;
   }
@@ -56,6 +57,7 @@ export async function advance(attempt: AttemptHydrated, test: Parameters<typeof 
   if (attempt.status !== "in_progress") throw new HttpError(409, "The test is already finished");
   if (attempt.sectionIdx + 1 >= test.sections.length) return finalize(attempt, test);
   attempt.sectionIdx += 1;
+  attempt.secureReached = 0;
   attempt.sectionStartedAt = new Date();
   await attempt.save();
 }

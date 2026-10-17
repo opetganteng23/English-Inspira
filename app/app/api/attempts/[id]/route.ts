@@ -36,6 +36,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       testName: test.name,
       section: { index: attempt.sectionIdx, total: test.sections.length, name: section.name },
       kind: attempt.kind,
+      secure: !!test.secureMode, reached: attempt.secureReached ?? 0,
       idleTimeoutSec: await getParam("idle_timeout_sec"),
       remainingSec: Math.max(0, Math.round((sectionDeadline(attempt, test) - Date.now()) / 1000)),
       groups: groups.map((g) => ({
@@ -59,6 +60,7 @@ const patchSchema = z.object({
     timeSpentSec: z.number().min(0).max(3600).optional(), flagged: z.boolean().optional(),
   })).max(200).optional(),
   flags: z.array(z.enum(["tab_hidden", "fullscreen_exit", "paste", "multi_tab"])).max(20).optional(),
+  reached: z.number().int().min(0).max(1000).optional(),
 });
 
 /** Autosave. Hanya soal section aktif yang diterima, dan hanya sebelum waktu habis. */
@@ -70,10 +72,24 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const body = patchSchema.parse(await req.json());
 
     const allowed = new Set(test.sections[attempt.sectionIdx].questionIds.map(String));
+    // Mode aman: nomor yang sudah dilewati tidak bisa dijawab/diubah lagi (ditegakkan di server, bukan hanya di layar).
+    let lockedBefore = -1;
+    const shownIdx = new Map<string, number>();
+    if (test.secureMode) {
+      const section = test.sections[attempt.sectionIdx];
+      const qs = await Question.find({ _id: { $in: section.questionIds } }).select("groupId").lean();
+      const order = new Map(section.questionIds.map((id, i) => [String(id), i]));
+      qs.sort((a, b) => order.get(String(a._id))! - order.get(String(b._id))!);
+      const ordered = test.shuffleQuestions ? shuffleQuestionOrder(qs, `${String(attempt._id)}:q:${attempt.sectionIdx}`) : qs;
+      ordered.forEach((q, i) => shownIdx.set(String(q._id), i));
+      lockedBefore = attempt.secureReached ?? 0;
+      if (body.reached != null) attempt.secureReached = Math.max(lockedBefore, Math.min(body.reached, ordered.length - 1));
+    }
     const optLen = new Map<string, number>();
     if (test.shuffleOptions) for (const q of await Question.find({ _id: { $in: [...allowed] } }).select("options").lean()) optLen.set(String(q._id), q.options.length);
     for (const a of body.answers ?? []) {
       if (!allowed.has(a.qid)) continue; // soal section lain diabaikan
+      if (lockedBefore > 0 && (shownIdx.get(a.qid) ?? 0) < lockedBefore) continue; // mode aman: soal yang sudah dilewati
       const cur = attempt.answers.find((x) => String(x.qid) === a.qid);
       let choice = a.choice ?? undefined;
       if (choice != null && test.shuffleOptions) {

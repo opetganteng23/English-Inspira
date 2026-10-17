@@ -60,6 +60,9 @@ img, video, canvas, svg { max-width: 100%; }
     .page-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .page-cols > :not(.card), .page-cols > .wide { grid-column: 1 / -1; }
   }
+  /* Mode aman: teks tidak bisa dipilih (kolom isian tetap bisa diketik). */
+  .secure-zone body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .secure-zone input, .secure-zone textarea { -webkit-user-select: text; user-select: text; }
   .page-title { @apply font-display text-2xl font-extrabold text-navy sm:text-3xl; }
   .prose-ei p { @apply mb-3 leading-relaxed; }
   .prose-ei h2, .prose-ei h3 { @apply mb-2 mt-5 font-display font-extrabold text-navy; }
