@@ -610,3 +610,17 @@ describe("impor jadwal coaching (plotting dari Excel)", () => {
   });
   it("kolom wajib hilang dilaporkan sekali", () => { const r = mapScheduleRows([["foo"], ["1"]]); expect(r).toHaveLength(1); expect(r[0].ok).toBe(false); });
 });
+
+describe("analisis soal tidak dijawab", () => {
+  it("menghitung per section, deteksi kehabisan waktu, dan saran", async () => {
+    const { buildUnanswered } = await import("@/lib/unanswered");
+    const mk = (no: number, section: string, answered: boolean) => ({ no, section, answered, tags: [{ skill: "reading", topic: "inference" }] });
+    const rv = [...Array.from({ length: 10 }, (_, i) => mk(i + 1, "reading", i < 6)), mk(11, "listening", true)];
+    const u = buildUnanswered(rv);
+    expect(u.unanswered).toBe(4);
+    expect(u.sections.find((s) => s.section === "reading")!.trailing).toBe(4);
+    expect(u.types[0]).toMatchObject({ topic: "inference", unanswered: 4 });
+    expect(u.advice.some((a) => /time ran out/.test(a))).toBe(true);
+    expect(buildUnanswered([mk(1, "reading", true)]).advice[0]).toMatch(/answered every/);
+  });
+});

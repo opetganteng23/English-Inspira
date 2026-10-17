@@ -13,6 +13,7 @@ import { equivalents } from "@/lib/score-equivalence";
 import { getEquivalence } from "@/lib/clustering";
 import { LEVEL_INFO } from "@/lib/level-info";
 import { isLearningTopic } from "@/lib/topics";
+import { buildUnanswered } from "@/lib/unanswered";
 
 type SnapItem = { qid: import("mongoose").Types.ObjectId; section: string; type: string; groupId?: import("mongoose").Types.ObjectId; stem: string; options: string[]; answerKey: number; explanation?: string; tags: { skill: string; topic: string }[] };
 
@@ -83,5 +84,6 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       level: level ? { name: level.name, quota: level.coachingQuota, scoreMin: level.scoreMin, scoreMax: level.scoreMax, info: LEVEL_INFO[String(level.key)] ?? null } : null,
       equivalents: eq ? { itp: eq.itp, cefr: eq.cefr, cefrLabel: eq.cefrLabel } : null,
       review, transcripts,
+      unanswered: buildUnanswered(review),
     };
 }

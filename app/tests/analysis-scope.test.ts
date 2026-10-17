@@ -47,6 +47,9 @@ describe.skipIf(!safe)("analisis per placement (database in-memory)", () => {
     expect(placement.validTopics.sort()).toEqual(["detail", "verb-form"]);
 
     const sim = (await buildEngineInput((await mk("sim")).toObject() as never))!;
-    expect(sim.topics.find((t) => t.topic === "verb-form")!.items).toBe(66); // jenis lain tetap kumulatif
+    expect(sim.topics.find((t) => t.topic === "verb-form")!.items).toBe(6); // semua jenis tes: per percobaan
+    const bare = await Attempt.create({ userId: user._id, testId: test._id, kind: "sim", status: "submitted", startedAt: new Date(), sectionStartedAt: new Date(), finishedAt: new Date(), scoreEst: 400, topicScores: [] });
+    const fb = (await buildEngineInput((await Analysis.create({ userId: user._id, sourceKind: "sim", attemptId: bare._id, calculated: {} })).toObject() as never))!;
+    expect(fb.topics.find((t) => t.topic === "verb-form")!.items).toBe(66); // tanpa rincian topik: cadangan kumulatif
   }, 240_000);
 });

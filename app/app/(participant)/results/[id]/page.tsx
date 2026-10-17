@@ -12,8 +12,9 @@ type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
+const BD_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", practice: "PRACTICE" };
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 
@@ -187,6 +188,20 @@ export default function Hasil({ params }: { params: { id: string } }) {
           </div>
         )}
       </section>
+
+      {r.unanswered && (
+        <section className="card">
+          <h2 className="font-display text-lg font-extrabold text-navy">Unanswered questions</h2>
+          <p className="mt-1 text-sm">{r.unanswered.unanswered === 0 ? `You answered all ${r.unanswered.total} questions.` : <><b className="text-navy">{r.unanswered.unanswered} of {r.unanswered.total}</b> questions ({r.unanswered.pct}%) were left blank and counted as wrong.</>}</p>
+          {r.unanswered.unanswered > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {r.unanswered.sections.filter((s) => s.unanswered > 0).map((s) => <span key={s.section} className="rounded-full bg-canvas px-3 py-1 font-semibold text-navy">{BD_LABEL[s.section] ?? s.section} · {s.unanswered}/{s.total}{s.trailing >= 3 ? ` · last ${s.trailing} blank` : ""}</span>)}
+              {r.unanswered.types.map((t) => <span key={`${t.skill}|${t.topic}`} className="rounded-full bg-canvas px-3 py-1 text-ink-soft">{t.topic} · {t.unanswered}/{t.total}</span>)}
+            </div>
+          )}
+          <ul className="mt-3 flex list-disc flex-col gap-1 pl-5 text-sm text-ink-soft">{r.unanswered.advice.map((t) => <li key={t}>{t}</li>)}</ul>
+        </section>
+      )}
 
       {r.recommendations?.length > 0 && (
         <section className="card">

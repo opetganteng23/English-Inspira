@@ -31,8 +31,9 @@ export async function buildEngineInput(analysis: AnalysisDoc): Promise<EngineInp
   const thisAttempt = new Map(attempt.topicScores.map((t) => [`${t.skill}|${t.topic}`, t.score ?? null]));
   const answered = attempt.answers.filter((a) => a.choice != null);
   const times = attempt.answers.map((a) => a.timeSpentSec).filter((x): x is number => typeof x === "number" && x > 0);
-  // Diagnostic (placement): analisis hanya dari placement ini, bukan akumulasi semua percobaan. Label bagian (part-a/b/c) bukan jenis soal.
-  const topicRows = attempt.kind === "placement"
+  // Setiap percobaan punya analisisnya sendiri: angka hanya dari percobaan ini, bukan akumulasi. Akumulasi hanya cadangan bila percobaan tak punya rincian topik.
+  // Label bagian (part-a/b/c) bukan jenis soal.
+  const topicRows = attempt.topicScores?.length
     ? attempt.topicScores
         .filter((t) => t.skill && t.topic && isLearningTopic({ skill: t.skill, topic: t.topic }) && !/^part-[abc]$/.test(t.topic))
         .map((t) => ({ topic: t.topic!, skill: t.skill!, score: Math.round((t.score ?? 0) * 10) / 10, items: t.total ?? 0, status: topicStatus(t.score ?? 0, t.total ?? 0, th), thisAttempt: t.score ?? null }))

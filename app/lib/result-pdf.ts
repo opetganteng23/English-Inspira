@@ -17,6 +17,7 @@ export type ResultPdfData = {
   topics: { skill: string; topic: string; score: number; correct: number; total: number }[];
   analysis: { status: string; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; nextSteps?: string[]; error?: string };
   recommendations: { course: string; unit: string; topic: string; score: number }[];
+  unanswered?: import("./unanswered").UnansweredReport;
 };
 
 const SEC_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -120,6 +121,18 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
     if (a.strengths?.length) { y += 4; para("Already strong", { bold: true, size: 10.5, keep: 60 }); for (const s of a.strengths) para(`- ${s.topic}: ${s.evidence}`, { indent: 8, color: GRAY }); }
     if (a.weaknesses?.length) { y += 4; para("Needs strengthening", { bold: true, size: 10.5, keep: 60 }); for (const w of a.weaknesses) para(`- ${w.title}: ${w.detail}`, { indent: 8, color: GRAY }); }
     if (a.nextSteps?.length) { y += 4; para("Next steps", { bold: true, size: 10.5, keep: 60 }); a.nextSteps.forEach((s, i) => para(`${i + 1}. ${s}`, { indent: 8, color: GRAY })); }
+  }
+
+  if (d.unanswered) {
+    const u = d.unanswered;
+    heading("Unanswered questions");
+    para(u.unanswered === 0 ? `All ${u.total} questions were answered.` : `${u.unanswered} of ${u.total} questions (${u.pct}%) were left blank and counted as wrong.`);
+    if (u.unanswered > 0) {
+      const rows = u.sections.filter((s) => s.unanswered > 0).map((s) => `${SEC_LABEL[s.section] ?? s.section} ${s.unanswered}/${s.total}${s.trailing >= 3 ? ` (last ${s.trailing} blank)` : ""}`);
+      if (rows.length) para(`By section: ${rows.join(" · ")}`, { size: 9, color: GRAY });
+      if (u.types.length) para(`By question type: ${u.types.map((t) => `${t.topic} ${t.unanswered}/${t.total}`).join(" · ")}`, { size: 9, color: GRAY });
+    }
+    for (const t of u.advice) para(`- ${t}`, { indent: 8, color: GRAY });
   }
 
   if (d.recommendations.length) {
