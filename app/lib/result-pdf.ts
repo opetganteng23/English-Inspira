@@ -19,6 +19,7 @@ export type ResultPdfData = {
   recommendations: { course: string; unit: string; topic: string; score: number }[];
   unanswered?: import("./unanswered").UnansweredReport;
   insights?: import("./insights").Insights;
+  summary?: import("./summary").Summary;
 };
 
 const SEC_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -77,6 +78,24 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
   side.slice(0, 4).forEach((t, i) => doc.text(t, X + 210, y + 16 + i * 18, { width: W - 225 }));
   y += 92 + 8;
   if (d.scoring) para(d.scoring.basis === "verified" ? `Scored with a verified conversion${d.scoring.name ? `: ${d.scoring.name}` : ""}.` : "Provisional conversion: treat this score as a rough estimate.", { size: 8.5, color: GRAY });
+
+  if (d.summary) {
+    const sm = d.summary;
+    heading("Diagnostic summary");
+    para(`Reliability: ${sm.reliability.level.toUpperCase()}. ${sm.reliability.headline}.`, { bold: true, keep: 30 });
+    para(sm.reliability.detail, { color: GRAY });
+    if (sm.pace.avgSec != null && sm.pace.realSec != null) para(`Average ${sm.pace.avgSec}s per answer; the real test pace is about ${sm.pace.realSec}s per question.`, { size: 9, color: GRAY });
+    if (sm.level.next) {
+      para(`Gap to ${sm.level.next.name} (${sm.level.next.scoreMin}): needs a section average of ${sm.level.next.avgNeeded}.`, { bold: true, keep: 40 });
+      for (const g of sm.gap) para(`- ${SEC_LABEL[g.section] ?? g.section}: ${g.scaled}${g.gap > 0 ? ` (+${g.gap} needed)` : " (on target)"}`, { indent: 8, color: GRAY });
+    }
+    if (sm.priorities.length) {
+      para(`Top ${sm.priorities.length} priorities`, { bold: true, keep: 40 });
+      sm.priorities.forEach((p, k) => para(`${k + 1}. ${p.topic} (${p.score}%, ${p.correct}/${p.total}, about ${p.recoverable} questions to win back). ${p.tip}`, { indent: 8, color: GRAY }));
+    }
+    para("Recommended next steps (about 20 minutes a day)", { bold: true, keep: 40 });
+    for (const x of sm.plan) para(`${x.when} - ${x.focus}: ${x.action}`, { indent: 8, color: GRAY });
+  }
 
   // Skor per section
   heading("Score per section");

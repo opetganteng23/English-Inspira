@@ -12,9 +12,10 @@ type Sec = { section: string; raw: number; total: number; scaled: number };
 type Rev = { no: number; section: string; type: string; groupId: string | null; correct: boolean; answered: boolean; stem?: string; options?: string[]; yourChoice?: number | null; answerKey?: number; explanation?: string };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; review: Rev[]; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; transcripts: { groupId: string; title: string; text: string }[]; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; summary?: Summary; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
 import type { Insights } from "@/lib/insights";
+import type { Summary } from "@/lib/summary";
 const BD_LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
 const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULATION TEST", practice: "PRACTICE" };
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -130,6 +131,59 @@ export default function Hasil({ params }: { params: { id: string } }) {
           {r.scoring && <p className={`mt-2 inline-block rounded-md px-2 py-1 text-[11px] font-semibold ${r.scoring.basis === "verified" ? "bg-white/15 text-[#DCE7F7]" : "bg-accent text-navy"}`}>{r.scoring.basis === "verified" ? `Scored with a verified conversion${r.scoring.name ? `: ${r.scoring.name}` : ""}` : "Provisional conversion: treat this score as a rough estimate"}</p>}
         </div>
       </section>
+
+      {r.summary && (() => {
+        const sm = r.summary;
+        const tone = sm.reliability.level === "high" ? "border-success bg-success-tint" : sm.reliability.level === "medium" ? "border-accent bg-accent-tint" : "border-red-300 bg-red-50";
+        const badge = sm.reliability.level === "high" ? "bg-success text-white" : sm.reliability.level === "medium" ? "bg-accent text-navy" : "bg-red-700 text-white";
+        const unitFor = (skill: string, topic: string) => r.recommendations?.find((x) => x.skill === skill && x.topic === topic);
+        return (
+          <section className="flex flex-col gap-4" aria-label="Diagnostic summary">
+            <div className={`rounded-xl border p-4 ${tone}`}>
+              <p className="flex flex-wrap items-center gap-2 text-sm"><span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase ${badge}`}>Reliability: {sm.reliability.level}</span><b className="text-navy">{sm.reliability.headline}.</b></p>
+              <p className="mt-1 text-sm text-ink-soft">{sm.reliability.detail}</p>
+              {sm.pace.avgSec != null && sm.pace.realSec != null && <p className="mt-1 text-xs text-ink-soft">Your average was {sm.pace.avgSec}s per answer; the real test pace is about {sm.pace.realSec}s per question.</p>}
+            </div>
+            {sm.level.next && (
+              <div className="card">
+                <h2 className="font-display text-lg font-extrabold text-navy">Gap to {sm.level.next.name} ({sm.level.next.scoreMin})</h2>
+                <p className="text-sm text-ink-soft">{sm.level.next.scoreMin} needs a section average of {sm.level.next.avgNeeded} (scale 31-68).</p>
+                <ul className="mt-3 flex flex-col gap-2">
+                  {sm.gap.map((g) => (
+                    <li key={g.section} className="grid grid-cols-[110px_1fr_auto] items-center gap-3 text-sm">
+                      <span className="font-semibold text-navy">{BD_LABEL[g.section] ?? g.section}</span>
+                      <span className="relative h-3 rounded-full bg-canvas" aria-hidden><span className="absolute h-3 rounded-full bg-navy" style={{ width: `${Math.max(2, ((g.scaled - 31) / 37) * 100)}%` }} /><span className="absolute -top-1 h-5 w-0.5 bg-accent" style={{ left: `${((sm.level.next!.avgNeeded - 31) / 37) * 100}%` }} /></span>
+                      <span className={`text-xs font-semibold ${g.gap > 0 ? "text-red-700" : "text-success"}`}>{g.scaled} · {g.gap > 0 ? `+${g.gap} needed` : "on target"}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {sm.priorities.length > 0 && (
+              <div className="card">
+                <h2 className="font-display text-lg font-extrabold text-navy">Your top {sm.priorities.length} priorities</h2>
+                <p className="text-sm text-ink-soft">Ranked by how many questions of that type you can win back in this test. Based only on this test.</p>
+                <ol className="mt-3 grid gap-3 md:grid-cols-3">
+                  {sm.priorities.map((p, k) => (
+                    <li key={`${p.skill}|${p.topic}`} className="rounded-xl border-t-4 border-red-600 bg-canvas p-3 text-sm">
+                      <p className="font-semibold text-navy">{k + 1}. {p.topic}</p>
+                      <p className="text-xs text-ink-soft">{BD_LABEL[p.skill === "grammar" ? "structure" : p.skill] ?? p.skill} · {p.score}% · {p.correct}/{p.total} · about {p.recoverable} questions to win back</p>
+                      <p className="mt-1 text-ink-soft">{p.tip}</p>
+                    </li>
+                  ))}
+                </ol>
+                <p className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-red-50 px-3 py-1 font-semibold text-red-700">Priority {sm.zones.priority}</span><span className="rounded-full bg-accent-tint px-3 py-1 font-semibold text-navy">Developing {sm.zones.developing}</span><span className="rounded-full bg-success-tint px-3 py-1 font-semibold text-success">Strong {sm.zones.strong}</span>{sm.zones.few > 0 && <span className="rounded-full bg-canvas px-3 py-1 text-ink-soft">Too few questions {sm.zones.few}</span>}</p>
+              </div>
+            )}
+            <div className="card">
+              <h2 className="font-display text-lg font-extrabold text-navy">Recommended next steps</h2>
+              <p className="text-sm text-ink-soft">About 20 minutes a day.</p>
+              <table className="mt-2 w-full text-left text-sm"><thead><tr className="border-b-2 border-navy text-xs uppercase text-ink-soft"><th className="py-1.5 pr-3">When</th><th className="py-1.5 pr-3">Focus</th><th className="py-1.5">What to do</th></tr></thead>
+                <tbody>{sm.plan.map((x) => { const u = x.topic ? unitFor(x.topic.skill, x.topic.topic) : undefined; return <tr key={x.when} className="border-b border-line align-top"><td className="py-2 pr-3 font-semibold text-navy">{x.when}</td><td className="py-2 pr-3">{x.focus}</td><td className="py-2 text-ink-soft">{x.action}{u && <> <Link href={`/learn/${u.unit.id}`} className="font-semibold text-brand">Open unit: {u.unit.title}</Link></>}</td></tr>; })}</tbody></table>
+            </div>
+          </section>
+        );
+      })()}
 
       {r.equivalents && (
         <section className="card" aria-label="Score equivalents">

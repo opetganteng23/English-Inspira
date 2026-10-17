@@ -15,6 +15,8 @@ import { LEVEL_INFO } from "@/lib/level-info";
 import { isLearningTopic } from "@/lib/topics";
 import { buildUnanswered } from "@/lib/unanswered";
 import { buildInsights } from "@/lib/insights";
+import { buildSummary } from "@/lib/summary";
+import { getLevels, getParam } from "@/lib/config";
 import { orderQuestions } from "@/lib/shuffle";
 
 type SnapItem = { qid: import("mongoose").Types.ObjectId; section: string; type: string; groupId?: import("mongoose").Types.ObjectId; stem: string; options: string[]; answerKey: number; explanation?: string; tags: { skill: string; topic: string }[] };
@@ -95,5 +97,13 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       review, transcripts,
       unanswered: buildUnanswered(review),
       insights: buildInsights(review),
+      summary: buildSummary({
+        scoreEst: attempt.scoreEst ?? null,
+        sections: (attempt.sectionScores ?? []).map((x) => ({ section: x.section ?? "", scaled: x.scaled ?? 0 })),
+        review, levels: (await getLevels()).map((l) => ({ name: l.name, order: l.order, scoreMin: l.scoreMin, scoreMax: l.scoreMax })), th: await getParam("weakness"),
+        topics: learning.map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0, score: t.score ?? 0 })),
+        durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,
+        allottedSec: test.sections.reduce((a, x) => a + (x.durationSec ?? 0), 0), hasPrevious: !!prev,
+      }),
     };
 }
