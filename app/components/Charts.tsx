@@ -124,3 +124,23 @@ export function ThirdsBars({ rows }: { rows: { label: string; thirds: number[] }
     </div>
   );
 }
+
+/** Radar 3 sumbu (skala section 31-68): skor ini, tes sebelumnya (opsional), dan target level berikutnya (opsional). */
+export function RadarChart({ axes, now, previous, target, min = 31, max = 68 }: { axes: string[]; now: number[]; previous?: number[] | null; target?: number | null; min?: number; max?: number }) {
+  const W = 320, H = 280, cx = W / 2, cy = 140, R = 95;
+  const ang = (i: number) => (-90 + (360 / axes.length) * i) * (Math.PI / 180);
+  const pt = (i: number, v: number) => { const r = (Math.max(min, Math.min(max, v)) - min) / (max - min) * R; return [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))] as const; };
+  const poly = (vals: number[]) => vals.map((v, i) => pt(i, v).map((n) => n.toFixed(1)).join(",")).join(" ");
+  const rings = [40, 50, 60];
+  const tgt = target != null ? axes.map(() => target) : null;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Score profile: ${axes.map((a, i) => `${a} ${now[i]}`).join(", ")}${target != null ? `, target ${target} in each section` : ""}`} className="h-auto w-full max-w-[340px]">
+      {rings.map((v) => <g key={v}><polygon points={poly(axes.map(() => v))} fill="none" stroke="#DCE3ED" /><text x={cx + 3} y={cy - ((v - min) / (max - min)) * R - 2} fontSize="9" fill="#4B5A70">{v}</text></g>)}
+      {axes.map((a, i) => { const [x, y] = pt(i, max); const [lx, ly] = pt(i, max + 9); return <g key={a}><line x1={cx} y1={cy} x2={x} y2={y} stroke="#DCE3ED" /><text x={lx} y={ly + 4} textAnchor={Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end"} fontSize="11" fontWeight="600" fill="#0A2257">{a}</text></g>; })}
+      {tgt && <polygon points={poly(tgt)} fill="none" stroke="#D9A02F" strokeWidth="1.5" strokeDasharray="5 4" />}
+      {previous && <polygon points={poly(previous)} fill="none" stroke="#9AA8BC" strokeWidth="1.5" />}
+      <polygon points={poly(now)} fill="#0B4FA6" fillOpacity=".25" stroke="#0B4FA6" strokeWidth="2.5" strokeLinejoin="round" />
+      {now.map((v, i) => { const [x, y] = pt(i, v); return <g key={i}><circle cx={x} cy={y} r="4" fill="#0B4FA6" stroke="#fff" strokeWidth="1.5"><title>{`${axes[i]}: ${v}`}</title></circle><text x={x} y={y - 8} textAnchor="middle" fontSize="11" fontWeight="700" fill="#0A2257">{v}</text></g>; })}
+    </svg>
+  );
+}

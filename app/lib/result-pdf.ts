@@ -109,6 +109,25 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
   });
   y += 62 + 10;
 
+  // Radar profil skor (skala section 31-68): skor ini dan, bila ada, target level berikutnya.
+  const keys = ["listening", "structure", "reading"], vals = keys.map((k) => d.sections.find((x) => x.section === k)?.scaled);
+  if (vals.every((v) => v != null)) {
+    const tgt = d.summary?.level.next?.avgNeeded ?? null;
+    ensure(200);
+    const cx = X + 110, cy = y + 100, R = 70;
+    const at = (i: number, v: number): [number, number] => { const a = (-90 + 120 * i) * (Math.PI / 180), r = ((Math.max(31, Math.min(68, v)) - 31) / 37) * R; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+    const poly = (vs: number[]) => vs.map((v, i) => at(i, v));
+    for (const ring of [40, 50, 60]) doc.polygon(...poly([ring, ring, ring])).lineWidth(0.6).strokeColor(LINE).stroke();
+    keys.forEach((k, i) => { const [ex, ey] = at(i, 68); doc.moveTo(cx, cy).lineTo(ex, ey).lineWidth(0.6).strokeColor(LINE).stroke(); const [lx, ly] = at(i, 76); doc.font("Bold").fontSize(8.5).fillColor(NAVY).text(SEC_LABEL[k], lx - 40, ly - 4, { width: 80, align: "center" }); });
+    if (tgt != null) doc.polygon(...poly([tgt, tgt, tgt])).lineWidth(1.2).dash(4, { space: 3 }).strokeColor("#D9A02F").stroke().undash();
+    doc.polygon(...poly(vals as number[])).fillOpacity(0.2).fillAndStroke(BLUE, BLUE).fillOpacity(1);
+    doc.font("Bold").fontSize(11).fillColor(NAVY).text("Score profile", X + 250, y + 40, { width: W - 250 });
+    doc.font("Regular").fontSize(9).fillColor(GRAY).text(`Blue: this test (${(vals as number[]).join(" / ")})`, X + 250, y + 60, { width: W - 250 });
+    if (tgt != null) doc.text(`Dashed: section average ${tgt} needed for ${d.summary!.level.next!.name}`, X + 250, doc.y + 4, { width: W - 250 });
+    doc.text("Scale 31-68 per section. Closer to the outer edge is better.", X + 250, doc.y + 4, { width: W - 250 });
+    y += 205;
+  }
+
   // Rincian per jenis soal, per section (terlemah dulu). Bagian (Part A/B/C) ditampilkan terpisah.
   const groups = buildBreakdown(d.topics);
   if (groups.length) {

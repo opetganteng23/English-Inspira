@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
-import { Loading, ErrorNote, HBars, Donut, OutcomeBars, SpeedScatter, ThirdsBars, LineChart } from "@/components/Charts";
+import { Loading, ErrorNote, HBars, Donut, OutcomeBars, RadarChart, SpeedScatter, ThirdsBars, LineChart } from "@/components/Charts";
 import { CounselorPanel } from "@/components/CounselorPanel";
 import { buildBreakdown, partLabel } from "@/lib/breakdown";
 
@@ -212,6 +212,26 @@ export default function Hasil({ params }: { params: { id: string } }) {
           );
         })}
       </section>
+
+      {r.sectionScores.length === 3 && (() => {
+        const order = ["listening", "structure", "reading"];
+        const val = (list: Sec[] | undefined) => order.map((k) => list?.find((x) => x.section === k)?.scaled ?? 31);
+        const tgt = r.summary?.level.next?.avgNeeded ?? null;
+        return (
+          <section className="card">
+            <h2 className="font-display text-lg font-extrabold text-navy">Score profile</h2>
+            <div className="mt-2 grid items-center gap-4 sm:grid-cols-[auto_1fr]">
+              <RadarChart axes={order.map((k) => BD_LABEL[k])} now={val(r.sectionScores)} previous={r.previous ? val(r.previous.sectionScores) : null} target={tgt} />
+              <ul className="flex flex-col gap-2 text-sm text-ink-soft">
+                <li><i className="mr-2 inline-block h-2.5 w-6 rounded bg-brand align-middle" />This test</li>
+                {r.previous && <li><i className="mr-2 inline-block h-0.5 w-6 bg-[#9AA8BC] align-middle" />{r.previous.name}</li>}
+                {tgt != null && <li><i className="mr-2 inline-block h-0.5 w-6 align-middle" style={{ borderTop: "2px dashed #D9A02F" }} />Needed for {r.summary?.level.next?.name} (section average {tgt})</li>}
+                <li className="text-xs">Scale 31-68 per section. A shape closer to the outer edge is better; an even shape means balanced skills.</li>
+              </ul>
+            </div>
+          </section>
+        );
+      })()}
 
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         {bd && (
