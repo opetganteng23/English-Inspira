@@ -9,8 +9,9 @@ describe("captcha bawaan", () => {
   });
   it("jawaban salah, token rusak, atau kosong ditolak", async () => {
     const c = challengeWithAnswer();
-    await expect(verifyCaptcha({ token: c.token, answer: "XXXXX" })).rejects.toThrow();
-    await expect(verifyCaptcha({ token: c.token.replace(/.$/, "A"), answer: c.answer })).rejects.toThrow();
+    await expect(verifyCaptcha({ token: c.token, answer: c.answer === "XXXXX" ? "YYYYY" : "XXXXX" })).rejects.toThrow(); // dijamin berbeda dari jawaban asli
+    const tampered = c.token.slice(0, -1) + (c.token.endsWith("A") ? "B" : "A"); // dijamin berbeda dari token asli (sebelumnya 1 dari 64 kali tak berubah)
+    await expect(verifyCaptcha({ token: tampered, answer: c.answer })).rejects.toThrow();
     await expect(verifyCaptcha(undefined)).rejects.toThrow();
   });
   it("token tidak bisa dipakai untuk jawaban lain", async () => {

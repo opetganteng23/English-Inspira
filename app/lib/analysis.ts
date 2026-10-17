@@ -1,5 +1,5 @@
 import { RateLimiterMemory } from "rate-limiter-flexible";
-import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
+import { LEARNING_TOPIC_FILTER, isLearningTopic } from "@/lib/topics";
 import { connectDB } from "./db";
 import { aiEnabled, askClaudeStructured, GUARDRAILS, AI_MODEL, AI_MODEL_LIGHT, type CounselorContext } from "./ai";
 import { getLevels, getParam } from "./config";
@@ -31,17 +31,23 @@ export async function buildEngineInput(analysis: AnalysisDoc): Promise<EngineInp
   const thisAttempt = new Map(attempt.topicScores.map((t) => [`${t.skill}|${t.topic}`, t.score ?? null]));
   const answered = attempt.answers.filter((a) => a.choice != null);
   const times = attempt.answers.map((a) => a.timeSpentSec).filter((x): x is number => typeof x === "number" && x > 0);
+  // Diagnostic (placement): analisis hanya dari placement ini, bukan akumulasi semua percobaan. Label bagian (part-a/b/c) bukan jenis soal.
+  const topicRows = attempt.kind === "placement"
+    ? attempt.topicScores
+        .filter((t) => t.skill && t.topic && isLearningTopic({ skill: t.skill, topic: t.topic }) && !/^part-[abc]$/.test(t.topic))
+        .map((t) => ({ topic: t.topic!, skill: t.skill!, score: Math.round((t.score ?? 0) * 10) / 10, items: t.total ?? 0, status: topicStatus(t.score ?? 0, t.total ?? 0, th), thisAttempt: t.score ?? null }))
+    : stats.map((t) => ({ topic: t.topic, skill: t.skill, score: Math.round(t.score * 10) / 10, items: t.items, status: t.status, thisAttempt: thisAttempt.get(`${t.skill}|${t.topic}`) ?? null }));
   return {
     alias: aliasFor(String(analysis.userId)), kind: attempt.kind ?? analysis.sourceKind, level: cur?.name ?? null, scoreEst: score,
     sections: attempt.sectionScores.map((s) => ({ section: s.section ?? "", raw: s.raw ?? 0, total: s.total ?? 0, scaled: s.scaled ?? 0 })),
-    topics: stats.map((t) => ({ topic: t.topic, skill: t.skill, score: Math.round(t.score * 10) / 10, items: t.items, status: t.status, thisAttempt: thisAttempt.get(`${t.skill}|${t.topic}`) ?? null })),
+    topics: topicRows,
     gapToNextLevel: next && score != null && score < next.scoreMin ? { points: next.scoreMin - score, target: next.scoreMin, nextLevel: next.name } : null,
     behaviour: {
       answered: answered.length, unanswered: attempt.answers.length - answered.length, answerChanges: attempt.answers.reduce((n, a) => n + (a.changes ?? 0), 0),
       avgSecPerAnswer: times.length ? Math.round((times.reduce((a, b) => a + b, 0) / times.length) * 10) / 10 : null,
       stuckTopics: (calc.stuck ?? []).map((k) => k.split("|")[1] ?? k),
     },
-    thresholds: th, validTopics: Array.from(new Set(stats.map((t) => t.topic))),
+    thresholds: th, validTopics: Array.from(new Set(topicRows.map((t) => t.topic))),
   };
 }
 

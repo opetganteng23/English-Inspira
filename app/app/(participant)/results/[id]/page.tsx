@@ -172,7 +172,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
       </div>
 
       <section className="card">
-        <div className="flex items-center justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">AI analysis summary</h2>{a.status === "ready" && a.mock && <span className="badge-muted">basic automatic analysis</span>}</div>
+        <div className="flex items-center justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">{r.kind === "placement" ? "Analysis of this placement test" : "AI analysis summary"}</h2>{a.status === "ready" && a.mock && <span className="badge-muted">basic automatic analysis</span>}</div>
         {a.status === "pending" && <p className="mt-3 text-sm text-ink-soft" role="status">Preparing the analysis… this can take a few minutes when many people finish at the same time.</p>}
         {a.status === "failed" && <div className="mt-3 text-sm"><p className="text-red-700">{a.error ?? "Analysis not available yet."}</p><button className="btn-outline mt-2" onClick={retry}>Try again</button></div>}
         {a.status === "ready" && (
