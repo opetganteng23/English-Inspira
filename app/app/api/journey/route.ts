@@ -21,7 +21,7 @@ export async function GET() {
     const uid = me._id;
     const [u, attempts, unitsDone, unitsAny, analysisReady, planDone, planAny, booked, attended, itpReg, itpCert] = await Promise.all([
       User.findById(uid).select("placementAttemptId").lean(),
-      Attempt.find({ userId: uid, status: "submitted", ...releasedFilter() }).select("kind scoreEst finishedAt").sort({ finishedAt: 1 }).lean(),
+      Attempt.find({ userId: uid, status: "submitted", kind: { $nin: ["quiz", "section"] }, ...releasedFilter() }).select("kind scoreEst finishedAt").sort({ finishedAt: 1 }).lean(),
       UnitProgress.countDocuments({ userId: uid, status: "completed" }),
       UnitProgress.countDocuments({ userId: uid }),
       Analysis.countDocuments({ userId: uid, status: "ready" }),

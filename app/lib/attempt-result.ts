@@ -16,6 +16,7 @@ import { buildUnanswered } from "@/lib/unanswered";
 import { buildInsights } from "@/lib/insights";
 import { buildSummary } from "@/lib/summary";
 import { courseProgressFor } from "@/lib/course-progress";
+import { isPartialKind, percentOf } from "@/lib/attempt-kinds";
 import { getLevels, getParam } from "@/lib/config";
 import { orderQuestions } from "@/lib/shuffle";
 
@@ -62,7 +63,10 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
 
     const calc = (await Analysis.findOne({ attemptId: attempt._id }).select("calculated").lean())?.calculated as { levelUp?: { up: boolean; reasons: string[]; level?: string }; stuck?: string[] } | undefined;
     // Tes sebelumnya (selesai) milik peserta yang sama, untuk selisih skor; laporan PDF bila sudah dibuat.
-    const prev = await Attempt.findOne({ userId: attempt.userId, status: "submitted", kind: { $ne: "trial" }, finishedAt: { $lt: attempt.finishedAt }, _id: { $ne: attempt._id } })
+    const partial = isPartialKind(attempt.kind); // quiz unit dan ujian per bagian: persen benar, bukan skor EPTA
+    const passScore = partial ? await getParam("unit_pass_score") : null;
+    const percent = partial ? percentOf(attempt.sectionScores ?? []) : null;
+    const prev = partial ? null : await Attempt.findOne({ userId: attempt.userId, status: "submitted", kind: { $nin: ["trial", "quiz", "section"] }, finishedAt: { $lt: attempt.finishedAt }, _id: { $ne: attempt._id } })
       .sort({ finishedAt: -1 }).select("testId scoreEst sectionScores topicScores").lean();
     const prevTest = prev ? await Test.findById(prev.testId).select("name").lean() : null;
     const sp = attempt.scoringProfileId ? await ScoringProfile.findById(attempt.scoringProfileId).select("name").lean() : null;
@@ -74,14 +78,14 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       .map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", score: Math.round(t.score ?? 0), correct: t.correct ?? 0, total: t.total ?? 0 }))
       .filter((t) => t.skill && t.topic && t.total >= 2 && t.score < 70).sort((x, y) => x.score - y.score).slice(0, 5);
     const recommendations = await recommendCourses(attempt.userId, u?.currentLevelId, weak);
-    const eq = attempt.scoreEst != null ? equivalents(attempt.scoreEst, await getEquivalence()) : null;
+    const eq = !partial && attempt.scoreEst != null ? equivalents(attempt.scoreEst, await getEquivalence()) : null;
     return {
       recommendations,
       previous: prev ? { name: prevTest?.name ?? "Previous test", scoreEst: prev.scoreEst, sectionScores: prev.sectionScores, topicScores: (prev.topicScores ?? []).filter((t) => isLearningTopic({ skill: t.skill ?? "", topic: t.topic ?? "" })) } : null,
       reportId: report ? String(report._id) : null,
       scoring: scoringInfo,
       levelUp: calc?.levelUp ?? null, stuck: (calc?.stuck ?? []).map((k) => k.split("|")[1] ?? k),
-      kind: attempt.kind, testName: test.name, finishedAt: attempt.finishedAt,
+      kind: attempt.kind, partial, percent, passScore, passed: percent != null && passScore != null ? percent >= passScore : null, testName: test.name, finishedAt: attempt.finishedAt,
       durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,
       scoreRaw: attempt.scoreRaw, scoreEst: attempt.scoreEst, sectionScores: attempt.sectionScores, topicScores: learning,
       flags: attempt.proctorFlags.length, attemptId: String(attempt._id), analysis: attempt.aiAnalysis ?? { status: "pending" },
@@ -91,9 +95,9 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
       courseProgress: await courseProgressFor(attempt.userId, u?.currentLevelId),
       insights: buildInsights(review),
       summary: buildSummary({
-        scoreEst: attempt.scoreEst ?? null,
-        sections: (attempt.sectionScores ?? []).map((x) => ({ section: x.section ?? "", scaled: x.scaled ?? 0 })),
-        review, levels: (await getLevels()).map((l) => ({ name: l.name, order: l.order, scoreMin: l.scoreMin, scoreMax: l.scoreMax })), th: await getParam("weakness"),
+        scoreEst: partial ? null : attempt.scoreEst ?? null,
+        sections: partial ? [] : (attempt.sectionScores ?? []).map((x) => ({ section: x.section ?? "", scaled: x.scaled ?? 0 })),
+        review, levels: partial ? [] : (await getLevels()).map((l) => ({ name: l.name, order: l.order, scoreMin: l.scoreMin, scoreMax: l.scoreMax })), th: await getParam("weakness"),
         topics: learning.map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0, score: t.score ?? 0 })),
         durationSec: attempt.finishedAt ? Math.round((+attempt.finishedAt - +attempt.startedAt) / 1000) : null,
         allottedSec: test.sections.reduce((a, x) => a + (x.durationSec ?? 0), 0), hasPrevious: !!prev,

@@ -41,5 +41,17 @@ describe.skipIf(!safe)("laporan hasil tanpa soal (database in-memory)", () => {
       for (const o of q.options ?? []) if (o.length > 12) expect(json).not.toContain(o);
     }
     expect(json).not.toMatch(/answerKey|yourChoice|"explanation"|"stem"/);
+
+    // Quiz unit dan ujian per bagian: dilaporkan sebagai persen benar, tanpa skor EPTA, level, padanan, atau pembanding dengan tes EPTA.
+    const raw = 3, total = 5;
+    const q = await Attempt.create({
+      userId: user._id, testId: test._id, kind: "quiz", status: "submitted", startedAt: now, sectionStartedAt: now, finishedAt: new Date(+now + 1000), scoreEst: 380,
+      sectionScores: [{ section: "structure", raw, total, scaled: 40 }], answers: ids.slice(0, 3).map((id) => ({ qid: id, choice: 0, firstChoice: 0, changes: 0, timeSpentSec: 10 })),
+    });
+    const pr = await attemptResult((await Attempt.findById(q._id))!, test as never);
+    expect(pr).toMatchObject({ partial: true, percent: 60, passScore: 70, passed: false, equivalents: null, previous: null, level: null });
+    expect(pr.summary.level.next).toBeNull();
+    expect(pr.summary.stats.total.scaled).toBeNull();
+    expect(r.partial).toBe(false);
   }, 240_000);
 });

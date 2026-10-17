@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isPartialKind, percentOf } from "@/lib/attempt-kinds";
 import { exemptFromDelay } from "@/lib/attempt-release";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
@@ -19,7 +20,7 @@ export async function GET() {
       attempts: list.map((a) => {
         const held = !!a.releaseAt && a.releaseAt > new Date() && !exemptFromDelay(user); // hasil ditahan: skor belum boleh terlihat
         return {
-          id: String(a._id), name: tests.get(String(a.testId)) ?? "-", kind: a.kind, status: a.status, startedAt: a.startedAt, finishedAt: a.finishedAt ?? null, scoreEst: held ? null : a.scoreEst ?? null,
+          id: String(a._id), name: tests.get(String(a.testId)) ?? "-", kind: a.kind, status: a.status, startedAt: a.startedAt, finishedAt: a.finishedAt ?? null, scoreEst: held || isPartialKind(a.kind) ? null : a.scoreEst ?? null, percent: !held && isPartialKind(a.kind) && a.status === "submitted" ? percentOf(a.sectionScores) : null,
           sections: held ? {} : Object.fromEntries(a.sectionScores.map((s) => [s.section, s.scaled])), reportId: held ? null : reports.get(String(a._id)) ?? null,
           availableAt: held ? a.releaseAt : null,
         };

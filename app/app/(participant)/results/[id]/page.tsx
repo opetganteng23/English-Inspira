@@ -11,7 +11,7 @@ import { buildBreakdown, partLabel, typeLabel } from "@/lib/breakdown";
 type Sec = { section: string; raw: number; total: number; scaled: number };
 type Topic = { skill: string; topic: string; correct: number; total: number; score: number };
 type Analysis = { status: "pending" | "ready" | "failed"; summary?: string; narrative?: string; strengths?: { topic: string; evidence: string }[]; weaknesses?: { title: string; detail: string }[]; gapToTarget?: { target: number; estimated: number; gap: number }; nextSteps?: string[]; mock?: boolean; error?: string };
-type R = { levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; summary?: Summary; courseProgress?: CourseProgressRow[]; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
+type R = { partial?: boolean; percent?: number | null; passScore?: number | null; passed?: boolean | null; levelUp: { up: boolean; reasons: string[]; level?: string } | null; stuck: string[]; kind: string; testName: string; attemptId: string; durationSec: number | null; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[]; flags: number; analysis: Analysis; level: { name: string; quota: number; scoreMin: number; scoreMax: number; info: { summary: string; traits: string } | null } | null; equivalents?: { itp: number; cefr: string; cefrLabel: string } | null; previous: { name: string; scoreEst: number; sectionScores: Sec[]; topicScores: Topic[] } | null; reportId: string | null; insights?: Insights; summary?: Summary; courseProgress?: CourseProgressRow[]; unanswered?: { total: number; unanswered: number; pct: number; sections: { section: string; total: number; unanswered: number; trailing: number }[]; types: { skill: string; topic: string; unanswered: number; total: number }[]; advice: string[] }; scoring?: { name: string | null; version: number | null; basis: "verified" | "provisional" }; recommendations: { skill: string; topic: string; score: number; correct: number; total: number; unit: { id: string; title: string; status: "new" | "in_progress" | "completed" }; course: { id: string; title: string } }[] };
 
 import type { Insights } from "@/lib/insights";
 import type { Summary } from "@/lib/summary";
@@ -28,7 +28,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
   const [err, setErr] = useState("");
   const [releaseAt, setReleaseAt] = useState<Date | null>(null);
   const me = useApi<{ targetScore: number | null }>("/api/me");
-  const hist = useApi<{ attempts: { id: string; name: string; status: string; finishedAt: string | null; scoreEst: number | null; availableAt?: string | null }[] }>("/api/attempts");
+  const hist = useApi<{ attempts: { id: string; kind?: string; name: string; status: string; finishedAt: string | null; scoreEst: number | null; availableAt?: string | null }[] }>("/api/attempts");
   const [bdTab, setBdTab] = useState("");
 
   useEffect(() => {
@@ -113,6 +113,14 @@ export default function Hasil({ params }: { params: { id: string } }) {
       </div>
       <ErrorNote text={err} />
 
+      {r.partial ? (
+        <section className="rounded-2xl bg-navy p-5 text-white sm:p-6" aria-label="Result">
+          <p className="text-sm text-[#B9CBE6]">{r.kind === "section" ? "Section test result" : "Unit quiz result"}</p>
+          <p className="font-display text-5xl font-extrabold leading-none sm:text-6xl">{r.percent}%<span className="ml-3 text-lg font-semibold text-[#B9CBE6]">correct</span></p>
+          <p className={`mt-3 inline-block rounded-md px-3 py-1 text-sm font-bold ${r.passed ? "bg-[#1E8E5A] text-white" : "bg-accent text-navy"}`}>{r.passed ? "Passed" : "Not passed yet"} · pass mark {r.passScore}%</p>
+          <p className="mt-3 text-xs leading-relaxed text-[#DCE7F7]">This covers only part of the material, so it is reported as a percentage and does not change your EPTA score estimate or level.</p>
+        </section>
+      ) : (
       <section className="grid gap-5 rounded-2xl bg-navy p-5 text-white sm:p-6 md:grid-cols-[auto_1fr] md:items-center md:gap-8">
         <div>
           <p className="text-sm text-[#B9CBE6]">Estimated EPTA score</p>
@@ -130,6 +138,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
           {r.scoring && <p className={`mt-2 inline-block rounded-md px-2 py-1 text-[11px] font-semibold ${r.scoring.basis === "verified" ? "bg-white/15 text-[#DCE7F7]" : "bg-accent text-navy"}`}>{r.scoring.basis === "verified" ? `Scored with a verified conversion${r.scoring.name ? `: ${r.scoring.name}` : ""}` : "Provisional conversion: treat this score as a rough estimate"}</p>}
         </div>
       </section>
+      )}
 
       {r.summary && (() => {
         const sm = r.summary;
@@ -217,7 +226,9 @@ export default function Hasil({ params }: { params: { id: string } }) {
       {levelBanners}
 
       <section className="grid gap-3 sm:grid-cols-3" aria-label="Score per section">
-        {r.sectionScores.map((s) => {
+        {r.partial ? r.sectionScores.map((s) => (
+          <div key={s.section} className="card !p-4"><p className="text-sm font-semibold text-navy">{LABEL[s.section]}</p><p className="mt-1 font-display text-3xl font-extrabold text-navy">{s.total ? Math.round((s.raw / s.total) * 100) : 0}%</p><p className="mt-1.5 text-xs text-ink-soft">{s.raw} of {s.total} correct</p></div>
+        )) : r.sectionScores.map((s) => {
           const d = secDelta(s.section);
           return (
             <div key={s.section} className="card !p-4">
@@ -230,7 +241,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
         })}
       </section>
 
-      {r.sectionScores.length === 3 && (() => {
+      {!r.partial && r.sectionScores.length === 3 && (() => {
         const order = ["listening", "structure", "reading"];
         const val = (list: Sec[] | undefined) => order.map((k) => list?.find((x) => x.section === k)?.scaled ?? 31);
         const tgt = r.summary?.level.next?.avgNeeded ?? null;
@@ -283,7 +294,7 @@ export default function Hasil({ params }: { params: { id: string } }) {
       </section>
 
       {(() => {
-        const pts = (hist.data?.attempts ?? []).filter((x) => x.status === "submitted" && !x.availableAt && x.scoreEst != null).reverse();
+        const pts = (hist.data?.attempts ?? []).filter((x) => x.status === "submitted" && !x.availableAt && x.scoreEst != null && x.kind !== "quiz" && x.kind !== "section").reverse();
         return pts.length >= 2 ? (
           <section className="card">
             <h2 className="font-display text-lg font-extrabold text-navy">Your score over time</h2>

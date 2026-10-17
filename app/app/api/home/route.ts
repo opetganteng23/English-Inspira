@@ -25,7 +25,7 @@ export async function GET() {
     await connectDB();
     const [u, levels, attempts, quota, inProgress, inst, counselor, plan, weak, levelUp] = await Promise.all([
       User.findById(me._id).lean(), getLevels(),
-      Attempt.find({ userId: me._id, status: "submitted", ...releasedFilter() }).sort({ finishedAt: 1 }).select("kind scoreEst sectionScores finishedAt testId").lean(),
+      Attempt.find({ userId: me._id, status: "submitted", kind: { $nin: ["quiz", "section"] }, ...releasedFilter() }).sort({ finishedAt: 1 }).select("kind scoreEst sectionScores finishedAt testId").lean(),
       CoachingQuota.findOne({ userId: me._id, active: true }).lean(),
       Attempt.findOne({ userId: me._id, status: "in_progress" }).select("_id").lean(),
       me.institutionId ? Institution.findById(me.institutionId).select("name contractEnd").lean() : null,

@@ -21,6 +21,7 @@ export type ResultPdfData = {
   insights?: import("./insights").Insights;
   summary?: import("./summary").Summary;
   courseProgress?: import("./course-progress").CourseProgressRow[];
+  partial?: { percent: number; passScore: number; passed: boolean };
 };
 
 const PART_NAMES: Record<string, string> = { listening_a: "Listening Part A", listening_b: "Listening Part B", listening_c: "Listening Part C", structure: "Structure", written_expression: "Written Expression", reading: "Reading" };
@@ -69,9 +70,10 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
 
   // Kotak skor
   doc.roundedRect(X, y, W, 92, 12).fill(NAVY);
-  doc.fillColor("#B9CBE6").font("Regular").fontSize(9).text("Estimated EPTA score", X + 18, y + 14);
-  doc.fillColor("#FFFFFF").font("Bold").fontSize(40).text(String(d.scoreEst ?? "-"), X + 18, y + 28);
+  doc.fillColor("#B9CBE6").font("Regular").fontSize(9).text(d.partial ? "Percent correct" : "Estimated EPTA score", X + 18, y + 14);
+  doc.fillColor("#FFFFFF").font("Bold").fontSize(40).text(d.partial ? `${d.partial.percent}%` : String(d.scoreEst ?? "-"), X + 18, y + 28);
   const side: string[] = [];
+  if (d.partial) { side.push(`${d.partial.passed ? "Passed" : "Not passed yet"} (pass mark ${d.partial.passScore}%)`); side.push("Covers part of the material: it does not change your EPTA score estimate or level."); }
   if (d.level) side.push(`Level: ${d.level.name} (${d.level.scoreMin}-${d.level.scoreMax})`);
   if (d.equivalents) side.push(`CEFR: ${d.equivalents.cefr} (${d.equivalents.cefrLabel.replace(/^\S+ /, "")})`);
   if (d.previous && d.scoreEst != null) { const dl = d.scoreEst - d.previous.scoreEst; side.push(`${dl > 0 ? "+" : dl < 0 ? "" : "±"}${dl} from ${d.previous.name} (${d.previous.scoreEst})`); }
@@ -79,7 +81,7 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
   doc.font("Regular").fontSize(10).fillColor("#FFFFFF");
   side.slice(0, 4).forEach((t, i) => doc.text(t, X + 210, y + 16 + i * 18, { width: W - 225 }));
   y += 92 + 8;
-  if (d.scoring) para(d.scoring.basis === "verified" ? `Scored with a verified conversion${d.scoring.name ? `: ${d.scoring.name}` : ""}.` : "Provisional conversion: treat this score as a rough estimate.", { size: 8.5, color: GRAY });
+  if (d.scoring && !d.partial) para(d.scoring.basis === "verified" ? `Scored with a verified conversion${d.scoring.name ? `: ${d.scoring.name}` : ""}.` : "Provisional conversion: treat this score as a rough estimate.", { size: 8.5, color: GRAY });
 
   if (d.summary) {
     const sm = d.summary;
@@ -118,8 +120,8 @@ function build(doc: PDFKit.PDFDocument, d: ResultPdfData) {
     const x = X + i * 169.5;
     doc.roundedRect(x, y, 160, 62, 10).fillAndStroke("#F5F7FA", LINE);
     doc.fillColor(GRAY).font("Regular").fontSize(9).text(SEC_LABEL[s.section] ?? s.section, x + 12, y + 10, { width: 136 });
-    doc.fillColor(NAVY).font("Bold").fontSize(22).text(String(s.scaled), x + 12, y + 24);
-    doc.fillColor(GRAY).font("Regular").fontSize(8.5).text(`${s.raw} of ${s.total} correct · scale 31-68`, x + 12, y + 49, { width: 140 });
+    doc.fillColor(NAVY).font("Bold").fontSize(22).text(d.partial ? `${s.total ? Math.round((s.raw / s.total) * 100) : 0}%` : String(s.scaled), x + 12, y + 24);
+    doc.fillColor(GRAY).font("Regular").fontSize(8.5).text(d.partial ? `${s.raw} of ${s.total} correct` : `${s.raw} of ${s.total} correct · scale 31-68`, x + 12, y + 49, { width: 140 });
   });
   y += 62 + 10;
 
