@@ -99,6 +99,40 @@ describe("keamanan materi", () => {
     expect(canStartTest({ ...(base as object), role: "participant" } as never, { kind: "sim" } as never).ok).toBe(false);
     expect(canStartTest({ ...(placed as object), role: "participant" } as never, { kind: "placement" } as never).ok).toBe(false);
   });
+  it("shuffleWithinParts: urutan beda per peserta, tetapi bagian dan blok audio/bacaan terjaga (struktur T01)", async () => {
+    const { shuffleWithinParts, orderQuestions } = await import("@/lib/shuffle");
+    const mk = (id: string, part: string | null, groupId?: string) => ({ id, groupId, tags: part ? [{ topic: part }] : [{ topic: "other" }] });
+    const listening = [
+      ...Array.from({ length: 30 }, (_, i) => mk(`A${i}`, "part-a", `ga${i}`)),
+      ...[0, 1].flatMap((g) => Array.from({ length: 4 }, (_, i) => mk(`B${g}_${i}`, "part-b", `gb${g}`))),
+      ...[0, 1, 2].flatMap((g) => Array.from({ length: 4 }, (_, i) => mk(`C${g}_${i}`, "part-c", `gc${g}`))),
+    ];
+    const structure = [...Array.from({ length: 15 }, (_, i) => mk(`S${i}`, null)), ...Array.from({ length: 25 }, (_, i) => mk(`W${i}`, "written-expression"))];
+    const reading = [0, 1, 2, 3, 4].flatMap((g) => Array.from({ length: 10 }, (_, i) => mk(`R${g}_${i}`, null, `gr${g}`)));
+    const seen = new Set<string>();
+    for (let n = 0; n < 40; n++) {
+      const l = shuffleWithinParts(listening, `att${n}:q:0`);
+      expect(l.map((x) => x.id).sort()).toEqual(listening.map((x) => x.id).sort()); // tidak ada soal hilang/ganda
+      expect(l.slice(0, 30).every((x) => x.id.startsWith("A"))).toBe(true); // Part A tetap di nomor 1-30
+      expect(l.slice(30, 38).every((x) => x.id.startsWith("B"))).toBe(true); // Part B di 31-38
+      expect(l.slice(38).every((x) => x.id.startsWith("C"))).toBe(true); // Part C di 39-50
+      for (const g of ["gb0", "gb1", "gc0", "gc1", "gc2"]) { // soal satu audio tetap berurutan di dalam blok
+        const idx = l.map((x, i) => (x.groupId === g ? i : -1)).filter((i) => i >= 0);
+        expect(idx[idx.length - 1] - idx[0]).toBe(3);
+        expect(idx.map((i) => l[i].id)).toEqual(listening.filter((x) => x.groupId === g).map((x) => x.id));
+      }
+      const st = shuffleWithinParts(structure, `att${n}:q:1`);
+      expect(st.slice(0, 15).every((x) => x.id.startsWith("S"))).toBe(true); // Structure sebelum Written Expression
+      expect(st.slice(15).every((x) => x.id.startsWith("W"))).toBe(true);
+      const rd = shuffleWithinParts(reading, `att${n}:q:2`);
+      for (let b = 0; b < 5; b++) { const ids = rd.slice(b * 10, b * 10 + 10).map((x) => x.id); expect(new Set(ids.map((x) => x.split("_")[0])).size).toBe(1); expect(ids.map((x) => Number(x.split("_")[1]))).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); }
+      seen.add(l.map((x) => x.id).join());
+    }
+    expect(seen.size).toBeGreaterThan(30); // peserta berbeda mendapat urutan berbeda
+    expect(shuffleWithinParts(listening, "x:q:0").map((x) => x.id)).toEqual(shuffleWithinParts(listening, "x:q:0").map((x) => x.id)); // deterministik per percobaan
+    expect(orderQuestions({}, listening, "s")).toBe(listening); // tanpa pengaturan: urutan asli
+    expect(orderQuestions({ shuffleWithinParts: true, shuffleQuestions: true }, listening, "s").slice(0, 30).every((x) => x.id.startsWith("A"))).toBe(true); // within-parts diutamakan
+  });
   it("advance tahan balapan: permintaan yang kalah dianggap berhasil bila percobaan sudah maju atau terkirim", async () => {
     const { advanceSafely } = await import("@/lib/attempts");
     const { Attempt } = await import("@/models/Test");

@@ -23,6 +23,35 @@ export function shuffleQuestionOrder<T extends { groupId?: unknown }>(items: T[]
   return shuffled(blocks, seed).flat();
 }
 
+type Tagged = { groupId?: unknown; tags?: { topic: string }[] };
+
+/** Bagian soal dari tag topik: part-a/b/c (Listening) dan written-expression; selain itu satu bagian bersama (Structure, Reading). */
+export function partOf(q: Pick<Tagged, "tags">): string {
+  const topics = (q.tags ?? []).map((t) => t.topic);
+  return topics.find((t) => /^part-[abc]$/.test(t)) ?? (topics.includes("written-expression") ? "written-expression" : "");
+}
+
+/**
+ * Acak di dalam bagian: soal dibagi menjadi bagian berurutan (menurut `partOf`), tiap bagian diacak sendiri (soal yang berbagi
+ * audio/bacaan tetap satu blok), lalu bagian digabung kembali sesuai urutan aslinya. Format resmi (Part A, B, C, dst.) terjaga,
+ * tetapi nomor soal berbeda antar peserta.
+ */
+export function shuffleWithinParts<T extends Tagged>(items: T[], seed: string): T[] {
+  const parts: T[][] = [];
+  for (const it of items) {
+    const last = parts[parts.length - 1];
+    if (last && partOf(last[0]) === partOf(it)) last.push(it); else parts.push([it]);
+  }
+  return parts.flatMap((p, i) => shuffleQuestionOrder(p, `${seed}:p${i}`));
+}
+
+/** Urutan tampil soal sebuah section menurut pengaturan tes. Dipakai bersama oleh tampilan soal dan penegakan Secure mode. */
+export function orderQuestions<T extends Tagged>(test: { shuffleQuestions?: boolean | null; shuffleWithinParts?: boolean | null }, items: T[], seed: string): T[] {
+  if (test.shuffleWithinParts) return shuffleWithinParts(items, seed);
+  if (test.shuffleQuestions) return shuffleQuestionOrder(items, seed);
+  return items;
+}
+
 /** perm[i] = indeks ASLI dari pilihan yang tampil di posisi i. Peserta menjawab dengan indeks tampil; server menyimpan indeks asli. */
 export function optionPermutation(seed: string, n: number): number[] {
   return shuffled(Array.from({ length: n }, (_, i) => i), seed);

@@ -34,6 +34,7 @@ export async function POST(req: Request) {
     const body = testSchema.parse(await req.json());
     await connectDB();
     await validateTestQuestions(body.sections);
+    body.shuffleQuestions = body.shuffleQuestions && !body.shuffleWithinParts;
     const t = await Test.create(body);
     await AuditLog.create({ actorId: admin._id, action: "test.create", target: String(t._id) });
     return NextResponse.json({ id: String(t._id) }, { status: 201 });

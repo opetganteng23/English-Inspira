@@ -37,6 +37,7 @@ export const testSchema = z.object({
   testMode: z.boolean().default(false),
   scoringProfileId: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional(),
   shuffleQuestions: z.boolean().default(false),
+  shuffleWithinParts: z.boolean().default(false),
   secureMode: z.boolean().default(false),
   shuffleOptions: z.boolean().default(false),
   maxAttempts: z.number().int().min(0).max(50).default(0),

@@ -439,6 +439,8 @@ Materi di dalam iframe dapat mengirim pesan melalui bridge terbatas yang disedia
 
 **Test mode** (v2.8, `tests.testMode`): tes yang sedang diuji. Hanya admin dan QA tester yang melihat dan bisa memulainya, walau Active menyala; peserta biasa tidak pernah melihatnya (daftar tes, mulai tes, kuis unit, dan langkah placement di Home). Tes baru di form admin dimulai dengan Active mati dan Test mode menyala; untuk menayangkan, matikan Test mode lalu nyalakan Active. Filter ada di `visibleTestFilter` (`lib/test-access.ts`).
 
+**Acak soal** (`tests.shuffleQuestions`) mengacak urutan soal per peserta di dalam satu section; soal yang berbagi audio atau bacaan tetap satu blok. **Acak di dalam bagian** (`tests.shuffleWithinParts`, v2.8) mengacak hanya di dalam tiap bagian yang dibaca dari tag soal (`part-a`, `part-b`, `part-c`, `written-expression`; selain itu satu bagian bersama), sehingga urutan resmi Part A, B, C dan Structure sebelum Written Expression terjaga tetapi nomor soal berbeda antar peserta. Keduanya deterministik per percobaan (kunci: ID percobaan dan index section), tidak dipakai bersamaan (acak di dalam bagian diutamakan), dan tidak dapat diubah saat ada peserta sungguhan yang sedang mengerjakan. Satu fungsi, `orderQuestions` (`lib/shuffle.ts`), dipakai bersama oleh tampilan soal dan penegakan Secure mode.
+
 **Jenis tes** (`tests.kind`): `placement` (sekali, format ITP penuh), `sim` (simulasi penuh berkala), `final` (Final Test, v2.8 — dinilai dan dilaporkan sama seperti `sim`, termasuk memicu evaluasi kenaikan level), `practice` (latihan per section atau topik, bebas ulang), `quiz` (penilaian unit, dinilai server).
 
 - **Mulai tes**: server membuat `attempt` dan menetapkan `startedAt`. Timer **dipegang server**, klien hanya menampilkan.

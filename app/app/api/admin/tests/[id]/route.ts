@@ -36,6 +36,12 @@ async function realAttemptCount(testId: Types.ObjectId) {
   return Attempt.countDocuments({ testId, userId: { $nin: staff.map((u) => u._id) } });
 }
 
+/** Peserta sungguhan yang sedang mengerjakan tes ini. Mengubah pengacakan soal saat itu akan menggeser urutan di tengah pengerjaan. */
+async function realInProgress(testId: Types.ObjectId) {
+  const staff = await User.find({ $or: [{ qaTester: true }, { role: "admin" }] }).select("_id").lean();
+  return Attempt.exists({ testId, status: "in_progress", userId: { $nin: staff.map((u) => u._id) } });
+}
+
 const sameStructure = (a: { name: string; durationSec: number; questionIds: unknown[] }[], b: typeof a) =>
   JSON.stringify(a.map((s) => [s.name, s.durationSec, s.questionIds.map(String)])) ===
   JSON.stringify(b.map((s) => [s.name, s.durationSec, s.questionIds.map(String)]));
@@ -49,6 +55,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     // Tes yang sudah dikerjakan: susunan soal dan durasi dikunci agar skor/pembahasan lama tetap valid.
     if (attempts > 0 && (t.kind !== body.kind || !sameStructure(t.sections, body.sections)))
       throw new HttpError(409, `This test has been taken ${attempts} times. The question set cannot be changed; deactivate it and create a new test.`);
+    body.shuffleQuestions = body.shuffleQuestions && !body.shuffleWithinParts; // dua mode acak tidak dipakai bersamaan
+    if ((!!t.shuffleQuestions !== body.shuffleQuestions || !!t.shuffleWithinParts !== body.shuffleWithinParts) && (await realInProgress(t._id)))
+      throw new HttpError(409, "Question shuffling cannot be changed while participants are taking this test.");
     if (attempts > 0 && !!t.shuffleOptions !== body.shuffleOptions) throw new HttpError(409, "Answer-option shuffling cannot be changed after the test has been taken.");
     if (attempts === 0) await validateTestQuestions(body.sections);
     t.set(body);

@@ -5,7 +5,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { getParam } from "@/lib/config";
 import { loadAttempt, sectionDeadline } from "@/lib/attempts";
 import { Question, QuestionGroup } from "@/models/Question";
-import { shuffleQuestionOrder, optionPermutation } from "@/lib/shuffle";
+import { orderQuestions, optionPermutation } from "@/lib/shuffle";
 
 const ROLES = ["participant", "admin", "inst_admin"] as const;
 
@@ -19,11 +19,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const section = test.sections[attempt.sectionIdx];
     await connectDB();
     const qs = await Question.find({ _id: { $in: section.questionIds } })
-      .select("-answerKey -explanation -tags -status").lean();
+      .select("-answerKey -explanation -status").lean();
     const order = new Map(section.questionIds.map((id, i) => [String(id), i]));
     qs.sort((a, b) => order.get(String(a._id))! - order.get(String(b._id))!);
     const sid = String(attempt._id);
-    const ordered = test.shuffleQuestions ? shuffleQuestionOrder(qs, `${sid}:q:${attempt.sectionIdx}`) : qs;
+    const ordered = orderQuestions(test, qs, `${sid}:q:${attempt.sectionIdx}`);
     // Pilihan diacak per peserta: tampil pada posisi acak, tersimpan sebagai indeks asli (penilaian tidak berubah).
     const perms = new Map<string, number[]>();
     if (test.shuffleOptions) for (const q of qs) perms.set(String(q._id), optionPermutation(`${sid}:o:${q._id}`, q.options.length));
@@ -77,10 +77,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const shownIdx = new Map<string, number>();
     if (test.secureMode) {
       const section = test.sections[attempt.sectionIdx];
-      const qs = await Question.find({ _id: { $in: section.questionIds } }).select("groupId").lean();
+      const qs = await Question.find({ _id: { $in: section.questionIds } }).select("groupId tags").lean();
       const order = new Map(section.questionIds.map((id, i) => [String(id), i]));
       qs.sort((a, b) => order.get(String(a._id))! - order.get(String(b._id))!);
-      const ordered = test.shuffleQuestions ? shuffleQuestionOrder(qs, `${String(attempt._id)}:q:${attempt.sectionIdx}`) : qs;
+      const ordered = orderQuestions(test, qs, `${String(attempt._id)}:q:${attempt.sectionIdx}`);
       ordered.forEach((q, i) => shownIdx.set(String(q._id), i));
       lockedBefore = attempt.secureReached ?? 0;
       if (body.reached != null) attempt.secureReached = Math.max(lockedBefore, Math.min(body.reached, ordered.length - 1));
