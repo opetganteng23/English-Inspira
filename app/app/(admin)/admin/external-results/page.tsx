@@ -28,7 +28,7 @@ export default function ExternalResults() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><h1 className="page-title">Class Results</h1><p className="max-w-3xl text-sm text-ink-soft">Upload participants&apos; PURE or OCE results (Excel, CSV, or one PDF per person). Each result is matched to a participant by email or name. After you confirm, the score sets the participant&apos;s level and coaching quota, and they join a class of that level that still has seats.</p></div>
+        <div><h1 className="page-title">Class Results</h1><p className="max-w-3xl text-sm text-ink-soft">Upload participants&apos; class test results (Excel, CSV, or one PDF per person). Each result is matched to a participant by email or name. After you confirm, the score sets the participant&apos;s level and coaching quota, and they join a class of that level that still has seats.</p></div>
         <div className="flex flex-wrap gap-2"><button className="btn-outline" onClick={() => setEqOpen(true)}>Score equivalents</button><button className="btn-solid" onClick={() => setUpload(true)}>+ Upload results</button></div>
       </div>
       <div className="flex flex-wrap items-center gap-2" role="tablist">
@@ -37,7 +37,7 @@ export default function ExternalResults() {
       </div>
       <ErrorNote text={error || err} />
       {msg && <p role="status" className="rounded-lg bg-success-tint p-3 text-sm text-success">{msg}</p>}
-      {loading && !data ? <Loading /> : data?.items.length === 0 ? <p className="card text-sm text-ink-soft">{tab === "pending" ? "Nothing to match. Upload PURE or OCE results to start." : "No results here yet."}</p> : (
+      {loading && !data ? <Loading /> : data?.items.length === 0 ? <p className="card text-sm text-ink-soft">{tab === "pending" ? "Nothing to match. Upload class test results to start." : "No results here yet."}</p> : (
         <div className="table-wrap">
           <table>
             <thead><tr><th>Name in file</th><th>Score</th><th>Participant</th><th>Match</th><th></th></tr></thead>
@@ -59,7 +59,7 @@ function Row({ i, tab, busy, run }: { i: Item; tab: string; busy: boolean; run: 
   const sure = i.matchConfidence >= 0.95;
   return (
     <tr>
-      <td><b className="text-navy">{i.rawName}</b><br /><span className="text-xs text-ink-soft">{i.source.toUpperCase()}{i.rawEmail ? ` · ${i.rawEmail}` : ""}{i.fileName ? ` · ${i.fileName}` : ""}</span>{i.hasFile && <><br /><a className="text-xs font-semibold text-brand" href={`/api/admin/external-results/${i.id}`} target="_blank" rel="noreferrer">Open PDF</a></>}</td>
+      <td><b className="text-navy">{i.rawName}</b><br /><span className="text-xs text-ink-soft">Class test{i.rawEmail ? ` · ${i.rawEmail}` : ""}{i.fileName ? ` · ${i.fileName}` : ""}</span>{i.hasFile && <><br /><a className="text-xs font-semibold text-brand" href={`/api/admin/external-results/${i.id}`} target="_blank" rel="noreferrer">Open PDF</a></>}</td>
       <td>
         {tab === "pending"
           ? <input className="field min-h-[38px] w-24 py-1" inputMode="decimal" aria-label={`Score for ${i.rawName}`} value={score} onChange={(e) => setScore(e.target.value)} onBlur={() => { const v = score.trim() === "" ? null : Number(score); if (v !== i.score && (v === null || Number.isFinite(v))) void run(() => api(`/api/admin/external-results/${i.id}`, { method: "PATCH", json: { score: v } })); }} />
@@ -98,7 +98,7 @@ function SearchPerson({ onPick }: { onPick: (id: string) => void }) {
 }
 
 function UploadDialog({ institutions, onClose, onDone }: { institutions: Data["institutions"]; onClose: () => void; onDone: (t: string) => void }) {
-  const [source, setSource] = useState<"pure" | "oce">("pure");
+  const source = "pure"; // satu jenis tes Class (nilai internal)
   const [inst, setInst] = useState("");
   const [files, setFiles] = useState<FileList | null>(null);
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
@@ -117,10 +117,9 @@ function UploadDialog({ institutions, onClose, onDone }: { institutions: Data["i
   return (
     <Modal title="Upload class results" onClose={onClose}>
       <div className="flex flex-col gap-4 text-sm">
-        <p className="text-ink-soft"><b>Excel or CSV:</b> one row per person with the columns <code>name</code> and <code>score</code>; <code>email</code>, <code>date</code>, and <code>test</code> (PURE or OCE) are optional. <b>PDF:</b> one file per person; the name is read from the PDF text, or from the file name, and the score from the text when possible. You can fix any score or match before confirming.</p>
+        <p className="text-ink-soft"><b>Excel or CSV:</b> one row per person with the columns <code>name</code> and <code>score</code>; <code>email</code> and <code>date</code> are optional. <b>PDF:</b> one file per person; the name is read from the PDF text, or from the file name, and the score from the text when possible. You can fix any score or match before confirming.</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className={label}>Test<select className="field font-normal" value={source} onChange={(e) => setSource(e.target.value as "pure" | "oce")}><option value="pure">PURE</option><option value="oce">OCE</option></select></label>
-          <label className={label}>Match within<select className="field font-normal" value={inst} onChange={(e) => setInst(e.target.value)}><option value="">All institutions</option>{institutions.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></label>
+                    <label className={label}>Match within<select className="field font-normal" value={inst} onChange={(e) => setInst(e.target.value)}><option value="">All institutions</option>{institutions.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></label>
         </div>
         <label className={label}>Files<input type="file" multiple accept=".csv,.xlsx,.pdf" className="text-sm font-normal" aria-label="Result files" onChange={(e) => setFiles(e.target.files)} /></label>
         <ErrorNote text={err} />
@@ -138,10 +137,10 @@ function EquivalenceDialog({ init, onClose, onSaved }: { init: Data["equivalence
   return (
     <Modal title="Score equivalents" onClose={onClose} wide>
       <div className="flex flex-col gap-4 text-sm">
-        <p className="text-ink-soft">EPTA to CEFR uses the standard boundaries: A2 from 337, B1 from 460, B2 from 543, C1 from 627. For OCE and PURE, either keep the EPTA scale or enter that test&apos;s own range and the lowest score for each CEFR level. Scores in between are converted proportionally. These conversions are guides for placement, so use figures from the test provider.</p>
-        {(["pure", "oce"] as const).map((k) => (
+        <p className="text-ink-soft">EPTA to CEFR uses the standard boundaries: A2 from 337, B1 from 460, B2 from 543, C1 from 627. For the class test, either keep the EPTA scale or enter the test&apos;s own range and the lowest score for each CEFR level. Scores in between are converted proportionally. These conversions are guides for placement, so use figures from the test provider.</p>
+        {(["pure"] as const).map((k) => (
           <fieldset key={k} className="rounded-xl border border-line p-3">
-            <legend className="px-1 font-semibold text-navy">{v[k].name}</legend>
+            <legend className="px-1 font-semibold text-navy">Class test</legend>
             <label className="flex min-h-[40px] items-center gap-2"><input type="checkbox" className="h-5 w-5" checked={v[k].sameAsItp} onChange={(e) => set(k, { sameAsItp: e.target.checked, ...(e.target.checked ? { min: 310, max: 677 } : {}) })} />Uses the EPTA scale (310 to 677)</label>
             {!v[k].sameAsItp && (
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-6">

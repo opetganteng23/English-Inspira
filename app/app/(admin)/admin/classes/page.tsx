@@ -114,7 +114,7 @@ function MembersDialog({ cls, classes, onClose }: { cls: Cls; classes: Cls[]; on
             <tbody>{list.map((m) => (
               <tr key={m.userId}>
                 <td><b className="text-navy">{m.name}</b><br /><span className="text-xs text-ink-soft">{m.email}</span></td>
-                <td>{m.score ?? "-"}{m.source && m.source !== "test" ? <span className="block text-xs text-ink-soft">{m.source.toUpperCase()}</span> : null}</td>
+                <td>{m.score ?? "-"}{m.source && m.source !== "test" ? <span className="block text-xs text-ink-soft">Class test</span> : null}</td>
                 <td><span className={m.active ? "badge-ok" : "badge-muted"}>{m.active ? "Active" : "Not active"}</span><span className="block text-xs text-ink-soft">{m.lastLoginAt ? `Last sign in ${tgl(m.lastLoginAt)}` : "Never signed in"}</span></td>
                 <td className="whitespace-nowrap">{tgl(m.joinedAt)}<span className="block text-xs text-ink-soft">{m.method === "auto" ? "Placed automatically" : "Moved by admin"}</span></td>
                 <td><select className="field min-h-[38px] py-1" aria-label={`Move ${m.name}`} value={cls.id} onChange={(e) => move(m.userId, e.target.value === "__none" ? null : e.target.value)}>{classes.map((c) => <option key={c.id} value={c.id}>{c.name}{c.id !== cls.id ? ` (${c.capacity - c.students} left)` : ""}</option>)}<option value="__none">Remove from class</option></select></td>

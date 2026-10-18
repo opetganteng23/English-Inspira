@@ -26,8 +26,8 @@ export type Equivalence = z.infer<typeof equivalenceSchema>;
 export type ExternalScale = "oce" | "pure";
 
 export const EQUIVALENCE_DEFAULT: Equivalence = {
-  oce: { name: "OCE", sameAsItp: true, min: ITP_MIN, max: ITP_MAX, anchors: { A2: null, B1: null, B2: null, C1: null } },
-  pure: { name: "PURE", sameAsItp: true, min: ITP_MIN, max: ITP_MAX, anchors: { A2: null, B1: null, B2: null, C1: null } },
+  oce: { name: "Class test", sameAsItp: true, min: ITP_MIN, max: ITP_MAX, anchors: { A2: null, B1: null, B2: null, C1: null } },
+  pure: { name: "Class test", sameAsItp: true, min: ITP_MIN, max: ITP_MAX, anchors: { A2: null, B1: null, B2: null, C1: null } },
 };
 
 export function cefrForItp(itp: number): Cefr {

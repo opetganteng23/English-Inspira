@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const admin = await requireRole(ACADEMIC_ROLES);
     const form = await req.formData();
     const source = String(form.get("source") ?? "");
-    if (source !== "pure" && source !== "oce") throw new HttpError(400, "Choose PURE or OCE");
+    if (source !== "pure" && source !== "oce") throw new HttpError(400, "Choose the test");
     const files = form.getAll("files").filter((f): f is File => f instanceof File);
     if (!files.length) throw new HttpError(400, "Choose at least one file");
     if (files.length > 200) throw new HttpError(413, "Maximum 200 files per upload");

@@ -62,7 +62,7 @@ export async function applyExternalResult(r: ExternalResultDoc & { save?: () => 
   }
   await ExternalResult.updateOne({ _id: r._id }, { userId: user._id, status: "confirmed", confirmedBy: adminId, confirmedAt: new Date(), ...(cycleId ? { programCycleId: cycleId } : {}) });
   const classId = await assignClass(String(user._id), adminId, "auto");
-  await notify(user._id, "placement_result", { title: `Your ${r.source.toUpperCase()} result is in: ${level.name} level`, body: `EPTA equivalent ${r.itpScore}. Coaching quota ${level.coachingQuota} sessions.`, href: "/home" }, `ext-${r._id}`);
+  await notify(user._id, "placement_result", { title: `Your class test result is in: ${level.name} level`, body: `EPTA equivalent ${r.itpScore}. Coaching quota ${level.coachingQuota} sessions.`, href: "/home" }, `ext-${r._id}`);
   await audit(adminId, "external_result.confirm", String(r._id), { userId: String(user._id), level: level.key, itp: r.itpScore, classId });
   return { level: level.name, classId };
 }
