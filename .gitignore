@@ -22,3 +22,8 @@ Thumbs.db
 # Data pribadi peserta (jangan pernah di-commit)
 Data Personel*.xlsx
 *.personel.xlsx
+
+# Laporan/berkas berisi data pribadi (jangan di-commit)
+*.xlsx
+*.pdf
+logo english inspira*.png
