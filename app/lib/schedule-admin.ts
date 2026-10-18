@@ -82,12 +82,14 @@ export async function autoSpread(testId: string, o: { mode: SpreadMode; seed: st
 }
 
 /** Kirim undangan ke peserta yang belum diberi tahu, dan email jadwal baru ke yang jendelanya berubah sejak diundang. */
-export async function sendInvites(testId: string) {
+/** `sessionId` opsional: kirim hanya untuk satu sesi (mis. per tanggal, agar muat dalam batas email harian). */
+export async function sendInvites(testId: string, sessionId?: string) {
   await connectDB();
   const test = await Test.findById(testId).select("name sections testMode").lean();
   if (!test) throw new HttpError(404, "Test not found");
   const sessions = new Map((await TestSession.find({ testId }).lean()).map((s) => [String(s._id), s]));
-  const seats = await TestSeat.find({ testId }).lean();
+  // Urut menurut jam buka sesi: bila batas harian habis, yang paling dekat jadwalnya terkirim lebih dulu.
+  const seats = (await TestSeat.find({ testId, ...(sessionId ? { sessionId } : {}) }).lean()).sort((a, b) => +(sessions.get(String(a.sessionId))?.opensAt ?? 0) - +(sessions.get(String(b.sessionId))?.opensAt ?? 0));
   const users = new Map((await User.find({ _id: { $in: seats.map((s) => s.userId) } }).select("name email qaTester").lean()).map((u) => [String(u._id), u]));
   const minutes = Math.round(test.sections.reduce((a, s) => a + s.durationSec, 0) / 60);
   const hasAudio = test.sections.some((s) => s.name === "listening");
@@ -144,7 +146,7 @@ export async function extendSeat(testId: string, userId: string, w: { opensAt: D
  */
 export async function sendTestReminders(now = new Date()) {
   await connectDB();
-  const tests = await Test.find({ scheduled: true, $or: [{ active: true }, { testMode: true }] }).select("name testMode").lean(); // tes yang sedang diuji ikut, agar QA bisa memeriksa pengingatnya (email tetap hanya ke akun QA)
+  const tests = await Test.find({ scheduled: true, reminderMode: { $ne: "none" }, $or: [{ active: true }, { testMode: true }] }).select("name testMode reminderMode").lean(); // tes yang sedang diuji ikut, agar QA bisa memeriksa pengingatnya (email tetap hanya ke akun QA)
   let opening = 0, closing = 0, now_ = 0;
   for (const t of tests) {
     const sessions = new Map((await TestSession.find({ testId: t._id }).lean()).map((s) => [String(s._id), s]));
@@ -159,8 +161,9 @@ export async function sendTestReminders(now = new Date()) {
       const w = effectiveWindow({ opensAt: s.opensAt, closesAt: s.closesAt }, seat.override);
       const data = { name: u.name, test: t.name, opensAt: w.opensAt, closesAt: w.closesAt, link: LINK() };
       const hoursToOpen = (+w.opensAt - +now) / 3_600_000, hoursToClose = (+w.closesAt - +now) / 3_600_000;
-      if (!seat.remindedOpenAt && hoursToOpen > 0 && hoursToOpen <= 24) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "opening" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedOpenAt: now } }); opening++; }
-      else if (!seat.remindedNowAt && windowState(w, now) === "open" && hoursToClose > 2) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "now" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedNowAt: now } }); now_++; }
+      const closingOnly = t.reminderMode === "closing";
+      if (!closingOnly && !seat.remindedOpenAt && hoursToOpen > 0 && hoursToOpen <= 24) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "opening" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedOpenAt: now } }); opening++; }
+      else if (!closingOnly && !seat.remindedNowAt && windowState(w, now) === "open" && hoursToClose > 2) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "now" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedNowAt: now } }); now_++; }
       else if (!seat.remindedCloseAt && windowState(w, now) === "open" && hoursToClose <= 2) { await enqueueMail(u.email, "test_reminder", { ...data, kind: "closing" }); await TestSeat.updateOne({ _id: seat._id }, { $set: { remindedCloseAt: now } }); closing++; }
     }
   }

@@ -8,9 +8,9 @@ import { Loading, ErrorNote } from "@/components/Charts";
 import { askConfirm } from "@/components/Feedback";
 
 type Seat = { userId: string; name: string | null; email: string; institution: string | null; invited: boolean; extended: boolean; opensAt: string; closesAt: string; status: "done" | "running" | null };
-type Sess = { id: string; label: string; opensAt: string; closesAt: string; capacity: number; seats: Seat[] };
+type Sess = { id: string; label: string; opensAt: string; closesAt: string; capacity: number; pending?: number; seats: Seat[] };
 type Person = { id: string; name: string | null; email: string; institutionId: string | null; institution: string | null };
-type Board = { test: { id: string; name: string; scheduled: boolean }; institutions: { id: string; name: string }[]; pending: { invite: number; reschedule: number; skipped: number }; sessions: Sess[]; pool: Person[] };
+type Board = { test: { id: string; name: string; scheduled: boolean; reminderMode?: "all" | "closing" | "none" }; institutions: { id: string; name: string }[]; pending: { invite: number; reschedule: number; skipped: number }; sessions: Sess[]; pool: Person[] };
 type Chip = { id: string; name: string | null; email: string; institution: string | null; seat?: Seat };
 
 const wib = (d: string) => new Date(d).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
@@ -99,6 +99,13 @@ export default function JadwalTes({ params }: { params: { id: string } }) {
           <input type="checkbox" checked={sch} disabled={busy} onChange={(e) => run(() => api(base, { method: "PATCH", json: { scheduled: e.target.checked } }))} />
           Scheduling {sch ? "on: only people on a card can open this test" : "off: everyone eligible can open it"}
         </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-soft">Automatic reminders
+          <select className="field" value={data.test.reminderMode ?? "all"} disabled={busy} onChange={(e) => run(() => api(base, { method: "PATCH", json: { reminderMode: e.target.value } }))}>
+            <option value="all">All: a day before, when it opens, and before it closes</option>
+            <option value="closing">Only before it closes, to people who have not started</option>
+            <option value="none">None</option>
+          </select>
+        </label>
       </div>
       <ErrorNote text={err || error} />
       {data.pending.skipped > 0 && <p role="note" className="rounded-lg bg-accent-tint p-3 text-sm text-navy"><b>Test mode safety.</b> This test is still in Test mode, so invitation emails go only to QA tester accounts. {data.pending.skipped} other {data.pending.skipped === 1 ? "person on a card will" : "people on cards will"} not be emailed until Test mode is turned off.</p>}
@@ -146,7 +153,7 @@ export default function JadwalTes({ params }: { params: { id: string } }) {
             <section key={s.id} className="card flex flex-col gap-2" onDragOver={(e) => e.preventDefault()} onDrop={(e) => dropOn(s.id, e)} aria-label={s.label}>
               <div className="flex items-start justify-between gap-2">
                 <div><h2 className="font-display text-lg font-extrabold text-navy">{s.label}</h2><p className="text-xs text-ink-soft">{wib(s.opensAt)} to {wib(s.closesAt)}</p></div>
-                <div className="flex gap-2 text-xs font-semibold"><button className="text-brand" onClick={() => setForm({ id: s.id, label: s.label, opensAt: toInput(s.opensAt), closesAt: toInput(s.closesAt), capacity: s.capacity })}>Edit</button>
+                <div className="flex gap-2 text-xs font-semibold">{(s.pending ?? 0) > 0 && <button className="text-brand" disabled={busy} onClick={async () => { if (await askConfirm(`Send ${s.pending} email${s.pending === 1 ? "" : "s"} for ${s.label} only?`, { title: "Send invites for this session", confirmLabel: "Send", danger: false })) run(async () => { const r = await api<{ invited: number; rescheduled: number; skipped: number }>(`${base}/send`, { json: { sessionId: s.id }, silent: true }); setNote(`${s.label}: ${r.invited} invitations and ${r.rescheduled} new-schedule emails queued${r.skipped ? `, ${r.skipped} skipped (Test mode)` : ""}. Emails go out within the daily limit.`); }); }}>Send invites ({s.pending})</button>}<button className="text-brand" onClick={() => setForm({ id: s.id, label: s.label, opensAt: toInput(s.opensAt), closesAt: toInput(s.closesAt), capacity: s.capacity })}>Edit</button>
                   <button className="text-red-700" onClick={async () => { if (await askConfirm(`Delete "${s.label}"? Its people go back to the unassigned list.`, { danger: true })) run(() => api(`${base}/sessions/${s.id}`, { method: "DELETE" })); }}>Delete</button></div>
               </div>
               <div><p className="flex justify-between text-xs"><span className="font-semibold text-navy">{s.seats.length} / {s.capacity}</span><span className="text-ink-soft">{s.capacity - s.seats.length} free</span></p>

@@ -20,7 +20,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     await requireRole(ACADEMIC_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Test not found");
     await connectDB();
-    const test = await Test.findById(params.id).select("name scheduled kind").lean();
+    const test = await Test.findById(params.id).select("name scheduled kind reminderMode").lean();
     if (!test) throw new HttpError(404, "Test not found");
     const [sessions, seats, pool, pending, attempts, insts] = await Promise.all([
       TestSession.find({ testId: params.id }).sort({ opensAt: 1 }).lean(),
@@ -35,11 +35,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const att = new Map<string, string>();
     for (const a of attempts) { const k = String(a.userId); if (att.get(k) !== "done") att.set(k, a.status === "submitted" ? "done" : "running"); }
     return NextResponse.json({
-      test: { id: params.id, name: test.name, scheduled: !!test.scheduled },
+      test: { id: params.id, name: test.name, scheduled: !!test.scheduled, reminderMode: test.reminderMode ?? "all" },
       institutions: insts.map((i) => ({ id: String(i._id), name: i.name })),
       pending,
       sessions: sessions.map((s) => ({
         id: String(s._id), label: s.label, opensAt: s.opensAt, closesAt: s.closesAt, capacity: s.capacity,
+        // Email yang menunggu untuk sesi ini saja (undangan baru + jadwal berubah).
+        pending: seats.filter((x) => String(x.sessionId) === String(s._id)).filter((x) => { const w = effectiveWindow({ opensAt: s.opensAt, closesAt: s.closesAt }, x.override); return !x.invitedAt || +(x.invitedOpensAt ?? 0) !== +w.opensAt || +(x.invitedClosesAt ?? 0) !== +w.closesAt; }).length,
         seats: seats.filter((x) => String(x.sessionId) === String(s._id)).map((x) => {
           const u = users.get(String(x.userId)); const w = effectiveWindow({ opensAt: s.opensAt, closesAt: s.closesAt }, x.override);
           return { userId: String(x.userId), name: u?.name ?? null, email: u?.email ?? "", institution: u?.institutionId ? inst.get(String(u.institutionId)) ?? null : null, invited: !!x.invitedAt, extended: !!x.override?.at, opensAt: w.opensAt, closesAt: w.closesAt, status: att.get(String(x.userId)) ?? null };
@@ -56,12 +58,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     const admin = await requireRole(ACADEMIC_ROLES);
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Test not found");
-    const p = z.object({ scheduled: z.boolean() }).safeParse(await req.json());
+    const p = z.object({ scheduled: z.boolean().optional(), reminderMode: z.enum(["all", "closing", "none"]).optional() }).safeParse(await req.json());
     if (!p.success) throw new HttpError(422, zodMessage(p.error));
     await connectDB();
-    const t = await Test.findByIdAndUpdate(params.id, { scheduled: p.data.scheduled }, { returnDocument: "after" });
+    const t = await Test.findByIdAndUpdate(params.id, { ...(p.data.scheduled !== undefined ? { scheduled: p.data.scheduled } : {}), ...(p.data.reminderMode ? { reminderMode: p.data.reminderMode } : {}) }, { returnDocument: "after" });
     if (!t) throw new HttpError(404, "Test not found");
-    await AuditLog.create({ actorId: admin._id, action: "test.schedule_toggle", target: params.id, meta: { scheduled: p.data.scheduled } });
+    await AuditLog.create({ actorId: admin._id, action: "test.schedule_toggle", target: params.id, meta: p.data });
     return NextResponse.json({ ok: true });
   } catch (e) {
     return handleError(e);
