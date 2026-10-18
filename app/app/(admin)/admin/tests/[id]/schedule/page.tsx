@@ -94,6 +94,7 @@ export default function JadwalTes({ params }: { params: { id: string } }) {
           <Link href="/admin/tests" className="text-sm font-semibold text-brand">← Tests</Link>
           <h1 className="font-display text-3xl font-extrabold text-navy">Schedule: {data.test.name}</h1>
           <p className="text-sm text-ink-soft">Create sessions, spread participants automatically, then drag people between cards. Times are in WIB.</p>
+          <a href={`/api/admin/tests/${params.id}/export.xlsx`} className="mt-2 inline-block text-sm font-semibold text-brand">Export results (Excel)</a>
         </div>
         <label className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-navy">
           <input type="checkbox" checked={sch} disabled={busy} onChange={(e) => run(() => api(base, { method: "PATCH", json: { scheduled: e.target.checked } }))} />

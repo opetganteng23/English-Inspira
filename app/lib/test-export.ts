@@ -1,0 +1,141 @@
+import ExcelJS from "exceljs";
+import { connectDB } from "./db";
+import { getLevels, levelForScore } from "./config";
+import { cefrForItp } from "./score-equivalence";
+import { effectiveWindow, windowState } from "./schedule";
+import { Test, Attempt } from "@/models/Test";
+import { TestSession, TestSeat } from "@/models/Schedule";
+import { User } from "@/models/User";
+import { Institution } from "@/models/Institution";
+
+export type ExportStatus = "Finished" | "In progress" | "Not started (open now)" | "Not started (opens later)" | "Missed" | "Not scheduled";
+
+/** Status satu peserta untuk satu tes, dari percobaan terakhir dan jendela jadwalnya. Murni (mudah diuji). */
+export function rowStatus(attempt: { status: string } | null, window: { opensAt: Date; closesAt: Date } | null, now = new Date()): ExportStatus {
+  if (attempt?.status === "submitted") return "Finished";
+  if (attempt?.status === "in_progress") return "In progress";
+  if (!window) return "Not scheduled";
+  const st = windowState(window, now);
+  return st === "open" ? "Not started (open now)" : st === "upcoming" ? "Not started (opens later)" : "Missed";
+}
+
+const WIB = (d?: Date | null) => (d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) : "");
+const DAY = (d: Date) => new Date(d).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
+
+/**
+ * Hasil satu tes untuk admin: semua peserta yang dijadwalkan (dan yang mengerjakan tanpa jadwal), satu baris per orang.
+ * Skor, bagian, CEFR, level, waktu, catatan proctoring, plus rekap per tanggal dan per level.
+ */
+export async function buildTestExport(testId: string, now = new Date()) {
+  await connectDB();
+  const test = await Test.findById(testId).lean();
+  if (!test) return null;
+  const [sessions, seats, attempts, levels] = await Promise.all([
+    TestSession.find({ testId }).sort({ opensAt: 1 }).lean(),
+    TestSeat.find({ testId }).lean(),
+    Attempt.find({ testId }).sort({ startedAt: 1 }).lean(),
+    getLevels(),
+  ]);
+  const sessById = new Map(sessions.map((s) => [String(s._id), s]));
+  // percobaan yang dipakai: selesai terakhir; bila belum ada, yang sedang berjalan
+  const latest = new Map<string, (typeof attempts)[number]>();
+  for (const a of attempts) {
+    const k = String(a.userId), cur = latest.get(k);
+    if (!cur || a.status === "submitted" || cur.status !== "submitted") latest.set(k, a);
+  }
+  const userIds = [...new Set([...seats.map((s) => String(s.userId)), ...latest.keys()])];
+  const users = await User.find({ _id: { $in: userIds } }).select("name email institutionId qaTester role").lean();
+  const insts = new Map((await Institution.find({ _id: { $in: users.map((u) => u.institutionId).filter((x): x is NonNullable<typeof x> => !!x) } }).select("name").lean()).map((i) => [String(i._id), i.name]));
+  const seatBy = new Map(seats.map((s) => [String(s.userId), s]));
+
+  const rows = users.map((u) => {
+    const id = String(u._id), seat = seatBy.get(id), sess = seat ? sessById.get(String(seat.sessionId)) : undefined;
+    const win = sess ? effectiveWindow({ opensAt: sess.opensAt, closesAt: sess.closesAt }, seat?.override) : null;
+    const a = latest.get(id) ?? null;
+    const done = a?.status === "submitted" && typeof a.scoreEst === "number";
+    const sec = (n: string) => a?.sectionScores?.find((s) => s.section === n)?.scaled ?? null;
+    const flags = (k: string) => (a?.proctorFlags ?? []).filter((f) => f.kind === k).length;
+    const lvl = done ? levelForScore(levels, a!.scoreEst!)?.name ?? "" : "";
+    return {
+      name: u.name ?? "", email: u.email, institution: u.institutionId ? insts.get(String(u.institutionId)) ?? "" : "",
+      qa: u.qaTester ? "QA" : "",
+      session: sess?.label ?? "", scheduledDay: win ? DAY(win.opensAt) : "", window: win ? `${WIB(win.opensAt)} - ${WIB(win.closesAt)}` : "",
+      extended: seat?.override?.at ? `Yes: ${seat.override.reason ?? ""}` : "",
+      status: rowStatus(a, win, now),
+      score: done ? a!.scoreEst! : null, cefr: done ? cefrForItp(a!.scoreEst!) : "", level: lvl,
+      listening: done ? sec("listening") : null, structure: done ? sec("structure") : null, reading: done ? sec("reading") : null,
+      answered: a ? (a.answers ?? []).filter((x) => x.choice != null).length : null,
+      started: WIB(a?.startedAt), finished: WIB(a?.finishedAt),
+      minutes: a?.startedAt && a?.finishedAt ? Math.round((+a.finishedAt - +a.startedAt) / 60000) : null,
+      released: a?.releaseAt ? (now >= a.releaseAt ? "Released" : `At ${WIB(a.releaseAt)}`) : a ? "Immediately" : "",
+      basis: a?.scoreBasis ?? "",
+      tabHidden: a ? flags("tab_hidden") : null, fullscreenExit: a ? flags("fullscreen_exit") : null, paste: a ? flags("paste") : null,
+      review: a?.proctorReview?.status ?? "",
+      _sort: win ? +win.opensAt : Number.MAX_SAFE_INTEGER,
+    };
+  }).sort((x, y) => x._sort - y._sort || x.name.localeCompare(y.name));
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "English Inspira AI";
+  const NAVY = "FF0A2257";
+  const head = (ws: ExcelJS.Worksheet) => { const r = ws.getRow(1); r.font = { bold: true, color: { argb: "FFFFFFFF" } }; r.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } }; r.alignment = { vertical: "middle", wrapText: true }; r.height = 30; ws.views = [{ state: "frozen", ySplit: 1 }]; };
+
+  // ---- Ringkasan
+  const sum = wb.addWorksheet("Summary");
+  sum.columns = [{ header: "Item", key: "k", width: 44 }, { header: "Value", key: "v", width: 40 }];
+  const fin = rows.filter((r) => r.status === "Finished");
+  const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => typeof x === "number"); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : "-"; };
+  [
+    ["Test", test.name], ["Exported", WIB(now) + " WIB"], ["People in this report", rows.length],
+    ["Finished", fin.length], ["In progress", rows.filter((r) => r.status === "In progress").length],
+    ["Not started (open now)", rows.filter((r) => r.status === "Not started (open now)").length],
+    ["Not started (opens later)", rows.filter((r) => r.status === "Not started (opens later)").length],
+    ["Missed (session closed, not started)", rows.filter((r) => r.status === "Missed").length],
+    ["Average total score (finished)", avg(fin.map((r) => r.score))],
+    ["Average Listening / Structure / Reading", `${avg(fin.map((r) => r.listening))} / ${avg(fin.map((r) => r.structure))} / ${avg(fin.map((r) => r.reading))}`],
+  ].forEach(([k, v]) => sum.addRow({ k, v }));
+  head(sum);
+
+  // ---- Hasil (satu baris per orang)
+  const res = wb.addWorksheet("Results");
+  res.columns = [
+    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 30 }, { header: "Email", key: "email", width: 34 }, { header: "Institution", key: "institution", width: 24 },
+    { header: "Scheduled day", key: "scheduledDay", width: 18 }, { header: "Window (WIB)", key: "window", width: 36 }, { header: "Special schedule", key: "extended", width: 18 },
+    { header: "Status", key: "status", width: 22 }, { header: "Total score", key: "score", width: 11 }, { header: "CEFR", key: "cefr", width: 8 }, { header: "Level", key: "level", width: 14 },
+    { header: "Listening", key: "listening", width: 10 }, { header: "Structure", key: "structure", width: 10 }, { header: "Reading", key: "reading", width: 10 },
+    { header: "Answered", key: "answered", width: 10 }, { header: "Started (WIB)", key: "started", width: 20 }, { header: "Finished (WIB)", key: "finished", width: 20 }, { header: "Minutes", key: "minutes", width: 9 },
+    { header: "Result release", key: "released", width: 22 }, { header: "Score basis", key: "basis", width: 12 },
+    { header: "Tab hidden", key: "tabHidden", width: 10 }, { header: "Fullscreen exit", key: "fullscreenExit", width: 12 }, { header: "Paste", key: "paste", width: 8 }, { header: "Proctor review", key: "review", width: 14 }, { header: "QA account", key: "qa", width: 10 },
+  ];
+  rows.forEach((r, i) => res.addRow({ ...r, no: i + 1 }));
+  head(res);
+  res.autoFilter = { from: "A1", to: { row: 1, column: res.columns.length } };
+  const STC: Record<string, string> = { Finished: "FFE6F4EC", "In progress": "FFE6EEFA", Missed: "FFFBE3E3", "Not started (open now)": "FFFBF1DB" };
+  res.eachRow((row, i) => { if (i > 1) { const c = row.getCell("status"); const col = STC[String(c.value)]; if (col) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col } }; } });
+  if (rows.length) res.addConditionalFormatting({ ref: `I2:I${rows.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 310 }, { type: "num", value: 677 }], color: { argb: "FF0B4FA6" } } as never] });
+
+  // ---- Rekap per tanggal
+  const day = wb.addWorksheet("By day");
+  day.columns = [{ header: "Scheduled day", key: "d", width: 22 }, { header: "Scheduled", key: "n", width: 11 }, { header: "Finished", key: "f", width: 10 }, { header: "In progress", key: "p", width: 12 }, { header: "Not started", key: "w", width: 12 }, { header: "Missed", key: "m", width: 9 }, { header: "% finished", key: "pct", width: 11 }, { header: "Average score", key: "avg", width: 13 }];
+  const days = [...new Set(rows.map((r) => r.scheduledDay || "Not scheduled"))];
+  for (const d of days) {
+    const rs = rows.filter((r) => (r.scheduledDay || "Not scheduled") === d), f = rs.filter((r) => r.status === "Finished");
+    day.addRow({ d, n: rs.length, f: f.length, p: rs.filter((r) => r.status === "In progress").length, w: rs.filter((r) => r.status.startsWith("Not started")).length, m: rs.filter((r) => r.status === "Missed").length, pct: rs.length ? f.length / rs.length : 0, avg: avg(f.map((r) => r.score)) });
+  }
+  day.getColumn("pct").numFmt = "0%";
+  head(day);
+  if (days.length) day.addConditionalFormatting({ ref: `G2:G${days.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 0 }, { type: "num", value: 1 }], color: { argb: "FF1D6B3F" } } as never] });
+
+  // ---- Rekap level dan CEFR (yang selesai)
+  const lv = wb.addWorksheet("By level");
+  lv.columns = [{ header: "Level", key: "l", width: 18 }, { header: "Score range", key: "r", width: 14 }, { header: "People", key: "n", width: 10 }, { header: "% of finished", key: "p", width: 14 }];
+  for (const l of levels) { const n = fin.filter((r) => r.level === l.name).length; lv.addRow({ l: l.name, r: `${l.scoreMin}-${l.scoreMax}`, n, p: fin.length ? n / fin.length : 0 }); }
+  lv.addRow({});
+  lv.addRow({ l: "CEFR", r: "", n: "People" }).font = { bold: true };
+  for (const c of ["A1", "A2", "B1", "B2", "C1"]) { const n = fin.filter((r) => r.cefr === c).length; lv.addRow({ l: c, n, p: fin.length ? n / fin.length : 0 }); }
+  lv.getColumn("p").numFmt = "0%";
+  head(lv);
+  lv.addConditionalFormatting({ ref: `D2:D${levels.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 0 }, { type: "num", value: 1 }], color: { argb: "FF0B4FA6" } } as never] });
+
+  return { name: test.name, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: rows.length };
+}
