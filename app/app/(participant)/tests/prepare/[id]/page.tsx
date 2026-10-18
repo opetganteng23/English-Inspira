@@ -48,7 +48,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
 
       <section className="card flex flex-col gap-3">
         <h2 className="font-display text-lg font-extrabold text-navy">Device check</h2>
-        <p className="text-sm text-ink-soft">Put on your headset, then play the test tone. Listening audio will only be played <b>sekali</b>.</p>
+        <p className="text-sm text-ink-soft">Put on your headset, then play the test tone. Listening audio will only be played <b>once</b>.</p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button type="button" className="btn-outline" onClick={beep}>Play test tone</button>
           <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={audioOk} onChange={(e) => setAudioOk(e.target.checked)} />I can hear the tone</label>

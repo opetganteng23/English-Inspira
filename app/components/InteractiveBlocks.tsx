@@ -73,7 +73,7 @@ function Fill({ cfg, report }: { cfg: z.infer<typeof blockSchemas.fill>; report:
         return (
           <p key={i} className="leading-9">
             {parts.map((p, k) => (<span key={k}>{p}{k < parts.length - 1 && <input aria-label={`Blank ${i + 1}.${k + 1}`} disabled={done} className={`mx-1 w-28 rounded-md border-[1.5px] px-2 py-1 ${done ? (ok(it, i) ? "border-success bg-success-tint" : "border-red-600 bg-red-50") : "border-line-strong"}`} value={vals[`${i}-${k}`] ?? ""} onChange={(e) => setVals({ ...vals, [`${i}-${k}`]: e.target.value })} />}</span>))}
-            {done && !ok(it, i) && <span className="ml-1 text-xs text-ink-soft">(jawaban: {it.answers.map((a) => a.split("|")[0]).join(", ")})</span>}
+            {done && !ok(it, i) && <span className="ml-1 text-xs text-ink-soft">(answer: {it.answers.map((a) => a.split("|")[0]).join(", ")})</span>}
           </p>
         );
       })}
