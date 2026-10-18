@@ -4,8 +4,10 @@ import { requireRole, handleError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { getLevels } from "@/lib/config";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
-import { Attempt } from "@/models/Test";
+import { Attempt, Test as TestModel } from "@/models/Test";
 import { CoachingQuota } from "@/models/Config";
+
+import { TestSession, TestSeat } from "@/models/Schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +27,21 @@ export async function GET(req: Request) {
     else if (instQ && /^[0-9a-f]{24}$/.test(instQ)) filter.institutionId = instQ;
     if (sp.get("status")) filter.status = sp.get("status");
     if (sp.get("level")) filter.currentLevelId = sp.get("level");
-    const page = Math.max(1, Number(sp.get("page")) || 1), size = 25;
+    // Placement: "done" = sudah submit placement (termasuk yang hasilnya masih ditahan), "none" = belum.
+    const placement = sp.get("placement");
+    if (placement === "done" || placement === "none") {
+      const did = await Attempt.distinct("userId", { kind: "placement", status: "submitted" });
+      const cond = placement === "done" ? { $or: [{ placementAttemptId: { $exists: true, $ne: null } }, { _id: { $in: did } }] } : { placementAttemptId: { $in: [null] }, _id: { $nin: did } };
+      filter.$and = [...((filter.$and as unknown[]) ?? []), cond];
+    }
+    const session = sp.get("session");
+    if (session && /^[0-9a-f]{24}$/.test(session)) filter.$and = [...((filter.$and as unknown[]) ?? []), { _id: { $in: await TestSeat.distinct("userId", { sessionId: session }) } }];
+    const page = Math.max(1, Number(sp.get("page")) || 1), size = [25, 50, 100, 200].includes(Number(sp.get("size"))) ? Number(sp.get("size")) : 25;
+    const SORTS: Record<string, Record<string, 1 | -1>> = { newest: { createdAt: -1 }, name: { name: 1, email: 1 }, name_desc: { name: -1, email: -1 }, score: { currentScoreEst: -1, name: 1 }, score_asc: { currentScoreEst: 1, name: 1 }, status: { status: 1, name: 1 }, login: { lastLoginAt: -1 } };
+    const sort = SORTS[sp.get("sort") ?? ""] ?? SORTS.newest;
 
     const [users, total, levels, insts] = await Promise.all([
-      User.find(filter).sort({ createdAt: -1 }).skip((page - 1) * size).limit(size).lean(),
+      User.find(filter).sort({ ...sort, _id: 1 }).skip((page - 1) * size).limit(size).lean(),
       User.countDocuments(filter), getLevels(), Institution.find().select("name").lean(),
     ]);
     const ids = users.map((u) => u._id);
@@ -40,6 +53,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       total, page, pages: Math.max(1, Math.ceil(total / size)),
       levels: levels.map((l) => ({ id: String(l._id), name: l.name })),
+      sessions: await scheduleOptions(),
       participants: users.map((u) => {
         const qt = quotas.find((x) => String(x.userId) === String(u._id)), la = lastAt.find((x) => String(x._id) === String(u._id));
         return { id: String(u._id), name: u.name ?? null, email: u.email, status: u.status, institution: u.institutionId ? inst.get(String(u.institutionId)) ?? "-" : null,
@@ -50,4 +64,13 @@ export async function GET(req: Request) {
   } catch (e) {
     return handleError(e);
   }
+}
+
+/** Pilihan filter jadwal: sesi tes terjadwal yang aktif (mis. Placement 20-27 Okt). */
+async function scheduleOptions() {
+  const tests = await TestModel.find({ scheduled: true, active: true }).select("name").lean();
+  if (!tests.length) return [];
+  const name = new Map(tests.map((t) => [String(t._id), t.name]));
+  const ss = await TestSession.find({ testId: { $in: tests.map((t) => t._id) } }).sort({ opensAt: 1 }).select("testId label").lean();
+  return ss.map((x) => ({ id: String(x._id), label: x.label, test: name.get(String(x.testId)) ?? "" }));
 }

@@ -20,3 +20,10 @@ import { classLetter } from "@/lib/clustering";
 describe("nama kelas otomatis", () => {
   it("A..Z lalu AA", () => { expect(classLetter(0)).toBe("A"); expect(classLetter(25)).toBe("Z"); expect(classLetter(26)).toBe("AA"); });
 });
+
+import { pageList } from "@/components/Pager";
+describe("nomor halaman", () => {
+  it("sedikit halaman: semua", () => expect(pageList(2, 5)).toEqual([1, 2, 3, 4, 5]));
+  it("di tengah: 1 … 27 28 29 … 56", () => expect(pageList(28, 56)).toEqual([1, "…", 27, 28, 29, "…", 56]));
+  it("di awal dan akhir", () => { expect(pageList(1, 56)).toEqual([1, 2, 3, 4, "…", 56]); expect(pageList(56, 56)).toEqual([1, "…", 53, 54, 55, 56]); });
+});
