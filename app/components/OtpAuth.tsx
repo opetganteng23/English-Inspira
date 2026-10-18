@@ -18,14 +18,14 @@ const safeNext = (n: string | null) => (n && n.startsWith("/") && !n.startsWith(
 function Shell({ heading, text, children }: { heading: string; text: string; children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <aside className="flex shrink-0 flex-col gap-4 bg-navy px-6 py-6 text-white lg:w-[480px] lg:gap-8 lg:px-14 lg:py-14 xl:w-[560px] xl:px-16">
+      <aside className="brand-panel brand-auth flex shrink-0 flex-col gap-4 px-6 py-6 lg:w-[480px] lg:gap-8 lg:px-14 lg:py-14 xl:w-[560px] xl:px-16">
         <Logo />
         <div className="hidden lg:block">
           <h1 className="mt-10 font-display text-[40px] font-extrabold leading-[1.15]">{heading}</h1>
-          <p className="mt-4 text-base leading-[1.7] text-mist">{text}</p>
+          <p className="bp-muted mt-4 text-base leading-[1.7] text-mist">{text}</p>
         </div>
         <p className="text-sm font-semibold lg:hidden">{heading}</p>
-        <div className="mt-auto hidden rounded-[14px] bg-navy-700 p-5 text-sm leading-relaxed text-mist lg:block">Developed by Inspira Teknologi with Telkom University and CoE AILO.</div>
+        <div className="bp-card mt-auto hidden rounded-[14px] bg-navy-700 p-5 text-sm leading-relaxed text-mist lg:block">Developed by Inspira Teknologi with Telkom University and CoE AILO.</div>
       </aside>
       <main className="flex flex-1 flex-col items-center justify-start gap-4 p-4 sm:p-8 lg:justify-center">
         <div className="w-full max-w-[520px]"><Link href="/" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-brand hover:text-brand-dark">Back to home</Link></div>

@@ -140,3 +140,17 @@ details.group[open] > summary { color: #0B4FA6; }
   h2.flash { animation: none; }
   .btn:active:not(:disabled), .btn-primary:active:not(:disabled) { transform: none; }
 }
+
+/* Panel merek (login, footer publik, 404, pemeliharaan): biru tua bawaan, atau gambar latar dari Settings
+   dengan lapisan terang sehingga logo tampil tanpa kartu dan teks berwarna navy. */
+.brand-panel { background-color: #0A2257; color: #fff; }
+html[data-bg-auth] .brand-auth { --bp-img: var(--bg-auth); }
+html[data-bg-page] .brand-page { --bp-img: var(--bg-page); }
+html[data-bg-auth] .brand-auth, html[data-bg-page] .brand-page {
+  color: #0A2257;
+  background: linear-gradient(rgba(248, 250, 253, var(--bg-overlay, 0.7)), rgba(248, 250, 253, var(--bg-overlay, 0.7))), var(--bp-img) center / cover no-repeat;
+}
+html[data-bg-auth] .brand-auth .bp-muted, html[data-bg-page] .brand-page .bp-muted { color: #33415C; }
+html[data-bg-auth] .brand-auth .bp-card, html[data-bg-page] .brand-page .bp-card { background: rgba(255, 255, 255, 0.75); color: #0A2257; }
+html[data-bg-page] .brand-page a:hover { color: #0B4FA6; }
+html[data-bg-auth] .brand-auth .logo-card, html[data-bg-page] .brand-page .logo-card { background: transparent; padding: 0; }

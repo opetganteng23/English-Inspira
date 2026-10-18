@@ -5,6 +5,7 @@ import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { LandingSettingsForm } from "@/components/LandingSettingsForm";
+import { AppearanceSettings } from "@/components/AppearanceSettings";
 
 type G = { siteName: string; supportEmail: string; supportWhatsapp: string; itpOrganizer: string; refundPolicy: string; rescheduleDays: number; idRetentionDays: number };
 const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
@@ -42,6 +43,7 @@ export default function Pengaturan() {
         <label className={label}>Official test reschedule policy text (optional)<textarea className="field font-normal" rows={4} value={v.refundPolicy} onChange={(e) => set("refundPolicy", e.target.value)} placeholder="Leave empty to use the default text." /></label>
         <button className="btn-solid self-start" disabled={busy}>{busy ? "Saving…" : "Save settings"}</button>
       </form>
+      <AppearanceSettings />
       <LandingSettingsForm />
     </div>
   );

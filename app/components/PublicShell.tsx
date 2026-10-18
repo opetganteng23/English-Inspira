@@ -14,8 +14,8 @@ export function PublicHeader() {
 
 export function PublicFooter({ email, whatsapp }: { email?: string; whatsapp?: string }) {
   return (
-    <footer className="bg-navy text-mist">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 lg:grid-cols-4">
+    <footer className="brand-panel brand-page">
+      <div className="bp-muted mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-3">
           <Logo />
           <p className="text-sm leading-relaxed">EPTA (English Proficiency Test & Analytics): an English test and analysis platform for partner institutions, with AI analysis and an AI counselor, by Inspira Teknologi, Telkom University, and CoE AILO.</p>
@@ -23,7 +23,7 @@ export function PublicFooter({ email, whatsapp }: { email?: string; whatsapp?: s
         <FooterCol title="PROGRAM" links={[["How it works", "/#how"], ["AI Counselor", "/#counselor"], ["For institutions", "/#institutions"], ["FAQ", "/#faq"]]} />
         <FooterCol title="HELP" links={[["Sign in", "/sign-in"], ["Create account", "/register"], ["Forgot password", "/forgot-password"], ["Privacy Policy", "/privacy"], ["Terms & Conditions", "/terms"]]} />
         <div className="flex flex-col gap-2 text-sm">
-          <p className="text-xs font-semibold tracking-wider text-[#8FA6C8]">CONTACT</p>
+          <p className="bp-muted text-xs font-semibold tracking-wider text-[#8FA6C8]">CONTACT</p>
           <span>inspiratekno.com</span>
           {email && <a href={`mailto:${email}`} className="hover:text-white">{email}</a>}
           {whatsapp && <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} className="hover:text-white">WhatsApp {whatsapp}</a>}
@@ -40,7 +40,7 @@ export function PublicFooter({ email, whatsapp }: { email?: string; whatsapp?: s
 function FooterCol({ title, links }: { title: string; links: [string, string][] }) {
   return (
     <div className="flex flex-col gap-2 text-sm">
-      <p className="text-xs font-semibold tracking-wider text-[#8FA6C8]">{title}</p>
+      <p className="bp-muted text-xs font-semibold tracking-wider text-[#8FA6C8]">{title}</p>
       {links.map(([l, h]) => <Link key={h} href={h} className="hover:text-white">{l}</Link>)}
     </div>
   );
