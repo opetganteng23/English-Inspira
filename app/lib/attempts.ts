@@ -117,7 +117,18 @@ export async function finalize(attempt: AttemptHydrated, test: Parameters<typeof
   // Efek samping setelah submit: tidak boleh menggagalkan submit, dan tidak memblokir respons.
   // Bila hasil ditahan (releaseAt di masa depan), efek (level, kuota, email, analisis) ditunda sampai dilepas oleh releaseDueResults.
   if (attempt.releaseAt) {
-    if (attempt.releaseAt > new Date()) return;
+    if (attempt.releaseAt > new Date()) {
+      // Hasil placement ditahan institusi: Class tetap dibentuk sekarang dari skornya; level, skor, dan nama Class baru terlihat saat dirilis.
+      if (attempt.kind === "placement" && attempt.get("heldByOrg") && attempt.scoreEst != null) {
+        try {
+          const { getLevels, levelForScore } = await import("./config");
+          const { assignClass } = await import("./clustering");
+          const lv = levelForScore(await getLevels(), attempt.scoreEst);
+          if (lv) await assignClass(String(attempt.userId), undefined, "auto", null, lv._id);
+        } catch (e) { console.error("[finalize] held class assignment failed", e); }
+      }
+      return;
+    }
     await Attempt.updateOne({ _id: attempt._id }, { $set: { releasedAt: new Date() } }); // sudah lewat waktu rilis: jalankan sekarang, jangan diulang oleh cron
   }
   void runAttemptEffects(attempt);

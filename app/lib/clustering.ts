@@ -86,9 +86,10 @@ export async function memberCounts(classIds: Types.ObjectId[]) {
 }
 
 /** Masukkan peserta ke kelas. `auto`: kelas berkursi yang paling longgar (acak bila seri); null = menunggu kelas. */
-export async function assignClass(userId: string, adminId: Types.ObjectId | undefined, method: "auto" | "manual", classId?: string | null) {
-  const user = await User.findById(userId).select("currentLevelId institutionId").lean();
-  if (!user) throw new HttpError(404, "Participant not found");
+export async function assignClass(userId: string, adminId: Types.ObjectId | undefined, method: "auto" | "manual", classId?: string | null, levelId?: Types.ObjectId) {
+  const found = await User.findById(userId).select("currentLevelId institutionId").lean();
+  if (!found) throw new HttpError(404, "Participant not found");
+  const user = levelId ? { ...found, currentLevelId: levelId } : found; // levelId: level dari hasil yang masih ditahan (level peserta belum ditetapkan)
   const current = await ClassMember.findOne({ userId, active: true }).lean();
   let target: string | null = null;
   if (method === "manual") {
