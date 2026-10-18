@@ -13,6 +13,7 @@ const config: Config = {
         ink: { DEFAULT: "#1C2B44", soft: "#4B5A70" },
         line: { DEFAULT: "#DCE3ED", strong: "#C5D2E4" },
         canvas: "#F5F7FA",
+        cloud: "#F8FAFD", // cloud white: latar sidebar dan bilah atas
         mist: "#D3DEEE",
       },
       fontFamily: {

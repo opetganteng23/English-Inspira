@@ -5,7 +5,7 @@ import { Certificate } from "@/models/Itp";
 import { User } from "@/models/User";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Document verification | English Inspira", robots: { index: false } };
+export const metadata = { title: "Document verification | English Inspira AI", robots: { index: false } };
 
 export default async function Verifikasi({ params }: { params: { number: string } }) {
   let c: { number: string; type: string; userId: unknown; issuedAt: Date; data?: unknown } | null = null;

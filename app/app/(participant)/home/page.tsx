@@ -36,7 +36,7 @@ export default function Beranda() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="page-title">Hello, {h.name ?? "participant"}</h1>
-        <p className="mt-1 text-ink-soft">{h.institution ? `${h.institution.name}${h.institution.contractEnd ? ` · access until ${tgl(h.institution.contractEnd)}` : ""}` : "Program English Inspira"}</p>
+        <p className="mt-1 text-ink-soft">{h.institution ? `${h.institution.name}${h.institution.contractEnd ? ` · access until ${tgl(h.institution.contractEnd)}` : ""}` : "Program English Inspira AI"}</p>
       </div>
 
       {h.step && (

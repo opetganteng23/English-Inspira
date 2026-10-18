@@ -118,7 +118,7 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
   );
 
   return (
-    <Shell heading={admin ? "Admin sign-in." : "Welcome back."} text={admin ? "For English Inspira administrators. This page stays available during maintenance." : "Sign in with your email and password. Invited by your institution? Open the link in your invitation email to create your password. New here? Create an account with the code from your institution."}>
+    <Shell heading={admin ? "Admin sign-in." : "Welcome back."} text={admin ? "For English Inspira AI administrators. This page stays available during maintenance." : "Sign in with your email and password. Invited by your institution? Open the link in your invitation email to create your password. New here? Create an account with the code from your institution."}>
       {step === "otp" ? (
         <form onSubmit={verify} className="flex flex-col gap-5">
           <Title t="Enter the code" s={<>A 6-digit code was sent to <b>{email}</b>. It is in the email subject and valid for 5 minutes. If you requested several codes, use the latest one.</>} />

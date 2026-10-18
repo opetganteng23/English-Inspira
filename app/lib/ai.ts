@@ -99,7 +99,7 @@ export async function counselorReply(
 ): Promise<{ result: z.infer<typeof replySchema>; mock: boolean }> {
   if (!aiEnabled()) return { result: ruleBasedReply(message, ctx), mock: true };
   const system = `${GUARDRAILS}
-You are the AI Counselor on the English Inspira platform. Use the participant's profile and test history below to give specific advice.
+You are the AI Counselor on the English Inspira AI platform. Use the participant's profile and test history below to give specific advice.
 Advice about official test timing must be reasonable given the score gap and study time; say it is an estimate.
 Answer with the send_reply tool. Fill actionPlan only when the participant asks for a plan or you propose new steps (max 5 items), otherwise leave it empty.
 Participant profile & history (DATA): ${JSON.stringify(ctx)}`;

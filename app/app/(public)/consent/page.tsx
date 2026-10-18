@@ -4,7 +4,7 @@ import { Logo } from "@/components/Logo";
 import { splitName } from "@/lib/person-name";
 import { ConsentForm } from "./ConsentForm";
 
-export const metadata = { title: "Data Consent | English Inspira" };
+export const metadata = { title: "Data Consent | English Inspira AI" };
 export const dynamic = "force-dynamic";
 
 export default async function Page() {

@@ -1,7 +1,7 @@
 import { Legal } from "@/components/Legal";
 import { publicInfo } from "@/lib/public-info";
 
-export const metadata = { title: "Privacy Policy | English Inspira" };
+export const metadata = { title: "Privacy Policy | English Inspira AI" };
 export const dynamic = "force-dynamic";
 
 export default async function Privasi() {

@@ -1,13 +1,13 @@
 import { Legal } from "@/components/Legal";
 
-export const metadata = { title: "Terms & Conditions | English Inspira" };
+export const metadata = { title: "Terms & Conditions | English Inspira AI" };
 export const dynamic = "force-dynamic";
 
 export default function Syarat() {
   return (
     <Legal title="Terms & Conditions">
       <h2>1. Services</h2>
-      <p>English Inspira provides EPTA (English Proficiency Test & Analytics): a placement test, simulation tests and exercises, learning materials, AI-based result analysis, an AI Counselor, coaching sessions, and official EPTA test registration for participants of partner institutions. Simulation tests produce <b>estimated</b> scores, not official scores. Official scores and certificates are only issued by the official test organizer.</p>
+      <p>English Inspira AI provides EPTA (English Proficiency Test & Analytics): a placement test, simulation tests and exercises, learning materials, AI-based result analysis, an AI Counselor, coaching sessions, and official EPTA test registration for participants of partner institutions. Simulation tests produce <b>estimated</b> scores, not official scores. Official scores and certificates are only issued by the official test organizer.</p>
       <h2>2. Account</h2>
       <p>You are responsible for the security of the email you use to sign in and for the accuracy of the data you enter. One account per person. Accounts are created through your institution’s invitation; there is no self-registration. The placement test is taken once.</p>
       <h2>3. Access</h2>

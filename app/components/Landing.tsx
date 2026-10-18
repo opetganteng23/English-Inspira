@@ -57,7 +57,7 @@ const FAQ = [
 export function Landing({ email, whatsapp, settings = LANDING_DEFAULTS }: { email?: string; whatsapp?: string; settings?: LandingSettings }) {
   const hero = settings;
   const dark = hero.theme === "dark";
-  const contact = email ? `mailto:${email}?subject=${encodeURIComponent("English Inspira for our institution")}` : whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}` : "https://inspiratekno.com";
+  const contact = email ? `mailto:${email}?subject=${encodeURIComponent("English Inspira AI for our institution")}` : whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}` : "https://inspiratekno.com";
   return (
     <div className="bg-canvas text-ink">
       <noscript><style>{".reveal,.fx-fade-up,.fx-pop,.chat-in{opacity:1!important;transform:none!important;animation:none!important}"}</style></noscript>
@@ -190,7 +190,7 @@ export function Landing({ email, whatsapp, settings = LANDING_DEFAULTS }: { emai
             <div className="flex flex-1 flex-col gap-6">
               <Eyebrow className="text-[#F3D68A]">FOR INSTITUTIONS</Eyebrow>
               <h2 className="font-display text-3xl font-extrabold leading-tight sm:text-[42px]">Campuses, agencies &amp; companies.</h2>
-              <p className="max-w-xl text-[17px] leading-relaxed text-mist">English Inspira is provided through partner institutions. You run the program for your participants; we provide the tests, the analysis, and the learning path.</p>
+              <p className="max-w-xl text-[17px] leading-relaxed text-mist">English Inspira AI is provided through partner institutions. You run the program for your participants; we provide the tests, the analysis, and the learning path.</p>
               <div className="max-w-xl overflow-hidden rounded-[14px] border border-[#2A5591]">
                 <div className="grid grid-cols-3 bg-navy-700 px-5 py-3.5 text-[13px] font-semibold text-[#B9CBE6]"><span>Section</span><span>Questions</span><span>Time</span></div>
                 {[["Listening", "50", "about 35 min"], ["Structure & WE", "40", "25 min"], ["Reading", "50", "55 min"]].map(([s, q, t]) => (

@@ -44,15 +44,15 @@ export function ShellNav({
         <div key={gi} className="flex flex-col gap-1">
           {g.label && (foldable
             ? <button type="button" aria-expanded={isOpen} aria-controls={id} disabled={hasActive} onClick={() => toggle(g.label!)}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold tracking-wider text-[#8FA6C8] hover:bg-navy-700 hover:text-white disabled:cursor-default disabled:hover:bg-transparent">
-                <span>{g.label.toUpperCase()}{!isOpen && <span className="ml-2 rounded-full bg-navy-700 px-1.5 py-0.5 text-[10px] text-mist">{g.items.length}</span>}</span>
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold tracking-wider text-ink-soft hover:bg-brand-tint hover:text-navy disabled:cursor-default disabled:hover:bg-transparent">
+                <span>{g.label.toUpperCase()}{!isOpen && <span className="ml-2 rounded-full bg-brand-tint px-1.5 py-0.5 text-[10px] text-brand">{g.items.length}</span>}</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden className={`transition-transform ${isOpen ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
               </button>
-            : <p className="px-3 text-[11px] font-semibold tracking-wider text-[#8FA6C8]">{g.label.toUpperCase()}</p>)}
+            : <p className="px-3 text-[11px] font-semibold tracking-wider text-ink-soft">{g.label.toUpperCase()}</p>)}
           <div id={id} hidden={!isOpen} className={isOpen ? "flex flex-col gap-1" : "hidden"}>
           {g.items.map((n) => (
             <Link key={n.href} href={n.href} aria-current={best?.href === n.href ? "page" : undefined}
-              className={`rounded-lg px-3 py-2.5 text-[15px] font-medium ${best?.href === n.href ? "bg-navy-700 text-white" : "text-mist hover:bg-navy-700 hover:text-white"}`}>
+              className={`rounded-lg px-3 py-2.5 text-[15px] font-medium ${best?.href === n.href ? "bg-brand font-semibold text-white shadow-sm" : "text-ink hover:bg-brand-tint hover:text-navy"}`}>
               {n.label}
             </Link>
           ))}
@@ -64,20 +64,20 @@ export function ShellNav({
   );
 
   const account = (
-    <div className="mt-auto border-t border-navy-700 pt-4">
+    <div className="mt-auto border-t border-line pt-4">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy-700 text-sm font-bold text-white">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-tint text-sm font-bold text-brand">
             {user.avatarId
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={`/api/assets/${user.avatarId}`} alt="" className="h-full w-full object-cover" />
               : (user.name || "?")[0].toUpperCase()}
           </span>
-          <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+          <p className="truncate text-sm font-semibold text-navy">{user.name}</p>
         </span><NotificationBell /></div>
-      <p className="truncate text-xs text-[#8FA6C8]">{ROLE[user.role] ?? user.role}</p>
+      <p className="truncate text-xs text-ink-soft">{ROLE[user.role] ?? user.role}</p>
       <button
-        className="mt-3 w-full rounded-lg border border-[#8FA6C8]/40 px-3 py-2 text-sm font-semibold text-mist hover:bg-navy-700"
+        className="mt-3 w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-sm font-semibold text-navy hover:bg-brand-tint"
         onClick={async () => { if (!(await askConfirm("You will need to sign in again to continue.", { title: "Log out?", confirmLabel: "Log out", danger: true }))) return; await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/"; }}
       >Sign out</button>
     </div>
@@ -86,18 +86,18 @@ export function ShellNav({
   return (
     <div className="relative flex h-dvh flex-col overflow-clip md:flex-row">
       {/* Desktop / tablet landscape */}
-      <aside className="hidden h-full w-64 shrink-0 flex-col gap-5 overflow-y-auto bg-navy p-4 md:flex lg:w-[264px] lg:p-5">
-        <Logo />
+      <aside className="hidden h-full w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r border-line bg-cloud p-4 md:flex lg:w-[264px] lg:p-5">
+        <Logo dark />
         {links}
         {account}
       </aside>
 
       {/* Mobile / portrait top bar */}
-      <header className="z-30 flex shrink-0 items-center justify-between bg-navy px-3 py-2 md:hidden">
-        <Logo />
-        <span className="flex items-center gap-1"><NotificationBell light />
+      <header className="z-30 flex shrink-0 items-center justify-between border-b border-line bg-cloud px-3 py-2 md:hidden">
+        <Logo dark />
+        <span className="flex items-center gap-1"><NotificationBell />
         <button aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-white hover:bg-navy-700">
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-navy hover:bg-brand-tint">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button></span>
       </header>
@@ -105,10 +105,10 @@ export function ShellNav({
       {open && (
         <div className="fixed inset-0 z-40 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <button aria-label="Close menu" className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col gap-6 overflow-y-auto bg-navy p-5">
+          <div className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col gap-6 overflow-y-auto bg-cloud p-5">
             <div className="flex items-center justify-between">
-              <Logo />
-              <button aria-label="Close menu" onClick={() => setOpen(false)} className="h-11 w-11 text-2xl leading-none text-white">×</button>
+              <Logo dark />
+              <button aria-label="Close menu" onClick={() => setOpen(false)} className="h-11 w-11 text-2xl leading-none text-navy">×</button>
             </div>
             {links}
             {account}

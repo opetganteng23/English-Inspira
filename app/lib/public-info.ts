@@ -2,7 +2,7 @@ import { connectDB } from "./db";
 import { getSetting } from "@/models/Settings";
 import { LANDING_DEFAULTS } from "./landing-settings";
 
-export const GENERAL_DEFAULTS = { siteName: "English Inspira", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 };
+export const GENERAL_DEFAULTS = { siteName: "English Inspira AI", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 };
 
 /** Pengaturan umum yang boleh tampil publik (placeholder desain diganti nilai dari admin, atau teks netral). */
 export async function publicInfo() {

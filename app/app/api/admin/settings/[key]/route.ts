@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 const SETTINGS = {
   general: {
     schema: z.object({ siteName: z.string().min(1).max(60), supportEmail: z.email().or(z.literal("")), supportWhatsapp: z.string().max(20), itpOrganizer: z.string().max(120), refundPolicy: z.string().max(2000), rescheduleDays: z.number().int().min(0).max(60), idRetentionDays: z.number().int().min(1).max(3650) }),
-    defaults: { siteName: "English Inspira", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 },
+    defaults: { siteName: "English Inspira AI", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 },
   },
   landing: { schema: landingSchema, defaults: LANDING_DEFAULTS },
 } as const;
