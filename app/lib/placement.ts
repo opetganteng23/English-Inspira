@@ -43,6 +43,12 @@ export async function applyPlacement(attempt: HydratedDocument<AttemptDoc>) {
     if (quota) await CoachingQuota.updateMany({ userId: user._id, active: true }, { active: false }); // sisa kuota lama hangus
     quota = await CoachingQuota.create({ userId: user._id, institutionId: user.institutionId, levelId: level._id, total: level.coachingQuota, ...(cycleId ? { programCycleId: cycleId } : {}) });
   }
+  // Masuk Class otomatis (acak, kelas level ini yang masih ada kursinya). Untuk hasil yang ditahan institusi, ini terjadi saat dirilis.
+  try {
+    const { assignClass } = await import("./clustering");
+    const { ClassMember } = await import("@/models/Cluster");
+    if (changed || !(await ClassMember.exists({ userId: user._id, active: true }))) await assignClass(String(user._id), undefined, "auto");
+  } catch (e) { console.error("[placement] class assignment failed", e); }
   await enqueueMail(user.email, "placement_result", { score: attempt.scoreEst, level: level.name, quota: quota?.total ?? level.coachingQuota, link: `${process.env.APP_URL ?? "http://localhost:3000"}/home` });
   await notify(user._id, "placement_result", { title: `Placement result: ${level.name} level`, body: `Estimated score ${attempt.scoreEst}. Coaching quota ${quota?.total ?? level.coachingQuota} sessions.`, href: "/home" }, String(attempt._id));
   await audit(user._id, "placement.applied", String(attempt._id), { level: level.key, score: attempt.scoreEst });

@@ -7,7 +7,7 @@ const nav: NavGroup[] = [
   { label: "People & Classes", items: [
     { href: "/admin/institutions", label: "Institutions" },
     { href: "/admin/participants", label: "Participants" },
-    { href: "/admin/external-results", label: "PURE / OCE Results" },
+    { href: "/admin/external-results", label: "Class Results" },
     { href: "/admin/classes", label: "Classes" },
     { href: "/admin/users", label: "Coaches & Admins" },
   ] },

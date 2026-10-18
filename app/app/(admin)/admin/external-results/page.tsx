@@ -28,7 +28,7 @@ export default function ExternalResults() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><h1 className="page-title">PURE / OCE Results</h1><p className="max-w-3xl text-sm text-ink-soft">Upload participants&apos; PURE or OCE results (Excel, CSV, or one PDF per person). Each result is matched to a participant by email or name. After you confirm, the score sets the participant&apos;s level and coaching quota, and they join a class of that level that still has seats.</p></div>
+        <div><h1 className="page-title">Class Results</h1><p className="max-w-3xl text-sm text-ink-soft">Upload participants&apos; PURE or OCE results (Excel, CSV, or one PDF per person). Each result is matched to a participant by email or name. After you confirm, the score sets the participant&apos;s level and coaching quota, and they join a class of that level that still has seats.</p></div>
         <div className="flex flex-wrap gap-2"><button className="btn-outline" onClick={() => setEqOpen(true)}>Score equivalents</button><button className="btn-solid" onClick={() => setUpload(true)}>+ Upload results</button></div>
       </div>
       <div className="flex flex-wrap items-center gap-2" role="tablist">
@@ -115,7 +115,7 @@ function UploadDialog({ institutions, onClose, onDone }: { institutions: Data["i
     } catch (e) { setErr((e as Error).message); setBusy(false); }
   }
   return (
-    <Modal title="Upload PURE / OCE results" onClose={onClose}>
+    <Modal title="Upload class results" onClose={onClose}>
       <div className="flex flex-col gap-4 text-sm">
         <p className="text-ink-soft"><b>Excel or CSV:</b> one row per person with the columns <code>name</code> and <code>score</code>; <code>email</code>, <code>date</code>, and <code>test</code> (PURE or OCE) are optional. <b>PDF:</b> one file per person; the name is read from the PDF text, or from the file name, and the score from the text when possible. You can fix any score or match before confirming.</p>
         <div className="grid gap-3 sm:grid-cols-2">
