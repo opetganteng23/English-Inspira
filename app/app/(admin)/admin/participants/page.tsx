@@ -18,22 +18,50 @@ type Detail = {
 };
 const STATUS: Record<string, [string, string]> = { invited: ["Awaiting activation", "badge-warn"], active: ["Active", "badge-ok"], disabled: ["Inactive", "badge-muted"] };
 
+type Card = { id: string; name: string; code: string; batch: string | null; status: string; total: number; active: number; invited: number; disabled: number; placed: number };
+
 export default function Peserta() {
   const [q, setQ] = useState(""); const [status, setStatus] = useState(""); const [page, setPage] = useState(1);
+  const [inst, setInstState] = useState<string>(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("institution") ?? ""));
+  const setInst = (id: string) => { setInstState(id); setPage(1); try { const u = new URL(window.location.href); if (id) u.searchParams.set("institution", id); else u.searchParams.delete("institution"); history.replaceState(null, "", u); } catch { /* */ } };
+  const cards = useApi<{ cards: Card[] }>("/api/admin/participants/summary");
   const qs = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("status");
   const [init] = useState(qs ?? "");
   const eff = status || init;
-  const { data, loading, error, reload } = useApi<{ participants: Row[]; total: number; pages: number }>(`/api/admin/participants?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ""}${eff ? `&status=${eff}` : ""}`);
+  const { data, loading, error, reload } = useApi<{ participants: Row[]; total: number; pages: number }>(inst || q || eff ? `/api/admin/participants?page=${page}${inst ? `&institution=${inst}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}${eff ? `&status=${eff}` : ""}` : null);
+  const card = cards.data?.cards.find((c) => c.id === inst);
+  const showCards = !inst && !q && !eff;
   const [sel, setSel] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-5">
-      <div><h1 className="page-title">Participants</h1><p className="text-sm text-ink-soft">All participants across institutions · {data?.total ?? 0} participants. Participants are added from the Institutions menu.</p></div>
+      <div>
+        {inst && <button className="text-sm font-semibold text-brand" onClick={() => { setInst(""); setQ(""); setStatus(""); }}>← All institutions</button>}
+        <h1 className="page-title">{card ? card.name : "Participants"}</h1>
+        <p className="text-sm text-ink-soft">{card ? `${card.total} participants · ${card.active} active · ${card.invited} awaiting activation · ${card.disabled} inactive` : showCards ? "Choose an institution to see its participants, or search everyone by name or email. Participants are added from the Institutions menu." : `Search across all institutions · ${data?.total ?? 0} participants`}</p>
+      </div>
       <div className="flex flex-wrap gap-3">
-        <input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
+        <input className="field max-w-xs" placeholder={inst ? "Search in this institution" : "Search everyone by name or email"} value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} />
         <select className="field w-auto" aria-label="Status" value={eff} onChange={(e) => { setPage(1); setStatus(e.target.value); }}><option value="">All statuses</option><option value="invited">Awaiting activation</option><option value="active">Active</option><option value="disabled">Inactive</option></select>
       </div>
-      <ErrorNote text={error} />
-      {loading && !data ? <Loading /> : (
+      <ErrorNote text={error || cards.error} />
+      {showCards ? (cards.loading && !cards.data ? <Loading /> : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {cards.data?.cards.map((c) => (
+            <button key={c.id} onClick={() => setInst(c.id)} className="card flex flex-col gap-3 text-left transition hover:border-brand hover:shadow-md">
+              <div className="flex items-start justify-between gap-2">
+                <div><h2 className="font-display text-lg font-extrabold text-navy">{c.name}</h2><p className="text-xs text-ink-soft">{[c.code, c.batch].filter(Boolean).join(" · ") || "Participants without an institution"}</p></div>
+                {c.status !== "active" && <span className="badge-muted">Inactive</span>}
+              </div>
+              <p className="font-display text-3xl font-extrabold text-navy">{c.total}<span className="ml-1 text-sm font-semibold text-ink-soft">{c.total === 1 ? "participant" : "participants"}</span></p>
+              <div className="flex flex-wrap gap-1.5 text-xs"><span className="badge-ok">{c.active} active</span>{c.invited > 0 && <span className="badge-warn">{c.invited} awaiting activation</span>}{c.disabled > 0 && <span className="badge-muted">{c.disabled} inactive</span>}</div>
+              <div><p className="flex justify-between text-xs text-ink-soft"><span>Placement done</span><span className="font-semibold text-navy">{c.placed} / {c.total}</span></p>
+                <div className="mt-1 h-2 rounded-full bg-canvas"><div className="h-2 rounded-full bg-brand" style={{ width: `${c.total ? Math.round((c.placed / c.total) * 100) : 0}%` }} /></div></div>
+              <span className="text-sm font-semibold text-brand">Open participants →</span>
+            </button>
+          ))}
+          {cards.data?.cards.length === 0 && <p className="card text-sm text-ink-soft">No institutions yet.</p>}
+        </div>
+      )) : loading && !data ? <Loading /> : (
         <div className="table-wrap"><table>
           <thead><tr><th>Participant</th><th>Status</th><th>Level</th><th>Score</th><th>Coaching quota</th><th>Tests</th><th /></tr></thead>
           <tbody>
@@ -49,7 +77,7 @@ export default function Peserta() {
           </tbody>
         </table></div>
       )}
-      <div className="flex items-center justify-between text-sm text-ink-soft"><span>Page {page} of {data?.pages ?? 1}</span><div className="flex gap-2"><button className="btn-outline !min-h-[40px]" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button><button className="btn-outline !min-h-[40px]" disabled={page >= (data?.pages ?? 1)} onClick={() => setPage(page + 1)}>Next</button></div></div>
+      {!showCards &&       <div className="flex items-center justify-between text-sm text-ink-soft"><span>Page {page} of {data?.pages ?? 1}</span><div className="flex gap-2"><button className="btn-outline !min-h-[40px]" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button><button className="btn-outline !min-h-[40px]" disabled={page >= (data?.pages ?? 1)} onClick={() => setPage(page + 1)}>Next</button></div></div>}
       {sel && <DetailModal id={sel} onClose={() => { setSel(null); reload(); }} />}
     </div>
   );

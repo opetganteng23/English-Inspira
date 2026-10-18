@@ -20,7 +20,9 @@ export async function GET(req: Request) {
     const filter: Record<string, unknown> = { role: "participant", deletedAt: { $exists: false } };
     const q = sp.get("q")?.trim();
     if (q) { const rx = new RegExp(esc(q), "i"); filter.$or = [{ name: rx }, { email: rx }]; }
-    if (sp.get("institution")) filter.institutionId = sp.get("institution");
+    const instQ = sp.get("institution");
+    if (instQ === "none") filter.institutionId = { $in: [null] };
+    else if (instQ && /^[0-9a-f]{24}$/.test(instQ)) filter.institutionId = instQ;
     if (sp.get("status")) filter.status = sp.get("status");
     if (sp.get("level")) filter.currentLevelId = sp.get("level");
     const page = Math.max(1, Number(sp.get("page")) || 1), size = 25;
