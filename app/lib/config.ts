@@ -23,6 +23,7 @@ export const PARAM_SCHEMAS = {
   counselor_quota: z.number().int().min(0), // pesan per bulan
   invite_hourly_cap: z.number().int().min(1), // batas email undangan per jam (Gmail ±500/hari)
   mail_daily_cap: z.number().int().min(1), // batas total email keluar per 24 jam; undangan massal berhenti di sini (OTP dan reset password tetap dikirim)
+  class_auto: z.object({ enabled: z.boolean(), size: z.number().int().min(1).max(500) }), // Class dibuat otomatis bila kelas level itu penuh/belum ada
   pdf_retention_days: z.number().int().min(1).max(3650), // file PDF asli dihapus setelah ini; nilai terverifikasi tetap
   analysis_prompt: z.object({ version: z.string().min(1).max(40), text: z.string().min(20).max(4000) }), // prompt analisis berversi (MTS §13.5)
   narrative_template: z.object({ summary: z.string().max(600), strong: z.string().max(300), weak: z.string().max(300), gap: z.string().max(300), suggestion: z.string().max(300) }), // narasi cadangan
@@ -45,6 +46,7 @@ export const PARAM_DEFAULTS: { [K in ParamKey]: z.infer<(typeof PARAM_SCHEMAS)[K
   counselor_quota: 30,
   invite_hourly_cap: 100,
   mail_daily_cap: 400, // di bawah batas Gmail akun biasa (±500); naikkan bila memakai Google Workspace atau SMTP lain
+  class_auto: { enabled: true, size: 70 },
   pdf_retention_days: 180, // placeholder retensi (MTS §25)
   analysis_prompt: {
     version: "v2",
@@ -74,6 +76,7 @@ export const PARAM_HELP: Record<ParamKey, string> = {
   alpha: "Weight of the new score in the cumulative topic score (0.05-1).",
   counselor_quota: "AI Counselor message limit per participant per month.",
   invite_hourly_cap: "Invitation email limit per hour.",
+  class_auto: "Automatic classes: when a participant gets a level and no class of that level (in their institution) has a free seat, a new class is created with this many seats, named after the level (Basic A, Basic B, ...). You can rename it, assign a coach, or change seats afterwards.",
   mail_daily_cap: "Total outgoing emails per 24 hours. Bulk invitations pause when this is reached; sign-in codes and password resets are still sent. Keep it below your mail provider limit (Gmail about 500 per day).",
   pdf_retention_days: "How long the original PDF file is kept (days). After that the file is deleted automatically; verified scores remain. PLACEHOLDER: agree with partners.",
   analysis_prompt: "Claude analysis prompt (versioned). Change the version whenever you change the text so older results remain traceable.",

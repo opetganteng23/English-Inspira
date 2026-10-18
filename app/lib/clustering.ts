@@ -1,6 +1,6 @@
 import type { Types } from "mongoose";
 import { connectDB } from "./db";
-import { getLevels, levelForScore } from "./config";
+import { getLevels, levelForScore, getParam } from "./config";
 import { audit } from "./audit";
 import { notify } from "./notify";
 import { cycleState } from "./cycles";
@@ -86,7 +86,15 @@ export async function memberCounts(classIds: Types.ObjectId[]) {
 }
 
 /** Masukkan peserta ke kelas. `auto`: kelas berkursi yang paling longgar (acak bila seri); null = menunggu kelas. */
-export async function assignClass(userId: string, adminId: Types.ObjectId | undefined, method: "auto" | "manual", classId?: string | null, levelId?: Types.ObjectId) {
+// Penempatan berjalan berurutan dalam satu proses (PM2 satu instance) agar dua peserta yang selesai bersamaan tidak membuat kelas kembar.
+let classLock: Promise<unknown> = Promise.resolve();
+export function assignClass(...args: Parameters<typeof assignClassNow>) {
+  const run = classLock.then(() => assignClassNow(...args));
+  classLock = run.catch(() => {});
+  return run;
+}
+
+async function assignClassNow(userId: string, adminId: Types.ObjectId | undefined, method: "auto" | "manual", classId?: string | null, levelId?: Types.ObjectId) {
   const found = await User.findById(userId).select("currentLevelId institutionId").lean();
   if (!found) throw new HttpError(404, "Participant not found");
   const user = levelId ? { ...found, currentLevelId: levelId } : found; // levelId: level dari hasil yang masih ditahan (level peserta belum ditetapkan)
@@ -106,6 +114,7 @@ export async function assignClass(userId: string, adminId: Types.ObjectId | unde
     if (current && classes.some((c) => String(c._id) === String(current.classId))) return String(current.classId);
     const counts = await memberCounts(classes.map((c) => c._id));
     target = pickClass(classes.map((c) => ({ id: String(c._id), capacity: c.capacity, count: counts.get(String(c._id)) ?? 0 })));
+    if (!target && user.currentLevelId) target = await autoCreateClass(user as { currentLevelId: Types.ObjectId; institutionId?: Types.ObjectId | null });
   }
   if (String(current?.classId ?? "") === String(target ?? "")) return target;
   if (current) await ClassMember.updateOne({ _id: current._id }, { active: false, leftAt: new Date() });
@@ -113,6 +122,22 @@ export async function assignClass(userId: string, adminId: Types.ObjectId | unde
   if (adminId) await audit(adminId, method === "manual" ? "class.move" : "class.assign", userId, { from: current ? String(current.classId) : null, to: target });
   return target;
 }
+
+/** Semua kelas level ini penuh atau belum ada: buat kelas baru (nama level + huruf, kapasitas dari parameter class_auto). */
+async function autoCreateClass(user: { currentLevelId: Types.ObjectId; institutionId?: Types.ObjectId | null }) {
+  const cfg = await getParam("class_auto");
+  if (!cfg.enabled) return null;
+  const level = (await getLevels()).find((l) => String(l._id) === String(user.currentLevelId));
+  if (!level) return null;
+  const cs = await cycleState(user.institutionId);
+  const scope = { levelId: level._id, ...(user.institutionId ? { institutionId: user.institutionId } : {}), ...(cs.active ? { programCycleId: cs.active._id } : {}) };
+  const names = new Set((await ClassGroup.find({ levelId: level._id, ...(user.institutionId ? { institutionId: user.institutionId } : {}) }).select("name").lean()).map((c) => c.name));
+  let i = 0; while (names.has(`${level.name} ${classLetter(i)}`)) i++;
+  const c = await ClassGroup.create({ ...scope, name: `${level.name} ${classLetter(i)}`, capacity: cfg.size, active: true });
+  return String(c._id);
+}
+/** 0 -> A, 25 -> Z, 26 -> AA ... */
+export const classLetter = (i: number): string => (i < 26 ? String.fromCharCode(65 + i) : classLetter(Math.floor(i / 26) - 1) + String.fromCharCode(65 + (i % 26)));
 
 /** Statistik kelas: jumlah siswa, aktif 7 hari terakhir (login atau belajar), rata-rata skor. */
 export async function classStats(classIds: Types.ObjectId[]) {

@@ -15,3 +15,8 @@ describe("status peserta di ekspor hasil", () => {
     expect(rowStatus(null, null)).toBe("Not scheduled");
   });
 });
+
+import { classLetter } from "@/lib/clustering";
+describe("nama kelas otomatis", () => {
+  it("A..Z lalu AA", () => { expect(classLetter(0)).toBe("A"); expect(classLetter(25)).toBe("Z"); expect(classLetter(26)).toBe("AA"); });
+});
