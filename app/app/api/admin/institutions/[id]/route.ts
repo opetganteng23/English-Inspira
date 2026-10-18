@@ -9,6 +9,7 @@ import { institutionInput } from "@/lib/admin-schemas";
 import { Institution } from "@/models/Institution";
 import { User } from "@/models/User";
 import { Enrollment } from "@/models/Access";
+import { releaseOrgHeld, holdInProgress } from "@/lib/attempt-release";
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -22,14 +23,19 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (b.seats < i.seatsUsed) throw new HttpError(409, `Seats cannot be lower than those already used (${i.seatsUsed})`);
     const endChanged = String(b.contractEnd ?? "") !== String(i.contractEnd ?? "");
     const startChanged = String(b.contractStart ?? "") !== String(i.contractStart ?? "");
-    i.set({ ...b, contractStart: b.contractStart ?? undefined, contractEnd: b.contractEnd ?? undefined, contactEmail: b.contactEmail || undefined });
+    const wasHeld = !!i.holdPlacementResults, nowHeld = b.holdPlacementResults ?? wasHeld;
+    i.set({ ...b, holdPlacementResults: nowHeld, contractStart: b.contractStart ?? undefined, contractEnd: b.contractEnd ?? undefined, contactEmail: b.contactEmail || undefined });
     await i.save();
     // Kontrak diperpanjang/dipersingkat → seluruh enrollment aktif ikut berubah (akses dicek dari enrollment).
     if (endChanged) await Enrollment.updateMany({ institutionId: i._id, status: { $in: ["active", "expired"] } }, { expiresAt: b.contractEnd ?? undefined, status: !b.contractEnd || b.contractEnd > new Date() ? "active" : "expired" });
     // Tanggal mulai kontrak berubah → akses peserta yang sudah ada mulai pada tanggal baru (atau sekarang bila tanggalnya sudah lewat/kosong).
     if (startChanged) await Enrollment.updateMany({ institutionId: i._id, status: "active" }, { startsAt: b.contractStart && b.contractStart > new Date() ? b.contractStart : new Date() });
-    await audit(admin._id, "institution.update", params.id);
-    return NextResponse.json({ ok: true });
+    // Penahanan hasil placement (perjanjian perusahaan): nyala = placement berjalan ikut ditahan; mati = semua hasil dilepas sekarang.
+    let released = 0;
+    if (!wasHeld && nowHeld) await holdInProgress(i._id);
+    if (wasHeld && !nowHeld) released = await releaseOrgHeld({ institutionId: i._id });
+    await audit(admin._id, "institution.update", params.id, wasHeld !== nowHeld ? { holdPlacementResults: nowHeld, released } : undefined);
+    return NextResponse.json({ ok: true, released });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: zodMessage(e) }, { status: 400 });
     return handleError(e);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
+import { askConfirm } from "@/components/Feedback";
 import { api, tgl } from "@/lib/client";
 import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
@@ -12,7 +13,7 @@ type Detail = {
   profile: { id: string; name?: string; givenName?: string; surname?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean; qaTester?: boolean };
   enrollment: { status: string; startsAt: string; expiresAt: string | null } | null;
   quotas: { level: string; used: number; total: number; active: boolean }[];
-  attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number }[];
+  attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number; held?: boolean }[];
   notes: { text: string; at: string }[];
 };
 const STATUS: Record<string, [string, string]> = { invited: ["Awaiting activation", "badge-warn"], active: ["Active", "badge-ok"], disabled: ["Inactive", "badge-muted"] };
@@ -84,7 +85,8 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="mt-2 grid gap-2 rounded-xl bg-canvas p-3 sm:grid-cols-[100px_1fr_auto]"><input aria-label="Days" className="field" type="number" min={1} max={730} value={ext.days} onChange={(e) => setExt({ ...ext, days: Number(e.target.value) })} /><input aria-label="Extension reason" className="field" placeholder="Reason for extending access (required)" value={ext.reason} onChange={(e) => setExt({ ...ext, reason: e.target.value })} /><button className="btn-outline" disabled={ext.reason.trim().length < 3} onClick={() => run({ action: "extend_enrollment", ...ext }, "Access extended.").then(() => setExt({ days: 30, reason: "" }))}>Extend</button></div></section>
 
           <section><h3 className="font-semibold text-navy">Test history</h3>
-            {d.attempts.length ? <ul className="mt-1">{d.attempts.map((a) => <li key={a.id} className="flex justify-between gap-3 border-b border-line py-1.5"><span>{a.kind} · {tgl(a.finishedAt)}{a.flags ? ` · ${a.flags} activity notes` : ""}</span><b>{a.scoreEst}</b></li>)}</ul> : <p className="text-ink-soft">None yet.</p>}</section>
+            {d.attempts.length ? <ul className="mt-1">{d.attempts.map((a) => <li key={a.id} className="flex justify-between gap-3 border-b border-line py-1.5"><span>{a.kind} · {tgl(a.finishedAt)}{a.flags ? ` · ${a.flags} activity notes` : ""}{a.held ? " · held (not visible to participant)" : ""}</span><b>{a.scoreEst}</b></li>)}</ul> : <p className="text-ink-soft">None yet.</p>}
+            {d.attempts.some((a) => a.held) && <button className="btn-outline mt-2 !min-h-[40px]" onClick={async () => { if (await askConfirm("Release this participant's held placement result now? They, their institution admin, and coaches will see it, and the result email is sent.", { confirmLabel: "Release result" })) run({ action: "release_results" }, "Result released."); }}>Release this result</button>}</section>
 
           <section><h3 className="font-semibold text-navy">Actions</h3>
             <div className="mt-2 flex flex-wrap gap-2">

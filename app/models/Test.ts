@@ -45,6 +45,7 @@ const attemptSchema = new Schema(
     kind: String, // salinan Test.kind
     startedAt: { type: Date, required: true },
     releaseAt: Date, // hasil ditahan sampai waktu ini; kosong = langsung. Disalin dari Test.resultDelayMin saat tes dimulai
+    heldByOrg: Boolean, // ditahan karena institusi menahan hasil placement (releaseAt = HOLD_UNTIL sampai dilepas admin)
     releasedAt: Date, // efek hasil (level, kuota, email, analisis) sudah dijalankan oleh pelepasan tertunda
     finishedAt: Date,
     // Timer dipegang server: section aktif dan kapan ia dimulai.

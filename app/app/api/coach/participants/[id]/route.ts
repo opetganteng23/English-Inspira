@@ -33,7 +33,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const [levels, quota, topics, plan, attempts, lastAnalysis, bookings, notes] = await Promise.all([
       getLevels(), CoachingQuota.findOne({ userId: u._id, active: true }).lean(), TopicStat.find({ userId: u._id, ...LEARNING_TOPIC_FILTER }).sort({ score: 1 }).lean(),
       PlanItem.find({ userId: u._id }).sort({ createdAt: -1 }).limit(30).lean(),
-      Attempt.find({ userId: u._id, status: "submitted" }).sort({ finishedAt: -1 }).limit(8).select("kind scoreEst sectionScores finishedAt").lean(),
+      Attempt.find({ userId: u._id, status: "submitted" }).sort({ finishedAt: -1 }).limit(8).select("kind scoreEst sectionScores finishedAt releaseAt").lean().then((l) => l.map((a) => (a.releaseAt && a.releaseAt > new Date() ? { ...a, scoreEst: undefined, sectionScores: [] } : a))),
       Analysis.findOne({ userId: u._id }).sort({ createdAt: -1 }).select("calculated createdAt").lean(),
       Booking.find({ userId: u._id, active: true }).lean(),
       SessionNote.find({ userId: u._id, coachId: coach._id }).sort({ updatedAt: -1 }).limit(5).lean(),

@@ -16,6 +16,7 @@ import { AuditLog } from "@/models/AuditLog";
 import { Institution } from "@/models/Institution";
 import { Enrollment } from "@/models/Access";
 import { CoachingQuota } from "@/models/Config";
+import { releaseOrgHeld } from "@/lib/attempt-release";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const admin = await requireRole(ACADEMIC_ROLES);
     const u = await find(params.id);
     const [attempts, notes, inst, enr, quotas, levels] = await Promise.all([
-      Attempt.find({ userId: u._id, status: "submitted" }).sort({ finishedAt: -1 }).limit(30).select("kind scoreEst sectionScores finishedAt proctorFlags").lean(),
+      Attempt.find({ userId: u._id, status: "submitted" }).sort({ finishedAt: -1 }).limit(30).select("kind scoreEst sectionScores finishedAt proctorFlags heldByOrg releasedAt").lean(),
       AuditLog.find({ target: params.id, action: "participant.note" }).sort({ at: -1 }).limit(30).lean(),
       u.institutionId ? Institution.findById(u.institutionId).select("name contractEnd").lean() : null,
       Enrollment.findOne({ userId: u._id }).sort({ createdAt: -1 }).lean(),
@@ -46,7 +47,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? null : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId, placementRetakeAllowed: u.placementRetakeAllowed, qaTester: !!u.qaTester },
       enrollment: enr ? { status: enr.status, startsAt: enr.startsAt, expiresAt: enr.expiresAt ?? null } : null,
       quotas: quotas.map((q) => ({ level: lv.get(String(q.levelId)) ?? "-", used: q.used, total: q.total, active: q.active })),
-      attempts: attempts.map((a) => ({ id: String(a._id), kind: a.kind, scoreEst: a.scoreEst, sections: a.sectionScores, finishedAt: a.finishedAt, flags: a.proctorFlags.length })),
+      attempts: attempts.map((a) => ({ id: String(a._id), kind: a.kind, scoreEst: a.scoreEst, sections: a.sectionScores, finishedAt: a.finishedAt, flags: a.proctorFlags.length, held: !!a.heldByOrg && !a.releasedAt })),
       notes: notes.map((n) => ({ text: (n.meta as { text?: string })?.text ?? "", at: n.at })),
     });
   } catch (e) {
@@ -65,6 +66,7 @@ const actions = z.discriminatedUnion("action", [
   z.object({ action: z.literal("temp_password") }),
   z.object({ action: z.literal("disable") }),
   z.object({ action: z.literal("enable") }),
+  z.object({ action: z.literal("release_results") }),
   z.object({ action: z.literal("qa_on") }),
   z.object({ action: z.literal("qa_off") }),
   z.object({ action: z.literal("extend_enrollment"), days: z.number().int().min(1).max(730), reason: z.string().trim().min(3).max(300) }),
@@ -92,6 +94,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         if (u.status !== "invited") throw new HttpError(409, "The participant is already active");
         u.status = "active"; u.consentAt ??= new Date(); await u.save();
         await audit(admin._id, "participant.activate", params.id, { reason: b.reason }); break;
+      case "release_results": { const n = await releaseOrgHeld({ userId: u._id }); await audit(admin._id, "participant.release_results", params.id, { released: n }); break; }
       case "erase": await eraseUserData(u._id, admin._id, b.reason); break;
       case "update_profile": await updateAccountIdentity(u._id, { givenName: b.givenName, surname: b.surname, email: b.email, phone: b.phone }, admin._id); break;
       case "reset_link": return NextResponse.json({ ok: true, ...(await sendResetLink(u._id, process.env.APP_URL ?? new URL(req.url).origin, admin._id)) });

@@ -4,7 +4,8 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { canStartTest, visibleTestFilter } from "@/lib/test-access";
 import { cycleState, placementNeeded } from "@/lib/cycles";
-import { releaseAtFor, exemptFromDelay, pendingEffectsFilter } from "@/lib/attempt-release";
+import { releaseAtFor, exemptFromDelay, pendingEffectsFilter, HOLD_UNTIL } from "@/lib/attempt-release";
+import { Institution } from "@/models/Institution";
 import { Test, Attempt } from "@/models/Test";
 import { seatsFor } from "@/lib/schedule-db";
 import { scheduleGate } from "@/lib/schedule";
@@ -38,7 +39,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     if (!gate.ok) throw new HttpError(403, gate.reason ?? "This test cannot be taken yet");
 
     const now = new Date();
-    const attempt = await Attempt.create({ userId: user._id, institutionId: user.institutionId, testId: test._id, kind: test.kind, programCycleId: cs.active?._id, startedAt: now, sectionStartedAt: now, releaseAt: releaseAtFor(test, user, now) });
+    const orgHold = test.kind === "placement" && !exemptFromDelay(user) && !!user.institutionId && !!(await Institution.exists({ _id: user.institutionId, holdPlacementResults: true }));
+    const attempt = await Attempt.create({ userId: user._id, institutionId: user.institutionId, testId: test._id, kind: test.kind, programCycleId: cs.active?._id, startedAt: now, sectionStartedAt: now, releaseAt: orgHold ? HOLD_UNTIL : releaseAtFor(test, user, now), ...(orgHold ? { heldByOrg: true } : {}) });
     return NextResponse.json({ attemptId: String(attempt._id) }, { status: 201 });
   } catch (e) {
     return handleError(e);

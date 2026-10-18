@@ -27,7 +27,7 @@ export default function HasilList() {
                 </Link>
                 <div className="flex items-center gap-3">
                   {a.availableAt
-                    ? <Link href={`/results/${a.id}`} className="text-right"><p className="text-sm font-semibold text-navy">Result pending</p><p className="text-xs text-ink-soft">available {tgl(a.availableAt, true)}</p></Link>
+                    ? <Link href={`/results/${a.id}`} className="text-right"><p className="text-sm font-semibold text-navy">Result pending</p><p className="text-xs text-ink-soft">{new Date(a.availableAt).getUTCFullYear() >= 9000 ? "announced by the organizer" : `available ${tgl(a.availableAt, true)}`}</p></Link>
                     : <><Link href={`/results/${a.id}`} className="text-right">{a.percent != null ? <><p className="font-display text-2xl font-extrabold text-navy">{a.percent}%</p><p className="text-xs text-ink-soft">{a.kind === "section" ? "section test" : "unit quiz"}</p></> : <><p className="font-display text-2xl font-extrabold text-navy">{a.scoreEst}</p><p className="text-xs text-ink-soft">L {a.sections.listening ?? "-"} · S {a.sections.structure ?? "-"} · R {a.sections.reading ?? "-"}</p></>}</Link>
                       <a href={`/api/attempts/${a.id}/pdf`} download className="btn-outline !min-h-[40px] !px-3 text-sm" aria-label={`Export ${a.name} as PDF`}>PDF</a></>}
                 </div>

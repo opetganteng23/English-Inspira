@@ -56,6 +56,14 @@ export default function Hasil({ params }: { params: { id: string } }) {
     try { await api(`/api/attempts/${params.id}/analysis`, { json: {} }); setR((x) => x && { ...x, analysis: { status: "pending" } }); setTimeout(() => location.reload(), 4000); } catch (e) { setErr((e as Error).message); }
   }
 
+  if (releaseAt && !r && releaseAt.getUTCFullYear() >= 9000) return (
+    <div className="mx-auto flex max-w-xl flex-col gap-4 py-10 text-center">
+      <p className="text-xs font-semibold tracking-wider text-brand">TEST SUBMITTED</p>
+      <h1 className="page-title">Your test has been received</h1>
+      <p className="text-ink-soft">Your answers have been saved. Results will be announced by the program organizer. You will be notified when they are available.</p>
+      <div className="flex justify-center gap-2"><Link href="/home" className="btn-outline">Back to Home</Link></div>
+    </div>
+  );
   if (releaseAt && !r) {
     const mins = Math.max(0, Math.ceil((+releaseAt - Date.now()) / 60000));
     return (

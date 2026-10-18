@@ -41,7 +41,7 @@ export async function buildInstSummary(inst: { _id: Types.ObjectId; name: string
     if (m.status === "invited" && now - +m.createdAt > 7 * 86_400_000) attention.push({ id: String(m._id), name, reason: "Has not activated the account (>7 days since invitation)", score: null });
     else if (m.status === "active" && !m.placementAttemptId && now - +(m.lastLoginAt ?? m.createdAt) > 7 * 86_400_000) attention.push({ id: String(m._id), name, reason: "Has not taken the placement test", score: null });
     else if (m.status === "active" && m.lastLoginAt && now - +m.lastLoginAt > 14 * 86_400_000) attention.push({ id: String(m._id), name, reason: "Inactive for 14 days", score: m.currentScoreEst ?? null });
-    else if (list.length > 1 && (last.scoreEst ?? 0) < (list[list.length - 2].scoreEst ?? 0)) attention.push({ id: String(m._id), name, reason: "Score dropped from the previous test", score: last.scoreEst ?? null });
+    else if (list.length > 1 && last.scoreEst != null && (last.scoreEst ?? 0) < (list[list.length - 2].scoreEst ?? 0)) attention.push({ id: String(m._id), name, reason: "Score dropped from the previous test", score: last.scoreEst ?? null });
   }
   const avg = (a: number[]) => (a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null);
   const aL = avg(lastScores), aF = avg(firstScores);

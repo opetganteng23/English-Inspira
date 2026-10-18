@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { releasedFilter, fmtRelease, pendingEffectsFilter } from "@/lib/attempt-release";
+import { releasedFilter, fmtRelease, pendingEffectsFilter, isOrgHold } from "@/lib/attempt-release";
 import { LEARNING_TOPIC_FILTER } from "@/lib/topics";
 import { cycleState, placementNeeded } from "@/lib/cycles";
 import { connectDB } from "@/lib/db";
@@ -52,6 +52,7 @@ export async function GET() {
     // Langkah berikutnya mengikuti kondisi nyata akun (urutan prioritas).
     let step: { title: string; body: string; cta: string; href: string } | null = null;
     if (inProgress) step = { title: "Continue your test", body: "You have a test in progress. Its time keeps running on the server.", cta: "Continue", href: `/test-room/${inProgress._id}` };
+    else if (held && isOrgHold(held.releaseAt)) step = { title: "Test submitted", body: "Your test has been received. Results will be announced by the program organizer.", cta: "View status", href: `/results/${held._id}` };
     else if (held) step = { title: held.releaseAt! > new Date() ? "Your result is being prepared" : "Your result is ready", body: held.releaseAt! > new Date() ? `Results are released at ${fmtRelease(held.releaseAt!)}. Come back then to see your score, level, and analysis.` : "Your result is ready. Open it to see your score, level, and analysis.", cta: "View status", href: `/results/${held._id}` };
     else if (cs.blockedReason) step = { title: "Program period closed", body: cs.blockedReason, cta: "Open learning", href: "/learn" };
     else if (needPlace && placeGate && !placeGate.visible) step = { title: "Your placement test is not scheduled yet", body: "Your placement test is taken in a scheduled session. You will receive an email with the date and time.", cta: "Open learning", href: "/learn" };
