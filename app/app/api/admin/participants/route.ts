@@ -45,6 +45,8 @@ export async function GET(req: Request) {
       User.countDocuments(filter), getLevels(), Institution.find().select("name").lean(),
     ]);
     const ids = users.map((u) => u._id);
+    // Hasil placement yang belum dirilis ke peserta (jeda rilis atau ditahan institusi): admin tetap melihat skornya.
+    const pending = new Map((await Attempt.find({ userId: { $in: ids }, kind: "placement", status: "submitted", releasedAt: { $exists: false }, releaseAt: { $exists: true } }).sort({ finishedAt: -1 }).select("userId scoreEst releaseAt heldByOrg").lean()).reverse().map((a) => [String(a.userId), a]));
     const [quotas, lastAt] = await Promise.all([
       CoachingQuota.find({ userId: { $in: ids }, active: true }).lean(),
       Attempt.aggregate([{ $match: { userId: { $in: ids }, status: "submitted" } }, { $group: { _id: "$userId", at: { $max: "$finishedAt" }, n: { $sum: 1 } } }]),
@@ -57,7 +59,8 @@ export async function GET(req: Request) {
       participants: users.map((u) => {
         const qt = quotas.find((x) => String(x.userId) === String(u._id)), la = lastAt.find((x) => String(x._id) === String(u._id));
         return { id: String(u._id), name: u.name ?? null, email: u.email, status: u.status, institution: u.institutionId ? inst.get(String(u.institutionId)) ?? "-" : null,
-          level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? "-" : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId, qaTester: !!u.qaTester,
+          level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? "-" : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId || pending.has(String(u._id)),
+          pending: pending.has(String(u._id)) ? { score: pending.get(String(u._id))!.scoreEst ?? null, level: (() => { const sc = pending.get(String(u._id))!.scoreEst; const l = typeof sc === "number" ? levels.find((x) => sc >= x.scoreMin && sc <= x.scoreMax) : null; return l?.name ?? null; })(), held: !!pending.get(String(u._id))!.heldByOrg, releaseAt: pending.get(String(u._id))!.releaseAt } : null, qaTester: !!u.qaTester,
           quota: qt ? { used: qt.used, total: qt.total } : null, tests: la?.n ?? 0, lastAt: la?.at ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt };
       }),
     });

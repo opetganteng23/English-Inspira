@@ -9,7 +9,7 @@ import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { EditAccountDialog, ResetPasswordDialog, DeleteAccountDialog } from "@/components/AccountDialogs";
 
-type Row = { id: string; name: string | null; email: string; status: string; institution: string | null; level: string | null; scoreEst: number | null; placementDone: boolean; qaTester?: boolean; quota: { used: number; total: number } | null; tests: number; lastAt: string | null; lastLoginAt: string | null; createdAt?: string };
+type Row = { id: string; name: string | null; email: string; status: string; institution: string | null; level: string | null; scoreEst: number | null; placementDone: boolean; qaTester?: boolean; quota: { used: number; total: number } | null; tests: number; lastAt: string | null; lastLoginAt: string | null; createdAt?: string; pending?: { score: number | null; level: string | null; held: boolean; releaseAt: string } | null };
 type Detail = {
   profile: { id: string; name?: string; givenName?: string; surname?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean; qaTester?: boolean };
   enrollment: { status: string; startsAt: string; expiresAt: string | null } | null;
@@ -108,7 +108,7 @@ export default function Peserta() {
               <tr key={p.id}>
                 <td className="font-semibold text-navy"><span className="mr-2 text-xs font-normal text-ink-soft">{(page - 1) * size + i + 1}.</span>{p.name ?? "(no name yet)"}{p.qaTester && <span className="ml-2 rounded-full bg-accent-tint px-2 py-0.5 text-xs font-semibold text-accent-dark">QA</span>}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.institution && !inst ? ` · ${p.institution}` : ""}</span></td>
                 <td><span className={STATUS[p.status]?.[1] ?? "badge-muted"}>{STATUS[p.status]?.[0] ?? p.status}</span></td>
-                <td>{p.level ?? (p.placementDone ? "-" : "No placement yet")}</td><td>{p.scoreEst ?? "-"}</td><td>{p.quota ? `${p.quota.used}/${p.quota.total}` : "-"}</td><td>{p.tests}</td>
+                <td>{p.level ?? p.pending?.level ?? (p.placementDone ? "-" : "No placement yet")}{!p.level && p.pending && <span className="block text-[11px] text-accent-dark" title="The participant cannot see this result yet">{p.pending.held ? "held (not released)" : `releases ${new Date(p.pending.releaseAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`}</span>}</td><td>{p.scoreEst ?? p.pending?.score ?? "-"}</td><td>{p.quota ? `${p.quota.used}/${p.quota.total}` : "-"}</td><td>{p.tests}</td>
                 <td className="text-xs text-ink-soft">{p.createdAt ? tgl(p.createdAt) : "-"}</td>
                 <td className="text-right"><button className="font-semibold text-brand" onClick={() => setSel(p.id)}>Detail</button></td>
               </tr>
