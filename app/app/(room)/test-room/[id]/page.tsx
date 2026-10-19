@@ -1,5 +1,6 @@
 "use client";
 
+import { enterFullscreen, isFullscreen, onFullscreenChange } from "@/lib/fullscreen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
@@ -157,10 +158,10 @@ export default function Ruang({ params }: { params: { id: string } }) {
   useEffect(() => {
     const add = (k: string) => { pendingFlags.current.push(k); clearTimeout(timer.current); timer.current = setTimeout(flush, 500); };
     const vis = () => document.hidden && add("tab_hidden");
-    const fs = () => !document.fullscreenElement && add("fullscreen_exit");
+    const fs = () => !isFullscreen() && add("fullscreen_exit");
     const paste = () => add("paste");
-    document.addEventListener("visibilitychange", vis); document.addEventListener("fullscreenchange", fs); document.addEventListener("paste", paste);
-    return () => { document.removeEventListener("visibilitychange", vis); document.removeEventListener("fullscreenchange", fs); document.removeEventListener("paste", paste); };
+    document.addEventListener("visibilitychange", vis); const offFs = onFullscreenChange(fs); document.addEventListener("paste", paste);
+    return () => { document.removeEventListener("visibilitychange", vis); offFs(); document.removeEventListener("paste", paste); };
   }, [flush]);
 
   async function next(auto = false) {
@@ -219,7 +220,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
         <div className="flex items-center gap-3 text-sm">
           <span className={`hidden sm:inline ${saved === "fail" ? "text-orange-300" : "text-mist"}`}>{saved === "saving" ? "Saving…" : saved === "fail" ? "Save failed, retrying" : "Saved automatically"}</span>
           <span className={`rounded-lg px-3 py-1.5 font-display text-lg font-extrabold ${left < 60 ? "bg-accent" : "bg-navy-700"}`} role="timer" aria-label="Section time remaining">{mmss(left)}</span>
-          <button className="hidden rounded-lg border border-white/40 px-3 py-1.5 text-xs md:block" onClick={() => document.documentElement.requestFullscreen?.()}>Fullscreen</button>
+          <button className="hidden rounded-lg border border-white/40 px-3 py-1.5 text-xs md:block" onClick={() => enterFullscreen()}>Fullscreen</button>
         </div>
         {saved === "fail" && <p className="basis-full text-xs text-orange-300 sm:hidden">Save failed, retrying…</p>}
       </header>

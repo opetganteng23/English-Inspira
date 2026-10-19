@@ -1,5 +1,6 @@
 "use client";
 
+import { enterFullscreen } from "@/lib/fullscreen";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,7 +34,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
     setBusy(true); setErr("");
     try {
       const d = await api(`/api/tests/${params.id}/start`, { json: {} });
-      try { await document.documentElement.requestFullscreen?.(); } catch { /* layar penuh opsional */ }
+      await enterFullscreen();
       router.push(`/test-room/${d.attemptId}`);
     } catch (e) { setErr((e as Error).message); setBusy(false); }
   }

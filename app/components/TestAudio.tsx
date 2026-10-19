@@ -17,6 +17,9 @@ export function GroupAudio({ kind, attemptId, group }: { kind?: string; attemptI
 }
 
 /** Mode tes: sekali putar, tanpa seek/jeda. Progres dilaporkan agar refresh melanjutkan, bukan mengulang. */
+// Klip WAV senyap sangat pendek, dipakai membuka izin pemutaran di Safari/iOS.
+const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+
 function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: string; audioId: string; finished: boolean; instruction?: string }) {
   const el = useRef<HTMLAudioElement>(null);
   const [phase, setPhase] = useState<"idle" | "playing" | "done" | "error">(finished ? "done" : "idle");
@@ -26,9 +29,12 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
 
   async function start() {
     setMsg("");
+    const a = el.current!;
+    // Safari hanya mengizinkan putar langsung dari klik: buka izin dengan klip senyap sebelum menunggu server.
+    try { a.src = SILENT; void a.play().catch(() => {}); } catch { /* */ }
     try {
       const d = await api(base, { json: {} });
-      const a = el.current!; a.src = d.url; a.currentTime = d.startAtSec || 0;
+      a.pause(); a.src = d.url; a.currentTime = d.startAtSec || 0;
       await a.play(); setPhase("playing");
     } catch (e) {
       const status = (e as { status?: number }).status;
@@ -51,9 +57,9 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
     <div className="card">
       <p className="text-sm font-semibold text-navy">{instruction ?? "Listen to the audio"}</p>
       <audio ref={el} preload="auto" controlsList="nodownload noplaybackrate"
-        onEnded={() => { setPhase("done"); api(base, { method: "PATCH", json: { posSec: el.current?.duration ?? lastPos.current, done: true } }).catch(() => {}); }}
+        onEnded={() => { if (el.current?.src.startsWith("data:")) return; /* klip senyap pembuka izin, bukan audio tes */ setPhase("done"); api(base, { method: "PATCH", json: { posSec: el.current?.duration ?? lastPos.current, done: true } }).catch(() => {}); }}
         onSeeking={() => { const a = el.current; if (a && a.currentTime > lastPos.current + 1) a.currentTime = lastPos.current; }}
-        onError={() => { if (phase === "playing") { setPhase("error"); setMsg("Audio failed to load. Click “Reload audio”; this does not count as replaying."); } }} />
+        onError={() => { if (el.current?.src.startsWith("data:")) return; if (phase === "playing") { setPhase("error"); setMsg("Audio failed to load. Click “Reload audio”; this does not count as replaying."); } }} />
       {phase === "idle" && <button onClick={start} className="btn-solid mt-3">Start audio (once only)</button>}
       {phase === "playing" && <p className="mt-3 text-sm text-success" role="status">Audio is playing. It cannot be paused or replayed.</p>}
       {phase === "done" && <p className="mt-3 text-sm text-ink-soft">Audio has been played.</p>}
