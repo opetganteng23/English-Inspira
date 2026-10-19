@@ -7,6 +7,8 @@ const csp = ["frame-ancestors 'none'", "object-src 'none'", "base-uri 'self'"].j
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Deploy membangun ke folder terpisah (NEXT_DIST_DIR=.next-build) lalu menukarnya, agar server yang berjalan tidak terganggu.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // Paket server-only yang tidak boleh di-bundle webpack.
   experimental: {
     // Wajib di Next 14 agar instrumentation.ts (penjadwal dalam-proses untuk PM2) dijalankan.

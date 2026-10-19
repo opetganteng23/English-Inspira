@@ -34,3 +34,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# build sementara saat deploy
+.next-build/
+.next-old/
+.next-failed/

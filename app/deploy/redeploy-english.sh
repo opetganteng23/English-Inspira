@@ -27,11 +27,22 @@ cd app
 if [ "$PREV" = "$NEW" ] && [ -d .next ] && [ "${FORCE:-0}" != "1" ]; then
   echo "==> Tidak ada perubahan ($NEW). Pakai FORCE=1 untuk build ulang. Restart saja."
 else
-  echo "==> npm ci"
-  npm ci --no-audit --no-fund
-  echo "==> next build"
+  # Dependensi hanya dipasang ulang bila package-lock berubah (npm ci menghapus node_modules yang sedang dipakai server).
+  if ! git diff --quiet "$PREV" "$NEW" -- package-lock.json || [ ! -d node_modules ]; then
+    echo "==> npm ci (package-lock berubah; server bisa terganggu sebentar)"
+    npm ci --no-audit --no-fund
+  else
+    echo "==> npm ci dilewati (package-lock tidak berubah)"
+  fi
+  echo "==> next build (ke .next-build; server yang berjalan tetap memakai .next)"
+  rm -rf .next-build
   # Server dipakai banyak aplikasi: batasi memori build dan turunkan prioritasnya.
-  NODE_OPTIONS=--max-old-space-size=1536 nice -n 10 npm run build
+  NEXT_DIST_DIR=.next-build NODE_OPTIONS=--max-old-space-size=1536 nice -n 10 npm run build
+  echo "==> tukar build"
+  rm -rf .next-old
+  [ -d .next ] && mv .next .next-old
+  mv .next-build .next
+  SWAPPED=1
 fi
 
 echo "==> pm2 restart"
@@ -48,6 +59,12 @@ for i in $(seq 1 20); do
   if curl -fsS "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1; then echo "OK: aplikasi sehat di port $PORT (versi $NEW, sebelumnya $PREV)"; exit 0; fi
   sleep 2
 done
+if [ "${SWAPPED:-0}" = "1" ] && [ -d .next-old ]; then
+  echo "GAGAL: kembali ke build sebelumnya ($PREV)"
+  rm -rf .next-failed; mv .next .next-failed; mv .next-old .next
+  git -C "$APP_DIR" reset --hard --quiet "$PREV"
+  pm2 restart "$PM2_NAME" --update-env
+fi
 echo "GAGAL: /api/health tidak merespons. Lihat: pm2 logs $PM2_NAME --lines 80"
 echo "Rollback manual: cd $APP_DIR && git reset --hard $PREV && cd app && npm ci && npm run build && pm2 restart $PM2_NAME"
 exit 1
