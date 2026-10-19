@@ -26,13 +26,13 @@ const DAY = (d: Date) => new Date(d).toLocaleDateString("en-GB", { weekday: "sho
  * Hasil satu tes untuk admin: semua peserta yang dijadwalkan (dan yang mengerjakan tanpa jadwal), satu baris per orang.
  * Skor, bagian, CEFR, level, waktu, catatan proctoring, plus rekap per tanggal dan per level.
  */
-export async function buildTestExport(testId: string, now = new Date()) {
+export async function buildTestExport(testId: string, now = new Date(), sessionId?: string) {
   await connectDB();
   const test = await Test.findById(testId).lean();
   if (!test) return null;
   const [sessions, seats, attempts, levels] = await Promise.all([
-    TestSession.find({ testId }).sort({ opensAt: 1 }).lean(),
-    TestSeat.find({ testId }).lean(),
+    TestSession.find({ testId, ...(sessionId ? { _id: sessionId } : {}) }).sort({ opensAt: 1 }).lean(),
+    TestSeat.find({ testId, ...(sessionId ? { sessionId } : {}) }).lean(),
     Attempt.find({ testId }).sort({ startedAt: 1 }).lean(),
     getLevels(),
   ]);
@@ -43,7 +43,9 @@ export async function buildTestExport(testId: string, now = new Date()) {
     const k = String(a.userId), cur = latest.get(k);
     if (!cur || a.status === "submitted" || cur.status !== "submitted") latest.set(k, a);
   }
-  const userIds = [...new Set([...seats.map((s) => String(s.userId)), ...latest.keys()])];
+  if (sessionId && !sessions.length) return null;
+  // Ekspor satu sesi: hanya peserta sesi itu (percobaan orang lain tidak ikut).
+  const userIds = sessionId ? [...new Set(seats.map((s) => String(s.userId)))] : [...new Set([...seats.map((s) => String(s.userId)), ...latest.keys()])];
   const users = await User.find({ _id: { $in: userIds } }).select("name email institutionId qaTester role").lean();
   const insts = new Map((await Institution.find({ _id: { $in: users.map((u) => u.institutionId).filter((x): x is NonNullable<typeof x> => !!x) } }).select("name").lean()).map((i) => [String(i._id), i.name]));
   const seatBy = new Map(seats.map((s) => [String(s.userId), s]));
@@ -86,7 +88,7 @@ export async function buildTestExport(testId: string, now = new Date()) {
   const fin = rows.filter((r) => r.status === "Finished");
   const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => typeof x === "number"); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : "-"; };
   [
-    ["Test", test.name], ["Exported", WIB(now) + " WIB"], ["People in this report", rows.length],
+    ["Test", test.name], ...(sessionId ? [["Session", sessions[0].label]] : []), ["Exported", WIB(now) + " WIB"], ["People in this report", rows.length],
     ["Finished", fin.length], ["In progress", rows.filter((r) => r.status === "In progress").length],
     ["Not started (open now)", rows.filter((r) => r.status === "Not started (open now)").length],
     ["Not started (opens later)", rows.filter((r) => r.status === "Not started (opens later)").length],
@@ -137,5 +139,5 @@ export async function buildTestExport(testId: string, now = new Date()) {
   head(lv);
   lv.addConditionalFormatting({ ref: `D2:D${levels.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 0 }, { type: "num", value: 1 }], color: { argb: "FF0B4FA6" } } as never] });
 
-  return { name: test.name, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: rows.length };
+  return { name: sessionId ? `${test.name} - ${sessions[0].label}` : test.name, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: rows.length };
 }
