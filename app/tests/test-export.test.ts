@@ -27,3 +27,8 @@ describe("nomor halaman", () => {
   it("di tengah: 1 … 27 28 29 … 56", () => expect(pageList(28, 56)).toEqual([1, "…", 27, 28, 29, "…", 56]));
   it("di awal dan akhir", () => { expect(pageList(1, 56)).toEqual([1, 2, 3, 4, "…", 56]); expect(pageList(56, 56)).toEqual([1, "…", 53, 54, 55, 56]); });
 });
+
+import { attendanceOf } from "@/lib/test-export";
+describe("kehadiran", () => {
+  it("dari status", () => { expect(attendanceOf("Finished")).toBe("Present"); expect(attendanceOf("In progress")).toBe("Present"); expect(attendanceOf("Missed")).toBe("Absent"); expect(attendanceOf("Not started (opens later)")).toBe("Upcoming"); });
+});

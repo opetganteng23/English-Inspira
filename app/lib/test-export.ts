@@ -8,6 +8,11 @@ import { TestSession, TestSeat } from "@/models/Schedule";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
 
+/** Kehadiran dari status: hadir bila sudah mulai, tidak hadir bila sesi lewat tanpa mulai. */
+export function attendanceOf(s: ExportStatus) {
+  return s === "Finished" || s === "In progress" ? "Present" : s === "Missed" ? "Absent" : s === "Not started (open now)" ? "Open now" : s === "Not started (opens later)" ? "Upcoming" : "-";
+}
+
 export type ExportStatus = "Finished" | "In progress" | "Not started (open now)" | "Not started (opens later)" | "Missed" | "Not scheduled";
 
 /** Status satu peserta untuk satu tes, dari percobaan terakhir dan jendela jadwalnya. Murni (mudah diuji). */
@@ -46,7 +51,7 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   if (sessionId && !sessions.length) return null;
   // Ekspor satu sesi: hanya peserta sesi itu (percobaan orang lain tidak ikut).
   const userIds = sessionId ? [...new Set(seats.map((s) => String(s.userId)))] : [...new Set([...seats.map((s) => String(s.userId)), ...latest.keys()])];
-  const users = await User.find({ _id: { $in: userIds } }).select("name email institutionId qaTester role").lean();
+  const users = await User.find({ _id: { $in: userIds } }).select("name email institutionId qaTester role status lastLoginAt").lean();
   const insts = new Map((await Institution.find({ _id: { $in: users.map((u) => u.institutionId).filter((x): x is NonNullable<typeof x> => !!x) } }).select("name").lean()).map((i) => [String(i._id), i.name]));
   const seatBy = new Map(seats.map((s) => [String(s.userId), s]));
 
@@ -64,6 +69,10 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
       session: sess?.label ?? "", scheduledDay: win ? DAY(win.opensAt) : "", window: win ? `${WIB(win.opensAt)} - ${WIB(win.closesAt)}` : "",
       extended: seat?.override?.at ? `Yes: ${seat.override.reason ?? ""}` : "",
       status: rowStatus(a, win, now),
+      attendance: attendanceOf(rowStatus(a, win, now)),
+      account: u.status === "active" ? "Active" : u.status === "invited" ? "Awaiting activation" : u.status === "disabled" ? "Inactive" : String(u.status ?? ""),
+      invitedAt: seat?.invitedAt ? WIB(seat.invitedAt) : seat ? "Not sent" : "",
+      lastLogin: u.lastLoginAt ? WIB(u.lastLoginAt) : "Never",
       score: done ? a!.scoreEst! : null, cefr: done ? cefrForItp(a!.scoreEst!) : "", level: lvl,
       listening: done ? sec("listening") : null, structure: done ? sec("structure") : null, reading: done ? sec("reading") : null,
       answered: a ? (a.answers ?? []).filter((x) => x.choice != null).length : null,
@@ -89,6 +98,7 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   const avg = (xs: (number | null)[]) => { const v = xs.filter((x): x is number => typeof x === "number"); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : "-"; };
   [
     ["Test", test.name], ...(sessionId ? [["Session", sessions[0].label]] : []), ["Exported", WIB(now) + " WIB"], ["People in this report", rows.length],
+    ["Present (started)", rows.filter((r) => r.attendance === "Present").length], ["Absent (session closed, not started)", rows.filter((r) => r.attendance === "Absent").length], ["Invitations sent", rows.filter((r) => r.invitedAt && r.invitedAt !== "Not sent").length], ["Never signed in", rows.filter((r) => r.lastLogin === "Never").length],
     ["Finished", fin.length], ["In progress", rows.filter((r) => r.status === "In progress").length],
     ["Not started (open now)", rows.filter((r) => r.status === "Not started (open now)").length],
     ["Not started (opens later)", rows.filter((r) => r.status === "Not started (opens later)").length],
@@ -103,7 +113,7 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   res.columns = [
     { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 30 }, { header: "Email", key: "email", width: 34 }, { header: "Institution", key: "institution", width: 24 },
     { header: "Scheduled day", key: "scheduledDay", width: 18 }, { header: "Window (WIB)", key: "window", width: 36 }, { header: "Special schedule", key: "extended", width: 18 },
-    { header: "Status", key: "status", width: 22 }, { header: "Total score", key: "score", width: 11 }, { header: "CEFR", key: "cefr", width: 8 }, { header: "Level", key: "level", width: 14 },
+    { header: "Attendance", key: "attendance", width: 13 }, { header: "Status", key: "status", width: 22 }, { header: "Total score", key: "score", width: 11 }, { header: "CEFR", key: "cefr", width: 8 }, { header: "Level", key: "level", width: 14 },
     { header: "Listening", key: "listening", width: 10 }, { header: "Structure", key: "structure", width: 10 }, { header: "Reading", key: "reading", width: 10 },
     { header: "Answered", key: "answered", width: 10 }, { header: "Started (WIB)", key: "started", width: 20 }, { header: "Finished (WIB)", key: "finished", width: 20 }, { header: "Minutes", key: "minutes", width: 9 },
     { header: "Result release", key: "released", width: 22 }, { header: "Score basis", key: "basis", width: 12 },
@@ -114,19 +124,33 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   res.autoFilter = { from: "A1", to: { row: 1, column: res.columns.length } };
   const STC: Record<string, string> = { Finished: "FFE6F4EC", "In progress": "FFE6EEFA", Missed: "FFFBE3E3", "Not started (open now)": "FFFBF1DB" };
   res.eachRow((row, i) => { if (i > 1) { const c = row.getCell("status"); const col = STC[String(c.value)]; if (col) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col } }; } });
-  if (rows.length) res.addConditionalFormatting({ ref: `I2:I${rows.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 310 }, { type: "num", value: 677 }], color: { argb: "FF0B4FA6" } } as never] });
+  if (rows.length) res.addConditionalFormatting({ ref: `J2:J${rows.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 310 }, { type: "num", value: 677 }], color: { argb: "FF0B4FA6" } } as never] });
 
-  // ---- Rekap per tanggal
+  // ---- Kehadiran (tanpa skor: aman dibagikan ke institusi)
+  const att = wb.addWorksheet("Attendance");
+  att.columns = [
+    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 32 }, { header: "Email", key: "email", width: 34 }, { header: "Scheduled day", key: "scheduledDay", width: 18 },
+    { header: "Attendance", key: "attendance", width: 14 }, { header: "Detail", key: "status", width: 24 }, { header: "Started (WIB)", key: "started", width: 20 }, { header: "Finished (WIB)", key: "finished", width: 20 }, { header: "Minutes", key: "minutes", width: 9 },
+    { header: "Account", key: "account", width: 20 }, { header: "Invitation sent (WIB)", key: "invitedAt", width: 20 }, { header: "Last sign-in (WIB)", key: "lastLogin", width: 20 }, { header: "Special schedule", key: "extended", width: 18 },
+    { header: "Tab hidden", key: "tabHidden", width: 10 }, { header: "Fullscreen exit", key: "fullscreenExit", width: 12 }, { header: "QA account", key: "qa", width: 10 },
+  ];
+  rows.forEach((r, i) => att.addRow({ ...r, no: i + 1 }));
+  head(att);
+  att.autoFilter = { from: "A1", to: { row: 1, column: att.columns.length } };
+  const ATC: Record<string, string> = { Present: "FFE6F4EC", Absent: "FFFBE3E3", "Open now": "FFFBF1DB" };
+  att.eachRow((row, i) => { if (i > 1) { const c = row.getCell("attendance"); const col = ATC[String(c.value)]; if (col) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col } }; } });
+
+  // ---- Rekap per tanggal (kehadiran + hasil)
   const day = wb.addWorksheet("By day");
-  day.columns = [{ header: "Scheduled day", key: "d", width: 22 }, { header: "Scheduled", key: "n", width: 11 }, { header: "Finished", key: "f", width: 10 }, { header: "In progress", key: "p", width: 12 }, { header: "Not started", key: "w", width: 12 }, { header: "Missed", key: "m", width: 9 }, { header: "% finished", key: "pct", width: 11 }, { header: "Average score", key: "avg", width: 13 }];
+  day.columns = [{ header: "Scheduled day", key: "d", width: 22 }, { header: "Scheduled", key: "n", width: 11 }, { header: "Invited", key: "inv", width: 9 }, { header: "Present", key: "pr", width: 9 }, { header: "Finished", key: "f", width: 10 }, { header: "In progress", key: "p", width: 12 }, { header: "Not started", key: "w", width: 12 }, { header: "Absent (missed)", key: "m", width: 14 }, { header: "% finished", key: "pct", width: 11 }, { header: "Average score", key: "avg", width: 13 }, { header: "Never signed in", key: "nl", width: 15 }];
   const days = [...new Set(rows.map((r) => r.scheduledDay || "Not scheduled"))];
   for (const d of days) {
     const rs = rows.filter((r) => (r.scheduledDay || "Not scheduled") === d), f = rs.filter((r) => r.status === "Finished");
-    day.addRow({ d, n: rs.length, f: f.length, p: rs.filter((r) => r.status === "In progress").length, w: rs.filter((r) => r.status.startsWith("Not started")).length, m: rs.filter((r) => r.status === "Missed").length, pct: rs.length ? f.length / rs.length : 0, avg: avg(f.map((r) => r.score)) });
+    day.addRow({ d, n: rs.length, inv: rs.filter((r) => r.invitedAt && r.invitedAt !== "Not sent").length, pr: rs.filter((r) => r.attendance === "Present").length, nl: rs.filter((r) => r.lastLogin === "Never").length, f: f.length, p: rs.filter((r) => r.status === "In progress").length, w: rs.filter((r) => r.status.startsWith("Not started")).length, m: rs.filter((r) => r.status === "Missed").length, pct: rs.length ? f.length / rs.length : 0, avg: avg(f.map((r) => r.score)) });
   }
   day.getColumn("pct").numFmt = "0%";
   head(day);
-  if (days.length) day.addConditionalFormatting({ ref: `G2:G${days.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 0 }, { type: "num", value: 1 }], color: { argb: "FF1D6B3F" } } as never] });
+  if (days.length) day.addConditionalFormatting({ ref: `I2:I${days.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 0 }, { type: "num", value: 1 }], color: { argb: "FF1D6B3F" } } as never] });
 
   // ---- Rekap level dan CEFR (yang selesai)
   const lv = wb.addWorksheet("By level");
