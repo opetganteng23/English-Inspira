@@ -36,6 +36,7 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
   const [undo, setUndo] = useState<{ userId: string; from: string | null }[] | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [note, setNote] = useState("");
+  const [find, setFind] = useState("");
   const base = `/api/admin/tests/${params.id}/schedule`;
 
   const where = useMemo(() => { const m = new Map<string, string | null>(); data?.sessions.forEach((s) => s.seats.forEach((x) => m.set(x.userId, s.id))); return m; }, [data]);
@@ -87,6 +88,11 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
       </li>
     );
   }
+
+  // Cari orang di semua kartu sesi sekaligus.
+  const rxFind = find.trim().toLowerCase();
+  const hit = (x: { name: string | null; email: string }) => !rxFind || `${x.name ?? ""} ${x.email}`.toLowerCase().includes(rxFind);
+  const found = rxFind && data ? data.sessions.flatMap((s) => s.seats.filter(hit).map((x) => ({ ...x, session: s }))) : [];
 
   if (loading && !data) return <Loading />;
   if (!data) return <ErrorNote text={error} />;
@@ -153,6 +159,34 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
         </section>
       )}
 
+      <section className="card flex flex-col gap-3" aria-label="Find a participant">
+        <div className="flex flex-wrap items-center gap-2">
+          <input className="field min-w-[260px] flex-1 sm:max-w-md" type="search" placeholder="Find a participant in all sessions (name or email)" value={find} onChange={(e) => setFind(e.target.value)} aria-label="Find a participant" />
+          {rxFind && <span className="text-sm text-ink-soft">{found.length} found{found.length > 0 && " · cards below show only matches"}</span>}
+          {rxFind && <button className="text-sm font-semibold text-brand" onClick={() => setFind("")}>Clear</button>}
+        </div>
+        {rxFind && found.length > 0 && found.length <= 30 && (
+          <ul className="flex flex-col divide-y divide-line rounded-lg border border-line">
+            {found.map((x) => (
+              <li key={x.userId} className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
+                <span className="min-w-0 flex-1"><b className="text-navy">{x.name ?? x.email}</b><span className="block text-xs text-ink-soft">{x.email}</span></span>
+                <span className="text-xs text-ink-soft">in <b className="text-navy">{x.session.label}</b>{x.status === "done" ? " · done" : x.status === "running" ? " · running" : ""}</span>
+                {!readOnly && !x.status && (
+                  <select className="field !h-9 w-auto text-sm" aria-label={`Move ${x.name ?? x.email} to`} value="" disabled={busy}
+                    onChange={(e) => { const to = e.target.value; if (to) move([x.userId], to === "__pool" ? null : to); }}>
+                    <option value="">Move to…</option>
+                    {data.sessions.filter((s) => s.id !== x.session.id).map((s) => <option key={s.id} value={s.id}>{s.label} ({s.capacity - s.seats.length} free)</option>)}
+                    <option value="__pool">No session (remove)</option>
+                  </select>
+                )}
+                {!readOnly && !x.status && <button className="text-xs font-semibold text-brand" onClick={() => setExt({ userId: x.userId, name: x.name ?? x.email, opensAt: toInput(x.opensAt), closesAt: toInput(x.closesAt), reason: "" })}>Reschedule</button>}
+              </li>
+            ))}
+          </ul>
+        )}
+        {rxFind && found.length === 0 && <p className="text-sm text-ink-soft">Nobody in the sessions matches “{find}”.{!readOnly && " They may be in “No session yet”."}</p>}
+      </section>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.sessions.map((s) => {
           const pct = Math.min(100, Math.round((s.seats.length / s.capacity) * 100));
@@ -167,7 +201,8 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
                 <div className="h-2 rounded-full bg-canvas"><div className={`h-2 rounded-full ${pct >= 100 ? "bg-accent" : "bg-brand"}`} style={{ width: `${pct}%` }} /></div></div>
               <ul className="flex max-h-[420px] min-h-[64px] flex-col gap-1.5 overflow-y-auto rounded-lg border border-dashed border-line p-1.5">
                 {s.seats.length === 0 && <li className="p-3 text-center text-xs text-ink-soft">{readOnly ? "Nobody from your institution" : "Drop people here"}</li>}
-                {s.seats.map((x) => renderChip({ id: x.userId, name: x.name, email: x.email, institution: x.institution, seat: x }))}
+                {rxFind && s.seats.length > 0 && !s.seats.some(hit) && <li className="p-3 text-center text-xs text-ink-soft">No match in this session</li>}
+                {s.seats.filter(hit).map((x) => renderChip({ id: x.userId, name: x.name, email: x.email, institution: x.institution, seat: x }))}
               </ul>
             </section>
           );
