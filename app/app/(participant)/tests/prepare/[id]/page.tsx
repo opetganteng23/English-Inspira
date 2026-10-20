@@ -8,7 +8,7 @@ import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 
-type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null };
+type T = { id: string; name: string; kind: string; totalQuestions: number; totalSec: number; unlocked: boolean; reason: string | null; inProgressAttemptId: string | null; secure?: boolean };
 
 export default function Persiapan({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -56,6 +56,16 @@ export default function Persiapan({ params }: { params: { id: string } }) {
         </div>
       </section>
 
+      {t.secure && (
+        <section className="card border-accent bg-accent-tint">
+          <h2 className="font-display text-lg font-extrabold text-navy">Important: this test is one way</h2>
+          <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-5 text-sm text-navy">
+            <li>Questions appear one at a time. <b>You cannot go back</b> to a previous question or section.</li>
+            <li><b>Choose an answer before pressing Next.</b> If you press Next without an answer, that question is skipped and cannot be answered later. It is scored as wrong.</li>
+            <li>Only press <b>Finish section</b> when you are on the last question and have answered it.</li>
+          </ul>
+        </section>
+      )}
       <section className="card">
         <h2 className="font-display text-lg font-extrabold text-navy">Rules during the test</h2>
         <ul className="mt-2 flex flex-col gap-1.5 text-sm text-ink-soft">

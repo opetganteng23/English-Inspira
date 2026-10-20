@@ -21,6 +21,7 @@ const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${St
 export default function Ruang({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [st, setSt] = useState<State | null>(null);
+  const [noticeSeen, setNoticeSeen] = useState<Set<string>>(new Set()); // pemberitahuan mode satu arah per bagian sudah ditutup
   const [ack, setAck] = useState(false); // centang "saya mengerti soal kosong dinilai salah" sebelum menutup bagian
   const advancing = useRef(false);
   const [err, setErr] = useState("");
@@ -191,6 +192,9 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const finishLabel = last ? "Submit test" : "Finish section";
   const openConfirm = () => { setAck(false); setConfirm(true); };
   const secure = !!st.secure;
+  const noticeKey = `ei-oneway:${params.id}:${st.section.index}`;
+  const showNotice = secure && !noticeSeen.has(noticeKey) && (() => { try { return !sessionStorage.getItem(noticeKey); } catch { return true; } })();
+  const closeNotice = () => { try { sessionStorage.setItem(noticeKey, "1"); } catch { /* */ } setNoticeSeen((x) => new Set(x).add(noticeKey)); };
   // Pindah soal. Mode aman: hanya maju; soal yang dilewati terkunci, jawaban yang tertunda disimpan sekarang.
   const goTo = (i: number) => {
     if (i < 0 || i >= st.questions.length) return;
@@ -288,6 +292,21 @@ export default function Ruang({ params }: { params: { id: string } }) {
         {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => goTo(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => openConfirm()}>{finishLabel}</button>}
       </div>
 
+      {showNotice && !confirm && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div role="dialog" aria-modal="true" aria-label="One-way section" className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
+            <p className="text-xs font-semibold tracking-wider text-brand">SECTION {st.section.index + 1} OF {st.section.total} · {(LABEL[st.section.name] ?? st.section.name).toUpperCase()}</p>
+            <h3 className="mt-1 font-display text-xl font-extrabold text-navy">This section is one way</h3>
+            <ul className="mt-3 flex list-disc flex-col gap-1.5 pl-5 text-sm text-ink">
+              <li>You cannot go back to a previous question.</li>
+              <li><b>Choose an answer before pressing Next.</b> A question you skip cannot be answered later and is scored as wrong.</li>
+              <li>Press <b>Finish section</b> only on the last question, after answering it.</li>
+              {st.section.name === "listening" && <li>Each audio plays <b>once</b>. Answer while or right after it plays.</li>}
+            </ul>
+            <button className="btn-solid mt-5 w-full" onClick={closeNotice}>I understand, start</button>
+          </div>
+        </div>
+      )}
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
           <div role="dialog" aria-modal="true" aria-label="Confirm" className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">

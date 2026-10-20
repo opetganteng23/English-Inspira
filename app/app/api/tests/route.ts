@@ -31,7 +31,7 @@ export async function GET() {
         const gate = !base.ok ? base : sched.ok ? base : { ok: false, reason: sched.reason };
         return {
           id: String(t._id), name: t.name, kind: t.kind, testMode: !!t.testMode,
-          totalQuestions: t.sections.reduce((n, s) => n + s.questionIds.length, 0),
+          totalQuestions: t.sections.reduce((n, s) => n + s.questionIds.length, 0), secure: !!t.secureMode,
           totalSec: t.sections.reduce((n, s) => n + s.durationSec, 0),
           unlocked: gate.ok, reason: gate.reason ?? null,
           schedule: t.scheduled && sched.window ? { state: sched.state, label: sched.label ?? null, opensAt: sched.window.opensAt, closesAt: sched.window.closesAt, text: fmtWindow(sched.window) } : null,
