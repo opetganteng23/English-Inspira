@@ -17,6 +17,7 @@ type Detail = {
   quotas: { level: string; used: number; total: number; active: boolean }[];
   attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number; held?: boolean; voidable?: boolean }[];
   notes: { text: string; at: string }[];
+  voided?: { id: string; test: string; score: number | null; status: string; finishedAt: string | null; voidedAt: string; reason: string }[];
 };
 const STATUS: Record<string, [string, string]> = { invited: ["Awaiting activation", "badge-warn"], active: ["Active", "badge-ok"], disabled: ["Inactive", "badge-muted"] };
 
@@ -157,6 +158,18 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
           <section><h3 className="font-semibold text-navy">Test history</h3>
             {d.attempts.length ? <ul className="mt-1">{d.attempts.map((a) => <li key={a.id} className="flex justify-between gap-3 border-b border-line py-1.5"><span>{a.kind} · {tgl(a.finishedAt)}{a.flags ? ` · ${a.flags} activity notes` : ""}{a.held ? " · held (not visible to participant)" : ""}</span><span className="flex items-center gap-3"><b>{a.scoreEst}</b>{a.voidable && <button className="text-xs font-semibold text-red-700" onClick={() => setVoidFor({ id: a.id, label: `${a.kind} · ${tgl(a.finishedAt)} · score ${a.scoreEst ?? "-"}` })}>Void</button>}</span></li>)}</ul> : <p className="text-ink-soft">None yet.</p>}
+            {!!d.voided?.length && (
+              <div className="mt-3 rounded-lg border border-line p-3">
+                <p className="font-semibold text-navy">Voided attempts</p>
+                <p className="text-xs text-ink-soft">Restore puts the original attempt back (answers, score, release status). Not possible while the participant has a newer attempt on the same test.</p>
+                <ul className="mt-2 flex flex-col divide-y divide-line">{d.voided.map((v) => (
+                  <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                    <span><b className="text-navy">{v.test}</b> · score {v.score ?? "-"}{v.finishedAt ? ` · ${tgl(v.finishedAt)}` : ""}<span className="block text-xs text-ink-soft">Voided {tgl(v.voidedAt, true)}: {v.reason}</span></span>
+                    <button className="btn-outline !min-h-[36px] text-sm" onClick={async () => { const reason = window.prompt("Reason for restoring (kept in the audit log):", "Participant does not need to retake"); if (!reason || reason.trim().length < 5) return; if (await askConfirm(`Restore this attempt (score ${v.score ?? "-"})?`, { confirmLabel: "Restore" })) run({ action: "restore_attempt", voidId: v.id, reason }, "Attempt restored."); }}>Restore</button>
+                  </li>
+                ))}</ul>
+              </div>
+            )}
             {voidFor && (
               <div className="mt-3 flex flex-col gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
                 <p className="font-semibold text-red-800">Void this attempt: {voidFor.label}</p>

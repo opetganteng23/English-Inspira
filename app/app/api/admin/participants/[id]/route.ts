@@ -11,13 +11,13 @@ import { eraseUserData } from "@/lib/erase";
 import { splitName } from "@/lib/person-name";
 import { sendResetLink, setTemporaryPassword, updateAccountIdentity } from "@/lib/account-admin";
 import { User } from "@/models/User";
-import { Attempt } from "@/models/Test";
+import { Attempt, Test } from "@/models/Test";
 import { AuditLog } from "@/models/AuditLog";
 import { Institution } from "@/models/Institution";
 import { Enrollment } from "@/models/Access";
 import { CoachingQuota } from "@/models/Config";
 import { releaseOrgHeld } from "@/lib/attempt-release";
-import { voidAttempt, isVoidable } from "@/lib/attempt-void";
+import { voidAttempt, isVoidable, restoreAttempt, VoidedAttempt } from "@/lib/attempt-void";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +48,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? null : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId, placementRetakeAllowed: u.placementRetakeAllowed, qaTester: !!u.qaTester },
       enrollment: enr ? { status: enr.status, startsAt: enr.startsAt, expiresAt: enr.expiresAt ?? null } : null,
       quotas: quotas.map((q) => ({ level: lv.get(String(q.levelId)) ?? "-", used: q.used, total: q.total, active: q.active })),
+      voided: await (async () => { const vs = await VoidedAttempt.find({ userId: u._id, restoredAt: { $exists: false } }).sort({ at: -1 }).lean(); const names = new Map((await Test.find({ _id: { $in: vs.map((x) => x.testId) } }).select("name").lean()).map((t) => [String(t._id), t.name])); return vs.map((x) => { const a = x.attempt as { scoreEst?: number; finishedAt?: Date; status?: string }; return { id: String(x._id), test: names.get(String(x.testId)) ?? "-", score: a.scoreEst ?? null, status: a.status ?? "", finishedAt: a.finishedAt ?? null, voidedAt: x.at, reason: x.reason }; }); })(),
       attempts: attempts.map((a) => ({ id: String(a._id), kind: a.kind, scoreEst: a.scoreEst, sections: a.sectionScores, finishedAt: a.finishedAt, flags: a.proctorFlags.length, held: !!a.heldByOrg && !a.releasedAt, voidable: isVoidable(a) })),
       notes: notes.map((n) => ({ text: (n.meta as { text?: string })?.text ?? "", at: n.at })),
     });
@@ -68,6 +69,7 @@ const actions = z.discriminatedUnion("action", [
   z.object({ action: z.literal("disable") }),
   z.object({ action: z.literal("enable") }),
   z.object({ action: z.literal("release_results") }),
+  z.object({ action: z.literal("restore_attempt"), voidId: z.string().regex(/^[0-9a-f]{24}$/), reason: z.string().trim().min(5, "Enter a reason (at least 5 characters)").max(300) }),
   z.object({ action: z.literal("void_attempt"), attemptId: z.string().regex(/^[0-9a-f]{24}$/), reason: z.string().trim().min(5, "Enter a reason (at least 5 characters)").max(300) }),
   z.object({ action: z.literal("qa_on") }),
   z.object({ action: z.literal("qa_off") }),
@@ -96,6 +98,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         if (u.status !== "invited") throw new HttpError(409, "The participant is already active");
         u.status = "active"; u.consentAt ??= new Date(); await u.save();
         await audit(admin._id, "participant.activate", params.id, { reason: b.reason }); break;
+      case "restore_attempt": { const r = await restoreAttempt(b.voidId, String(u._id), admin._id, b.reason); return NextResponse.json({ ok: true, ...r }); }
       case "void_attempt": { const r = await voidAttempt(b.attemptId, String(u._id), admin._id, b.reason); return NextResponse.json({ ok: true, ...r }); }
       case "release_results": { const n = await releaseOrgHeld({ userId: u._id }); await audit(admin._id, "participant.release_results", params.id, { released: n }); break; }
       case "erase": await eraseUserData(u._id, admin._id, b.reason); break;
