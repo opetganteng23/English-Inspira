@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    const { scoped } = await instContext(req);
+    const { scoped, full } = await instContext(req);
     const sp = new URL(req.url).searchParams;
     const q = sp.get("q")?.trim();
     const size = 50, page = Math.max(1, Math.floor(Number(sp.get("page")) || 1));
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       User.find(scoped(extra)).sort({ name: 1, _id: 1 }).skip((page - 1) * size).limit(size).select("name email targetScore createdAt status currentScoreEst").lean(),
       User.countDocuments(scoped(extra)),
     ]);
-    const results = await memberResults(members.map((m) => m._id));
+    const results = await memberResults(members.map((m) => m._id), full);
     return NextResponse.json({
       total, page, pages: Math.max(1, Math.ceil(total / size)),
       participants: members.map((m) => {

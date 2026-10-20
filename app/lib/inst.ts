@@ -23,14 +23,15 @@ export async function instContext(req: Request) {
   if (!inst) throw new HttpError(404, "Institution not found");
   const scoped = (filter: Record<string, unknown> = {}) =>
     user.role === "inst_admin" ? scopeByInstitution(user, { role: "participant", ...filter } as never) : { role: "participant", institutionId: inst._id, ...filter };
-  return { user, inst, scoped: scoped as (f?: Record<string, unknown>) => Record<string, unknown> };
+  // Admin pusat melihat semua hasil (Hold tidak berlaku); admin institusi hanya hasil yang sudah dirilis.
+  return { user, inst, full: user.role === "admin", scoped: scoped as (f?: Record<string, unknown>) => Record<string, unknown> };
 }
 
 /** Ringkasan hasil per peserta institusi: skor awal, skor terakhir, jumlah tes, aktivitas terakhir. */
-export async function memberResults(ids: Types.ObjectId[]) {
+export async function memberResults(ids: Types.ObjectId[], full = false) {
   const attempts = await Attempt.find({ userId: { $in: ids }, status: "submitted" }).sort({ finishedAt: 1 }).select("userId kind scoreEst sectionScores finishedAt releaseAt").lean();
   const now = new Date();
-  for (const a of attempts) if (a.releaseAt && a.releaseAt > now) { a.scoreEst = undefined as never; a.sectionScores = [] as never; } // hasil ditahan: hanya partisipasi
+  if (!full) for (const a of attempts) if (a.releaseAt && a.releaseAt > now) { a.scoreEst = undefined as never; a.sectionScores = [] as never; } // hasil ditahan: hanya partisipasi
   const by = new Map<string, typeof attempts>();
   for (const a of attempts) { const k = String(a.userId); by.set(k, [...(by.get(k) ?? []), a]); }
   return by;

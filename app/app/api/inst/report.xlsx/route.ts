@@ -9,10 +9,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    const { user, inst, scoped } = await instContext(req);
+    const { user, inst, scoped, full } = await instContext(req);
     const members = await User.find(scoped()).sort({ name: 1 }).select("name email targetScore status currentLevelId currentScoreEst").lean();
     const lv = new Map((await getLevels()).map((l) => [String(l._id), l.name]));
-    const results = await memberResults(members.map((m) => m._id));
+    const results = await memberResults(members.map((m) => m._id), full);
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("Participant");
     ws.columns = [

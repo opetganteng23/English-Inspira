@@ -7,7 +7,7 @@ import { HBars, Stat, Loading, ErrorNote } from "@/components/Charts";
 
 type S = {
   institution: { name: string; code: string; batch: string | null; contractEnd: string | null; seats: number };
-  registered: number; seats: number; seatsLeft: number; active: number; invited: number; placementDone: number; placementPct: number | null;
+  registered: number; seats: number; seatsLeft: number; active: number; invited: number; placementDone: number; placementPct: number | null; placementHeld?: number;
   levels: { label: string; n: number }[]; avgEstimate: number | null; avgDelta: number | null; reachedPct: number | null; reached: number; withScore: number;
   coaching: { sessionsMarked: number; presentPct: number | null; absent: number; quotaUsedPct: number | null };
   planLatePct: number | null; planLate: number; commonWeaknesses: { title: string; n: number }[];
@@ -34,7 +34,7 @@ export default function InstHome() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="PARTICIPANTS" value={<>{s.registered}<span className="text-lg text-ink-soft"> / {s.seats}</span></>} sub={`${s.active} active · ${s.invited} awaiting activation`} />
-        <Stat label="PLACEMENT COMPLETED" value={s.placementPct != null ? `${s.placementPct}%` : "-"} sub={`${s.placementDone} of ${s.registered} participants`} />
+        <Stat label="PLACEMENT COMPLETED" value={s.placementPct != null ? `${s.placementPct}%` : "-"} sub={`${s.placementDone} of ${s.registered} participants${s.placementHeld ? ` · ${s.placementHeld} results held until release` : ""}`} />
         <Stat label="AVERAGE ESTIMATE" value={s.avgEstimate ?? "-"} sub={s.avgDelta != null ? `${s.avgDelta >= 0 ? "+" : ""}${s.avgDelta} since the first test` : "No comparison yet"} tone={s.avgDelta != null && s.avgDelta >= 0 ? "ok" : undefined} />
         <Stat label="REACHED TARGET" value={s.reachedPct != null ? `${s.reachedPct}%` : "-"} sub={`${s.reached} of ${s.withScore} participants with scores`} />
         <Stat label="COACHING ATTENDANCE" value={s.coaching.presentPct != null ? `${s.coaching.presentPct}%` : "-"} sub={`${s.coaching.sessionsMarked} sessions recorded · ${s.coaching.absent} absent`} />
