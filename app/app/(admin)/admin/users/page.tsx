@@ -49,7 +49,7 @@ export default function Pengguna() {
           ))}</tbody>
         </table></div>
       )}
-      {dlg?.type === "edit" && <EditAccountDialog kind="internal" account={dlg.u} onClose={() => setDlg(null)} onDone={(m) => { setDlg(null); setMsg(m); reload(); }} />}
+      {dlg?.type === "edit" && <EditAccountDialog kind="internal" institutions={insts.data?.institutions ?? []} account={dlg.u} onClose={() => setDlg(null)} onDone={(m) => { setDlg(null); setMsg(m); reload(); }} />}
       {dlg?.type === "reset" && <ResetPasswordDialog kind="internal" account={dlg.u} onClose={() => setDlg(null)} />}
       {dlg?.type === "delete" && <DeleteAccountDialog kind="internal" account={dlg.u} onClose={() => setDlg(null)} onDone={(m) => { setDlg(null); setMsg(m); reload(); }} />}
       {add && <AddModal institutions={insts.data?.institutions ?? []} onClose={() => setAdd(false)} onSaved={() => { setAdd(false); reload(); }} />}

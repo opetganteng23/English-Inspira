@@ -1,5 +1,6 @@
 "use client";
 
+import { askConfirm } from "@/components/Feedback";
 import { useState } from "react";
 import { Modal } from "@/components/Modal";
 import { ErrorNote } from "@/components/Charts";
@@ -11,12 +12,17 @@ const label = "flex flex-col gap-1.5 text-sm font-semibold text-navy";
 const base = (kind: Kind, id: string) => (kind === "internal" ? `/api/admin/users/${id}` : `/api/admin/participants/${id}`);
 
 /** Ubah nama, email, dan telepon. Email baru harus unik; pengguna perlu masuk dengan kode OTP ke email itu. */
-export function EditAccountDialog({ kind, account, onClose, onDone }: { kind: Kind; account: Account; onClose: () => void; onDone: (m: string) => void }) {
-  const [v, setV] = useState({ givenName: account.givenName ?? "", surname: account.surname ?? "", email: account.email, phone: account.phone ?? "" });
+const ROLE_OPTS: [string, string][] = [["admin", "Admin"], ["academic_admin", "Academic admin"], ["content_editor", "Question editor"], ["inst_admin", "Institution admin"], ["coach", "Coach"]];
+const CENTRAL = ["admin", "academic_admin", "content_editor"];
+
+export function EditAccountDialog({ kind, account, onClose, onDone, institutions = [] }: { kind: Kind; account: Account & { institutionId?: string | null }; onClose: () => void; onDone: (m: string) => void; institutions?: { id: string; name: string }[] }) {
+  const [v, setV] = useState({ givenName: account.givenName ?? "", surname: account.surname ?? "", email: account.email, phone: account.phone ?? "", role: account.role ?? "", institutionId: account.institutionId ?? "" });
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   async function save() {
     setBusy(true); setErr("");
-    const body = { givenName: v.givenName, surname: v.surname, email: v.email, phone: v.phone };
+    const roleChanged = kind === "internal" && (v.role !== (account.role ?? "") || (!CENTRAL.includes(v.role) && v.institutionId !== (account.institutionId ?? "")));
+    if (roleChanged && !(await askConfirm(`Change ${account.email} to ${ROLE_OPTS.find((r) => r[0] === v.role)?.[1] ?? v.role}? Their access changes right away; they should sign out and sign in again.`, { confirmLabel: "Change role" }))) { setBusy(false); return; }
+    const body = { givenName: v.givenName, surname: v.surname, email: v.email, phone: v.phone, ...(roleChanged ? { role: v.role, institutionId: CENTRAL.includes(v.role) ? null : v.institutionId || null } : {}) };
     try {
       if (kind === "internal") await api(base(kind, account.id), { method: "PATCH", json: body });
       else await api(base(kind, account.id), { json: { action: "update_profile", ...body } });
@@ -33,6 +39,12 @@ export function EditAccountDialog({ kind, account, onClose, onDone }: { kind: Ki
         <label className={label}>Email<input className="field font-normal" type="email" autoComplete="off" value={v.email} onChange={(e) => setV({ ...v, email: e.target.value })} />
           {v.email.trim().toLowerCase() !== account.email && <span className="text-xs font-normal text-accent-dark">Changing the email means the person must sign in with a code sent to the new address.</span>}</label>
         <label className={label}>Phone (optional)<input className="field font-normal" inputMode="tel" autoComplete="off" value={v.phone} onChange={(e) => setV({ ...v, phone: e.target.value })} /></label>
+        {kind === "internal" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className={label}>Role<select className="field font-normal" value={v.role} onChange={(e) => setV({ ...v, role: e.target.value })}>{ROLE_OPTS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
+            {!CENTRAL.includes(v.role) && <label className={label}>Institution<select className="field font-normal" value={v.institutionId} onChange={(e) => setV({ ...v, institutionId: e.target.value })}><option value="">Choose…</option>{institutions.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></label>}
+          </div>
+        )}
         <ErrorNote text={err} />
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button className="btn-outline" onClick={onClose}>Cancel</button><button className="btn-solid" disabled={busy || !v.givenName.trim() || !v.email.trim()} onClick={save}>{busy ? "Saving…" : "Save"}</button></div>
       </div>

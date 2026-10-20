@@ -10,7 +10,7 @@ import { MaintenanceToggle } from "@/components/MaintenanceToggle";
 type D = {
   days: number;
   kpi: { institutions: number; participants: number; active: number; invited: number; loggedInRecently: number; placementsDone: number; placementPct: number | null };
-  levels: { name: string; n: number }[];
+  levels: { name: string; n: number; held?: number }[];
   tests: { kind: string; n: number }[];
   actions: { label: string; n: number; href: string }[];
   mail: { queued: number; failed: number };
@@ -42,7 +42,7 @@ export default function AdminHome() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Participant level distribution</h2><div className="mt-4"><HBars rows={d.levels.map((l) => ({ label: l.name, value: l.n, sub: "participants" }))} /></div></section>
+            <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Participant level distribution</h2><div className="mt-4"><HBars rows={d.levels.map((l) => ({ label: l.name, value: l.n, sub: l.held ? `participants · ${l.held} not released yet` : "participants" }))} /></div><p className="mt-2 text-xs text-ink-soft">Includes placement results that are held or waiting for release. QA test accounts are excluded.</p></section>
             <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Completed tests ({d.days} days)</h2>
               <div className="mt-4">{d.tests.length ? <HBars color="#D9A02F" rows={d.tests.map((t) => ({ label: KIND[t.kind] ?? t.kind, value: t.n, sub: "tests" }))} /> : <p className="text-sm text-ink-soft">No completed tests yet.</p>}</div></section>
           </div>

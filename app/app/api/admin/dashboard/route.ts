@@ -20,13 +20,19 @@ export async function GET(req: Request) {
     const days = Math.min(365, Math.max(1, Number(new URL(req.url).searchParams.get("days")) || 30));
     const since = new Date(Date.now() - days * 86_400_000), now = new Date();
 
+    // Hasil placement yang masih ditahan/menunggu rilis ikut dihitung di sebaran level (admin pusat: Hold tidak berlaku).
+    const qa = await User.distinct("_id", { qaTester: true });
+    const heldPl = await Attempt.aggregate([
+      { $match: { kind: "placement", status: "submitted", releasedAt: { $exists: false }, releaseAt: { $exists: true }, userId: { $nin: qa } } },
+      { $sort: { finishedAt: -1 } }, { $group: { _id: "$userId", score: { $first: "$scoreEst" } } },
+    ]);
     const [levels, insts, byStatus, byLevel, tests, placements, activeUsers, docsPending, pastUnscored, needReview, mailFailed, mailQueued, upcoming, expiring, aiAgg, aiFailed] = await Promise.all([
       getLevels(),
       Institution.countDocuments({ status: "active" }),
-      User.aggregate([{ $match: { role: "participant" } }, { $group: { _id: "$status", n: { $sum: 1 } } }]),
-      User.aggregate([{ $match: { role: "participant", currentLevelId: { $exists: true } } }, { $group: { _id: "$currentLevelId", n: { $sum: 1 } } }]),
+      User.aggregate([{ $match: { role: "participant", qaTester: { $ne: true } } }, { $group: { _id: "$status", n: { $sum: 1 } } }]),
+      User.aggregate([{ $match: { role: "participant", qaTester: { $ne: true }, currentLevelId: { $exists: true, $ne: null } } }, { $group: { _id: "$currentLevelId", n: { $sum: 1 } } }]),
       Attempt.aggregate([{ $match: { status: "submitted", finishedAt: { $gte: since } } }, { $group: { _id: "$kind", n: { $sum: 1 } } }]),
-      Attempt.countDocuments({ kind: "placement", status: "submitted" }),
+      Attempt.distinct("userId", { kind: "placement", status: "submitted", userId: { $nin: qa } }).then((x) => x.length),
       User.countDocuments({ role: "participant", lastLoginAt: { $gte: since } }),
       ItpRegistration.countDocuments({ docStatus: "pending", status: { $ne: "cancelled" } }),
       ItpSession.find({ date: { $lt: now }, status: { $ne: "done" } }).select("_id").lean(),
@@ -45,7 +51,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       days,
       kpi: { institutions: insts, participants: total, active: st("active"), invited: st("invited"), loggedInRecently: activeUsers, placementsDone: placements, placementPct: st("active") ? Math.round((placements / Math.max(1, st("active"))) * 100) : null },
-      levels: levels.map((l) => ({ name: l.name, n: byLevel.find((x) => String(x._id) === String(l._id))?.n ?? 0 })),
+      levels: levels.map((l) => ({ name: l.name, n: (byLevel.find((x) => String(x._id) === String(l._id))?.n ?? 0) + heldPl.filter((h) => typeof h.score === "number" && h.score >= l.scoreMin && h.score <= l.scoreMax).length, held: heldPl.filter((h) => typeof h.score === "number" && h.score >= l.scoreMin && h.score <= l.scoreMax).length })),
       tests: tests.map((t) => ({ kind: t._id, n: t.n })),
       actions: [
         { label: "Invitations not accepted yet (status invited)", n: st("invited"), href: "/admin/participants?status=invited" },

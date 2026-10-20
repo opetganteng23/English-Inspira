@@ -91,6 +91,8 @@ export const userPatchInput = z.object({
   email: z.email().max(200).optional(),
   phone: z.string().trim().regex(/^$|^[0-9+\-\s]{8,20}$/, "Invalid phone number").optional(),
   status: z.enum(["active", "disabled"]).optional(),
+  role: z.enum(["coach", "inst_admin", "admin", "academic_admin", "content_editor"]).optional(),
+  institutionId: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional(),
 });
 /** Aksi admin atas akun (internal maupun peserta): reset password dan hapus wajib beralasan untuk audit. */
 export const userActionInput = z.discriminatedUnion("action", [
