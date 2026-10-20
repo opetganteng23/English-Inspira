@@ -21,6 +21,7 @@ const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${St
 export default function Ruang({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [st, setSt] = useState<State | null>(null);
+  const advancing = useRef(false);
   const [err, setErr] = useState("");
   const [cur, setCur] = useState(0);
   const [ans, setAns] = useState<Record<string, number>>({});
@@ -165,14 +166,16 @@ export default function Ruang({ params }: { params: { id: string } }) {
   }, [flush]);
 
   async function next(auto = false) {
-    if (busy) return; setBusy(true);
+    if (busy || advancing.current) return; // ref: klik ganda dalam satu render tidak lolos
+    advancing.current = true; setBusy(true);
+    const fromIdx = st?.section.index;
     await flush();
     try {
-      const d = await api(`/api/attempts/${params.id}/advance`, { json: {} });
-      setBusy(false);
+      const d = await api(`/api/attempts/${params.id}/advance`, { json: { fromIdx } });
+      setBusy(false); advancing.current = false;
       if (d.status === "submitted") return router.replace(`/results/${params.id}`);
       await load();
-    } catch (e) { setBusy(false); if (!auto) setErr((e as Error).message); else await load(); }
+    } catch (e) { setBusy(false); advancing.current = false; if (!auto) setErr((e as Error).message); else await load(); }
   }
 
   if (err) return <Center><div className="max-w-sm text-center"><p className="text-red-700">{err}</p><button className="btn-outline mt-4" onClick={() => { setErr(""); load(); }}>Reload</button></div></Center>;
