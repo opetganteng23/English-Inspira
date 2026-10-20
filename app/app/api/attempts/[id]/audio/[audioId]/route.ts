@@ -5,6 +5,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { loadAttempt } from "@/lib/attempts";
 import { signAudioToken } from "@/lib/audio-store";
 import { Question, QuestionGroup } from "@/models/Question";
+import { Attempt } from "@/models/Test";
 
 const ROLES = ["participant", "admin", "inst_admin"] as const;
 
@@ -28,8 +29,8 @@ export async function POST(_req: Request, { params }: { params: { id: string; au
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
     // Mode latihan (practice): pemutar penuh, boleh diulang. Tes lain: sekali putar (MTS §11).
     if (rec?.done && attempt.kind !== "practice") throw new HttpError(403, "This audio has already been played and cannot be replayed");
-    if (!rec) attempt.audioPlays.push({ audioId: params.audioId, playedAt: new Date(), lastPosSec: 0, done: false } as never);
-    await attempt.save();
+    // Update atomik (bukan save dokumen penuh): tidak bentrok dengan autosave jawaban yang berjalan bersamaan.
+    if (!rec) await Attempt.updateOne({ _id: attempt._id, "audioPlays.audioId": { $ne: params.audioId } }, { $push: { audioPlays: { audioId: params.audioId, playedAt: new Date(), lastPosSec: 0, done: false } } });
     const token = await signAudioToken(params.audioId, params.id);
     return NextResponse.json({
       url: `/api/audio/${params.audioId}?token=${token}`,
@@ -50,9 +51,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string; au
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
     if (!rec) throw new HttpError(409, "Audio has not been started");
     if (!rec.done && attempt.kind !== "practice") {
-      rec.lastPosSec = Math.max(rec.lastPosSec ?? 0, b.posSec); // posisi tidak boleh mundur
-      if (b.done) rec.done = true;
-      await attempt.save();
+      // Atomik: posisi hanya maju ($max), tanda selesai tidak bisa hilang karena bentrok dengan autosave jawaban.
+      await Attempt.updateOne(
+        { _id: attempt._id, audioPlays: { $elemMatch: { audioId: rec.audioId, done: { $ne: true } } } },
+        { $max: { "audioPlays.$.lastPosSec": b.posSec }, ...(b.done ? { $set: { "audioPlays.$.done": true } } : {}) },
+      );
     }
     return NextResponse.json({ ok: true });
   } catch (e) {

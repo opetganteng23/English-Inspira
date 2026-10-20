@@ -3,7 +3,7 @@ import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { getParam } from "@/lib/config";
-import { loadAttempt, sectionDeadline } from "@/lib/attempts";
+import { loadAttempt, sectionDeadline, isVersionError } from "@/lib/attempts";
 import { Question, QuestionGroup } from "@/models/Question";
 import { orderQuestions, optionPermutation } from "@/lib/shuffle";
 
@@ -67,9 +67,12 @@ const patchSchema = z.object({
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireRole([...ROLES]);
+    const body = patchSchema.parse(await req.json());
+    // Dua simpanan bersamaan (koneksi tersendat lalu menumpuk) bisa bentrok versi dokumen: muat ulang dan terapkan lagi, jawaban tidak hilang.
+    for (let tryNo = 0; ; tryNo++) {
+    try {
     const { attempt, test } = await loadAttempt(params.id, user);
     if (attempt.status !== "in_progress") throw new HttpError(409, "Time is up or the test is already finished");
-    const body = patchSchema.parse(await req.json());
 
     const allowed = new Set(test.sections[attempt.sectionIdx].questionIds.map(String));
     // Mode aman: nomor yang sudah dilewati tidak bisa dijawab/diubah lagi (ditegakkan di server, bukan hanya di layar).
@@ -108,6 +111,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     for (const kind of body.flags ?? []) attempt.proctorFlags.push({ kind, at: now } as never);
     await attempt.save();
     return NextResponse.json({ ok: true, savedAt: now });
+    } catch (e) { if (isVersionError(e) && tryNo < 4) continue; throw e; }
+    }
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);
