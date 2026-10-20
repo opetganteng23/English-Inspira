@@ -201,6 +201,9 @@ export default function Ruang({ params }: { params: { id: string } }) {
     setCur(i);
   };
   const firstOpen = st.questions.findIndex((x, i) => ans[x.id] == null && (!secure || i >= reachedRef.current));
+  const unanswered = st.questions.length - answered;
+  const lockedBlank = secure ? st.questions.filter((x, i) => ans[x.id] == null && i < reachedRef.current).length : 0; // dilewati, tidak bisa dijawab lagi
+  const canAnswerMore = firstOpen >= 0;
 
   const navigator = (
     <>
@@ -290,7 +293,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
           <div role="dialog" aria-modal="true" aria-label="Confirm" className="w-full max-w-md rounded-t-2xl bg-white p-6 sm:rounded-2xl">
             <h3 className="font-display text-xl font-extrabold text-navy">{last ? "Submit the test?" : "Finish this section?"}</h3>
             <p className="mt-2 text-sm text-ink-soft">
-              {st.questions.length - answered > 0 ? `${st.questions.length - answered} question${st.questions.length - answered === 1 ? " is" : "s are"} still unanswered and will be scored as wrong. ` : "All questions answered. "}
+              {unanswered > 0 ? `${unanswered} question${unanswered === 1 ? " is" : "s are"} unanswered and will be scored as wrong. ` : "All questions answered. "}
+              {secure && canAnswerMore ? "Choose Cancel to stay on the current question. " : ""}{secure && lockedBlank > 0 ? `${lockedBlank === unanswered ? (lockedBlank === 1 ? "It was" : "They were") : `${lockedBlank} of them ${lockedBlank === 1 ? "was" : "were"}`} skipped earlier and can no longer be answered (secure mode). ` : ""}
               {last ? "After submitting, your answers cannot be changed." : "You cannot return to this section."}
             </p>
             {st.questions.length - answered > 0 && (
@@ -301,21 +305,26 @@ export default function Ruang({ params }: { params: { id: string } }) {
                 </div>
               </div>
             )}
-            {st.questions.length - answered > 0 && (
+            {unanswered > 0 && (
               <label className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
                 <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={ack} onChange={(e) => setAck(e.target.checked)} />
-                <span>I understand that {st.questions.length - answered} unanswered question{st.questions.length - answered === 1 ? "" : "s"} will be scored as wrong and I cannot come back to {last ? "the test" : "this section"}.</span>
+                <span>I understand that {unanswered} unanswered question{unanswered === 1 ? "" : "s"} will be scored as wrong and I cannot come back to {last ? "the test" : "this section"}.</span>
               </label>
             )}
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-              {st.questions.length - answered > 0 ? (
+              {unanswered > 0 && canAnswerMore && !secure ? (
                 <>
                   <button disabled={busy || !ack} onClick={() => next()} className="btn-outline order-2 !border-red-300 !text-red-700 disabled:opacity-50 sm:order-1">{busy ? "Processing…" : last ? "Submit anyway" : "Finish section anyway"}</button>
-                  <button onClick={() => { if (firstOpen >= 0) goTo(firstOpen); setConfirm(false); }} className="btn-solid order-1 sm:order-2">Go back and answer</button>
+                  <button onClick={() => { goTo(firstOpen); setConfirm(false); }} className="btn-solid order-1 sm:order-2">Go back and answer</button>
+                </>
+              ) : unanswered > 0 ? (
+                <>
+                  <button onClick={() => setConfirm(false)} className="btn-outline">Cancel</button>
+                  <button disabled={busy || !ack} onClick={() => next()} className="btn-solid disabled:opacity-50">{busy ? "Processing…" : last ? "Submit test" : "Finish section"}</button>
                 </>
               ) : (
                 <>
-                  <button onClick={() => setConfirm(false)} className="btn-outline">Back</button>
+                  <button onClick={() => setConfirm(false)} className="btn-outline">{secure ? "Cancel" : "Back"}</button>
                   <button disabled={busy} onClick={() => next()} className="btn-solid">{busy ? "Processing…" : last ? "Submit test" : "Finish section"}</button>
                 </>
               )}
