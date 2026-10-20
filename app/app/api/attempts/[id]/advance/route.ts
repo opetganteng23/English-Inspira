@@ -13,6 +13,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (typeof body.fromIdx === "number" && (attempt.status !== "in_progress" || attempt.sectionIdx !== body.fromIdx)) {
       return NextResponse.json({ status: attempt.status, sectionIdx: attempt.sectionIdx, duplicate: true });
     }
+    // Halaman lama (tanpa fromIdx): bagian yang baru dibuka < 3 detik tidak mungkin diselesaikan manusia, jadi itu permintaan ganda.
+    if (typeof body.fromIdx !== "number" && attempt.status === "in_progress" && attempt.sectionIdx > 0 && attempt.sectionStartedAt && Date.now() - +attempt.sectionStartedAt < 3000) {
+      return NextResponse.json({ status: attempt.status, sectionIdx: attempt.sectionIdx, duplicate: true });
+    }
     const status = await advanceSafely(attempt, test);
     return NextResponse.json({ status });
   } catch (e) {
