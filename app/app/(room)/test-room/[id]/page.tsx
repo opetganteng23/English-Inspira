@@ -210,10 +210,10 @@ export default function Ruang({ params }: { params: { id: string } }) {
       <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-6">
         {st.questions.map((x, i) => (
           <button key={x.id} disabled={secure && i !== cur} onClick={() => { goTo(i); setNavOpen(false); }} aria-label={`Question ${i + 1}${ans[x.id] != null ? ", answered" : ""}${flagged[x.id] ? ", flagged" : ""}`} aria-current={i === cur}
-            className={`h-10 rounded-lg text-sm font-semibold ${i === cur ? "ring-2 ring-brand " : ""}${flagged[x.id] ? "bg-accent-tint text-accent-dark" : ans[x.id] != null ? "bg-brand text-white" : "bg-canvas text-ink-soft"}`}>{i + 1}</button>
+            className={`h-10 rounded-lg text-sm font-semibold ${i === cur ? "ring-2 ring-brand " : ""}${!secure && flagged[x.id] ? "bg-accent-tint text-accent-dark" : ans[x.id] != null ? "bg-brand text-white" : "bg-canvas text-ink-soft"}`}>{i + 1}</button>
         ))}
       </div>
-      <p className="mt-3 text-xs text-ink-soft">{answered} of {st.questions.length} answered · blue = answered, orange = flagged{secure ? " · secure mode: use Next to move on" : ""}</p>
+      <p className="mt-3 text-xs text-ink-soft">{answered} of {st.questions.length} answered · blue = answered{secure ? " · secure mode: one way, use Next to move on" : ", orange = flagged"}</p>
     </>
   );
 
@@ -259,7 +259,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
               ))}
             </div>
             <div className="mt-5 flex items-center justify-between">
-              <button onClick={toggleFlag} className="min-h-[44px] text-sm font-semibold text-accent-dark">{flagged[q.id] ? "★ Flagged" : "☆ Flag question"}</button>
+              {secure ? <span /> : <button onClick={toggleFlag} className="min-h-[44px] text-sm font-semibold text-accent-dark">{flagged[q.id] ? "★ Flagged" : "☆ Flag question"}</button>}
               {!secure && <button className="btn-outline hidden lg:inline-flex" onClick={() => openConfirm()}>{finishLabel}</button>}
             </div>
           </section>
