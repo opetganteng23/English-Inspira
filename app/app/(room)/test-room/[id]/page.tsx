@@ -21,6 +21,7 @@ const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${St
 export default function Ruang({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [st, setSt] = useState<State | null>(null);
+  const [ack, setAck] = useState(false); // centang "saya mengerti soal kosong dinilai salah" sebelum menutup bagian
   const advancing = useRef(false);
   const [err, setErr] = useState("");
   const [cur, setCur] = useState(0);
@@ -188,6 +189,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const toggleFlag = () => { setFlagged((f) => ({ ...f, [q.id]: !f[q.id] })); queue(q.id); };
   const answered = Object.keys(ans).filter((id) => st.questions.some((x) => x.id === id)).length;
   const finishLabel = last ? "Submit test" : "Finish section";
+  const openConfirm = () => { setAck(false); setConfirm(true); };
   const secure = !!st.secure;
   // Pindah soal. Mode aman: hanya maju; soal yang dilewati terkunci, jawaban yang tertunda disimpan sekarang.
   const goTo = (i: number) => {
@@ -255,7 +257,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
             </div>
             <div className="mt-5 flex items-center justify-between">
               <button onClick={toggleFlag} className="min-h-[44px] text-sm font-semibold text-accent-dark">{flagged[q.id] ? "★ Flagged" : "☆ Flag question"}</button>
-              <button className="btn-outline hidden lg:inline-flex" onClick={() => setConfirm(true)}>{finishLabel}</button>
+              {!secure && <button className="btn-outline hidden lg:inline-flex" onClick={() => openConfirm()}>{finishLabel}</button>}
             </div>
           </section>
           <p className="text-xs text-ink-soft">{secure ? "Secure mode: you cannot go back to previous questions. Answer each question before pressing Next." : "After finishing a section, you cannot return to it."}</p>
@@ -269,18 +271,18 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
       {/* Mobile/tablet: navigator lipat + bilah navigasi tetap di bawah */}
       <div className="z-20 shrink-0 border-t border-line bg-white lg:hidden">
-        {navOpen && <div className="max-h-[45vh] overflow-y-auto border-b border-line p-4">{navigator}<button className="btn-outline mt-3 w-full" onClick={() => { setNavOpen(false); setConfirm(true); }}>{finishLabel}</button></div>}
+        {navOpen && <div className="max-h-[45vh] overflow-y-auto border-b border-line p-4">{navigator}{(!secure || cur === st.questions.length - 1) && <button className="btn-outline mt-3 w-full" onClick={() => { setNavOpen(false); openConfirm(); }}>{finishLabel}</button>}</div>}
         <div className="flex items-center gap-2 p-3">
           {!secure && <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => goTo(cur - 1)} aria-label="Previous question">Previous</button>}
           <button className="btn-outline flex-1" onClick={() => setNavOpen(!navOpen)} aria-expanded={navOpen}>{cur + 1}/{st.questions.length} · {answered} answered</button>
           {cur < st.questions.length - 1
             ? <button className="btn-solid !px-5" onClick={() => goTo(cur + 1)} aria-label="Next question">Next</button>
-            : <button className="btn-accent !px-4" onClick={() => setConfirm(true)}>Done</button>}
+            : <button className="btn-accent !px-4" onClick={() => openConfirm()}>{finishLabel}</button>}
         </div>
       </div>
       <div className="mx-auto hidden w-full max-w-6xl shrink-0 items-center justify-between border-t border-line bg-white px-6 py-3 lg:flex">
         {secure ? <span className="text-sm text-ink-soft">Secure mode: no going back</span> : <button className="btn-outline" disabled={cur === 0} onClick={() => goTo(cur - 1)}>Previous</button>}
-        {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => goTo(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => setConfirm(true)}>{finishLabel}</button>}
+        {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => goTo(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => openConfirm()}>{finishLabel}</button>}
       </div>
 
       {confirm && (
@@ -295,13 +297,28 @@ export default function Ruang({ params }: { params: { id: string } }) {
               <div className="mt-3">
                 <p className="text-xs font-semibold uppercase text-ink-soft">Unanswered</p>
                 <div className="mt-1.5 flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
-                  {st.questions.map((x, i) => (ans[x.id] == null ? <button key={x.id} type="button" disabled={secure && i < reachedRef.current} onClick={() => { goTo(i); setConfirm(false); setNavOpen(false); }} className="h-9 min-w-[36px] rounded-lg border border-accent bg-accent-tint px-2 text-sm font-semibold text-accent-dark disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Go to question ${i + 1}`}>{i + 1}</button> : null))}
+                  {st.questions.map((x, i) => (ans[x.id] == null ? secure ? <span key={x.id} className="inline-flex h-9 min-w-[36px] items-center justify-center rounded-lg border border-accent bg-accent-tint px-2 text-sm font-semibold text-accent-dark">{i + 1}</span> : <button key={x.id} type="button" onClick={() => { goTo(i); setConfirm(false); setNavOpen(false); }} className="h-9 min-w-[36px] rounded-lg border border-accent bg-accent-tint px-2 text-sm font-semibold text-accent-dark disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Go to question ${i + 1}`}>{i + 1}</button> : null))}
                 </div>
               </div>
             )}
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button onClick={() => { if (firstOpen >= 0) goTo(firstOpen); setConfirm(false); }} className="btn-outline">{firstOpen >= 0 ? "Answer the rest" : "Back"}</button>
-              <button disabled={busy} onClick={() => next()} className="btn-solid">{busy ? "Processing…" : "Yes, continue"}</button>
+            {st.questions.length - answered > 0 && (
+              <label className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+                <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+                <span>I understand that {st.questions.length - answered} unanswered question{st.questions.length - answered === 1 ? "" : "s"} will be scored as wrong and I cannot come back to {last ? "the test" : "this section"}.</span>
+              </label>
+            )}
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              {st.questions.length - answered > 0 ? (
+                <>
+                  <button disabled={busy || !ack} onClick={() => next()} className="btn-outline order-2 !border-red-300 !text-red-700 disabled:opacity-50 sm:order-1">{busy ? "Processing…" : last ? "Submit anyway" : "Finish section anyway"}</button>
+                  <button onClick={() => { if (firstOpen >= 0) goTo(firstOpen); setConfirm(false); }} className="btn-solid order-1 sm:order-2">Go back and answer</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setConfirm(false)} className="btn-outline">Back</button>
+                  <button disabled={busy} onClick={() => next()} className="btn-solid">{busy ? "Processing…" : last ? "Submit test" : "Finish section"}</button>
+                </>
+              )}
             </div>
           </div>
         </div>
