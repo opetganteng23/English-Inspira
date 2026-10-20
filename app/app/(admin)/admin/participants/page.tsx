@@ -14,7 +14,7 @@ type Detail = {
   profile: { id: string; name?: string; givenName?: string; surname?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean; qaTester?: boolean };
   enrollment: { status: string; startsAt: string; expiresAt: string | null } | null;
   quotas: { level: string; used: number; total: number; active: boolean }[];
-  attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number; held?: boolean }[];
+  attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number; held?: boolean; voidable?: boolean }[];
   notes: { text: string; at: string }[];
 };
 const STATUS: Record<string, [string, string]> = { invited: ["Awaiting activation", "badge-warn"], active: ["Active", "badge-ok"], disabled: ["Inactive", "badge-muted"] };
@@ -136,6 +136,8 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     try { await api(`/api/admin/participants/${id}`, { json: body }); if (ok) setMsg(ok); reload(); } catch (e) { setErr((e as Error).message); }
   };
   const p = d?.profile;
+  const [voidFor, setVoidFor] = useState<{ id: string; label: string } | null>(null);
+  const [voidReason, setVoidReason] = useState("");
 
   return (
     <Modal title="Participant details" onClose={onClose} wide>
@@ -153,7 +155,16 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="mt-2 grid gap-2 rounded-xl bg-canvas p-3 sm:grid-cols-[100px_1fr_auto]"><input aria-label="Days" className="field" type="number" min={1} max={730} value={ext.days} onChange={(e) => setExt({ ...ext, days: Number(e.target.value) })} /><input aria-label="Extension reason" className="field" placeholder="Reason for extending access (required)" value={ext.reason} onChange={(e) => setExt({ ...ext, reason: e.target.value })} /><button className="btn-outline" disabled={ext.reason.trim().length < 3} onClick={() => run({ action: "extend_enrollment", ...ext }, "Access extended.").then(() => setExt({ days: 30, reason: "" }))}>Extend</button></div></section>
 
           <section><h3 className="font-semibold text-navy">Test history</h3>
-            {d.attempts.length ? <ul className="mt-1">{d.attempts.map((a) => <li key={a.id} className="flex justify-between gap-3 border-b border-line py-1.5"><span>{a.kind} · {tgl(a.finishedAt)}{a.flags ? ` · ${a.flags} activity notes` : ""}{a.held ? " · held (not visible to participant)" : ""}</span><b>{a.scoreEst}</b></li>)}</ul> : <p className="text-ink-soft">None yet.</p>}
+            {d.attempts.length ? <ul className="mt-1">{d.attempts.map((a) => <li key={a.id} className="flex justify-between gap-3 border-b border-line py-1.5"><span>{a.kind} · {tgl(a.finishedAt)}{a.flags ? ` · ${a.flags} activity notes` : ""}{a.held ? " · held (not visible to participant)" : ""}</span><span className="flex items-center gap-3"><b>{a.scoreEst}</b>{a.voidable && <button className="text-xs font-semibold text-red-700" onClick={() => setVoidFor({ id: a.id, label: `${a.kind} · ${tgl(a.finishedAt)} · score ${a.scoreEst ?? "-"}` })}>Void</button>}</span></li>)}</ul> : <p className="text-ink-soft">None yet.</p>}
+            {voidFor && (
+              <div className="mt-3 flex flex-col gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="font-semibold text-red-800">Void this attempt: {voidFor.label}</p>
+                <p className="text-xs text-red-800">Use this only when the attempt was broken by a technical problem. It is removed from results and reports (kept in an archive with your reason), any class formed from it is released, and the participant can be scheduled and take the test again. Then move them to a session on the Schedule board and send the invite.</p>
+                <input className="field" placeholder="Reason, e.g. Reading closed automatically by a system error" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} />
+                <div className="flex gap-2"><button className="btn-outline !min-h-[40px]" onClick={() => { setVoidFor(null); setVoidReason(""); }}>Cancel</button>
+                  <button className="btn-solid !min-h-[40px] !bg-red-700" disabled={voidReason.trim().length < 5} onClick={async () => { if (await askConfirm("Void this attempt? The participant will need to take the test again.", { danger: true, confirmLabel: "Void attempt" })) { await run({ action: "void_attempt", attemptId: voidFor.id, reason: voidReason }, "Attempt voided. Move the participant to a session on the Schedule board, then send the invite."); setVoidFor(null); setVoidReason(""); } }}>Void attempt</button></div>
+              </div>
+            )}
             {d.attempts.some((a) => a.held) && <button className="btn-outline mt-2 !min-h-[40px]" onClick={async () => { if (await askConfirm("Release this participant's held placement result now? They, their institution admin, and coaches will see it, and the result email is sent.", { confirmLabel: "Release result" })) run({ action: "release_results" }, "Result released."); }}>Release this result</button>}</section>
 
           <section><h3 className="font-semibold text-navy">Actions</h3>
