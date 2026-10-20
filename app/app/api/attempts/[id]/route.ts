@@ -59,7 +59,7 @@ const patchSchema = z.object({
     qid: z.string(), choice: z.number().int().min(0).max(5).nullable(),
     timeSpentSec: z.number().min(0).max(3600).optional(), flagged: z.boolean().optional(),
   })).max(200).optional(),
-  flags: z.array(z.enum(["tab_hidden", "fullscreen_exit", "paste", "multi_tab"])).max(20).optional(),
+  flags: z.array(z.union([z.enum(["tab_hidden", "fullscreen_exit", "paste", "multi_tab"]), z.object({ kind: z.enum(["tab_hidden", "fullscreen_exit", "paste", "multi_tab"]), qid: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional() })])).max(20).optional(),
   reached: z.number().int().min(0).max(1000).optional(),
 });
 
@@ -108,7 +108,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       else attempt.answers.push(next as never);
     }
     const now = new Date();
-    for (const kind of body.flags ?? []) attempt.proctorFlags.push({ kind, at: now } as never);
+    for (const f of body.flags ?? []) { const kind = typeof f === "string" ? f : f.kind; const qid = typeof f === "string" ? null : f.qid; attempt.proctorFlags.push({ kind, at: now, section: attempt.sectionIdx, ...(qid && allowed.has(qid) ? { qid } : {}) } as never); }
     await attempt.save();
     return NextResponse.json({ ok: true, savedAt: now });
     } catch (e) { if (isVersionError(e) && tryNo < 4) continue; throw e; }

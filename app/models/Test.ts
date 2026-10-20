@@ -63,7 +63,7 @@ const attemptSchema = new Schema(
     scoreBasis: { type: String, enum: ["verified", "provisional"] },
     sectionScores: [{ _id: false, section: String, raw: Number, total: Number, scaled: Number }],
     topicScores: [{ _id: false, skill: String, topic: String, correct: Number, total: Number, score: Number }],
-    proctorFlags: [{ _id: false, kind: String, at: Date }],
+    proctorFlags: [{ _id: false, kind: String, at: Date, section: Number, qid: Schema.Types.ObjectId }], // section & qid: di soal mana kejadian terjadi (sejak 20 Okt 2026)
     audioPlays: [{ _id: false, audioId: Schema.Types.ObjectId, playedAt: Date, lastPosSec: Number, done: Boolean }],
     analysisId: { type: Schema.Types.ObjectId, ref: "Analysis" },
     aiAnalysis: Schema.Types.Mixed, // sementara; dipindah ke koleksi analyses pada Fase 5

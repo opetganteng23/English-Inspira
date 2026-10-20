@@ -43,7 +43,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
   }, [cur]);
 
   const dirty = useRef<Set<string>>(new Set());
-  const pendingFlags = useRef<string[]>([]);
+  const pendingFlags = useRef<{ kind: string; qid: string | null }[]>([]);
+  const curQid = useRef<string | null>(null); // soal yang sedang tampil: dicatat bersama setiap kejadian proctoring
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const ansRef = useRef(ans); ansRef.current = ans;
   const flagRef = useRef(flagged); flagRef.current = flagged;
@@ -159,7 +160,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
   // Proctoring ringan: hanya mencatat, tanpa kamera/mikrofon.
   useEffect(() => {
-    const add = (k: string) => { pendingFlags.current.push(k); clearTimeout(timer.current); timer.current = setTimeout(flush, 500); };
+    const add = (k: string) => { pendingFlags.current.push({ kind: k, qid: curQid.current }); clearTimeout(timer.current); timer.current = setTimeout(flush, 500); };
     const vis = () => document.hidden && add("tab_hidden");
     const fs = () => !isFullscreen() && add("fullscreen_exit");
     const paste = () => add("paste");
@@ -184,6 +185,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
   if (!st) return <Center>Loading test…</Center>;
 
   const q = st.questions[cur];
+  curQid.current = q?.id ?? null;
   const group = st.groups.find((g) => g.id === q.groupId);
   const last = st.section.index + 1 >= st.section.total;
   const choose = (i: number) => { setAns((a) => ({ ...a, [q.id]: i })); queue(q.id); };

@@ -99,7 +99,7 @@ export function StaffParticipantView({ id, backHref, backLabel, reportBase }: { 
                 <tr key={a.id}>
                   <td className="font-semibold text-navy">{a.name}<span className="block text-xs font-normal text-ink-soft">{KIND[a.kind] ?? a.kind}{a.flags ? ` · ${a.flags} activity notes` : ""}{!a.released && (a.held ? " · held" : " · not released yet")}</span></td>
                   <td>{a.finishedAt ? tgl(a.finishedAt, true) : "-"}</td><td className="font-semibold text-navy">{a.score ?? "-"}</td><td>{s("listening")}</td><td>{s("structure")}</td><td>{s("reading")}</td><td>{a.minutes ?? "-"}</td>
-                  <td className="text-right"><Link href={reportHref(a.id)} className="font-semibold text-brand">Full report</Link></td>
+                  <td className="whitespace-nowrap text-right"><Link href={reportHref(a.id)} className="font-semibold text-brand">Full report</Link>{h.viewer.full && <Link href={`/admin/proctoring/${a.id}`} className="ml-3 font-semibold text-brand">Activity</Link>}</td>
                 </tr>
               );
             })}</tbody>

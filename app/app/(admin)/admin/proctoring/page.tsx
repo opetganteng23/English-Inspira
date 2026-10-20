@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
@@ -28,7 +29,7 @@ export default function Proctoring() {
           {data?.attempts.map((a) => (
             <div key={a.id} className="card flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-semibold text-navy">{a.user}</p><p className="text-sm text-ink-soft">{a.test} · {tgl(a.finishedAt, true)} · score {a.scoreEst}</p></div>{a.review && <span className={RV[a.review.status][1]}>{RV[a.review.status][0]}</span>}</div>
-              <div className="flex flex-wrap gap-2">{Object.entries(a.counts).map(([k, n]) => <span key={k} className="badge-muted">{FLAG[k] ?? k}: {n}×</span>)}</div>
+              <div className="flex flex-wrap items-center gap-2">{Object.entries(a.counts).map(([k, n]) => <span key={k} className="badge-muted">{FLAG[k] ?? k}: {n}×</span>)}<Link href={`/admin/proctoring/${a.id}`} className="ml-auto text-sm font-semibold text-brand">Activity timeline →</Link></div>
               <div className="flex flex-col gap-2 sm:flex-row"><input aria-label="Note" className="field" placeholder={a.review?.note || "Note (optional)"} value={note[a.id] ?? ""} onChange={(e) => setNote({ ...note, [a.id]: e.target.value })} />
                 <div className="flex shrink-0 gap-2">{Object.entries(RV).map(([k, [l]]) => <button key={k} className={k === "clean" ? "btn-outline" : k === "suspicious" ? "btn-accent" : "btn-danger"} onClick={() => review(a.id, k)}>{l}</button>)}</div></div>
             </div>
