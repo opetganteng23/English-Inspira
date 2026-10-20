@@ -6,7 +6,9 @@ import { loadAttempt, ensureReleased } from "@/lib/attempts";
 import { attemptResult } from "@/lib/attempt-result";
 import { resultPdf, scopeForKind } from "@/lib/result-pdf";
 import { User } from "@/models/User";
-import { Attempt } from "@/models/Test";
+import { Attempt, Test } from "@/models/Test";
+import { staffViewer } from "@/lib/staff-view";
+import { isValidObjectId } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +17,23 @@ const KIND: Record<string, string> = { placement: "PLACEMENT TEST", sim: "SIMULA
 /** Ekspor hasil tes dan diagnostic (analisis AI) satu percobaan sebagai PDF. Hanya pemilik (atau admin); tanpa pembahasan per soal. */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const user = await requireRole(["participant", "admin"]);
-    const { attempt, test } = await loadAttempt(params.id, user);
+    const user = await requireRole(["participant", "admin", "academic_admin", "inst_admin"]);
+    let attempt, test;
+    if (user.role === "participant" || user.role === "admin") ({ attempt, test } = await loadAttempt(params.id, user));
+    else {
+      // Admin akademik / admin institusi: aturan akses sama dengan dasbor peserta (institusi sendiri, hasil yang sudah dirilis).
+      if (!isValidObjectId(params.id)) throw new HttpError(404, "Attempt not found");
+      await connectDB();
+      const a = await Attempt.findById(params.id);
+      if (!a) throw new HttpError(404, "Attempt not found");
+      const sv = await staffViewer(String(a.userId));
+      if (!sv.full && !isReleased(a)) return NextResponse.json({ error: "This result is not released yet." }, { status: 423 });
+      attempt = a; test = await Test.findById(a.testId).lean();
+      if (!test) throw new HttpError(404, "Test not found");
+    }
     if (attempt.status !== "submitted") throw new HttpError(409, "The test is not finished yet");
-    if (!exemptFromDelay(user) && !isReleased(attempt)) return NextResponse.json({ error: "Your results are not released yet.", availableAt: attempt.releaseAt }, { status: 423 });
-    await ensureReleased(attempt);
+    if (user.role === "participant" && !exemptFromDelay(user) && !isReleased(attempt)) return NextResponse.json({ error: "Your results are not released yet.", availableAt: attempt.releaseAt }, { status: 423 });
+    if (user.role === "participant") await ensureReleased(attempt);
     await connectDB();
     const owner = await User.findById(attempt.userId).select("name email targetScore").lean();
     let r = await attemptResult(attempt, test);

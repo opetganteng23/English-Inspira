@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { useInstQuery } from "@/lib/inst-client";
@@ -29,7 +30,7 @@ export default function InstPeserta() {
         <div className="table-wrap"><table>
           <thead><tr><th>Participant</th><th>Target</th><th>Tests</th><th>First score</th><th>Last score</th><th>Last</th><th /></tr></thead>
           <tbody>
-            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td><td>{p.target ?? "-"}</td><td>{p.tests}</td><td>{p.firstScore ?? "-"}</td><td className="font-semibold">{p.lastScore ?? "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td><td className="text-right"><button className="font-semibold text-brand" onClick={() => setSel(p.id)}>Results</button></td></tr>)}
+            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td><td>{p.target ?? "-"}</td><td>{p.tests}</td><td>{p.firstScore ?? "-"}</td><td className="font-semibold">{p.lastScore ?? "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td><td className="text-right"><Link href={`/institution/participants/${p.id}`} className="font-semibold text-brand">Dashboard</Link></td></tr>)}
             {data?.participants.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No participants yet.</td></tr>}
           </tbody>
         </table></div>

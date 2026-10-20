@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Pager } from "@/components/Pager";
 import { useApi } from "@/lib/useApi";
 import { askConfirm } from "@/components/Feedback";
@@ -110,7 +111,7 @@ export default function Peserta() {
                 <td><span className={STATUS[p.status]?.[1] ?? "badge-muted"}>{STATUS[p.status]?.[0] ?? p.status}</span></td>
                 <td>{p.level ?? p.pending?.level ?? (p.placementDone ? "-" : "No placement yet")}{!p.level && p.pending && <span className="block text-[11px] text-accent-dark" title="The participant cannot see this result yet">{p.pending.held ? "held (not released)" : `releases ${new Date(p.pending.releaseAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`}</span>}</td><td>{p.scoreEst ?? p.pending?.score ?? "-"}</td><td>{p.quota ? `${p.quota.used}/${p.quota.total}` : "-"}</td><td>{p.tests}</td>
                 <td className="text-xs text-ink-soft">{p.createdAt ? tgl(p.createdAt) : "-"}</td>
-                <td className="text-right"><button className="font-semibold text-brand" onClick={() => setSel(p.id)}>Detail</button></td>
+                <td className="whitespace-nowrap text-right"><Link href={`/admin/participants/${p.id}`} className="mr-3 font-semibold text-brand">Dashboard</Link><button className="font-semibold text-brand" onClick={() => setSel(p.id)}>Manage</button></td>
               </tr>
             ))}
             {data?.participants.length === 0 && <tr><td colSpan={8} className="p-6 text-center text-ink-soft">No participants match these filters. {filtered && <button className="font-semibold text-brand" onClick={reset}>Clear filters</button>}</td></tr>}
