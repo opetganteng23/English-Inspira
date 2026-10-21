@@ -56,6 +56,17 @@ function topicAgg(rs: Row[]): TopicAgg[] {
     .filter((x) => x.perPerson >= 2) // topik dengan 1 soal per orang terlalu sempit untuk disimpulkan
     .sort((x, y) => x.pct - y.pct);
 }
+type PersonTopic = { name: string; section: string; pct: number; n: number };
+/** Kekuatan dan kelemahan satu peserta: topik dengan minimal 2 soal, diurutkan % benar (seri: soal lebih banyak lebih bermakna). */
+function personal(r: Row) {
+  const list: PersonTopic[] = r.topics
+    .filter((t) => t.total >= 2 && isLearningTopic(t) && !/^part-[abc]$/.test(t.topic))
+    .map((t) => ({ name: topicName(t.topic), section: SKILL[t.skill] ?? t.skill, pct: (t.correct / t.total) * 100, n: t.total }));
+  const strong = [...list].sort((a, b) => b.pct - a.pct || b.n - a.n).filter((t) => t.pct >= 60).slice(0, 2);
+  const weak = [...list].sort((a, b) => a.pct - b.pct || b.n - a.n).filter((t) => t.pct < 60).slice(0, 2);
+  return { strong, weak };
+}
+const fmtTopics = (ts: PersonTopic[]) => ts.map((t) => `${t.name} (${Math.round((t.pct * t.n) / 100)}/${t.n} benar)`).join(", ");
 const title = (s: string) => s.replace(/\S+/g, (w) => (w.length > 2 && w === w.toUpperCase() ? w[0] + w.slice(1).toLowerCase() : w));
 
 /**
@@ -531,11 +542,71 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     const rank = (sc: number) => sorted.findIndex((r) => r.score === sc) + 1;
     const allC1 = top.every((r) => r.cefr === "C1");
     const s = base("Peserta dengan skor tertinggi", `${ID(top.length)} peserta dengan skor ≥ ${cut}${allC1 ? ", seluruhnya setara CEFR C1" : ""}`);
-    const body = top.map((r, i) => [String(rank(r.score!)), title(r.name), String(r.score), String(r.listening ?? "-"), String(r.structure ?? "-"), String(r.reading ?? "-"), r.cefr].map((t, j) => ({
-      text: t, options: { align: (j === 1 ? "left" : "center") as PptxGenJS.HAlign, bold: j === 2, fill: { color: rank(r.score!) <= 3 ? C.cream : i % 2 ? C.white : C.card } },
-    })));
+    const body = top.map((r, i) => {
+      const pr = personal(r);
+      const best = KEYS.reduce((a, k) => ((r[k] ?? 0) > (r[a] ?? 0) ? k : a), "listening" as Sec);
+      return [String(rank(r.score!)), title(r.name), String(r.score), String(r.listening ?? "-"), String(r.structure ?? "-"), String(r.reading ?? "-"), r.cefr, pr.strong.length ? pr.strong.map((t) => t.name).join(", ") : SHORT[best]].map((t, j) => ({
+        text: t, options: { align: (j === 1 || j === 7 ? "left" : "center") as PptxGenJS.HAlign, bold: j === 2, fontSize: j === 7 ? 10 : 11.5, fill: { color: rank(r.score!) <= 3 ? C.cream : i % 2 ? C.white : C.card } },
+      }));
+    });
     const rh = Math.min(36.5, 440 / (top.length + 1));
-    s.addTable([tableHead(["Peringkat", "Nama peserta", "Total", "Listening", "Structure", "Reading", "CEFR"], 11.5, ["center", "left", "center", "center", "center", "center", "center"]), ...body], { x: X(58), y: X(163), w: X(1162), colW: [X(115), X(490), X(105), X(115), X(115), X(115), X(107)], rowH: X(rh), fontFace: FONT, fontSize: 11.5, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.75 }, margin: [0.02, 0.1, 0.02, 0.1] });
+    s.addTable([tableHead(["No", "Nama peserta", "Total", "L", "S", "R", "CEFR", "Paling kuat di"], 11.5, ["center", "left", "center", "center", "center", "center", "center", "left"]), ...body], { x: X(58), y: X(163), w: X(1162), colW: [X(55), X(340), X(70), X(55), X(55), X(55), X(62), X(470)], rowH: X(rh), fontFace: FONT, fontSize: 11.5, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.75 }, margin: [0.02, 0.1, 0.02, 0.1] });
+    // ringkasan kekuatan kelompok teratas
+    const cnt = new Map<string, number>();
+    for (const r of top) for (const t of personal(r).strong) cnt.set(`${t.name} (${t.section})`, (cnt.get(`${t.name} (${t.section})`) ?? 0) + 1);
+    const common = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    if (common.length) T(s, [{ text: "Kekuatan bersama peserta teratas: ", options: { bold: true, color: C.orange } }, { text: common.map(([k, n]) => `${k} pada ${n} peserta`).join(" · ") + `. Rata-rata bagian kelompok ini: Listening ${ID(secAvg(top, "listening"), 1)} · Structure ${ID(secAvg(top, "structure"), 1)} · Reading ${ID(secAvg(top, "reading"), 1)}.` }], { x: X(58), y: X(612), w: X(1162), h: X(40), fontSize: 11, color: C.ink, valign: "middle" });
+  }
+
+  // ================= 11b. Kekuatan dan kelemahan per peserta =================
+  {
+    const profs = fin.map((r) => ({ r, ...personal(r) }));
+    const tally = (pick: (x: (typeof profs)[number]) => PersonTopic | undefined) => {
+      const m = new Map<string, { label: string; n: number }>();
+      for (const x of profs) { const t = pick(x); if (!t) continue; const k = `${t.name}|${t.section}`; const a = m.get(k) ?? { label: `${t.name} · ${t.section}`, n: 0 }; a.n++; m.set(k, a); }
+      return [...m.values()].sort((a, b) => b.n - a.n).slice(0, 6);
+    };
+    const weakT = tally((x) => x.weak[0]), strongT = tally((x) => x.strong[0]);
+    if (weakT.length && strongT.length) {
+      const s = base("Kekuatan dan kelemahan per peserta", "Ringkasan topik terkuat dan terlemah masing-masing peserta (topik dengan minimal 2 soal)");
+      const col = (x: number, head: string, list: { label: string; n: number }[], color: string) => {
+        T(s, head, { x: X(x), y: X(160), w: X(560), h: X(24), fontSize: 14, bold: true, color: C.navy });
+        const max = Math.max(...list.map((l) => l.n));
+        list.forEach((l, i) => {
+          const y = 196 + i * 50;
+          const bw = Math.max(10, (170 * l.n) / max);
+          T(s, l.label, { x: X(x), y: X(y), w: X(232), h: X(40), fontSize: 11.5, color: C.ink, valign: "middle" });
+          box(s, x + 238, y + 12, bw, 18, color, 0.3);
+          T(s, `${ID(l.n)} peserta (${P(l.n, fin.length)})`, { x: X(x + 238 + bw + 8), y: X(y), w: X(140), h: X(40), fontSize: 10.5, color: C.soft, valign: "middle" });
+        });
+      };
+      col(58, "Kelemahan utama yang paling sering", weakT, C.red);
+      col(648, "Kekuatan utama yang paling sering", strongT, C.green);
+      darkNote(s, 58, 520, 1162, 118, [
+        { text: "Cara membaca: ", options: { bold: true, color: C.orange } },
+        { text: `${weakT[0].label.split(" · ")[0]} menjadi kelemahan utama bagi ${ID(weakT[0].n)} peserta, sedangkan ${strongT[0].label.split(" · ")[0]} menjadi kekuatan utama bagi ${ID(strongT[0].n)} peserta. Rincian kekuatan dan kelemahan setiap peserta, beserta rencana belajarnya, tersedia di dashboard masing-masing peserta.` },
+      ], "info");
+    }
+
+    // contoh profil: dari tiap level, satu peserta dengan skor tertinggi dan satu di sekitar median level
+    const picks: { r: Row; strong: PersonTopic[]; weak: PersonTopic[]; why: string }[] = [];
+    for (const { l, rs } of [...lv].reverse()) {
+      const ps = [...rs].sort((a, b) => b.score! - a.score!).map((r) => ({ r, ...personal(r) })).filter((x) => x.strong.length && x.weak.length);
+      if (!ps.length) continue;
+      picks.push({ ...ps[0], why: `Tertinggi di ${l.name}` });
+      if (ps.length > 2) picks.push({ ...ps[Math.floor(ps.length / 2)], why: `Tipikal ${l.name}` });
+    }
+    if (picks.length) {
+      const s = base("Contoh profil peserta", "Kekuatan dan kelemahan beberapa peserta, sebagai gambaran hasil analisis per orang");
+      picks.slice(0, 6).forEach((x, i) => {
+        const cx = 58 + (i % 3) * 393.5, cy = 160 + Math.floor(i / 3) * 240;
+        box(s, cx, cy, 370, 225, C.card);
+        T(s, x.why.toUpperCase(), { x: X(cx + 20), y: X(cy + 14), w: X(330), h: X(18), fontSize: 9, bold: true, color: C.orange, charSpacing: 1 });
+        T(s, [{ text: title(x.r.name), options: { bold: true, fontSize: 14, color: C.navy, breakLine: true } }, { text: `Skor ${x.r.score} · ${x.r.level} · CEFR ${x.r.cefr} · L ${x.r.listening ?? "-"} / S ${x.r.structure ?? "-"} / R ${x.r.reading ?? "-"}`, options: { fontSize: 10, color: C.soft } }], { x: X(cx + 20), y: X(cy + 36), w: X(330), h: X(48), valign: "top" });
+        T(s, [{ text: "Kuat: ", options: { bold: true, color: C.green } }, { text: fmtTopics(x.strong) }], { x: X(cx + 20), y: X(cy + 98), w: X(330), h: X(52), fontSize: 11, color: C.ink });
+        T(s, [{ text: "Perlu ditingkatkan: ", options: { bold: true, color: C.red } }, { text: fmtTopics(x.weak) }], { x: X(cx + 20), y: X(cy + 154), w: X(330), h: X(56), fontSize: 11, color: C.ink });
+      });
+    }
   }
 
   // ================= 12. Rekomendasi =================
