@@ -13,10 +13,16 @@ export async function checkIntegrity(attemptId: string) {
   const has = new Set(a.answers.map((x) => String(x.qid)));
   const act = await buildActivity(attemptId);
   const where: string[] = [];
-  for (const s of act.sections) s.questions.forEach((q, i) => {
-    if (!q.answered && !has.has(q.qid) && s.questions[i - 1]?.answered && s.questions[i + 1]?.answered) where.push(`${s.name[0].toUpperCase()}${q.no}`);
-  });
-  await Attempt.updateOne({ _id: attemptId }, { $set: { integrity: { isolatedBlanks: where.length, where, checkedAt: new Date() } } });
+  const lockedStart: { section: string; n: number }[] = [];
+  for (const s of act.sections) {
+    s.questions.forEach((q, i) => {
+      if (!q.answered && !has.has(q.qid) && s.questions[i - 1]?.answered && s.questions[i + 1]?.answered) where.push(`${s.name[0].toUpperCase()}${q.no}`);
+    });
+    // Bagian yang "mulai di tengah": blok soal awal tanpa jejak sama sekali lalu soal sesudahnya dijawab (posisi dari bagian sebelumnya terbawa).
+    let lead = 0; while (lead < s.questions.length && !has.has(s.questions[lead].qid)) lead++;
+    if (lead >= 3 && s.questions.slice(lead).some((q) => q.answered)) lockedStart.push({ section: s.name, n: lead });
+  }
+  await Attempt.updateOne({ _id: attemptId }, { $set: { integrity: { isolatedBlanks: where.length, where, lockedStart, checkedAt: new Date() } } });
   return where;
 }
 

@@ -40,7 +40,7 @@ export async function monitorRows(testId: string, now = new Date(), opts: { inst
   const limitMin = test.sections.reduce((n, s) => n + (s.durationSec ?? 0), 0) / 60;
   const list = await Attempt.aggregate<{
     _id: Types.ObjectId; userId: Types.ObjectId; status: string; startedAt: Date; finishedAt?: Date; updatedAt: Date; sectionIdx: number; scoreEst?: number;
-    releaseAt?: Date; flags: { kind: string }[]; integrity?: { isolatedBlanks?: number }; conn?: { lastSeenAt?: Date; loads?: number; gaps?: { from: Date; to: Date }[] }; proctorReview?: { status?: string; note?: string }; answered: number;
+    releaseAt?: Date; flags: { kind: string }[]; integrity?: { isolatedBlanks?: number; lockedStart?: { section: string; n: number }[] }; conn?: { lastSeenAt?: Date; loads?: number; gaps?: { from: Date; to: Date }[] }; proctorReview?: { status?: string; note?: string }; answered: number;
   }>([
     { $match: { testId: new Types.ObjectId(testId), status: { $in: ["in_progress", "submitted"] }, ...(opts.institutionId ? { userId: { $in: await User.distinct("_id", { institutionId: new Types.ObjectId(opts.institutionId) }) } } : {}) } },
     { $project: { userId: 1, releaseAt: 1, status: 1, startedAt: 1, finishedAt: 1, updatedAt: 1, sectionIdx: 1, scoreEst: 1, flags: "$proctorFlags", integrity: 1, conn: 1, proctorReview: 1, answered: { $size: { $filter: { input: { $ifNull: ["$answers", []] }, cond: { $gt: ["$$this.choice", null] } } } } } },
@@ -76,6 +76,8 @@ export async function monitorRows(testId: string, now = new Date(), opts: { inst
     else if (live === "unstable") issues.push({ code: "unstable", label: "Unstable connection", level: "warn" });
     const sure = +a.startedAt >= +SKIP_TRACKED_SINCE;
     if (lost) issues.push(sure ? { code: "lost", label: `Possible lost answers ×${lost}`, level: "bad" } : { code: "lost", label: `Skipped or lost ×${lost}`, level: "warn" });
+    const locked = a.integrity?.lockedStart ?? [];
+    for (const l of locked) issues.push({ code: "locked", label: `${SEC[l.section] ?? l.section} started at Q${l.n + 1}`, level: "bad" });
     if (gaps.length) issues.push({ code: "gap", label: `Disconnected ${gaps.length}× (max ${gapMaxMin}m)`, level: gapMaxMin >= 3 ? "warn" : "info" });
     if (blanks >= 10) issues.push({ code: "blank", label: `${blanks} blank`, level: "warn" });
     if (minutes != null && limitMin && minutes < limitMin * 0.5) issues.push({ code: "fast", label: `Finished fast (${minutes}m)`, level: "warn" });
@@ -83,7 +85,7 @@ export async function monitorRows(testId: string, now = new Date(), opts: { inst
     if (fullscreen) issues.push({ code: "fullscreen", label: `Left fullscreen ×${fullscreen}`, level: "warn" });
     if (paste) issues.push({ code: "paste", label: `Paste ×${paste}`, level: "bad" });
     if (loads > 2) issues.push({ code: "reload", label: `Reopened ×${loads - 1}`, level: "info" });
-    const risk = Math.min(100, (sure ? lost * 25 : Math.min(20, lost * 5)) + (live === "offline" ? 25 : live === "unstable" ? 10 : 0) + Math.min(30, tab * 2) + Math.min(10, fullscreen * 2) + paste * 15 + (gapMaxMin >= 3 ? 10 : gaps.length ? 4 : 0) + (blanks >= 10 ? 10 : 0) + (issues.some((i) => i.code === "fast") ? 20 : 0) + (loads > 2 ? 3 : 0));
+    const risk = Math.min(100, (locked.length ? 60 : 0) + (sure ? lost * 25 : Math.min(20, lost * 5)) + (live === "offline" ? 25 : live === "unstable" ? 10 : 0) + Math.min(30, tab * 2) + Math.min(10, fullscreen * 2) + paste * 15 + (gapMaxMin >= 3 ? 10 : gaps.length ? 4 : 0) + (blanks >= 10 ? 10 : 0) + (issues.some((i) => i.code === "fast") ? 20 : 0) + (loads > 2 ? 3 : 0));
     rows.push({
       id: String(a._id), name: u.name ?? "", email: u.email, institution: u.institutionId ? insts.get(String(u.institutionId)) ?? "" : "", session: sm.get(String(a.userId)) ?? "",
       status: done ? "submitted" : "in_progress", startedAt: a.startedAt.toISOString(), finishedAt: a.finishedAt?.toISOString() ?? null, minutes,
@@ -111,6 +113,7 @@ export async function diagnose(attemptId: string) {
     const sec = act.sections[g.section ?? 0]?.name ?? "";
     f.push({ level: min >= 3 ? "warn" : "info", title: `Connection lost for ${min} min`, detail: `${clock(g.from!)}–${clock(g.to!)} WIB during ${SEC[sec] ?? sec}. The test resumed afterwards${lostWhere.length ? "" : "; no answers were lost"}.` });
   }
+  for (const { section, n } of (a?.integrity?.lockedStart ?? []).map((l) => ({ section: SEC[String(l.section ?? "")] ?? String(l.section ?? ""), n: l.n ?? 0 }))) f.push({ level: "bad", title: `${section} started at question ${n + 1}`, detail: `Questions 1–${n} of ${section} were never shown: a system fault carried the position over from the previous section (fixed on 22 Oct 2026). These questions count as blank; consider a retake.` });
   if ((a?.conn?.loads ?? 0) > 2) f.push({ level: "info", title: `Test page opened ${a!.conn!.loads} times`, detail: "The participant reloaded or reopened the test (browser closed, device restarted, or network change)." });
   if (a?.integrity?.isolatedBlanks) {
     const sure = a.startedAt && +a.startedAt >= +SKIP_TRACKED_SINCE;

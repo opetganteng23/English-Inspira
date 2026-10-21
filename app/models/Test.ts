@@ -67,7 +67,7 @@ const attemptSchema = new Schema(
     audioPlays: [{ _id: false, audioId: Schema.Types.ObjectId, playedAt: Date, lastPosSec: Number, done: Boolean }],
     analysisId: { type: Schema.Types.ObjectId, ref: "Analysis" },
     aiAnalysis: Schema.Types.Mixed, // sementara; dipindah ke koleksi analyses pada Fase 5
-    integrity: { isolatedBlanks: Number, where: [String], checkedAt: Date },
+    integrity: { isolatedBlanks: Number, where: [String], lockedStart: [{ _id: false, section: String, n: Number }], checkedAt: Date },
     // Koneksi ruang tes (heartbeat 30 detik + tiap simpanan): jeda > 90 detik dicatat sebagai terputus; loads = berapa kali halaman tes dibuka.
     conn: { lastSeenAt: Date, loads: Number, gaps: [{ _id: false, from: Date, to: Date, section: Number }] }, // soal kosong terselip (kemungkinan jawaban hilang), diperiksa otomatis tiap jam
     proctorReview: { status: { type: String, enum: ["clean", "suspicious", "invalid"] }, note: String, at: Date, by: Schema.Types.ObjectId },

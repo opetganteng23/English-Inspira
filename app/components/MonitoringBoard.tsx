@@ -27,7 +27,7 @@ type Trace = {
 const RV: Record<string, [string, string]> = { clean: ["Clean", "badge-ok"], suspicious: ["Suspicious", "badge-warn"], invalid: ["Invalid", "badge-bad"] };
 const LIVE: Record<string, [string, string]> = { active: ["Active", "bg-success"], unstable: ["Unstable", "bg-accent"], offline: ["Disconnected", "bg-red-600"] };
 const CHIP: Record<Issue["level"], string> = { bad: "badge-bad", warn: "badge-warn", info: "badge-muted" };
-const PROBLEMS: [string, string][] = [["any", "Any problem"], ["offline", "Disconnected now"], ["gap", "Connection lost"], ["lost", "Blanks between answers (lost or skipped)"], ["blank", "Many blanks"], ["fast", "Finished fast"], ["tab", "Tab switches"], ["fullscreen", "Left fullscreen"], ["paste", "Paste"], ["reload", "Reopened"], ["none", "No problems"]];
+const PROBLEMS: [string, string][] = [["any", "Any problem"], ["locked", "Section started mid-way (system fault)"], ["offline", "Disconnected now"], ["gap", "Connection lost"], ["lost", "Blanks between answers (lost or skipped)"], ["blank", "Many blanks"], ["fast", "Finished fast"], ["tab", "Tab switches"], ["fullscreen", "Left fullscreen"], ["paste", "Paste"], ["reload", "Reopened"], ["none", "No problems"]];
 const clock = (d: string) => new Date(d).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 const ago = (d: string | null, now: number) => {
   if (!d) return "-";
