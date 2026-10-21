@@ -83,6 +83,7 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
       tabHidden: a ? flags("tab_hidden") : null, fullscreenExit: a ? flags("fullscreen_exit") : null, paste: a ? flags("paste") : null,
       review: a?.proctorReview?.status ?? "",
       startedAt: a?.startedAt ?? null,
+      topics: done ? (a!.topicScores ?? []).map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0 })) : [],
       _sort: win ? +win.opensAt : Number.MAX_SAFE_INTEGER,
     };
   }).sort((x, y) => x._sort - y._sort || x.name.localeCompare(y.name));

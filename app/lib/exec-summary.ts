@@ -4,13 +4,14 @@ import PptxGenJS from "pptxgenjs";
 import { collectTestRows } from "./test-export";
 import { TestSeat, TestSession } from "@/models/Schedule";
 import { User } from "@/models/User";
+import { isLearningTopic } from "./topics";
 
 type Row = NonNullable<Awaited<ReturnType<typeof collectTestRows>>>["rows"][number];
 type Slide = PptxGenJS.Slide;
 type Sec = "listening" | "structure" | "reading";
 
 // Palet dan tipografi mengikuti laporan Hari 1 AirNav yang disusun manual (960 x 540 pt).
-const C = { navy: "0B2A5B", ink: "14213D", soft: "5B6577", card: "EEF3FB", line: "D6DEEA", blue: "0D4FA8", orange: "F28C28", green: "2E9E6B", red: "C2412D", sky: "1E9BE0", mid: "4F86CF", peach: "F7B77A", cream: "FFF1E0", white: "FFFFFF" };
+const C = { cloud: "F8FAFD", navy: "0B2A5B", ink: "14213D", soft: "5B6577", card: "EEF3FB", line: "D6DEEA", blue: "0D4FA8", orange: "F28C28", green: "2E9E6B", red: "C2412D", sky: "1E9BE0", mid: "4F86CF", peach: "F7B77A", cream: "FFF1E0", white: "FFFFFF" };
 const FONT = "Calibri";
 const X = (px: number) => px / 96; // koordinat diukur dari render 1280 x 720 px
 const ASSET = path.join(process.cwd(), "lib", "report-assets");
@@ -29,6 +30,32 @@ const hari = (d: string) => d.replace(/[A-Z][a-z]{2}/g, (w) => HARI[w] ?? w);
 const SEC: Record<Sec, string> = { listening: "Listening", structure: "Structure & Written Expression", reading: "Reading" };
 const SHORT: Record<Sec, string> = { listening: "Listening", structure: "Structure", reading: "Reading" };
 const KEYS: Sec[] = ["listening", "structure", "reading"];
+// Nama tampilan topik soal (tag di bank soal). Topik yang belum dipetakan ditampilkan dari slug-nya.
+const TOPIC: Record<string, string> = {
+  "infinitive-gerund": "Gerund & infinitive", inversion: "Inversion", "reduced-clause": "Reduced clause", cleft: "Cleft sentence", "verb-form": "Verb form & tenses",
+  "adj-clause": "Adjective clause", parallelism: "Parallel structure", "plural-noun": "Singular & plural noun", "noun-adverb-clause": "Noun & adverb clause",
+  "sv-agreement": "Subject–verb agreement", redundancy: "Redundancy", "paired-conj": "Paired conjunction", pronoun: "Pronoun", "subject-verb": "Subject & verb",
+  "word-form": "Word form", comparison: "Comparison", article: "Article", conjunction: "Conjunction", preposition: "Preposition", tense: "Tenses", tenses: "Tenses",
+  "main-idea": "Main idea", detail: "Detail", "phrasal-verb": "Phrasal verb", reason: "Reason", agreement: "Agreement & disagreement", implication: "Implication",
+  purpose: "Purpose", idiom: "Idiom", inference: "Inference", suggestion: "Suggestion", conditional: "Conditional", restatement: "Restatement", negative: "Negative expression",
+  "negative-fact": "Negative fact (NOT/EXCEPT)", reference: "Reference", vocabulary: "Vocabulary", attitude: "Author’s attitude",
+};
+const SKILL: Record<string, string> = { grammar: "Structure", structure: "Structure", listening: "Listening", reading: "Reading" };
+const topicName = (t: string) => TOPIC[t] ?? t.replace(/-/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+type TopicAgg = { key: string; name: string; section: string; pct: number; perPerson: number; weak: number; people: number };
+/** Rekap per topik dari skor topik tiap peserta: % benar, rata-rata soal per orang, dan jumlah peserta yang benar < 50%. */
+function topicAgg(rs: Row[]): TopicAgg[] {
+  const m = new Map<string, { skill: string; topic: string; c: number; n: number; people: number; weak: number }>();
+  for (const r of rs) for (const t of r.topics) {
+    if (!t.total || !isLearningTopic(t) || /^part-[abc]$/.test(t.topic)) continue;
+    const k = `${t.skill}|${t.topic}`, a = m.get(k) ?? { skill: t.skill, topic: t.topic, c: 0, n: 0, people: 0, weak: 0 };
+    a.c += t.correct; a.n += t.total; a.people++; if (t.correct / t.total < 0.5) a.weak++;
+    m.set(k, a);
+  }
+  return [...m.entries()].map(([key, a]) => ({ key, name: topicName(a.topic), section: SKILL[a.skill] ?? a.skill, pct: (a.c / a.n) * 100, perPerson: a.n / a.people, weak: a.weak, people: a.people }))
+    .filter((x) => x.perPerson >= 2) // topik dengan 1 soal per orang terlalu sempit untuk disimpulkan
+    .sort((x, y) => x.pct - y.pct);
+}
 const title = (s: string) => s.replace(/\S+/g, (w) => (w.length > 2 && w === w.toUpperCase() ? w[0] + w.slice(1).toLowerCase() : w));
 
 /**
@@ -81,7 +108,7 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   };
   // Footer di slide master: logo tersimpan sekali untuk seluruh slide (ukuran file tetap kecil).
   p.defineSlideMaster({
-    title: "CONTENT", background: { color: C.white },
+    title: "CONTENT", background: { color: C.cloud },
     objects: [
       { image: { data: L.inspira, x: X(58), y: X(664), w: X(30 * LOGO.inspira), h: X(30) } },
       { text: { text: footerText, options: { x: X(158), y: X(670), w: X(760), h: X(22), fontFace: FONT, fontSize: 9, color: C.ink, valign: "middle", margin: 0 } } },
@@ -107,16 +134,15 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   {
     const s = p.addSlide();
     s.background = { data: img("bg-cover.png") }; // lingkaran sudah terpotong di gambar: aman di viewer yang tidak memotong objek di luar slide
-    box(s, 67, 62, 376, 141, C.white, 0.15);
-    s.addImage({ data: L.inspira, x: X(85), y: X(78), w: X(110 * LOGO.inspira), h: X(110) });
+    s.addImage({ data: L.inspira, x: X(67), y: X(70), w: X(118 * LOGO.inspira), h: X(118) });
     T(s, `LAPORAN UNTUK ${(inst || "institusi").toUpperCase()}`, { x: X(67), y: X(244), w: X(1000), h: X(24), fontSize: 12, bold: true, color: C.orange, charSpacing: 3 });
-    T(s, `Hasil ${test.name}`, { x: X(67), y: X(292), w: X(1000), h: X(60), fontSize: 34, bold: true, color: C.white });
+    T(s, `Hasil ${test.name}`, { x: X(67), y: X(292), w: X(1000), h: X(60), fontSize: 34, bold: true, color: C.navy });
     T(s, perDay ? scopeLabel : allSess.length ? `Keseluruhan · ${TGL(allSess[0].opensAt, false)} – ${TGL(allSess[allSess.length - 1].opensAt, false)}` : "Keseluruhan", { x: X(67), y: X(355), w: X(1000), h: X(60), fontSize: 34, bold: true, color: C.orange });
-    T(s, `Program English Inspira AI · ${ID(fin.length)} peserta menyelesaikan tes${fin.length ? ` · rata-rata skor ${ID(Math.round(mean(scores)))}` : ""}`, { x: X(67), y: X(457), w: X(1000), h: X(26), fontSize: 14, color: "DCE6F5" });
-    T(s, `Data diekspor dari English Inspira AI pada ${now.toLocaleString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`, { x: X(67), y: X(510), w: X(1000), h: X(20), fontSize: 10, italic: true, color: "AFC2E2" });
-    box(s, 67, 600, 443, 83, C.white, 0.15);
-    T(s, "Dikembangkan oleh", { x: X(82), y: X(630), w: X(110), h: X(20), fontSize: 8, color: C.soft, valign: "middle" });
-    partners(s, 190, 608, 68);
+    T(s, `Program English Inspira AI · ${ID(fin.length)} peserta menyelesaikan tes${fin.length ? ` · rata-rata skor ${ID(Math.round(mean(scores)))}` : ""}`, { x: X(67), y: X(457), w: X(1000), h: X(26), fontSize: 14, color: C.ink });
+    T(s, `Data diekspor dari English Inspira AI pada ${now.toLocaleString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`, { x: X(67), y: X(510), w: X(1000), h: X(20), fontSize: 10, italic: true, color: C.soft });
+    s.addShape(p.ShapeType.line, { x: X(67), y: X(588), w: X(440), h: 0, line: { color: C.line, width: 1 } });
+    T(s, "Dikembangkan oleh", { x: X(67), y: X(630), w: X(110), h: X(20), fontSize: 9, color: C.soft, valign: "middle" });
+    partners(s, 180, 606, 70);
   }
 
   if (!fin.length) {
@@ -361,6 +387,52 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     ]);
   }
 
+  // ================= 7b. Kekuatan dan kelemahan per topik =================
+  const topics = topicAgg(fin);
+  if (topics.length >= 4) {
+    const s = base("Kekuatan dan kelemahan per topik", "Persentase jawaban benar per topik soal, dari seluruh jawaban peserta yang menyelesaikan tes");
+    const n = Math.min(6, Math.floor(topics.length / 2));
+    const weak = topics.slice(0, n), strong = topics.slice(-n).reverse();
+    const col = (x: number, head: string, list: TopicAgg[], color: string, weakSide: boolean) => {
+      T(s, head, { x: X(x), y: X(160), w: X(560), h: X(24), fontSize: 14, bold: true, color: C.navy });
+      list.forEach((t, i) => {
+        const y = 196 + i * 70;
+        box(s, x, y, 572, 60, C.card);
+        T(s, [{ text: t.name, options: { bold: true, color: C.navy, fontSize: 13 } }, { text: `   ${t.section}`, options: { color: C.soft, fontSize: 10 } }], { x: X(x + 18), y: X(y + 7), w: X(420), h: X(22), valign: "middle" });
+        T(s, `${ID(t.pct, 0)}%`, { x: X(x + 450), y: X(y + 5), w: X(104), h: X(28), fontSize: 20, bold: true, color, align: "right", valign: "middle" });
+        box(s, x + 18, y + 38, 300, 10, C.line, 0.5);
+        box(s, x + 18, y + 38, Math.max(8, 3 * t.pct), 10, color, 0.5);
+        T(s, weakSide ? `${ID(t.weak)} peserta (${P(t.weak, t.people)}) benar < 50%` : `${ID(t.people - t.weak)} peserta (${P(t.people - t.weak, t.people)}) benar ≥ 50%`, { x: X(x + 330), y: X(y + 34), w: X(224), h: X(18), fontSize: 9.5, color: C.soft, align: "right", valign: "middle" });
+      });
+    };
+    col(58, "Topik paling lemah", weak, C.red, true);
+    col(648, "Topik paling kuat", strong, C.green, false);
+    const w0 = weak[0];
+    T(s, [{ text: "Cara membaca: ", options: { bold: true, color: C.orange } }, { text: `soal ${w0.name} (${w0.section}) hanya dijawab benar ${ID(w0.pct, 0)}%, dan ${ID(w0.weak)} peserta menjawab benar kurang dari separuh soal topik ini. Topik seperti ini layak menjadi materi awal di kelas.` }], { x: X(58), y: X(618), w: X(1162), h: X(36), fontSize: 11, color: C.ink, valign: "middle" });
+  }
+
+  // ================= 7c. Kelemahan per level =================
+  if (topics.length >= 4) {
+    const s = base("Kelemahan utama per level", "Topik dengan persentase benar terendah di tiap level, sebagai dasar materi kelas pada tahap pembelajaran");
+    const icons: [string, string][] = [["sprout", C.sky], ["layers", C.blue], ["rocket", C.navy]];
+    const examples: string[] = [];
+    lv.slice(0, 3).forEach(({ l, rs }, i) => {
+      const x = 58 + i * 393.5;
+      box(s, x, 160, 370, 362, C.card);
+      dot(s, x + 22, 178, 54, icons[i][1], icons[i][0]);
+      T(s, [{ text: l.name, options: { bold: true, fontSize: 16, color: C.navy, breakLine: true } }, { text: `${ID(rs.length)} peserta · 5 topik terlemah`, options: { fontSize: 10.5, color: C.soft } }], { x: X(x + 90), y: X(180), w: X(260), h: X(50), valign: "middle" });
+      const tl = topicAgg(rs).slice(0, 5);
+      if (!tl.length) { T(s, "Belum ada peserta di level ini.", { x: X(x + 22), y: X(250), w: X(320), h: X(24), fontSize: 12, color: C.soft }); return; }
+      tl.forEach((t, j) => {
+        const y = 248 + j * 53;
+        T(s, [{ text: t.name, options: { bold: true, fontSize: 12, color: C.ink, breakLine: true } }, { text: t.section, options: { fontSize: 9.5, color: C.soft } }], { x: X(x + 22), y: X(y), w: X(250), h: X(42), valign: "middle" });
+        T(s, `${ID(t.pct, 0)}%`, { x: X(x + 270), y: X(y), w: X(80), h: X(42), fontSize: 18, bold: true, color: t.pct < 50 ? C.red : t.pct < 65 ? C.orange : C.green, align: "right", valign: "middle" });
+      });
+      examples.push(`${l.name} lemah di ${tl.slice(0, 2).map((t) => `${t.name} (${ID(t.pct, 0)}%)`).join(" dan ")}`);
+    });
+    darkNote(s, 58, 540, 1162, 98, [{ text: "Contoh hasil: ", options: { bold: true, color: C.orange } }, { text: `${examples.join("; ")}. Persentase adalah jawaban benar dari seluruh soal topik tersebut pada level itu.` }]);
+  }
+
   // ================= 8. Profil per level =================
   {
     const s = base("Profil kemampuan per level", "Rata-rata skor tiap bagian untuk masing-masing level penempatan");
@@ -476,7 +548,7 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
       ["rocket", C.navy, `${hi.l.name} · ${ID(hi.rs.length)} peserta`, `Pembelajaran padat dan intensif untuk menjaga skor ≥ ${target} dan mendorong ke 600-an${hi.rs.length ? `, dengan fokus ${weakOf(hi.rs).slice(0, 2).map((k) => SHORT[k]).join(" dan ")}` : ""}.`],
       ["target", C.blue, mid ? `${mid.l.name} · ${ID(mid.rs.length)} peserta` : "Kelompok dekat target", `Prioritaskan ${ID(near)} peserta di rentang ${target - 50}–${target - 1}.${mid?.rs.length ? ` Fokus utama ${SEC[weakOf(mid.rs)[0]]} dan strategi waktu.` : ""}`],
       ["sprout", C.sky, `${low.l.name} · ${ID(low.rs.length)} peserta`, "Pembelajaran lebih banyak dan bertahap: grammar dasar, kosakata akademik, dan pemahaman audio."],
-      ["layers", C.orange, "Materi bersama", `${SEC[weakPer]} menjadi materi prioritas lintas level, dipadukan latihan manajemen waktu.`],
+      ["layers", C.orange, "Materi bersama", `${SEC[weakPer]} menjadi materi prioritas lintas level${topics.length ? `, terutama ${topics.slice(0, 2).map((t) => t.name).join(" dan ")}` : ""}, dipadukan latihan manajemen waktu.`],
       ["users", C.green, "Tindak lanjut jadwal", moved.length ? `Pastikan ${ID(moved.length)} peserta yang pindah jadwal mengikuti tes di tanggal barunya${inactive ? `; ${ID(inactive)} akun perlu segera diaktifkan` : ""}.`
         : absentRows.length ? `Hubungi ${ID(absentRows.length)} peserta yang tidak hadir untuk dijadwalkan ulang.`
         : pendingRows.length ? `${ID(pendingRows.length)} peserta masih dijadwalkan; pastikan akun mereka sudah aktif sebelum tes.`
@@ -537,20 +609,20 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     const s = p.addSlide();
     s.background = { data: img("bg-closing.png") };
     T(s, "TERIMA KASIH", { x: X(67), y: X(68), w: X(600), h: X(22), fontSize: 12, bold: true, color: C.orange, charSpacing: 3 });
-    T(s, perDay ? "Awal yang kuat sudah dimulai." : "Peta kemampuan sudah lengkap.", { x: X(67), y: X(112), w: X(720), h: X(56), fontSize: 30, bold: true, color: C.white });
+    T(s, perDay ? "Awal yang kuat sudah dimulai." : "Peta kemampuan sudah lengkap.", { x: X(67), y: X(112), w: X(720), h: X(56), fontSize: 30, bold: true, color: C.navy });
     T(s, perDay ? "Skor terbaik menanti di depan." : "Saatnya belajar lebih terarah.", { x: X(67), y: X(172), w: X(720), h: X(56), fontSize: 30, bold: true, color: C.orange });
-    T(s, `Terima kasih kepada ${inst ? `institusi dan seluruh peserta ${inst}` : "institusi dan seluruh peserta"} atas semangatnya${perDay ? " hari ini" : ""}. Setiap jawaban menjadi peta belajar menuju ${target} dan lebih tinggi lagi.`, { x: X(67), y: X(285), w: X(680), h: X(80), fontSize: 14, color: "DCE6F5" });
-    T(s, perDay ? "Laporan hari berikutnya dan laporan keseluruhan dapat diunduh setelah setiap sesi selesai." : "Laporan ini dapat diunduh ulang kapan saja dari English Inspira AI untuk angka terbaru.", { x: X(67), y: X(402), w: X(680), h: X(44), fontSize: 11, italic: true, color: "AFC2E2" });
-    box(s, 806, 125, 414, 375, C.white);
+    T(s, `Terima kasih kepada ${inst ? `institusi dan seluruh peserta ${inst}` : "institusi dan seluruh peserta"} atas semangatnya${perDay ? " hari ini" : ""}. Setiap jawaban menjadi peta belajar menuju ${target} dan lebih tinggi lagi.`, { x: X(67), y: X(285), w: X(680), h: X(80), fontSize: 14, color: C.ink });
+    T(s, perDay ? "Laporan hari berikutnya dan laporan keseluruhan dapat diunduh setelah setiap sesi selesai." : "Laporan ini dapat diunduh ulang kapan saja dari English Inspira AI untuk angka terbaru.", { x: X(67), y: X(402), w: X(680), h: X(44), fontSize: 11, italic: true, color: C.soft });
+    s.addShape(p.ShapeType.roundRect, { x: X(806), y: X(125), w: X(414), h: X(375), fill: { color: C.white }, line: { color: C.line, width: 1 }, rectRadius: 0.12 });
     T(s, "Hubungi kami", { x: X(840), y: X(150), w: X(350), h: X(30), fontSize: 18, bold: true, color: C.navy, valign: "middle" });
     ([["whatsapp", "+62 851 1163 6633"], ["mail", "nusainspirateknologi@gmail.com"], ["globe", "english.edulyfe.id"]] as const).forEach(([ic, t], i) => {
       dot(s, 840, 220 + i * 82, 54, C.blue, ic);
       T(s, t, { x: X(907), y: X(232 + i * 82), w: X(300), h: X(30), fontSize: 13, color: C.ink, valign: "middle" });
     });
-    box(s, 67, 576, 1153, 102, C.white);
-    s.addImage({ data: L.inspira, x: X(95), y: X(588), w: X(78 * LOGO.inspira), h: X(78) });
-    T(s, "Learn Smarter. Improve Faster. Certify with Confidence.", { x: X(345), y: X(612), w: X(480), h: X(30), fontSize: 14, bold: true, italic: true, color: C.blue, align: "center", valign: "middle" });
-    partners(s, 858, 590, 72);
+    s.addShape(p.ShapeType.line, { x: X(470), y: X(570), w: X(750), h: 0, line: { color: C.line, width: 1 } });
+    s.addImage({ data: L.inspira, x: X(470), y: X(590), w: X(78 * LOGO.inspira), h: X(78) });
+    T(s, "Learn Smarter. Improve Faster. Certify with Confidence.", { x: X(470), y: X(530), w: X(750), h: X(30), fontSize: 14, bold: true, italic: true, color: C.blue, align: "right", valign: "middle" });
+    partners(s, 878, 592, 72);
   }
 
   return { buffer: Buffer.from((await p.stream({ compression: true })) as Uint8Array), name: perDay ? `${test.name} - ${scopeLabel}` : test.name };
