@@ -8,6 +8,7 @@ import { planDeadlineReminders, quotaWarnings, contractWarnings } from "./remind
 import { sendSessionReminders } from "./coaching";
 import { retryFallbackAnalyses } from "./analysis";
 import { releaseDueResults } from "./attempts";
+import { scanIntegrity } from "./integrity";
 import { sendTestReminders } from "./schedule-admin";
 import { PdfImport, pdfBucket } from "@/models/Pdf";
 
@@ -26,7 +27,7 @@ export async function mailJob() {
 
 /** Per jam: pengingat sesi coaching H-1, dan ulangi narasi AI yang jatuh ke template. */
 export async function hourlyJob() {
-  return { reminders: await sendSessionReminders(), analysis: await retryFallbackAnalyses(), testReminders: await sendTestReminders() };
+  return { reminders: await sendSessionReminders(), analysis: await retryFallbackAnalyses(), testReminders: await sendTestReminders(), integrity: await scanIntegrity().catch((e) => { console.error("[integrity]", e); return null; }) };
 }
 
 /** Harian: akhiri enrollment yang kontraknya habis, bersihkan undangan/email lama. */

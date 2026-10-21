@@ -6,7 +6,7 @@ import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
 
-type A = { id: string; user: string; test: string; kind: string; finishedAt: string; scoreEst: number; flags: number; counts: Record<string, number>; review: { status: string; note?: string } | null };
+type A = { id: string; user: string; test: string; kind: string; finishedAt: string; scoreEst: number; flags: number; counts: Record<string, number>; lost?: { n: number; where: string[] } | null; review: { status: string; note?: string } | null };
 const FLAG: Record<string, string> = { tab_hidden: "Tab switch", fullscreen_exit: "Exit fullscreen", paste: "Paste", multi_tab: "Multi-tab" };
 const RV: Record<string, [string, string]> = { clean: ["Clean", "badge-ok"], suspicious: ["Suspicious", "badge-warn"], invalid: ["Invalid", "badge-bad"] };
 
@@ -29,7 +29,7 @@ export default function Proctoring() {
           {data?.attempts.map((a) => (
             <div key={a.id} className="card flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-semibold text-navy">{a.user}</p><p className="text-sm text-ink-soft">{a.test} · {tgl(a.finishedAt, true)} · score {a.scoreEst}</p></div>{a.review && <span className={RV[a.review.status][1]}>{RV[a.review.status][0]}</span>}</div>
-              <div className="flex flex-wrap items-center gap-2">{Object.entries(a.counts).map(([k, n]) => <span key={k} className="badge-muted">{FLAG[k] ?? k}: {n}×</span>)}<Link href={`/admin/proctoring/${a.id}`} className="ml-auto text-sm font-semibold text-brand">Activity timeline →</Link></div>
+              <div className="flex flex-wrap items-center gap-2">{Object.entries(a.counts).map(([k, n]) => <span key={k} className="badge-muted">{FLAG[k] ?? k}: {n}×</span>)}{a.lost && <span className="badge-warn" title="Blank questions between answered ones with no saved data: an answer may have been lost on the way, or Next was pressed without choosing">Possible lost answers: {a.lost.n} ({a.lost.where.join(", ")})</span>}<Link href={`/admin/proctoring/${a.id}`} className="ml-auto text-sm font-semibold text-brand">Activity timeline →</Link></div>
               <div className="flex flex-col gap-2 sm:flex-row"><input aria-label="Note" className="field" placeholder={a.review?.note || "Note (optional)"} value={note[a.id] ?? ""} onChange={(e) => setNote({ ...note, [a.id]: e.target.value })} />
                 <div className="flex shrink-0 gap-2">{Object.entries(RV).map(([k, [l]]) => <button key={k} className={k === "clean" ? "btn-outline" : k === "suspicious" ? "btn-accent" : "btn-danger"} onClick={() => review(a.id, k)}>{l}</button>)}</div></div>
             </div>

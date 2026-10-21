@@ -15,16 +15,17 @@ export async function GET(req: Request) {
     await requireRole(["admin"]);
     await connectDB();
     const filter = new URL(req.url).searchParams.get("filter") ?? "pending";
-    const q: Record<string, unknown> = { status: "submitted", "proctorFlags.0": { $exists: true } };
+    // Sesi dengan catatan aktivitas ATAU kemungkinan jawaban hilang (soal kosong terselip, diperiksa otomatis).
+    const q: Record<string, unknown> = { status: "submitted", $or: [{ "proctorFlags.0": { $exists: true } }, { "integrity.isolatedBlanks": { $gt: 0 } }] };
     if (filter === "pending") q["proctorReview.status"] = { $exists: false };
-    const list = await Attempt.find(q).sort({ finishedAt: -1 }).limit(100).select("userId testId kind finishedAt proctorFlags proctorReview scoreEst").lean();
+    const list = await Attempt.find(q).sort({ finishedAt: -1 }).limit(100).select("userId testId kind finishedAt proctorFlags proctorReview scoreEst integrity").lean();
     const [users, tests] = await Promise.all([User.find({ _id: { $in: list.map((a) => a.userId) } }).select("name email").lean(), Test.find({ _id: { $in: list.map((a) => a.testId) } }).select("name").lean()]);
     const un = new Map(users.map((u) => [String(u._id), u])), tn = new Map(tests.map((t) => [String(t._id), t.name]));
     return NextResponse.json({
       attempts: list.map((a) => {
         const counts: Record<string, number> = {};
         for (const f of a.proctorFlags) counts[f.kind ?? "?"] = (counts[f.kind ?? "?"] ?? 0) + 1;
-        return { id: String(a._id), user: un.get(String(a.userId))?.name ?? un.get(String(a.userId))?.email ?? "-", test: tn.get(String(a.testId)) ?? "-", kind: a.kind, finishedAt: a.finishedAt, scoreEst: a.scoreEst, flags: a.proctorFlags.length, counts, review: a.proctorReview?.status ? { status: a.proctorReview.status, note: a.proctorReview.note } : null };
+        return { id: String(a._id), user: un.get(String(a.userId))?.name ?? un.get(String(a.userId))?.email ?? "-", test: tn.get(String(a.testId)) ?? "-", kind: a.kind, finishedAt: a.finishedAt, scoreEst: a.scoreEst, flags: a.proctorFlags.length, counts, lost: a.integrity?.isolatedBlanks ? { n: a.integrity.isolatedBlanks, where: a.integrity.where ?? [] } : null, review: a.proctorReview?.status ? { status: a.proctorReview.status, note: a.proctorReview.note } : null };
       }),
     });
   } catch (e) {

@@ -44,9 +44,15 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
   const dirty = useRef<Set<string>>(new Set());
   const pendingFlags = useRef<{ kind: string; qid: string | null }[]>([]);
+  const flushRef = useRef<(() => Promise<boolean>) | null>(null);
   const curQid = useRef<string | null>(null); // soal yang sedang tampil: dicatat bersama setiap kejadian proctoring
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const ansRef = useRef(ans); ansRef.current = ans;
+  // Cadangan jawaban yang belum terkirim, di browser peserta: dikirim ulang setelah koneksi kembali atau setelah refresh.
+  const PENDING = `ei-pending:${params.id}`;
+  const readPending = (): Record<string, number> => { try { return JSON.parse(localStorage.getItem(PENDING) ?? "{}"); } catch { return {}; } };
+  const writePending = (p: Record<string, number>) => { try { if (Object.keys(p).length) localStorage.setItem(PENDING, JSON.stringify(p)); else localStorage.removeItem(PENDING); } catch { /* penyimpanan tidak tersedia */ } };
+  const [navBusy, setNavBusy] = useState(false);
   const flagRef = useRef(flagged); flagRef.current = flagged;
   // Waktu per soal: akumulasi detik saat soal tampil (dipakai analisis AI).
   const spent = useRef<Record<string, number>>({});
@@ -91,7 +97,12 @@ export default function Ruang({ params }: { params: { id: string } }) {
       }
       setSt(d); setCur(start); setLeft(d.remainingSec); setConfirm(false); spent.current = {};
       for (const a of d.answers) if (a.timeSpentSec) spent.current[a.qid] = a.timeSpentSec;
-      setAns(Object.fromEntries(d.answers.filter((a) => a.choice != null).map((a) => [a.qid, a.choice as number])));
+      const fromServer = Object.fromEntries(d.answers.filter((a) => a.choice != null).map((a) => [a.qid, a.choice as number]));
+      const pend = readPending(), inSection = new Set(d.questions.map((x) => x.id)), resend: Record<string, number> = {};
+      for (const [qid, c] of Object.entries(pend)) { if (fromServer[qid] == null && inSection.has(qid)) resend[qid] = c; else if (fromServer[qid] != null || !inSection.has(qid)) delete pend[qid]; }
+      writePending(pend);
+      setAns({ ...fromServer, ...resend });
+      if (Object.keys(resend).length) { Object.keys(resend).forEach((qid) => dirty.current.add(qid)); setTimeout(() => void flushRef.current?.(), 300); }
       setFlagged(Object.fromEntries(d.answers.map((a) => [a.qid, a.flagged])));
     } catch (e) { setErr((e as Error).message); }
   }, [params.id, router]);
@@ -120,16 +131,18 @@ export default function Ruang({ params }: { params: { id: string } }) {
     const sendReached = reachedDirty.current; reachedDirty.current = false;
     const ids = Array.from(dirty.current); dirty.current.clear();
     const flags = pendingFlags.current.splice(0);
+    const sentAns: Record<string, number | null> = {};
     setSaved("saving");
     try {
       await api(`/api/attempts/${params.id}`, {
         method: "PATCH",
         json: {
-          answers: ids.map((qid) => ({ qid, choice: ansRef.current[qid] ?? null, flagged: !!flagRef.current[qid], timeSpentSec: Math.min(3600, Math.round(spent.current[qid] ?? 0)) })),
+          answers: ids.map((qid) => ({ qid, choice: (sentAns[qid] = ansRef.current[qid] ?? null), flagged: !!flagRef.current[qid], timeSpentSec: Math.min(3600, Math.round(spent.current[qid] ?? 0)) })),
           flags,
           ...(sendReached ? { reached: reachedRef.current } : {}),
         },
       });
+      const p = readPending(); for (const qid of ids) if (p[qid] === sentAns[qid]) delete p[qid]; writePending(p);
       setSaved("ok"); return true;
     } catch (e) {
       if ((e as { status?: number }).status === 409) { await load(); return false; } // section habis di server
@@ -141,6 +154,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
     saving.current = run;
     return run;
   }, [flushNow]); // eslint-disable-line react-hooks/exhaustive-deps
+  flushRef.current = flush;
+  useEffect(() => { const on = () => void flushRef.current?.(); window.addEventListener("online", on); return () => window.removeEventListener("online", on); }, []);
 
   const queue = (qid: string) => { dirty.current.add(qid); clearTimeout(timer.current); timer.current = setTimeout(flush, 2000); };
 
@@ -195,7 +210,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
   curQid.current = q?.id ?? null;
   const group = st.groups.find((g) => g.id === q.groupId);
   const last = st.section.index + 1 >= st.section.total;
-  const choose = (i: number) => { setAns((a) => ({ ...a, [q.id]: i })); queue(q.id); };
+  const choose = (i: number) => { setAns((a) => ({ ...a, [q.id]: i })); writePending({ ...readPending(), [q.id]: i }); queue(q.id); };
   const toggleFlag = () => { setFlagged((f) => ({ ...f, [q.id]: !f[q.id] })); queue(q.id); };
   const answered = Object.keys(ans).filter((id) => st.questions.some((x) => x.id === id)).length;
   const finishLabel = last ? "Submit test" : "Finish section";
@@ -205,6 +220,13 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const showNotice = secure && !noticeSeen.has(noticeKey) && (() => { try { return !sessionStorage.getItem(noticeKey); } catch { return true; } })();
   const closeNotice = () => { try { sessionStorage.setItem(noticeKey, "1"); } catch { /* */ } setNoticeSeen((x) => new Set(x).add(noticeKey)); };
   // Pindah soal. Mode aman: hanya maju; soal yang dilewati terkunci, jawaban yang tertunda disimpan sekarang.
+  const goNext = async () => {
+    if (!secure) return goTo(cur + 1);
+    if (navBusy) return;
+    setNavBusy(true);
+    try { await flush(); } finally { setNavBusy(false); }
+    goTo(cur + 1);
+  };
   const goTo = (i: number) => {
     if (i < 0 || i >= st.questions.length) return;
     if (secure) {
@@ -292,13 +314,13 @@ export default function Ruang({ params }: { params: { id: string } }) {
           {!secure && <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => goTo(cur - 1)} aria-label="Previous question">Previous</button>}
           <button className="btn-outline flex-1" onClick={() => setNavOpen(!navOpen)} aria-expanded={navOpen}>{cur + 1}/{st.questions.length} · {answered} answered</button>
           {cur < st.questions.length - 1
-            ? <button className="btn-solid !px-5" onClick={() => goTo(cur + 1)} aria-label="Next question">Next</button>
+            ? <button className="btn-solid !px-5" disabled={navBusy} onClick={() => void goNext()} aria-label="Next question">{navBusy ? "Saving…" : "Next"}</button>
             : <button className="btn-accent !px-4" onClick={() => openConfirm()}>{finishLabel}</button>}
         </div>
       </div>
       <div className="mx-auto hidden w-full max-w-6xl shrink-0 items-center justify-between border-t border-line bg-white px-6 py-3 lg:flex">
         {secure ? <span className="text-sm text-ink-soft">Secure mode: no going back</span> : <button className="btn-outline" disabled={cur === 0} onClick={() => goTo(cur - 1)}>Previous</button>}
-        {cur < st.questions.length - 1 ? <button className="btn-solid" onClick={() => goTo(cur + 1)}>Next</button> : <button className="btn-accent" onClick={() => openConfirm()}>{finishLabel}</button>}
+        {cur < st.questions.length - 1 ? <button className="btn-solid" disabled={navBusy} onClick={() => void goNext()}>{navBusy ? "Saving…" : "Next"}</button> : <button className="btn-accent" onClick={() => openConfirm()}>{finishLabel}</button>}
       </div>
 
       {showNotice && !confirm && (
