@@ -31,7 +31,7 @@ const DAY = (d: Date) => new Date(d).toLocaleDateString("en-GB", { weekday: "sho
  * Hasil satu tes untuk admin: semua peserta yang dijadwalkan (dan yang mengerjakan tanpa jadwal), satu baris per orang.
  * Skor, bagian, CEFR, level, waktu, catatan proctoring, plus rekap per tanggal dan per level.
  */
-export async function buildTestExport(testId: string, now = new Date(), sessionId?: string) {
+export async function collectTestRows(testId: string, now = new Date(), sessionId?: string) {
   await connectDB();
   const test = await Test.findById(testId).lean();
   if (!test) return null;
@@ -82,10 +82,18 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
       basis: a?.scoreBasis ?? "",
       tabHidden: a ? flags("tab_hidden") : null, fullscreenExit: a ? flags("fullscreen_exit") : null, paste: a ? flags("paste") : null,
       review: a?.proctorReview?.status ?? "",
+      startedAt: a?.startedAt ?? null,
       _sort: win ? +win.opensAt : Number.MAX_SAFE_INTEGER,
     };
   }).sort((x, y) => x._sort - y._sort || x.name.localeCompare(y.name));
 
+  return { test, sessions, rows, levels };
+}
+
+export async function buildTestExport(testId: string, now = new Date(), sessionId?: string) {
+  const got = await collectTestRows(testId, now, sessionId);
+  if (!got) return null;
+  const { test, sessions, rows, levels } = got;
   const wb = new ExcelJS.Workbook();
   wb.creator = "English Inspira AI";
   const NAVY = "FF0A2257";
