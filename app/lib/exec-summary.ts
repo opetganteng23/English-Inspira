@@ -558,6 +558,46 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     if (common.length) T(s, [{ text: "Kekuatan bersama peserta teratas: ", options: { bold: true, color: C.orange } }, { text: common.map(([k, n]) => `${k} pada ${n} peserta`).join(" · ") + `. Rata-rata bagian kelompok ini: Listening ${ID(secAvg(top, "listening"), 1)} · Structure ${ID(secAvg(top, "structure"), 1)} · Reading ${ID(secAvg(top, "reading"), 1)}.` }], { x: X(58), y: X(612), w: X(1162), h: X(40), fontSize: 11, color: C.ink, valign: "middle" });
   }
 
+  // ================= 11a. Skor terendah: apa masalahnya =================
+  {
+    const asc = [...fin].sort((a, b) => a.score! - b.score! || a.name.localeCompare(b.name));
+    const low = asc.slice(0, Math.min(10, Math.max(3, Math.floor(fin.length * 0.1))));
+    if (fin.length >= 5) {
+      const mid = median(nums(fin.map((r) => r.minutes)));
+      const issues = (r: Row) => {
+        const out: string[] = [];
+        const blank = totalQ - (r.answered ?? totalQ);
+        if (blank >= 10) out.push(`${blank} soal tidak dijawab`);
+        if (r.minutes != null && limitMin && r.minutes < limitMin * 0.5) out.push(`selesai cepat (${r.minutes} menit)`);
+        const lowSec = KEYS.reduce((a, k) => ((r[k] ?? 99) < (r[a] ?? 99) ? k : a), "listening" as Sec);
+        if (r[lowSec] != null) out.push(`${SHORT[lowSec]} terendah (${r[lowSec]})`);
+        const w = personal(r).weak;
+        if (w.length) out.push(`lemah di ${w.map((t) => t.name).join(" & ")}`);
+        if ((r.tabHidden ?? 0) + (r.fullscreenExit ?? 0) >= 5) out.push(`${(r.tabHidden ?? 0) + (r.fullscreenExit ?? 0)} kali keluar layar tes`);
+        return out.join("; ");
+      };
+      const s = base("Peserta dengan skor terendah", `${ID(low.length)} peserta dengan skor terendah dan dugaan penyebabnya, sebagai prioritas pendampingan`);
+      const body = low.map((r, i) => [String(i + 1), title(r.name), String(r.score), String(r.listening ?? "-"), String(r.structure ?? "-"), String(r.reading ?? "-"), r.minutes != null ? `${r.minutes}′` : "-", `${r.answered ?? "-"}/${totalQ}`, issues(r)].map((t, j) => ({
+        text: t, options: { align: (j === 1 || j === 8 ? "left" : "center") as PptxGenJS.HAlign, bold: j === 2, fontSize: j === 8 ? 9.5 : 11, fill: { color: i % 2 ? C.card : C.white } },
+      })));
+      const rh = Math.min(36, 380 / (low.length + 1));
+      s.addTable([tableHead(["No", "Nama peserta", "Total", "L", "S", "R", "Durasi", "Dijawab", "Masalah utama"], 11, ["center", "left", "center", "center", "center", "center", "center", "center", "left"]), ...body], { x: X(58), y: X(150), w: X(1162), colW: [X(42), X(250), X(58), X(44), X(44), X(44), X(62), X(72), X(546)], rowH: X(rh), fontFace: FONT, fontSize: 11, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.75 }, margin: [0.02, 0.08, 0.02, 0.08] });
+      // highlight kelompok
+      const blankers = low.filter((r) => totalQ - (r.answered ?? totalQ) >= 10).length;
+      const fast = low.filter((r) => r.minutes != null && limitMin && r.minutes < limitMin * 0.5).length;
+      const la = KEYS.map((k) => secAvg(low, k)), lw = KEYS[la.indexOf(Math.min(...la))];
+      const common = topicAgg(low).slice(0, 3).map((t) => `${t.name} (${ID(t.pct, 0)}%)`);
+      const parts: string[] = [`rata-rata L ${ID(la[0], 1)} · S ${ID(la[1], 1)} · R ${ID(la[2], 1)}, dengan ${SEC[lw]} paling rendah`];
+      if (common.length) parts.push(`topik paling lemah bersama: ${common.join(", ")}`);
+      if (blankers) parts.push(`${ID(blankers)} orang meninggalkan ≥ 10 soal kosong (manajemen waktu)`);
+      if (fast) parts.push(`${ID(fast)} orang selesai kurang dari separuh waktu (median seluruh peserta ${ID(Math.round(mid))} menit), kemungkinan kurang serius atau menebak`);
+      darkNote(s, 58, 150 + rh * (low.length + 1) + 14, 1162, Math.max(96, 640 - (150 + rh * (low.length + 1) + 14)), [
+        { text: "Highlight kelompok ini: ", options: { bold: true, color: C.orange } },
+        { text: parts.join("; ") + ". Disarankan pendampingan fondasi, latihan bertahap, dan konfirmasi kepada peserta yang menyelesaikan tes sangat cepat." },
+      ], "info");
+    }
+  }
+
   // ================= 11b. Kekuatan dan kelemahan per peserta =================
   {
     const profs = fin.map((r) => ({ r, ...personal(r) }));
