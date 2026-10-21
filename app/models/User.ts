@@ -38,6 +38,14 @@ const userSchema = new Schema(
     levelHistory: [{ _id: false, levelId: { type: Schema.Types.ObjectId, ref: "Level" }, at: Date, reason: String }],
     // Profil opsional
     nik: String,
+    // Data kepegawaian dari institusi (impor HR; dilindungi NDA). NIK tidak disimpan.
+    birthPlace: String,
+    employmentStatus: String,
+    jobTitle: String,
+    branch: { type: String, index: true }, // cabang/unit, mis. "Cabang Ambon"
+    city: String,
+    province: { type: String, index: true },
+    personnelImportedAt: Date,
     birthDate: Date,
     gender: { type: String, enum: ["L", "P"] },
     targetScore: Number,

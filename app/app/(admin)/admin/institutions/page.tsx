@@ -17,6 +17,7 @@ export default function Institusi() {
   const { data, loading, error, reload } = useApi<{ institutions: I[] }>("/api/admin/institutions");
   const [edit, setEdit] = useState<Partial<I> | null>(null);
   const [manage, setManage] = useState<I | null>(null);
+  const [personnel, setPersonnel] = useState<I | null>(null);
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Institution</h1><p className="text-sm text-ink-soft">Contract, seats, and participants of each partner institution. Participant access ends on the contract end date.</p></div><button className="btn-solid" onClick={() => setEdit({ status: "active", seats: 50 })}>+ New institution</button></div>
@@ -26,13 +27,49 @@ export default function Institusi() {
           <thead><tr><th>Institution</th><th>Seats</th><th>Contract</th><th>Coaches / Admins</th><th>Status</th><th /></tr></thead>
           <tbody>
             {data?.institutions.map((i) => <tr key={i.id}><td className="font-semibold text-navy">{i.name}<br /><span className="text-xs font-normal text-ink-soft">{i.code}{i.batch ? ` · ${i.batch}` : ""}</span></td><td>{i.seatsUsed}/{i.seats}</td><td>{i.contractStart ? tgl(i.contractStart) : "-"} to {i.contractEnd ? tgl(i.contractEnd) : "no limit"}</td><td>{i.coaches} / {i.admins}</td><td><span className={i.status === "active" ? "badge-ok" : "badge-muted"}>{i.status === "active" ? "Active" : "Inactive"}</span>{i.holdPlacementResults && <span className="badge-warn ml-1" title="Placement results are held">Results held ({i.heldResults ?? 0})</span>}</td>
-              <td className="whitespace-nowrap text-right"><Link className="mr-3 font-semibold text-brand" href={`/institution?institution=${i.id}`}>Portal</Link><button className="mr-3 font-semibold text-brand" onClick={() => setManage(i)}>Add participants</button><button className="font-semibold text-brand" onClick={() => setEdit(i)}>Edit</button></td></tr>)}
+              <td className="whitespace-nowrap text-right"><Link className="mr-3 font-semibold text-brand" href={`/institution?institution=${i.id}`}>Portal</Link><button className="mr-3 font-semibold text-brand" onClick={() => setManage(i)}>Add participants</button><button className="mr-3 font-semibold text-brand" onClick={() => setPersonnel(i)}>Personnel data</button><button className="font-semibold text-brand" onClick={() => setEdit(i)}>Edit</button></td></tr>)}
             {data?.institutions.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-soft">No institutions yet.</td></tr>}
           </tbody>
         </table></div>
       )}
       {edit && <Editor init={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); }} />}
+      {personnel && <Modal title={`${personnel.name}: personnel data`} onClose={() => setPersonnel(null)} wide><PersonnelImport id={personnel.id} /></Modal>}
       {manage && <Modal title={`${manage.name}: add participants`} onClose={() => { setManage(null); reload(); }} wide><ImportPanel base={`/api/admin/institutions/${manage.id}`} /></Modal>}
+    </div>
+  );
+}
+
+type PR = { dry: boolean; rows: number; matched: number; updated: number; unmatched: string[]; unmatchedCount: number; badDate: number; unmappedBranches: string[]; missing: string[] };
+/** Impor data kepegawaian dari HR (cabang, tanggal lahir, jenis kelamin, status, jabatan): pratinjau dulu, lalu simpan. */
+function PersonnelImport({ id }: { id: string }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [res, setRes] = useState<PR | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function send(dry: boolean) {
+    if (!file) return;
+    setBusy(true); setErr("");
+    try { const fd = new FormData(); fd.append("file", file); setRes(await api<PR>(`/api/admin/institutions/${id}/personnel${dry ? "?dry=1" : ""}`, { method: "POST", body: fd })); } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+  }
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      <p className="text-ink-soft">Upload the HR Excel file. Rows are matched to participants by office email (or personal email). Columns used: gender, place and date of birth, employment status, branch/location and job title. NIK and personal email are not stored (personal email is only used for matching). This data is confidential (NDA): only central admins and this institution&apos;s admins can see it.</p>
+      <input type="file" accept=".xlsx" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setRes(null); }} />
+      <ErrorNote text={err} />
+      {res && (
+        <div className="rounded-xl bg-canvas p-4">
+          <p className="font-semibold text-navy">{res.dry ? "Preview (nothing saved yet)" : "Imported"}</p>
+          <p>{res.rows} rows · <b>{res.matched}</b> matched to participants{!res.dry ? ` · ${res.updated} profiles updated` : ""} · {res.unmatchedCount} not found</p>
+          {res.badDate > 0 && <p className="text-red-700">{res.badDate} rows have a date of birth that could not be read.</p>}
+          {res.unmappedBranches.length > 0 && <p>Branches without a map location: {res.unmappedBranches.join(", ")}</p>}
+          {res.missing.length > 0 && <p className="text-ink-soft">Columns not found: {res.missing.join(", ")}</p>}
+          {res.unmatched.length > 0 && <p className="text-ink-soft">Not found (first {res.unmatched.length}): {res.unmatched.join(", ")}</p>}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <button className="btn-outline" disabled={!file || busy} onClick={() => send(true)}>Preview</button>
+        <button className="btn-solid" disabled={!file || busy || !res?.dry} onClick={() => send(false)}>{busy ? "Working…" : "Import"}</button>
+      </div>
     </div>
   );
 }
