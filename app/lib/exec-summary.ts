@@ -106,9 +106,7 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   // ================= 1. Sampul =================
   {
     const s = p.addSlide();
-    s.background = { color: C.navy };
-    s.addShape(p.ShapeType.ellipse, { x: X(855), y: X(-215), w: X(640), h: X(640), fill: { color: C.blue }, line: { color: C.blue, width: 0 } });
-    s.addShape(p.ShapeType.ellipse, { x: X(1018), y: X(375), w: X(540), h: X(540), fill: { color: C.orange, transparency: 55 }, line: { color: C.orange, width: 0, transparency: 100 } });
+    s.background = { data: img("bg-cover.png") }; // lingkaran sudah terpotong di gambar: aman di viewer yang tidak memotong objek di luar slide
     box(s, 67, 62, 376, 141, C.white, 0.15);
     s.addImage({ data: L.inspira, x: X(85), y: X(78), w: X(110 * LOGO.inspira), h: X(110) });
     T(s, `LAPORAN UNTUK ${(inst || "institusi").toUpperCase()}`, { x: X(67), y: X(244), w: X(1000), h: X(24), fontSize: 12, bold: true, color: C.orange, charSpacing: 3 });
@@ -537,8 +535,7 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   // ================= Penutup =================
   {
     const s = p.addSlide();
-    s.background = { color: C.navy };
-    s.addShape(p.ShapeType.ellipse, { x: X(-235), y: X(345), w: X(640), h: X(640), fill: { color: C.blue }, line: { color: C.blue, width: 0 } });
+    s.background = { data: img("bg-closing.png") };
     T(s, "TERIMA KASIH", { x: X(67), y: X(68), w: X(600), h: X(22), fontSize: 12, bold: true, color: C.orange, charSpacing: 3 });
     T(s, perDay ? "Awal yang kuat sudah dimulai." : "Peta kemampuan sudah lengkap.", { x: X(67), y: X(112), w: X(720), h: X(56), fontSize: 30, bold: true, color: C.white });
     T(s, perDay ? "Skor terbaik menanti di depan." : "Saatnya belajar lebih terarah.", { x: X(67), y: X(172), w: X(720), h: X(56), fontSize: 30, bold: true, color: C.orange });
