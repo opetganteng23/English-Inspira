@@ -34,7 +34,7 @@ export function SegmentMap({ points, target, onPick }: { points: MapPoint[]; tar
   useEffect(() => () => { map.current?.remove(); map.current = null; }, []);
   return (
     <div>
-      <div ref={el} className="h-[420px] w-full overflow-hidden rounded-xl border border-line" role="img" aria-label="Map of branches by average score" />
+      <div ref={el} className="relative z-0 isolate h-[420px] w-full overflow-hidden rounded-xl border border-line" role="img" aria-label="Map of branches by average score" />
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-ink-soft">
         <span><span className="mr-1 inline-block h-3 w-3 rounded-full bg-[#1D6B3F] align-middle" />avg ≥ {target}</span>
         <span><span className="mr-1 inline-block h-3 w-3 rounded-full bg-[#F28C28] align-middle" />{target - 50}–{target - 1}</span>

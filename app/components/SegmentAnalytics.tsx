@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { Loading, ErrorNote } from "@/components/Charts";
 import type { MapPoint } from "@/components/SegmentMap";
+import { Modal } from "@/components/Modal";
 
 const SegmentMap = dynamic(() => import("@/components/SegmentMap").then((m) => m.SegmentMap), { ssr: false, loading: () => <div className="h-[420px] animate-pulse rounded-xl bg-canvas" /> });
 
@@ -13,7 +14,7 @@ type Seg = {
   atTarget: number; pctTarget: number | null; levels: Record<string, number>; sections: { listening: number | null; structure: number | null; reading: number | null };
   weakTopic: { name: string; section: string; pct: number } | null; avgAge: number | null; lat: number | null; lng: number | null;
 };
-type Resp = { tests: { id: string; name: string; finished: number }[]; dims: { key: string; label: string }[]; dim: string; data: { test: { id: string; name: string }; levels: string[]; target: number; held: number; segments: Seg[]; overall: Seg | null } | null };
+type Resp = { tests: { id: string; name: string; finished: number }[]; dims: { key: string; label: string }[]; dim: string; data: { test: { id: string; name: string }; levels: string[]; target: number; held: number; branches: string[]; provinces: string[]; ageGroups: { key: string; label: string }[]; segments: Seg[]; overall: Seg | null } | null };
 type SortKey = "label" | "scheduled" | "finished" | "avg" | "pctTarget" | "listening" | "structure" | "reading";
 const LV_COL = ["bg-sky-500", "bg-brand", "bg-navy"];
 const r1 = (n: number | null | undefined) => (n == null ? "-" : (Math.round(n * 10) / 10).toLocaleString("en-US"));
@@ -23,13 +24,17 @@ const r0 = (n: number | null | undefined) => (n == null ? "-" : Math.round(n).to
  * Analisis per kelompok (umur, cabang, provinsi, tanggal tes) untuk admin pusat dan portal institusi.
  * `api` membangun URL endpoint dengan query; `exports` memberi tautan unduhan untuk tes terpilih.
  */
-export function SegmentAnalytics({ api, exports }: { api: (qs: string) => string | null; exports?: (testId: string, dim: string, key?: string) => { label: string; href: string }[] }) {
+export type ReportKind = "xlsx" | "pptx";
+export function SegmentAnalytics({ api, report }: { api: (qs: string) => string | null; report?: (testId: string, kind: ReportKind, qs: string) => string | null }) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [dl, setDl] = useState(false);
   const [test, setTest] = useState("");
   const [dim, setDim] = useState("branch");
   const [target, setTarget] = useState(550);
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "avg", dir: -1 });
   const [focus, setFocus] = useState<string | null>(null);
-  const qs = new URLSearchParams({ dim, target: String(target) }); if (test) qs.set("test", test);
+  const qs = new URLSearchParams({ dim, target: String(target) }); if (test) qs.set("test", test); if (from) qs.set("from", from); if (to) qs.set("to", to);
   const { data, error, loading } = useApi<Resp>(api(qs.toString()));
   const d = data?.data;
   const rows = useMemo(() => {
@@ -56,11 +61,14 @@ export function SegmentAnalytics({ api, exports }: { api: (qs: string) => string
             {(data?.dims ?? []).filter((x) => x.key !== "overall").map((x) => <button key={x.key} role="tab" aria-selected={dim === x.key} onClick={() => { setDim(x.key); setFocus(null); setSort({ key: "avg", dir: -1 }); }} className={`rounded-md px-3 py-1.5 font-semibold ${dim === x.key ? "bg-navy text-white" : "text-ink-soft"}`}>{x.label}</button>)}
           </div>
           <label className="flex items-center gap-2 text-sm text-ink-soft">Target<input type="number" min={310} max={677} className="field !w-24" value={target} onChange={(e) => setTarget(Math.max(310, Math.min(677, Number(e.target.value) || 550)))} /></label>
-          {exports && d && <div className="ml-auto flex flex-wrap gap-2">{exports(d.test.id, dim).map((x) => <a key={x.href} className="btn-outline !min-h-[40px]" href={x.href}>{x.label}</a>)}</div>}
+          <label className="flex items-center gap-2 text-sm text-ink-soft">Test date<input type="date" aria-label="From date" className="field !w-auto" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />to<input type="date" aria-label="To date" className="field !w-auto" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
+          {(from || to) && <button className="text-sm font-semibold text-brand" onClick={() => { setFrom(""); setTo(""); }}>All dates</button>}
+          {report && d && <button className="btn-solid ml-auto !min-h-[40px]" onClick={() => setDl(true)}>Download report</button>}
         </div>
         {d && d.held > 0 && <p className="rounded-lg bg-accent-tint p-2 text-sm text-navy">{d.held} result{d.held === 1 ? " is" : "s are"} held by the program and not counted yet.</p>}
       </div>
       <ErrorNote text={error} />
+      {dl && d && report && <DownloadDialog testId={d.test.id} testName={d.test.name} branches={d.branches ?? []} provinces={d.provinces ?? []} ageGroups={d.ageGroups ?? []} from={from} to={to} target={target} report={report} onClose={() => setDl(false)} />}
       {loading && !data ? <Loading /> : !d ? <div className="card py-10 text-center text-ink-soft">No finished tests yet.</div> : (
         <>
           {o && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -111,5 +119,54 @@ export function SegmentAnalytics({ api, exports }: { api: (qs: string) => string
         </>
       )}
     </div>
+  );
+}
+
+/** Pilih format, cakupan (semua / satu kelompok umur / satu cabang), dan rentang tanggal tes sebelum mengunduh laporan. */
+function DownloadDialog({ testId, testName, branches, provinces, ageGroups, from: f0, to: t0, target, report, onClose }: { testId: string; testName: string; branches: string[]; provinces: string[]; ageGroups: { key: string; label: string }[]; from: string; to: string; target: number; report: (testId: string, kind: ReportKind, qs: string) => string | null; onClose: () => void }) {
+  const [kind, setKind] = useState<ReportKind>("pptx");
+  const [scope, setScope] = useState<"all" | "age" | "branch" | "province">("all");
+  const [province, setProvince] = useState(provinces[0] ?? "");
+  const [age, setAge] = useState(ageGroups[0]?.key ?? "");
+  const [branch, setBranch] = useState(branches[0] ?? "");
+  const [from, setFrom] = useState(f0);
+  const [to, setTo] = useState(t0);
+  const qs = new URLSearchParams({ target: String(target) });
+  if (from) qs.set("from", from);
+  if (to) qs.set("to", to);
+  if (scope === "age" && age) qs.set("age", age);
+  if (scope === "branch" && branch) qs.set("branch", branch);
+  if (scope === "province" && province) qs.set("province", province);
+  const href = report(testId, kind, qs.toString());
+  const what = scope === "age" ? `age ${ageGroups.find((g) => g.key === age)?.label ?? ""}` : scope === "branch" ? branch : scope === "province" ? province : "all participants";
+  const when = from || to ? `${from || "start"} to ${to || "today"}` : "all test dates";
+  const radio = "flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-tint";
+  return (
+    <Modal title="Download report" onClose={onClose}>
+      <div className="flex flex-col gap-4 text-sm">
+        <p className="text-ink-soft">{testName}</p>
+        <fieldset className="flex flex-col gap-2"><legend className="mb-1 font-semibold text-navy">Format</legend>
+          <div className="grid grid-cols-2 gap-2">
+            <label className={radio}><input type="radio" name="kind" checked={kind === "pptx"} onChange={() => setKind("pptx")} />Executive summary (PPT)</label>
+            <label className={radio}><input type="radio" name="kind" checked={kind === "xlsx"} onChange={() => setKind("xlsx")} />Results &amp; attendance (Excel)</label>
+          </div>
+        </fieldset>
+        <fieldset className="flex flex-col gap-2"><legend className="mb-1 font-semibold text-navy">Participants</legend>
+          <label className={radio}><input type="radio" name="scope" checked={scope === "all"} onChange={() => setScope("all")} />All participants (includes comparison by age and branch)</label>
+          <label className={radio}><input type="radio" name="scope" checked={scope === "age"} onChange={() => setScope("age")} />One age group
+            <select aria-label="Age group" className="field ml-auto !w-auto" value={age} onChange={(e) => { setAge(e.target.value); setScope("age"); }}>{ageGroups.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}</select></label>
+          {provinces.length > 0 && <label className={radio}><input type="radio" name="scope" checked={scope === "province"} onChange={() => setScope("province")} />One province
+            <select aria-label="Province" className="field ml-auto !w-auto max-w-[220px]" value={province} onChange={(e) => { setProvince(e.target.value); setScope("province"); }}>{provinces.map((b) => <option key={b} value={b}>{b}</option>)}</select></label>}
+          {branches.length > 0 && <label className={radio}><input type="radio" name="scope" checked={scope === "branch"} onChange={() => setScope("branch")} />One branch
+            <select aria-label="Branch" className="field ml-auto !w-auto max-w-[220px]" value={branch} onChange={(e) => { setBranch(e.target.value); setScope("branch"); }}>{branches.map((b) => <option key={b} value={b}>{b}</option>)}</select></label>}
+        </fieldset>
+        <fieldset><legend className="mb-1 font-semibold text-navy">Test date</legend>
+          <div className="flex flex-wrap items-center gap-2"><input type="date" aria-label="From date" className="field !w-auto" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /><span className="text-ink-soft">to</span><input type="date" aria-label="To date" className="field !w-auto" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />{(from || to) && <button className="text-sm font-semibold text-brand" onClick={() => { setFrom(""); setTo(""); }}>All dates</button>}</div>
+          <p className="mt-1 text-xs text-ink-soft">Leave empty for all dates. Pick the same date twice for a single day.</p>
+        </fieldset>
+        <p className="rounded-lg bg-canvas p-3 text-navy">You will download: <b>{kind === "pptx" ? "Executive summary" : "Excel"}</b> for <b>{what}</b>, <b>{when}</b>.</p>
+        <div className="flex justify-end gap-2"><button className="btn-outline" onClick={onClose}>Cancel</button>{href && <a className="btn-solid" href={href} onClick={() => setTimeout(onClose, 300)}>Download</a>}</div>
+      </div>
+    </Modal>
   );
 }

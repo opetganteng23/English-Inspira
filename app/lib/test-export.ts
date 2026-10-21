@@ -33,7 +33,18 @@ const DAY = (d: Date) => new Date(d).toLocaleDateString("en-GB", { weekday: "sho
  * Skor, bagian, CEFR, level, waktu, catatan proctoring, plus rekap per tanggal dan per level.
  */
 /** Cakupan laporan: satu institusi, satu cabang, satu kelompok umur; releasedOnly menyembunyikan skor yang belum dirilis (admin institusi). */
-export type ReportScope = { institutionId?: string; branch?: string; age?: string; releasedOnly?: boolean };
+export type ReportScope = { institutionId?: string; branch?: string; province?: string; age?: string; releasedOnly?: boolean; from?: string; to?: string };
+/** Tanggal tes (WIB, YYYY-MM-DD) satu baris: hari mulai mengerjakan; bila belum mulai, hari jadwalnya. */
+const testDay = (startedAt: Date | null | undefined, sortMs: number) => {
+  const d = startedAt ? new Date(startedAt) : sortMs < Number.MAX_SAFE_INTEGER ? new Date(sortMs) : null;
+  return d ? d.toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" }) : null;
+};
+const DAY_RX = /^\d{4}-\d{2}-\d{2}$/;
+/** Ambil from/to/branch/age dari query string (diabaikan bila formatnya salah). */
+export function scopeFromQuery(q: URLSearchParams): Pick<ReportScope, "from" | "to" | "branch" | "province" | "age"> {
+  const day = (k: string) => { const v = q.get(k); return v && DAY_RX.test(v) ? v : undefined; };
+  return { from: day("from"), to: day("to"), branch: q.get("branch") || undefined, province: q.get("province") || undefined, age: q.get("age") || undefined };
+}
 
 export async function collectTestRows(testId: string, now = new Date(), sessionId?: string, scope: ReportScope = {}) {
   await connectDB();
@@ -92,7 +103,8 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
       _sort: win ? +win.opensAt : Number.MAX_SAFE_INTEGER,
     };
   }).sort((x, y) => x._sort - y._sort || x.name.localeCompare(y.name))
-    .filter((r) => (!scope.institutionId || r.instId === scope.institutionId) && (!scope.branch || r.branch === scope.branch) && (!scope.age || ageGroupOf(ageOf(r.birthDate))?.key === scope.age))
+    .filter((r) => (!scope.institutionId || r.instId === scope.institutionId) && (!scope.branch || r.branch === scope.branch) && (!scope.province || r.province === scope.province) && (!scope.age || ageGroupOf(ageOf(r.birthDate))?.key === scope.age))
+    .filter((r) => { if (!scope.from && !scope.to) return true; const d = testDay(r.startedAt, r._sort); return !!d && (!scope.from || d >= scope.from) && (!scope.to || d <= scope.to); })
     .map((r) => (scope.releasedOnly && r.status === "Finished" && r.released.startsWith("At") ? { ...r, score: null, cefr: "", level: "", listening: null, structure: null, reading: null, topics: [], released: "Held" } : r));
 
   return { test, sessions, rows, levels };

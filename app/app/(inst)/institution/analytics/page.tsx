@@ -13,10 +13,7 @@ export default function InstAnalytics() {
       <div><h1 className="page-title">Analytics</h1><p className="text-sm text-ink-soft">Results of your participants by age group, branch, province and test date. Only released results are counted.</p></div>
       <SegmentAnalytics
         api={(qs) => url(`/api/inst/analytics?${qs}`)}
-        exports={(test, dim) => [
-          { label: "Excel", href: url(`/api/inst/tests/${test}/export.xlsx`) ?? "#" },
-          { label: "Executive summary (PPT)", href: url(`/api/inst/tests/${test}/summary.pptx?groups=${dim}`) ?? "#" },
-        ]}
+        report={(test, kind, qs) => url(`/api/inst/tests/${test}/${kind === "xlsx" ? "export.xlsx" : "summary.pptx"}?${qs}`)}
       />
     </div>
   );

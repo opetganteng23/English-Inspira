@@ -57,13 +57,13 @@ export function segment(rows: Row[], dim: Dim, levels: { name: string }[], targe
 }
 
 /** Data analisis satu tes (opsional dibatasi ke satu institusi) untuk dimensi terpilih. */
-export async function testSegments(testId: string, dim: Dim, opts: { institutionId?: string; target?: number; releasedOnly?: boolean } = {}) {
-  const got = await collectTestRows(testId);
+export async function testSegments(testId: string, dim: Dim, opts: { institutionId?: string; target?: number; releasedOnly?: boolean; from?: string; to?: string } = {}) {
+  const got = await collectTestRows(testId, new Date(), undefined, { from: opts.from, to: opts.to });
   if (!got) return null;
   let rows = got.rows.filter((r) => !r.qa && (!opts.institutionId || r.instId === opts.institutionId));
   // Admin institusi: hasil yang masih ditahan/menunggu jam rilis tidak dihitung (jumlahnya tetap diberitahukan).
   const held = opts.releasedOnly ? rows.filter((r) => r.status === "Finished" && r.released.startsWith("At")).length : 0;
   if (opts.releasedOnly) rows = rows.map((r) => (r.status === "Finished" && r.released.startsWith("At") ? { ...r, score: null, level: "", listening: null, structure: null, reading: null, topics: [] } : r));
   const levels = [...got.levels].sort((a, b) => a.order - b.order).map((l) => ({ name: l.name }));
-  return { test: { id: String(got.test._id), name: got.test.name }, levels: levels.map((l) => l.name), target: opts.target ?? 550, held, segments: segment(rows, dim, levels, opts.target), overall: segment(rows, "overall", levels, opts.target)[0] ?? null };
+  return { test: { id: String(got.test._id), name: got.test.name }, levels: levels.map((l) => l.name), target: opts.target ?? 550, held, branches: [...new Set(rows.map((r) => r.branch).filter(Boolean))].sort(), provinces: [...new Set(rows.map((r) => r.province).filter(Boolean))].sort(), ageGroups: AGE_GROUPS.map((g) => ({ key: g.key, label: g.label })), segments: segment(rows, dim, levels, opts.target), overall: segment(rows, "overall", levels, opts.target)[0] ?? null };
 }

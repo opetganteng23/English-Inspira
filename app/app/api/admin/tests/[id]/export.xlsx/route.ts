@@ -1,7 +1,7 @@
 import { isValidObjectId } from "mongoose";
 import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
-import { buildTestExport } from "@/lib/test-export";
+import { buildTestExport, scopeFromQuery } from "@/lib/test-export";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const session = new URL(req.url).searchParams.get("session");
     if (session && !isValidObjectId(session)) throw new HttpError(404, "Session not found");
     const sp = new URL(req.url).searchParams;
-    const out = await buildTestExport(params.id, new Date(), session ?? undefined, { institutionId: sp.get("institution") || undefined, branch: sp.get("branch") || undefined, age: sp.get("age") || undefined });
+    const out = await buildTestExport(params.id, new Date(), session ?? undefined, { institutionId: sp.get("institution") || undefined, ...scopeFromQuery(sp) });
     if (!out) throw new HttpError(404, session ? "Session not found" : "Test not found");
     await audit(admin._id, "test.results_export", params.id, { rows: out.rows, session: session ?? null });
     const file = `results-${out.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").replace(/-{2,}/g, "-").slice(0, 90) || "test"}-${new Date().toISOString().slice(0, 10)}.xlsx`;

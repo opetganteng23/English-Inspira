@@ -3,6 +3,7 @@ import { handleError, HttpError } from "@/lib/rbac";
 import { instContext } from "@/lib/inst";
 import { audit } from "@/lib/audit";
 import { buildExecSummary } from "@/lib/exec-summary";
+import { scopeFromQuery } from "@/lib/test-export";
 import { analyticsTests } from "@/lib/analytics-tests";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!isValidObjectId(params.id) || !(await analyticsTests(String(inst._id))).some((t) => t.id === params.id)) throw new HttpError(404, "Test not found");
     const q = new URL(req.url).searchParams, session = q.get("session"), t = Number(q.get("target"));
     if (session && !isValidObjectId(session)) throw new HttpError(404, "Session not found");
-    const out = await buildExecSummary(params.id, { sessionId: session ?? undefined, target: t >= 310 && t <= 677 ? Math.round(t) : undefined, scope: { institutionId: String(inst._id), releasedOnly: !full, branch: q.get("branch") || undefined, age: q.get("age") || undefined } });
+    const out = await buildExecSummary(params.id, { sessionId: session ?? undefined, target: t >= 310 && t <= 677 ? Math.round(t) : undefined, scope: { institutionId: String(inst._id), releasedOnly: !full, ...scopeFromQuery(q) } });
     if (!out) throw new HttpError(404, "Test not found");
     await audit(user._id, "inst.summary_export", params.id, { institution: String(inst._id) });
     const file = `executive-summary-${out.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 90) || "test"}-${new Date().toISOString().slice(0, 10)}.pptx`;

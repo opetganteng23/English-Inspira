@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { testSegments, DIMS, type Dim } from "@/lib/segments";
 import { analyticsTests } from "@/lib/analytics-tests";
+import { scopeFromQuery } from "@/lib/test-export";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
     const t = Number(sp.get("target"));
     if (!test) return NextResponse.json({ tests, dims: DIMS, data: null });
     if (!isValidObjectId(test)) throw new HttpError(404, "Test not found");
-    return NextResponse.json({ tests, dims: DIMS, dim, data: await testSegments(test, dim, { institutionId: inst, target: t >= 310 && t <= 677 ? t : undefined }) });
+    return NextResponse.json({ tests, dims: DIMS, dim, data: await testSegments(test, dim, { institutionId: inst, target: t >= 310 && t <= 677 ? t : undefined, from: scopeFromQuery(sp).from, to: scopeFromQuery(sp).to }) });
   } catch (e) {
     return handleError(e);
   }

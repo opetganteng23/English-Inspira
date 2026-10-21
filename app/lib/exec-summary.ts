@@ -98,7 +98,9 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   // Semua sesi tes (untuk "sesi berikutnya"), bukan hanya sesi laporan ini.
   const allSess = perDay ? await TestSession.find({ testId }).sort({ opensAt: 1 }).lean() : sessions;
   const sc = opts.scope ?? {};
-  const scopeExtra = [sc.branch, sc.age ? `Usia ${AGE_GROUPS.find((g) => g.key === sc.age)?.label ?? sc.age}` : ""].filter(Boolean).join(" · ");
+  const dayLabel = (d: string) => new Date(`${d}T00:00:00+07:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
+  const range = sc.from || sc.to ? (sc.from && sc.to && sc.from === sc.to ? dayLabel(sc.from) : `${sc.from ? dayLabel(sc.from) : "awal"} – ${sc.to ? dayLabel(sc.to) : "sekarang"}`) : "";
+  const scopeExtra = [range, sc.province, sc.branch, sc.age ? `Usia ${AGE_GROUPS.find((g) => g.key === sc.age)?.label ?? sc.age}` : ""].filter(Boolean).join(" · ");
   const scopeLabel = [sess ? sess.label : "Keseluruhan", scopeExtra].filter(Boolean).join(" · ");
   const footerText = `Laporan ${test.name} · ${scopeLabel}${inst ? ` · ${inst}` : ""}`;
 
