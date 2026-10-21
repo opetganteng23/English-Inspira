@@ -19,6 +19,8 @@ const seatSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     // Perpanjangan per peserta oleh admin: menggantikan jendela sesi untuk orang ini saja.
     override: { opensAt: Date, closesAt: Date, reason: String, by: { type: Schema.Types.ObjectId, ref: "User" }, at: Date },
+    /** Sesi asal terakhir saat admin memindahkan peserta (untuk laporan "pindah jadwal"). */
+    movedFrom: { sessionId: { type: Schema.Types.ObjectId, ref: "TestSession" }, at: Date },
     // Jendela yang terakhir diberitahukan lewat email; bila berbeda dengan jendela efektif, peserta perlu email jadwal baru.
     invitedAt: Date,
     invitedOpensAt: Date,

@@ -56,8 +56,10 @@ export async function moveSeats(testId: string, userIds: string[], sessionId: st
   const incoming = movable.filter((id) => !already.has(id));
   const used = await seatCount(sessionId);
   if (used + incoming.length > session.capacity) throw new HttpError(409, `${session.label} has ${Math.max(0, session.capacity - used)} free seats, but you are moving ${incoming.length} people. Raise the capacity first.`);
+  const prev = new Map((await TestSeat.find({ testId, userId: { $in: incoming } }).select("userId sessionId").lean()).map((x) => [String(x.userId), x.sessionId]));
   for (const id of incoming) {
-    await TestSeat.updateOne({ testId, userId: id }, { $set: { sessionId: session._id }, $unset: { override: "" } }, { upsert: true });
+    const from = prev.get(id);
+    await TestSeat.updateOne({ testId, userId: id }, { $set: { sessionId: session._id, ...(from ? { movedFrom: { sessionId: from, at: new Date() } } : {}) }, $unset: { override: "" } }, { upsert: true });
   }
   return { moved: incoming.length, blocked: ids.length - movable.length };
 }
