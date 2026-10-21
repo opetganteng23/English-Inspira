@@ -5,6 +5,7 @@ import { Attempt, Test } from "@/models/Test";
 import { TestSeat, TestSession } from "@/models/Schedule";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
+import { screenStates } from "./screen-store";
 
 /** Status sambungan peserta yang sedang tes, dari kabar terakhir (heartbeat 30 detik). */
 export type Live = "active" | "unstable" | "offline";
@@ -22,6 +23,7 @@ export type MonitorRow = {
   score: number | null; lastSeen: string | null; live: Live | null;
   tab: number; fullscreen: number; paste: number; lost: number; gaps: number; gapMaxMin: number; loads: number;
   issues: Issue[]; risk: number; review: string | null; reviewNote: string | null;
+  screen: "shared" | "stopped" | "unsupported" | "denied" | "none" | null; screenAt: number | null; screenImg: boolean;
 };
 
 const SEC: Record<string, string> = { listening: "Listening", structure: "Structure", reading: "Reading" };
@@ -34,7 +36,8 @@ export const SKIP_TRACKED_SINCE = new Date("2026-10-21T14:15:00Z");
  */
 export async function monitorRows(testId: string, now = new Date(), opts: { institutionId?: string; releasedOnly?: boolean } = {}) {
   await connectDB();
-  const test = await Test.findById(testId).select("name sections secureMode").lean();
+  const test = await Test.findById(testId).select("name sections secureMode screenWatch").lean();
+  const screens = test?.screenWatch ? screenStates(testId, opts.institutionId) : {};
   if (!test) return null;
   const total = test.sections.reduce((n, s) => n + s.questionIds.length, 0);
   const limitMin = test.sections.reduce((n, s) => n + (s.durationSec ?? 0), 0) / 60;
@@ -72,6 +75,11 @@ export async function monitorRows(testId: string, now = new Date(), opts: { inst
     const live = done ? null : liveOf(lastSeen, +now);
     const blanks = done ? total - a.answered : 0;
     const issues: Issue[] = [];
+    const sc = !done && test.screenWatch ? screens[String(a._id)] ?? null : null;
+    const screen = !done && test.screenWatch ? (sc?.state ?? "none") : null;
+    if (screen === "stopped" || screen === "denied") issues.push({ code: "screen", label: "Screen share stopped", level: "bad" });
+    else if (screen === "none") issues.push({ code: "screen", label: "Screen not shared", level: "warn" });
+    else if (screen === "unsupported") issues.push({ code: "noscreen", label: "No screen share (device)", level: "info" });
     if (live === "offline") issues.push({ code: "offline", label: "Disconnected now", level: "bad" });
     else if (live === "unstable") issues.push({ code: "unstable", label: "Unstable connection", level: "warn" });
     const sure = +a.startedAt >= +SKIP_TRACKED_SINCE;
@@ -85,7 +93,7 @@ export async function monitorRows(testId: string, now = new Date(), opts: { inst
     if (fullscreen) issues.push({ code: "fullscreen", label: `Left fullscreen ×${fullscreen}`, level: "warn" });
     if (paste) issues.push({ code: "paste", label: `Paste ×${paste}`, level: "bad" });
     if (loads > 2) issues.push({ code: "reload", label: `Reopened ×${loads - 1}`, level: "info" });
-    const risk = Math.min(100, (locked.length ? 60 : 0) + (sure ? lost * 25 : Math.min(20, lost * 5)) + (live === "offline" ? 25 : live === "unstable" ? 10 : 0) + Math.min(30, tab * 2) + Math.min(10, fullscreen * 2) + paste * 15 + (gapMaxMin >= 3 ? 10 : gaps.length ? 4 : 0) + (blanks >= 10 ? 10 : 0) + (issues.some((i) => i.code === "fast") ? 20 : 0) + (loads > 2 ? 3 : 0));
+    const risk = Math.min(100, (locked.length ? 60 : 0) + (sure ? lost * 25 : Math.min(20, lost * 5)) + (live === "offline" ? 25 : live === "unstable" ? 10 : 0) + Math.min(30, tab * 2) + Math.min(10, fullscreen * 2) + paste * 15 + (gapMaxMin >= 3 ? 10 : gaps.length ? 4 : 0) + (blanks >= 10 ? 10 : 0) + (issues.some((i) => i.code === "fast") ? 20 : 0) + (loads > 2 ? 3 : 0) + (issues.some((i) => i.code === "screen" && i.level === "bad") ? 20 : 0));
     rows.push({
       id: String(a._id), name: u.name ?? "", email: u.email, institution: u.institutionId ? insts.get(String(u.institutionId)) ?? "" : "", session: sm.get(String(a.userId)) ?? "",
       status: done ? "submitted" : "in_progress", startedAt: a.startedAt.toISOString(), finishedAt: a.finishedAt?.toISOString() ?? null, minutes,
@@ -93,9 +101,10 @@ export async function monitorRows(testId: string, now = new Date(), opts: { inst
       answered: a.answered, total, score: done && !(opts.releasedOnly && a.releaseAt && +a.releaseAt > +now) ? a.scoreEst ?? null : null, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null, live,
       tab, fullscreen, paste, lost, gaps: gaps.length, gapMaxMin, loads, issues, risk,
       review: a.proctorReview?.status ?? null, reviewNote: a.proctorReview?.note ?? null,
+      screen, screenAt: sc?.at ?? null, screenImg: !!sc?.hasImg,
     });
   }
-  return { test: { id: String(test._id), name: test.name, secure: !!test.secureMode, total, limitMin: Math.round(limitMin) }, rows, at: now.toISOString() };
+  return { test: { id: String(test._id), name: test.name, secure: !!test.secureMode, screenWatch: !!test.screenWatch, total, limitMin: Math.round(limitMin) }, rows, at: now.toISOString() };
 }
 
 export type Finding = { level: "bad" | "warn" | "info" | "ok"; title: string; detail: string };

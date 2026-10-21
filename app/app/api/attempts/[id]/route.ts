@@ -40,7 +40,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       testName: test.name,
       section: { index: attempt.sectionIdx, total: test.sections.length, name: section.name },
       kind: attempt.kind,
-      secure: !!test.secureMode, reached: attempt.secureReached ?? 0,
+      secure: !!test.secureMode, reached: attempt.secureReached ?? 0, screenWatch: !!test.screenWatch,
       idleTimeoutSec: await getParam("idle_timeout_sec"),
       remainingSec: Math.max(0, Math.round((sectionDeadline(attempt, test) - Date.now()) / 1000)),
       groups: groups.map((g) => ({

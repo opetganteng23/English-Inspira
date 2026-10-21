@@ -27,6 +27,7 @@ const testSchema = new Schema(
     scoringProfileId: { type: Schema.Types.ObjectId, ref: "ScoringProfile" }, // kosong = profil bawaan
     shuffleQuestions: { type: Boolean, default: false },
     shuffleWithinParts: { type: Boolean, default: false }, // acak soal di dalam tiap bagian (Part A/B/C, Structure, Written Expression), urutan antarbagian tetap
+    screenWatch: { type: Boolean, default: false }, // live screen view: peserta membagikan layar; gambar hanya di memori server, tidak disimpan
     secureMode: { type: Boolean, default: false }, // tidak bisa kembali ke soal sebelumnya, salin/tempel diblokir
     shuffleOptions: { type: Boolean, default: false },
     maxAttempts: { type: Number, default: 0, min: 0, max: 50 },

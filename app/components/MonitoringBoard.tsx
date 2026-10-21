@@ -14,8 +14,9 @@ type Row = {
   score: number | null; lastSeen: string | null; live: "active" | "unstable" | "offline" | null;
   tab: number; fullscreen: number; paste: number; lost: number; gaps: number; gapMaxMin: number; loads: number;
   issues: Issue[]; risk: number; review: string | null; reviewNote: string | null;
+  screen?: "shared" | "stopped" | "unsupported" | "denied" | "none" | null; screenAt?: number | null; screenImg?: boolean;
 };
-type Resp = { tests: { id: string; name: string; live: number }[]; data: { test: { id: string; name: string; total: number; limitMin: number }; rows: Row[]; at: string } | null };
+type Resp = { tests: { id: string; name: string; live: number }[]; data: { test: { id: string; name: string; total: number; limitMin: number; screenWatch?: boolean }; rows: Row[]; at: string } | null };
 type Finding = { level: "bad" | "warn" | "info" | "ok"; title: string; detail: string };
 type Trace = {
   findings: Finding[]; loads: number; gaps: { from: string; to: string; section: number }[];
@@ -36,7 +37,7 @@ const ago = (d: string | null, now: number) => {
 };
 type SortKey = "name" | "session" | "status" | "progress" | "seen" | "score" | "risk";
 
-export type BoardApi = { list: (qs: string) => string | null; trace: (id: string) => string | null; canReview: boolean; timeline?: (id: string) => string };
+export type BoardApi = { list: (qs: string) => string | null; trace: (id: string) => string | null; screen?: (id: string) => string | null; canReview: boolean; timeline?: (id: string) => string };
 /** Monitoring & Proctoring: satu tabel untuk peserta yang sedang tes dan yang sudah selesai; cari, filter, urutkan, lalu buka trace per peserta. */
 export function MonitoringBoard({ apis }: { apis: BoardApi }) {
   const [test, setTest] = useState("");
@@ -54,6 +55,7 @@ export function MonitoringBoard({ apis }: { apis: BoardApi }) {
   const [size, setSize] = useState(25);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<Row | null>(null);
+  const [view, setView] = useState<"table" | "screens">("table");
   const [msg, setMsg] = useState("");
 
   const load = useCallback(async () => {
@@ -188,6 +190,12 @@ export function MonitoringBoard({ apis }: { apis: BoardApi }) {
             {msg && <p className="text-sm text-navy" role="status">{msg}</p>}
           </div>
 
+          {resp.data.test.screenWatch && apis.screen && (
+            <div className="flex gap-1 self-start rounded-lg bg-white p-1 text-sm" role="tablist" aria-label="View">
+              {([["table", "Table"], ["screens", "Live screens"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={view === k} onClick={() => setView(k)} className={`rounded-md px-3 py-1.5 font-semibold ${view === k ? "bg-navy text-white" : "text-ink-soft"}`}>{l}</button>)}
+            </div>
+          )}
+          {view === "screens" && resp.data.test.screenWatch && apis.screen ? <ScreenGrid rows={filtered.filter((r) => r.status === "in_progress")} src={apis.screen} onOpen={setOpen} /> : <>
           <div className="table-wrap card !p-0">
             <table className="w-full text-sm">
               <thead><tr>
@@ -218,10 +226,54 @@ export function MonitoringBoard({ apis }: { apis: BoardApi }) {
             </table>
           </div>
           <Pager page={page} pages={pages} total={filtered.length} size={size} onPage={setPage} onSize={(s) => { setSize(s); setPage(1); }} />
+          </>}
         </>
       )}
       {open && <TracePanel row={open} apis={apis} onClose={() => setOpen(null)} onChanged={() => void load()} />}
     </div>
+  );
+}
+
+const SCREEN: Record<string, [string, string]> = { shared: ["Sharing", "bg-success"], stopped: ["Share stopped", "bg-red-600"], denied: ["Share refused", "bg-red-600"], none: ["Not shared yet", "bg-accent"], unsupported: ["Phone/tablet: no share", "bg-ink-soft"] };
+const withT = (u: string, t: number) => `${u}${u.includes("?") ? "&" : "?"}t=${t}`;
+
+/** Grid layar live peserta yang sedang tes (gambar dari memori server, diperbarui tiap ±10 detik; tidak direkam). */
+function ScreenGrid({ rows, src, onOpen }: { rows: Row[]; src: (id: string) => string | null; onOpen: (r: Row) => void }) {
+  const [t, setT] = useState(() => Date.now());
+  const [big, setBig] = useState<Row | null>(null);
+  useEffect(() => { const iv = setInterval(() => setT(Date.now()), big ? 5_000 : 10_000); return () => clearInterval(iv); }, [big]);
+  const sorted = [...rows].sort((a, b) => (a.screen === "shared" ? 1 : 0) - (b.screen === "shared" ? 1 : 0) || a.name.localeCompare(b.name));
+  if (!rows.length) return <div className="card py-10 text-center text-ink-soft">No one is taking this test right now.</div>;
+  return (
+    <>
+      <p className="text-sm text-ink-soft">Live view only: each screen refreshes about every 10 seconds and nothing is recorded or stored. Problems (share stopped, not shared) are listed first.</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        {sorted.map((r) => {
+          const u = src(r.id);
+          return (
+            <div key={r.id} className="card flex flex-col gap-2 !p-3">
+              <button className="relative aspect-video w-full overflow-hidden rounded-lg bg-canvas" onClick={() => setBig(r)} aria-label={`Enlarge screen of ${r.name}`}>
+                {r.screen === "shared" && r.screenImg && u ? <img src={withT(u, t)} alt={`Screen of ${r.name}`} className="h-full w-full object-contain" /> : <span className="flex h-full items-center justify-center text-sm text-ink-soft">{r.screen === "shared" ? "Waiting for image…" : SCREEN[r.screen ?? "none"]?.[0] ?? "No image"}</span>}
+              </button>
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <button className="truncate text-left font-semibold text-navy" onClick={() => onOpen(r)} title="Open trace">{r.name || r.email}</button>
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs text-ink-soft"><span className={`h-2 w-2 rounded-full ${SCREEN[r.screen ?? "none"]?.[1] ?? "bg-ink-soft"}`} />{SCREEN[r.screen ?? "none"]?.[0]}</span>
+              </div>
+              <p className="text-xs text-ink-soft">{r.sectionName} · {r.answered}/{r.total} answered{r.tab ? ` · tab switch ×${r.tab}` : ""}</p>
+            </div>
+          );
+        })}
+      </div>
+      {big && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setBig(null)} role="dialog" aria-modal="true" aria-label={`Screen of ${big.name}`}>
+          <div className="w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-2 flex items-center justify-between text-white"><b>{big.name}</b><button className="text-2xl leading-none" onClick={() => setBig(null)} aria-label="Close">×</button></div>
+            {src(big.id) ? <img src={withT(src(big.id)!, t)} alt={`Screen of ${big.name}`} className="w-full rounded-lg bg-black" /> : null}
+            <p className="mt-2 text-xs text-white/70">Refreshes about every 5 seconds while open. Live only, not recorded.</p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

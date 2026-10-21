@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreenGate } from "@/components/ScreenGate";
 import { enterFullscreen, isFullscreen, onFullscreenChange } from "@/lib/fullscreen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,7 +13,7 @@ type G = { id: string; instruction?: string; passageTitle?: string; passageHtml?
 type State = {
   status: "in_progress" | "submitted"; testName: string;
   section: { index: number; total: number; name: string };
-  kind?: string; secure?: boolean; reached?: number; idleTimeoutSec?: number; remainingSec: number; groups: G[]; questions: Q[]; answers: { qid: string; choice: number | null; flagged: boolean; timeSpentSec?: number }[];
+  kind?: string; secure?: boolean; screenWatch?: boolean; reached?: number; idleTimeoutSec?: number; remainingSec: number; groups: G[]; questions: Q[]; answers: { qid: string; choice: number | null; flagged: boolean; timeSpentSec?: number }[];
 };
 
 const LABEL: Record<string, string> = { listening: "Listening", structure: "Structure & Written Expression", reading: "Reading" };
@@ -269,6 +270,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
   return (
     <SecureZone active={secure}>
+      {st.screenWatch && <ScreenGate attemptId={params.id} />}
     <div className="relative flex h-dvh flex-col overflow-clip">
       <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
         <div className="min-w-0">

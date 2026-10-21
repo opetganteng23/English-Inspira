@@ -1,3 +1,4 @@
+import { dropScreen } from "@/lib/screen-store";
 import { NextResponse } from "next/server";
 import { requireRole, handleError } from "@/lib/rbac";
 import { loadAttempt, finalize, isVersionError } from "@/lib/attempts";
@@ -9,6 +10,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const { attempt, test } = await loadAttempt(params.id, user);
     try {
       await finalize(attempt, test); // idempoten
+      dropScreen(params.id); // layar live dibuang saat tes selesai
     } catch (e) {
       // Permintaan lain (mis. timer habis) sudah menyelesaikan percobaan ini lebih dulu: anggap berhasil.
       if (!isVersionError(e)) throw e;
