@@ -8,7 +8,7 @@ import { LineChart, Loading, ErrorNote, HBars } from "@/components/Charts";
 type Sec = { section: string; raw?: number; total?: number; scaled: number };
 type D = {
   viewer: { role: string; full: boolean };
-  profile: { id: string; name: string | null; email: string; status: string; phone: string | null; targetScore: number | null; goal: string | null; lastLoginAt: string | null; joinedAt: string | null; institution: { name: string; contractEnd: string | null } | null };
+  profile: { id: string; name: string | null; email: string; status: string; phone: string | null; targetScore: number | null; goal: string | null; lastLoginAt: string | null; joinedAt: string | null; institution: { name: string; contractEnd: string | null } | null; personal?: { gender: string | null; birthPlace: string | null; birthDate: string | null; age: number | null; employmentStatus: string | null; jobTitle: string | null; branch: string | null; city: string | null; province: string | null; education: string | null } | null };
   level: { name: string; scoreMin: number; scoreMax: number } | null; nextLevel: { name: string; scoreMin: number } | null; levelProvisional: boolean;
   scoreEst: number | null; gapToNext: number | null;
   quota: { used: number; total: number; left: number } | null;
@@ -45,6 +45,21 @@ export function StaffParticipantView({ id, backHref, backLabel, reportBase }: { 
         <p className="mt-1 text-sm text-ink-soft">{p.email}{p.institution ? ` · ${p.institution.name}` : ""}{p.targetScore ? ` · target ${p.targetScore}` : ""} · last sign-in {p.lastLoginAt ? tgl(p.lastLoginAt, true) : "never"}</p>
         <p className="mt-1 text-xs text-ink-soft">Participant dashboard as the participant sees it (view only). {h.viewer.full ? "As program admin you also see results that are not released to the participant yet." : "Results that are held or not yet released are hidden."}</p>
       </div>
+
+      {p.personal && Object.values(p.personal).some((v) => v != null) && (
+        <section className="card" aria-label="Personal data">
+          <h2 className="font-display text-lg font-extrabold text-navy">Personal data</h2>
+          <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
+            {([
+              ["Branch", p.personal.branch], ["City / province", [p.personal.city, p.personal.province].filter(Boolean).join(", ") || null],
+              ["Age", p.personal.age != null ? `${p.personal.age} years` : null], ["Date of birth", p.personal.birthDate ? new Date(p.personal.birthDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : null],
+              ["Place of birth", p.personal.birthPlace], ["Gender", p.personal.gender === "L" ? "Male" : p.personal.gender === "P" ? "Female" : null],
+              ["Employment status", p.personal.employmentStatus], ["Job title", p.personal.jobTitle], ["Phone", p.phone], ["Education", p.personal.education?.toUpperCase() ?? null],
+            ] as const).map(([k, v]) => <div key={k}><dt className="text-xs font-semibold tracking-wider text-ink-soft">{k.toUpperCase()}</dt><dd className="mt-0.5 font-semibold text-navy">{v ?? "-"}</dd></div>)}
+          </dl>
+          <p className="mt-3 text-xs text-ink-soft">Confidential (NDA): visible to program admins and this participant&apos;s institution admins only.</p>
+        </section>
+      )}
 
       {h.hiddenHeld > 0 && <p role="note" className="rounded-lg bg-accent-tint p-3 text-sm text-navy">{h.hiddenHeld} test result{h.hiddenHeld === 1 ? " is" : "s are"} held by the program and will appear here once released.</p>}
       {h.inProgress && <p role="status" className="rounded-lg bg-brand-tint p-3 text-sm text-navy">Taking <b>{h.inProgress.test}</b> now (started {tgl(h.inProgress.startedAt, true)}).</p>}

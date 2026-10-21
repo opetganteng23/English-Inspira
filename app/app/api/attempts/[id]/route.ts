@@ -65,6 +65,7 @@ const patchSchema = z.object({
   })).max(200).optional(),
   flags: z.array(z.union([z.enum(["tab_hidden", "fullscreen_exit", "paste", "multi_tab"]), z.object({ kind: z.enum(["tab_hidden", "fullscreen_exit", "paste", "multi_tab"]), qid: z.string().regex(/^[0-9a-f]{24}$/).nullable().optional() })])).max(20).optional(),
   reached: z.number().int().min(0).max(1000).optional(),
+  section: z.number().int().min(0).max(10).optional(),
 });
 
 /** Autosave. Hanya soal section aktif yang diterima, dan hanya sebelum waktu habis. */
@@ -100,7 +101,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       const ordered = orderQuestions(test, qs, `${String(attempt._id)}:q:${attempt.sectionIdx}`);
       ordered.forEach((q, i) => shownIdx.set(String(q._id), i));
       lockedBefore = attempt.secureReached ?? 0;
-      if (body.reached != null) attempt.secureReached = Math.max(lockedBefore, Math.min(body.reached, ordered.length - 1));
+      // Posisi hanya berlaku untuk bagian asalnya. Simpanan dari bagian sebelumnya yang tiba setelah pindah bagian
+      // (mis. "soal 40" Structure) dulu tercatat di Reading sehingga soal 1-39 terkunci. Klien lama tanpa `section`: hanya maju bertahap.
+      const sameSection = body.section != null ? body.section === attempt.sectionIdx : body.reached != null && body.reached <= lockedBefore + 1;
+      if (body.reached != null && sameSection) attempt.secureReached = Math.max(lockedBefore, Math.min(body.reached, ordered.length - 1));
     }
     const optLen = new Map<string, number>();
     if (test.shuffleOptions) for (const q of await Question.find({ _id: { $in: [...allowed] } }).select("options").lean()) optLen.set(String(q._id), q.options.length);

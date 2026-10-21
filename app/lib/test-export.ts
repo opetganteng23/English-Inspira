@@ -7,6 +7,7 @@ import { Test, Attempt } from "@/models/Test";
 import { TestSession, TestSeat } from "@/models/Schedule";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
+import { ageOf, ageGroupOf } from "./age";
 
 /** Kehadiran dari status: hadir bila sudah mulai, tidak hadir bila sesi lewat tanpa mulai. */
 export function attendanceOf(s: ExportStatus) {
@@ -31,7 +32,10 @@ const DAY = (d: Date) => new Date(d).toLocaleDateString("en-GB", { weekday: "sho
  * Hasil satu tes untuk admin: semua peserta yang dijadwalkan (dan yang mengerjakan tanpa jadwal), satu baris per orang.
  * Skor, bagian, CEFR, level, waktu, catatan proctoring, plus rekap per tanggal dan per level.
  */
-export async function collectTestRows(testId: string, now = new Date(), sessionId?: string) {
+/** Cakupan laporan: satu institusi, satu cabang, satu kelompok umur; releasedOnly menyembunyikan skor yang belum dirilis (admin institusi). */
+export type ReportScope = { institutionId?: string; branch?: string; age?: string; releasedOnly?: boolean };
+
+export async function collectTestRows(testId: string, now = new Date(), sessionId?: string, scope: ReportScope = {}) {
   await connectDB();
   const test = await Test.findById(testId).lean();
   if (!test) return null;
@@ -51,7 +55,7 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
   if (sessionId && !sessions.length) return null;
   // Ekspor satu sesi: hanya peserta sesi itu (percobaan orang lain tidak ikut).
   const userIds = sessionId ? [...new Set(seats.map((s) => String(s.userId)))] : [...new Set([...seats.map((s) => String(s.userId)), ...latest.keys()])];
-  const users = await User.find({ _id: { $in: userIds } }).select("name email institutionId qaTester role status lastLoginAt").lean();
+  const users = await User.find({ _id: { $in: userIds } }).select("name email institutionId qaTester role status lastLoginAt branch province birthDate").lean();
   const insts = new Map((await Institution.find({ _id: { $in: users.map((u) => u.institutionId).filter((x): x is NonNullable<typeof x> => !!x) } }).select("name").lean()).map((i) => [String(i._id), i.name]));
   const seatBy = new Map(seats.map((s) => [String(s.userId), s]));
 
@@ -83,16 +87,19 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
       tabHidden: a ? flags("tab_hidden") : null, fullscreenExit: a ? flags("fullscreen_exit") : null, paste: a ? flags("paste") : null,
       review: a?.proctorReview?.status ?? "",
       startedAt: a?.startedAt ?? null,
+      instId: u.institutionId ? String(u.institutionId) : "", branch: u.branch ?? "", province: u.province ?? "", birthDate: u.birthDate ?? null, ageGroup: ageGroupOf(ageOf(u.birthDate))?.label ?? "",
       topics: done ? (a!.topicScores ?? []).map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0 })) : [],
       _sort: win ? +win.opensAt : Number.MAX_SAFE_INTEGER,
     };
-  }).sort((x, y) => x._sort - y._sort || x.name.localeCompare(y.name));
+  }).sort((x, y) => x._sort - y._sort || x.name.localeCompare(y.name))
+    .filter((r) => (!scope.institutionId || r.instId === scope.institutionId) && (!scope.branch || r.branch === scope.branch) && (!scope.age || ageGroupOf(ageOf(r.birthDate))?.key === scope.age))
+    .map((r) => (scope.releasedOnly && r.status === "Finished" && r.released.startsWith("At") ? { ...r, score: null, cefr: "", level: "", listening: null, structure: null, reading: null, topics: [], released: "Held" } : r));
 
   return { test, sessions, rows, levels };
 }
 
-export async function buildTestExport(testId: string, now = new Date(), sessionId?: string) {
-  const got = await collectTestRows(testId, now, sessionId);
+export async function buildTestExport(testId: string, now = new Date(), sessionId?: string, scope: ReportScope = {}) {
+  const got = await collectTestRows(testId, now, sessionId, scope);
   if (!got) return null;
   const { test, sessions, rows, levels } = got;
   const wb = new ExcelJS.Workbook();
@@ -120,7 +127,7 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   // ---- Hasil (satu baris per orang)
   const res = wb.addWorksheet("Results");
   res.columns = [
-    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 30 }, { header: "Email", key: "email", width: 34 }, { header: "Institution", key: "institution", width: 24 },
+    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 30 }, { header: "Email", key: "email", width: 34 }, { header: "Institution", key: "institution", width: 24 }, { header: "Branch", key: "branch", width: 24 }, { header: "Age group", key: "ageGroup", width: 10 },
     { header: "Scheduled day", key: "scheduledDay", width: 18 }, { header: "Window (WIB)", key: "window", width: 36 }, { header: "Special schedule", key: "extended", width: 18 },
     { header: "Attendance", key: "attendance", width: 13 }, { header: "Status", key: "status", width: 22 }, { header: "Total score", key: "score", width: 11 }, { header: "CEFR", key: "cefr", width: 8 }, { header: "Level", key: "level", width: 14 },
     { header: "Listening", key: "listening", width: 10 }, { header: "Structure", key: "structure", width: 10 }, { header: "Reading", key: "reading", width: 10 },
@@ -133,12 +140,12 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   res.autoFilter = { from: "A1", to: { row: 1, column: res.columns.length } };
   const STC: Record<string, string> = { Finished: "FFE6F4EC", "In progress": "FFE6EEFA", Missed: "FFFBE3E3", "Not started (open now)": "FFFBF1DB" };
   res.eachRow((row, i) => { if (i > 1) { const c = row.getCell("status"); const col = STC[String(c.value)]; if (col) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col } }; } });
-  if (rows.length) res.addConditionalFormatting({ ref: `J2:J${rows.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 310 }, { type: "num", value: 677 }], color: { argb: "FF0B4FA6" } } as never] });
+  if (rows.length) res.addConditionalFormatting({ ref: `L2:L${rows.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 310 }, { type: "num", value: 677 }], color: { argb: "FF0B4FA6" } } as never] });
 
   // ---- Kehadiran (tanpa skor: aman dibagikan ke institusi)
   const att = wb.addWorksheet("Attendance");
   att.columns = [
-    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 32 }, { header: "Email", key: "email", width: 34 }, { header: "Scheduled day", key: "scheduledDay", width: 18 },
+    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 32 }, { header: "Email", key: "email", width: 34 }, { header: "Branch", key: "branch", width: 24 }, { header: "Age group", key: "ageGroup", width: 10 }, { header: "Scheduled day", key: "scheduledDay", width: 18 },
     { header: "Attendance", key: "attendance", width: 14 }, { header: "Detail", key: "status", width: 24 }, { header: "Started (WIB)", key: "started", width: 20 }, { header: "Finished (WIB)", key: "finished", width: 20 }, { header: "Minutes", key: "minutes", width: 9 },
     { header: "Account", key: "account", width: 20 }, { header: "Invitation sent (WIB)", key: "invitedAt", width: 20 }, { header: "Last sign-in (WIB)", key: "lastLogin", width: 20 }, { header: "Special schedule", key: "extended", width: 18 },
     { header: "Tab hidden", key: "tabHidden", width: 10 }, { header: "Fullscreen exit", key: "fullscreenExit", width: 12 }, { header: "QA account", key: "qa", width: 10 },

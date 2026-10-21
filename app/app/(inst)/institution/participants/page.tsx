@@ -9,7 +9,7 @@ import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { ImportPanel } from "@/components/ImportPanel";
 
-type P = { id: string; status: string; name: string | null; email: string; target: number | null; tests: number; firstScore: number | null; lastScore: number | null; lastAt: string | null };
+type P = { id: string; status: string; name: string | null; email: string; target: number | null; tests: number; firstScore: number | null; lastScore: number | null; lastAt: string | null; branch: string | null; age: number | null };
 type D = { participant: { name: string | null; email: string; target: number | null; goal: string | null }; attempts: { id: string; kind: string; scoreEst: number; sections: { section: string; scaled: number }[]; finishedAt: string }[] };
 const SEC: Record<string, string> = { listening: "Listening", structure: "Structure", reading: "Reading" };
 
@@ -17,21 +17,26 @@ export default function InstPeserta() {
   const { url, ready, q: q2 } = useInstQuery();
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
-  const { data, loading, error, reload } = useApi<{ participants: P[]; total: number; page: number; pages: number }>(url(`/api/inst/participants?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ""}`));
+  const [branch, setBranch] = useState(""), [age, setAge] = useState(""), [sort, setSort] = useState("name");
+  const qs = new URLSearchParams({ page: String(page), sort }); if (q) qs.set("q", q); if (branch) qs.set("branch", branch); if (age) qs.set("age", age);
+  const { data, loading, error, reload } = useApi<{ participants: P[]; total: number; page: number; pages: number; branches: string[]; ageGroups: { key: string; label: string }[] }>(url(`/api/inst/participants?${qs}`));
+  const Sort = ({ label, asc, desc }: { label: string; asc: string; desc?: string }) => { const on = sort === asc || sort === desc; return <button className={`inline-flex items-center gap-1 font-semibold uppercase ${on ? "text-brand" : ""}`} onClick={() => { setSort(sort === asc && desc ? desc : asc); setPage(1); }}>{label}<span aria-hidden className="text-[10px]">{on ? (sort === desc ? "▼" : "▲") : "↕"}</span></button>; };
   const [sel, setSel] = useState<string | null>(null);
   if (!ready) return <Loading />;
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><h1 className="page-title">Participants & invitations</h1><p className="text-sm text-ink-soft">Add participants and view individual results. Only participants from your institution are shown.</p></div><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Export Excel</a></div>
       <ImportPanel base="/api/inst" query={q2} onDone={reload} />
-      <div className="flex flex-wrap items-center justify-between gap-3"><input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />{data && <span className="text-sm text-ink-soft">{data.total.toLocaleString("en-GB")} participants</span>}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap items-center gap-2"><input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+        {(data?.branches.length ?? 0) > 0 && <><select className="field w-auto" aria-label="Branch" value={branch} onChange={(e) => { setBranch(e.target.value); setPage(1); }}><option value="">All branches</option>{data!.branches.map((b) => <option key={b} value={b}>{b}</option>)}</select>
+        <select className="field w-auto" aria-label="Age group" value={age} onChange={(e) => { setAge(e.target.value); setPage(1); }}><option value="">All ages</option>{data!.ageGroups.map((g) => <option key={g.key} value={g.key}>{g.label}</option>)}</select></>}</div>{data && <span className="text-sm text-ink-soft">{data.total.toLocaleString("en-GB")} participants</span>}</div>
       <ErrorNote text={error} />
       {loading && !data ? <Loading /> : (
         <div className="table-wrap"><table>
-          <thead><tr><th>Participant</th><th>Target</th><th>Tests</th><th>First score</th><th>Last score</th><th>Last</th><th /></tr></thead>
+          <thead><tr><th><Sort label="Participant" asc="name" /></th><th><Sort label="Branch" asc="branch" /></th><th><Sort label="Age" asc="age" desc="age_desc" /></th><th>Target</th><th>Tests</th><th>First score</th><th><Sort label="Last score" asc="score" desc="score_asc" /></th><th>Last</th><th /></tr></thead>
           <tbody>
-            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td><td>{p.target ?? "-"}</td><td>{p.tests}</td><td>{p.firstScore ?? "-"}</td><td className="font-semibold">{p.lastScore ?? "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td><td className="text-right"><Link href={`/institution/participants/${p.id}`} className="font-semibold text-brand">Dashboard</Link></td></tr>)}
-            {data?.participants.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No participants yet.</td></tr>}
+            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td><td className="text-xs">{p.branch ?? "-"}</td><td>{p.age ?? "-"}</td><td>{p.target ?? "-"}</td><td>{p.tests}</td><td>{p.firstScore ?? "-"}</td><td className="font-semibold">{p.lastScore ?? "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td><td className="text-right"><Link href={`/institution/participants/${p.id}`} className="font-semibold text-brand">Dashboard</Link></td></tr>)}
+            {data?.participants.length === 0 && <tr><td colSpan={9} className="p-6 text-center text-ink-soft">No participants found.</td></tr>}
           </tbody>
         </table></div>
       )}

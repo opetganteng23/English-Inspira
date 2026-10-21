@@ -142,7 +142,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
         json: {
           answers: ids.map((qid) => ({ qid, choice: (sentAns[qid] = ansRef.current[qid] ?? null), flagged: !!flagRef.current[qid], timeSpentSec: Math.min(3600, Math.round(spent.current[qid] ?? 0)) })),
           flags,
-          ...(sendReached ? { reached: reachedRef.current } : {}),
+          // bagian asal simpanan: server menolak posisi soal dari bagian sebelumnya yang tiba terlambat setelah pindah bagian
+          ...(sendReached ? { reached: reachedRef.current, section: st?.section.index } : {}),
         },
       });
       const p = readPending(); for (const qid of ids) if (p[qid] === sentAns[qid]) delete p[qid]; writePending(p);

@@ -32,7 +32,7 @@ export const SKIP_TRACKED_SINCE = new Date("2026-10-21T14:15:00Z");
  * Baris tabel Monitoring & Proctoring untuk satu tes: semua percobaan (sedang berjalan dan selesai),
  * dengan masalah yang terdeteksi otomatis dan skor risiko untuk mengurutkan antrian peninjauan.
  */
-export async function monitorRows(testId: string, now = new Date()) {
+export async function monitorRows(testId: string, now = new Date(), opts: { institutionId?: string; releasedOnly?: boolean } = {}) {
   await connectDB();
   const test = await Test.findById(testId).select("name sections secureMode").lean();
   if (!test) return null;
@@ -40,10 +40,10 @@ export async function monitorRows(testId: string, now = new Date()) {
   const limitMin = test.sections.reduce((n, s) => n + (s.durationSec ?? 0), 0) / 60;
   const list = await Attempt.aggregate<{
     _id: Types.ObjectId; userId: Types.ObjectId; status: string; startedAt: Date; finishedAt?: Date; updatedAt: Date; sectionIdx: number; scoreEst?: number;
-    flags: { kind: string }[]; integrity?: { isolatedBlanks?: number }; conn?: { lastSeenAt?: Date; loads?: number; gaps?: { from: Date; to: Date }[] }; proctorReview?: { status?: string; note?: string }; answered: number;
+    releaseAt?: Date; flags: { kind: string }[]; integrity?: { isolatedBlanks?: number }; conn?: { lastSeenAt?: Date; loads?: number; gaps?: { from: Date; to: Date }[] }; proctorReview?: { status?: string; note?: string }; answered: number;
   }>([
-    { $match: { testId: new Types.ObjectId(testId), status: { $in: ["in_progress", "submitted"] } } },
-    { $project: { userId: 1, status: 1, startedAt: 1, finishedAt: 1, updatedAt: 1, sectionIdx: 1, scoreEst: 1, flags: "$proctorFlags", integrity: 1, conn: 1, proctorReview: 1, answered: { $size: { $filter: { input: { $ifNull: ["$answers", []] }, cond: { $gt: ["$$this.choice", null] } } } } } },
+    { $match: { testId: new Types.ObjectId(testId), status: { $in: ["in_progress", "submitted"] }, ...(opts.institutionId ? { userId: { $in: await User.distinct("_id", { institutionId: new Types.ObjectId(opts.institutionId) }) } } : {}) } },
+    { $project: { userId: 1, releaseAt: 1, status: 1, startedAt: 1, finishedAt: 1, updatedAt: 1, sectionIdx: 1, scoreEst: 1, flags: "$proctorFlags", integrity: 1, conn: 1, proctorReview: 1, answered: { $size: { $filter: { input: { $ifNull: ["$answers", []] }, cond: { $gt: ["$$this.choice", null] } } } } } },
   ]);
   // satu baris per peserta: percobaan terbaru
   const latest = new Map<string, (typeof list)[number]>();
@@ -88,7 +88,7 @@ export async function monitorRows(testId: string, now = new Date()) {
       id: String(a._id), name: u.name ?? "", email: u.email, institution: u.institutionId ? insts.get(String(u.institutionId)) ?? "" : "", session: sm.get(String(a.userId)) ?? "",
       status: done ? "submitted" : "in_progress", startedAt: a.startedAt.toISOString(), finishedAt: a.finishedAt?.toISOString() ?? null, minutes,
       section: a.sectionIdx ?? 0, sectionName: SEC[test.sections[a.sectionIdx ?? 0]?.name] ?? test.sections[a.sectionIdx ?? 0]?.name ?? "", sections: test.sections.length,
-      answered: a.answered, total, score: done ? a.scoreEst ?? null : null, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null, live,
+      answered: a.answered, total, score: done && !(opts.releasedOnly && a.releaseAt && +a.releaseAt > +now) ? a.scoreEst ?? null : null, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null, live,
       tab, fullscreen, paste, lost, gaps: gaps.length, gapMaxMin, loads, issues, risk,
       review: a.proctorReview?.status ?? null, reviewNote: a.proctorReview?.note ?? null,
     });

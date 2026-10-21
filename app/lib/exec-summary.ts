@@ -1,10 +1,12 @@
 import { readFileSync } from "fs";
 import path from "path";
 import PptxGenJS from "pptxgenjs";
-import { collectTestRows } from "./test-export";
+import { collectTestRows, type ReportScope } from "./test-export";
 import { TestSeat, TestSession } from "@/models/Schedule";
 import { User } from "@/models/User";
 import { isLearningTopic } from "./topics";
+import { segment } from "./segments";
+import { AGE_GROUPS } from "./age";
 
 type Row = NonNullable<Awaited<ReturnType<typeof collectTestRows>>>["rows"][number];
 type Slide = PptxGenJS.Slide;
@@ -73,9 +75,9 @@ const title = (s: string) => s.replace(/\S+/g, (w) => (w.length > 2 && w === w.t
  * Executive summary (.pptx) satu tes: per sesi/hari (sessionId) atau keseluruhan.
  * Struktur, tata letak, ikon, dan logo mengikuti laporan Placement Test Hari 1 AirNav. Akun QA tidak dihitung.
  */
-export async function buildExecSummary(testId: string, opts: { sessionId?: string; target?: number; now?: Date } = {}) {
+export async function buildExecSummary(testId: string, opts: { sessionId?: string; target?: number; now?: Date; scope?: ReportScope; groups?: string } = {}) {
   const now = opts.now ?? new Date(), target = opts.target ?? 550;
-  const got = await collectTestRows(testId, now, opts.sessionId);
+  const got = await collectTestRows(testId, now, opts.sessionId, opts.scope ?? {});
   if (!got) return null;
   const { test, sessions, levels } = got;
   const perDay = !!opts.sessionId;
@@ -95,7 +97,9 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
 
   // Semua sesi tes (untuk "sesi berikutnya"), bukan hanya sesi laporan ini.
   const allSess = perDay ? await TestSession.find({ testId }).sort({ opensAt: 1 }).lean() : sessions;
-  const scopeLabel = sess ? sess.label : "Keseluruhan";
+  const sc = opts.scope ?? {};
+  const scopeExtra = [sc.branch, sc.age ? `Usia ${AGE_GROUPS.find((g) => g.key === sc.age)?.label ?? sc.age}` : ""].filter(Boolean).join(" · ");
+  const scopeLabel = [sess ? sess.label : "Keseluruhan", scopeExtra].filter(Boolean).join(" · ");
   const footerText = `Laporan ${test.name} · ${scopeLabel}${inst ? ` · ${inst}` : ""}`;
 
   const p = new PptxGenJS();
@@ -471,6 +475,40 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     });
   }
 
+  // ================= 8b. Perbandingan per kelompok umur dan per cabang =================
+  {
+    const lvNames = lv.map((x) => ({ name: x.l.name }));
+    const fmtTopic = (t: { name: string; pct: number } | null) => (t ? `${topicName(t.name.replace(/ /g, "-"))} ${ID(t.pct, 0)}%` : "-");
+    const ages = segment(rows, "age", lvNames, target).filter((g) => g.key && g.finished);
+    if (ages.length >= 2 && !sc.age) {
+      const s = base("Perbandingan per kelompok umur", "Rata-rata skor, pencapaian target, dan kemampuan per bagian di tiap kelompok umur");
+      const best = [...ages].sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0))[0], worst = [...ages].sort((a, b) => (a.avg ?? 0) - (b.avg ?? 0))[0];
+      s.addChart(p.ChartType.bar, [{ name: "Rata-rata skor", labels: ages.map((g) => g.label), values: ages.map((g) => Math.round(g.avg ?? 0)) }], {
+        x: X(58), y: X(160), w: X(470), h: X(360), barDir: "col", barGapWidthPct: 40, chartColors: [C.blue], showValue: true, dataLabelPosition: "outEnd", dataLabelColor: C.ink, dataLabelFontFace: FONT, dataLabelFontSize: 11,
+        valAxisMinVal: 400, valAxisMaxVal: 620, valAxisHidden: true, valGridLine: { style: "none" }, catAxisLabelFontFace: FONT, catAxisLabelFontSize: 11, catAxisLabelColor: C.ink, catAxisLineShow: false,
+        showTitle: true, title: "Rata-rata skor per kelompok umur", titleFontFace: FONT, titleFontSize: 12, titleColor: C.navy,
+      });
+      const body = ages.map((g, i) => [g.label, ID(g.finished), ID(Math.round(g.avg ?? 0)), g.pctTarget != null ? `${ID(g.pctTarget, 1)}%` : "-", ID(g.sections.listening ?? 0, 1), ID(g.sections.structure ?? 0, 1), ID(g.sections.reading ?? 0, 1), fmtTopic(g.weakTopic)].map((t, j) => ({ text: t, options: { align: (j === 0 || j === 7 ? "left" : "center") as PptxGenJS.HAlign, bold: j === 2, fontSize: j === 7 ? 9.5 : 11, fill: { color: i % 2 ? C.card : C.white } } })));
+      s.addTable([tableHead(["Usia", "Selesai", "Rata-rata", `≥ ${target}`, "L", "S", "R", "Topik terlemah"], 10.5, ["left", "center", "center", "center", "center", "center", "center", "left"]), ...body], { x: X(548), y: X(165), w: X(672), colW: [X(70), X(64), X(76), X(72), X(48), X(48), X(48), X(246)], rowH: X(Math.min(40, 340 / (body.length + 1))), fontFace: FONT, fontSize: 11, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.75 }, margin: [0.02, 0.08, 0.02, 0.08] });
+      darkNote(s, 58, 540, 1162, 98, [{ text: "Temuan: ", options: { bold: true, color: C.orange } }, { text: `kelompok usia ${best.label} memiliki rata-rata tertinggi (${ID(Math.round(best.avg ?? 0))}, ${ID(best.pctTarget ?? 0, 1)}% ≥ ${target}), sedangkan ${worst.label} terendah (${ID(Math.round(worst.avg ?? 0))}). Selisih ${ID(Math.round((best.avg ?? 0) - (worst.avg ?? 0)))} poin dapat menjadi dasar penyesuaian pendampingan per kelompok umur.` }], "info");
+    }
+    const brs = segment(rows, "branch", lvNames, target).filter((g) => g.key && g.finished).sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0));
+    if (brs.length >= 2 && !sc.branch) {
+      const s = base("Perbandingan per cabang", `${ID(brs.length)} cabang/unit, diurutkan dari rata-rata skor tertinggi`);
+      const PER = Math.ceil(Math.min(brs.length, 36) / 2), cols = [brs.slice(0, PER), brs.slice(PER, 36)];
+      const rh = Math.min(26, 360 / (PER + 1));
+      cols.forEach((list, half) => {
+        if (!list.length) return;
+        const body = list.map((g, i) => [String(half * PER + i + 1), g.label.replace(/^Cabang (Pembantu )?/i, ""), ID(g.finished), ID(Math.round(g.avg ?? 0)), g.pctTarget != null ? `${ID(g.pctTarget, 0)}%` : "-", fmtTopic(g.weakTopic)].map((t, j) => ({
+          text: t, options: { align: (j === 1 || j === 5 ? "left" : "center") as PptxGenJS.HAlign, bold: j === 3, color: j === 3 ? ((g.avg ?? 0) >= target ? C.green : (g.avg ?? 0) >= target - 50 ? C.orange : C.red) : C.ink, fontSize: j === 5 ? 8 : 9.5, fill: { color: i % 2 ? C.card : C.white } },
+        })));
+        s.addTable([tableHead(["#", "Cabang", "Selesai", "Rata-rata", `≥ ${target}`, "Topik terlemah"], 9, ["center", "left", "center", "center", "center", "left"]), ...body], { x: X(58 + half * 590), y: X(150), w: X(572), colW: [X(30), X(165), X(60), X(70), X(57), X(190)], rowH: X(rh), fontFace: FONT, fontSize: 9.5, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.5 }, margin: [0, 0.06, 0, 0.06] });
+      });
+      const top = brs[0], low = brs[brs.length - 1], big = [...brs].sort((a, b) => b.finished - a.finished)[0];
+      darkNote(s, 58, 150 + rh * (PER + 1) + 12, 1162, Math.max(80, 640 - (150 + rh * (PER + 1) + 12)), [{ text: "Temuan: ", options: { bold: true, color: C.orange } }, { text: `${top.label} tertinggi (rata-rata ${ID(Math.round(top.avg ?? 0))}), ${low.label} terendah (${ID(Math.round(low.avg ?? 0))}). Cabang dengan peserta terbanyak: ${big.label} (${ID(big.finished)} peserta, rata-rata ${ID(Math.round(big.avg ?? 0))}). Peta sebaran per cabang tersedia di menu Analytics.` }], "info");
+    }
+  }
+
   // ================= 9. Pola pengerjaan =================
   {
     const s = base("Pola pengerjaan tes", "Kapan peserta mengerjakan, berapa lama, dan seberapa lengkap jawabannya");
@@ -679,7 +717,7 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   {
     const s = base("Catatan dan langkah berikutnya", "Hal yang perlu diperhatikan institusi dalam membaca laporan ini");
     const later = allSess.filter((x) => x.opensAt > (sess?.opensAt ?? now));
-    const held = fin.filter((r) => String(r.released).startsWith("At")).length;
+    const held = fin.filter((r) => String(r.released).startsWith("At")).length + rows.filter((r) => r.released === "Held").length;
     const cards: [string, string, string, string][] = [
       ["calendar", C.blue, later.length ? `${test.name} berlanjut` : "Seluruh sesi selesai", later.length ? `Sesi berikutnya berlangsung ${TGL(later[0].opensAt, false)}${later.length > 1 ? ` – ${TGL(later[later.length - 1].opensAt, false)}` : ""}. Laporan kumulatif dapat diunduh kapan saja dari English Inspira AI.` : "Laporan ini dapat diunduh ulang kapan saja dari English Inspira AI bila ada pembaruan data."],
       ["file", C.blue, held ? "Skor bersifat sementara" : "Skor sudah dirilis", held ? `Skor ${held === fin.length ? "" : `${ID(held)} peserta `}masih berstatus provisional dan belum dirilis ke peserta. Rilis hasil mengikuti jadwal program.` : "Hasil sudah dapat dilihat peserta di dashboard masing-masing beserta analisis AI."],

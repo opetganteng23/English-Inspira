@@ -7,6 +7,7 @@ import { LEARNING_TOPIC_FILTER } from "./topics";
 import { levelUpStatus } from "./level-up";
 import { counselorAccess } from "./counselor-access";
 import { audit } from "./audit";
+import { ageOf } from "./age";
 import { User } from "@/models/User";
 import { Attempt, Test } from "@/models/Test";
 import { Institution } from "@/models/Institution";
@@ -57,7 +58,9 @@ export async function staffDashboard(participantId: string) {
   await audit(viewer._id, "participant.dashboard_view", String(u._id), { role: viewer.role });
   return {
     viewer: { role: viewer.role, full },
-    profile: { id: String(u._id), name: u.name ?? null, email: u.email, status: u.status, phone: u.phone ?? null, targetScore: u.targetScore ?? null, goal: u.goal ?? null, lastLoginAt: u.lastLoginAt ?? null, joinedAt: u.createdAt ?? null, institution: inst ? { name: inst.name, contractEnd: inst.contractEnd ?? null } : null },
+    profile: { id: String(u._id), name: u.name ?? null, email: u.email, status: u.status, phone: u.phone ?? null, targetScore: u.targetScore ?? null, goal: u.goal ?? null, lastLoginAt: u.lastLoginAt ?? null, joinedAt: u.createdAt ?? null, institution: inst ? { name: inst.name, contractEnd: inst.contractEnd ?? null } : null,
+      // Data diri dari impor HR (NDA): hanya admin pusat dan admin institusi; NIK tidak disimpan.
+      personal: viewer.role === "admin" || viewer.role === "inst_admin" ? { gender: u.gender ?? null, birthPlace: u.birthPlace ?? null, birthDate: u.birthDate ?? null, age: ageOf(u.birthDate), employmentStatus: u.employmentStatus ?? null, jobTitle: u.jobTitle ?? null, branch: u.branch ?? null, city: u.city ?? null, province: u.province ?? null, education: u.education ?? null } : null },
     level: level ? { name: level.name, scoreMin: level.scoreMin, scoreMax: level.scoreMax } : null,
     nextLevel: next ? { name: next.name, scoreMin: next.scoreMin } : null,
     levelProvisional: !u.currentLevelId && !!level,

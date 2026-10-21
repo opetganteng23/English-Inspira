@@ -8,6 +8,7 @@ import { Attempt, Test as TestModel } from "@/models/Test";
 import { CoachingQuota } from "@/models/Config";
 
 import { TestSession, TestSeat } from "@/models/Schedule";
+import { ageOf, birthRange, AGE_GROUPS } from "@/lib/age";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,10 @@ export async function GET(req: Request) {
     else if (instQ && /^[0-9a-f]{24}$/.test(instQ)) filter.institutionId = instQ;
     if (sp.get("status")) filter.status = sp.get("status");
     if (sp.get("level")) filter.currentLevelId = sp.get("level");
+    if (sp.get("branch")) filter.branch = sp.get("branch");
+    if (sp.get("province")) filter.province = sp.get("province");
+    const br = sp.get("age") ? birthRange(sp.get("age")!) : null;
+    if (br) filter.birthDate = br;
     // Placement: "done" = sudah submit placement (termasuk yang hasilnya masih ditahan), "none" = belum.
     const placement = sp.get("placement");
     if (placement === "done" || placement === "none") {
@@ -37,7 +42,7 @@ export async function GET(req: Request) {
     const session = sp.get("session");
     if (session && /^[0-9a-f]{24}$/.test(session)) filter.$and = [...((filter.$and as unknown[]) ?? []), { _id: { $in: await TestSeat.distinct("userId", { sessionId: session }) } }];
     const page = Math.max(1, Number(sp.get("page")) || 1), size = [25, 50, 100, 200].includes(Number(sp.get("size"))) ? Number(sp.get("size")) : 25;
-    const SORTS: Record<string, Record<string, 1 | -1>> = { newest: { createdAt: -1 }, name: { name: 1, email: 1 }, name_desc: { name: -1, email: -1 }, score: { currentScoreEst: -1, name: 1 }, score_asc: { currentScoreEst: 1, name: 1 }, status: { status: 1, name: 1 }, login: { lastLoginAt: -1 } };
+    const SORTS: Record<string, Record<string, 1 | -1>> = { newest: { createdAt: -1 }, name: { name: 1, email: 1 }, name_desc: { name: -1, email: -1 }, score: { currentScoreEst: -1, name: 1 }, score_asc: { currentScoreEst: 1, name: 1 }, status: { status: 1, name: 1 }, login: { lastLoginAt: -1 }, age: { birthDate: -1, name: 1 }, age_desc: { birthDate: 1, name: 1 }, branch: { branch: 1, name: 1 } };
     const sort = SORTS[sp.get("sort") ?? ""] ?? SORTS.newest;
 
     const [users, total, levels, insts] = await Promise.all([
@@ -56,12 +61,14 @@ export async function GET(req: Request) {
       total, page, pages: Math.max(1, Math.ceil(total / size)),
       levels: levels.map((l) => ({ id: String(l._id), name: l.name })),
       sessions: await scheduleOptions(),
+      branches: (await User.distinct("branch", { role: "participant", branch: { $nin: [null, ""] }, ...(filter.institutionId ? { institutionId: filter.institutionId } : {}) })).sort(),
+      ageGroups: AGE_GROUPS.map((g) => ({ key: g.key, label: g.label })),
       participants: users.map((u) => {
         const qt = quotas.find((x) => String(x.userId) === String(u._id)), la = lastAt.find((x) => String(x._id) === String(u._id));
         return { id: String(u._id), name: u.name ?? null, email: u.email, status: u.status, institution: u.institutionId ? inst.get(String(u.institutionId)) ?? "-" : null,
           level: u.currentLevelId ? lv.get(String(u.currentLevelId)) ?? "-" : null, scoreEst: u.currentScoreEst ?? null, placementDone: !!u.placementAttemptId || pending.has(String(u._id)),
           pending: pending.has(String(u._id)) ? { score: pending.get(String(u._id))!.scoreEst ?? null, level: (() => { const sc = pending.get(String(u._id))!.scoreEst; const l = typeof sc === "number" ? levels.find((x) => sc >= x.scoreMin && sc <= x.scoreMax) : null; return l?.name ?? null; })(), held: !!pending.get(String(u._id))!.heldByOrg, releaseAt: pending.get(String(u._id))!.releaseAt } : null, qaTester: !!u.qaTester,
-          quota: qt ? { used: qt.used, total: qt.total } : null, tests: la?.n ?? 0, lastAt: la?.at ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt };
+          quota: qt ? { used: qt.used, total: qt.total } : null, tests: la?.n ?? 0, lastAt: la?.at ?? null, lastLoginAt: u.lastLoginAt ?? null, createdAt: u.createdAt, branch: u.branch ?? null, age: ageOf(u.birthDate) };
       }),
     });
   } catch (e) {

@@ -12,7 +12,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!isValidObjectId(params.id)) throw new HttpError(404, "Test not found");
     const session = new URL(req.url).searchParams.get("session");
     if (session && !isValidObjectId(session)) throw new HttpError(404, "Session not found");
-    const out = await buildTestExport(params.id, new Date(), session ?? undefined);
+    const sp = new URL(req.url).searchParams;
+    const out = await buildTestExport(params.id, new Date(), session ?? undefined, { institutionId: sp.get("institution") || undefined, branch: sp.get("branch") || undefined, age: sp.get("age") || undefined });
     if (!out) throw new HttpError(404, session ? "Session not found" : "Test not found");
     await audit(admin._id, "test.results_export", params.id, { rows: out.rows, session: session ?? null });
     const file = `results-${out.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").replace(/-{2,}/g, "-").slice(0, 90) || "test"}-${new Date().toISOString().slice(0, 10)}.xlsx`;
