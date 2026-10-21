@@ -21,9 +21,18 @@ export async function limit(name: keyof typeof limiters, key: string) {
   try {
     await limiters[name].consume(key);
   } catch (e) {
-    if (e instanceof RateLimiterRes) throw new HttpError(429, "Too many attempts, please try again later");
+    if (e instanceof RateLimiterRes) {
+      const min = Math.max(1, Math.ceil(e.msBeforeNext / 60000));
+      if (name === "loginEmail") throw new HttpError(429, `Too many wrong passwords for this account. Try again in ${min} minute${min === 1 ? "" : "s"}, or reset your password to unlock it now. Tip: type the password yourself instead of using the browser's saved one.`);
+      throw new HttpError(429, `Too many attempts, please try again in ${min} minute${min === 1 ? "" : "s"}`);
+    }
     throw e;
   }
+}
+
+/** Hapus hitungan batas untuk satu kunci (mis. setelah password berhasil direset: kunci login email dibuka). */
+export async function clearLimit(name: keyof typeof limiters, key: string) {
+  await limiters[name].delete(key).catch(() => {});
 }
 
 export const clientIp = (req: Request) =>

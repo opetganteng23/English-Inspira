@@ -3,7 +3,7 @@ import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
-import { limit, clientIp } from "@/lib/ratelimit";
+import { limit, clientIp, clearLimit } from "@/lib/ratelimit";
 import { handleError, HttpError } from "@/lib/rbac";
 import { sha256 } from "@/lib/participants";
 import { hashPassword, passwordSchema } from "@/lib/password";
@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     );
     if (!user) throw new HttpError(400, "This reset link is invalid or has expired. Request a new one.");
     if (!user.emailVerifiedAt) await User.updateOne({ _id: user._id }, { emailVerifiedAt: new Date() });
+    await clearLimit("loginEmail", user.email.toLowerCase().trim()); // password baru: kunci akibat salah password dibuka
     await audit(user._id, "auth.password_reset", String(user._id));
     return NextResponse.json({ ok: true });
   } catch (e) {
