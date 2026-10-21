@@ -111,7 +111,9 @@ export default function Ruang({ params }: { params: { id: string } }) {
     return stopView;
   }, [st, cur, stopView]);
 
-  const flush = useCallback(async () => {
+  // Simpanan dikirim berurutan: kiriman berikutnya menunggu yang sebelumnya selesai (tidak saling menyalip di server).
+  const saving = useRef<Promise<unknown>>(Promise.resolve());
+  const flushNow = useCallback(async () => {
     stopView();
     if (st) viewSince.current = { qid: st.questions[cur]?.id, at: Date.now() };
     if (!dirty.current.size && !pendingFlags.current.length && !reachedDirty.current) return true;
@@ -134,6 +136,11 @@ export default function Ruang({ params }: { params: { id: string } }) {
       ids.forEach((i) => dirty.current.add(i)); flags.forEach((f) => pendingFlags.current.push(f)); if (sendReached) reachedDirty.current = true; setSaved("fail"); return false;
     }
   }, [params.id, load, stopView, st, cur]);
+  const flush = useCallback(async () => {
+    const run = saving.current.catch(() => {}).then(() => flushNow()) as Promise<boolean>;
+    saving.current = run;
+    return run;
+  }, [flushNow]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const queue = (qid: string) => { dirty.current.add(qid); clearTimeout(timer.current); timer.current = setTimeout(flush, 2000); };
 

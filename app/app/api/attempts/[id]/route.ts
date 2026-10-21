@@ -92,8 +92,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (test.shuffleOptions) for (const q of await Question.find({ _id: { $in: [...allowed] } }).select("options").lean()) optLen.set(String(q._id), q.options.length);
     for (const a of body.answers ?? []) {
       if (!allowed.has(a.qid)) continue; // soal section lain diabaikan
-      if (lockedBefore > 0 && (shownIdx.get(a.qid) ?? 0) < lockedBefore) continue; // mode aman: soal yang sudah dilewati
       const cur = attempt.answers.find((x) => String(x.qid) === a.qid);
+      // Mode aman: soal yang sudah dilewati tidak bisa DIUBAH. Jawaban pertama yang tiba terlambat (simpanan tersalip simpanan
+      // berikutnya saat koneksi lambat) tetap diterima, asal soal itu masih kosong dan baru saja dilewati.
+      const passed = lockedBefore > 0 && (shownIdx.get(a.qid) ?? 0) < lockedBefore;
+      if (passed && (cur?.choice != null || a.choice == null || (shownIdx.get(a.qid) ?? 0) < lockedBefore - 5)) continue;
       let choice = a.choice ?? undefined;
       if (choice != null && test.shuffleOptions) {
         const n = optLen.get(a.qid) ?? 0;
