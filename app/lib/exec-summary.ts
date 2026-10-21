@@ -12,6 +12,9 @@ const median = (xs: number[]) => { if (!xs.length) return 0; const s = [...xs].s
 const sd = (xs: number[]) => { const m = mean(xs); return xs.length ? Math.sqrt(mean(xs.map((x) => (x - m) ** 2))) : 0; };
 const nums = (xs: (number | null | undefined)[]) => xs.filter((x): x is number => typeof x === "number");
 const TGL = (d: Date) => d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
+const HARI: Record<string, string> = { Mon: "Senin", Tue: "Selasa", Wed: "Rabu", Thu: "Kamis", Fri: "Jumat", Sat: "Sabtu", Sun: "Minggu", Jan: "Jan", Feb: "Feb", Mar: "Mar", Apr: "Apr", May: "Mei", Jun: "Jun", Jul: "Jul", Aug: "Agu", Sep: "Sep", Oct: "Okt", Nov: "Nov", Dec: "Des" };
+/** "Tue, 20 Oct 2026" → "Selasa, 20 Okt 2026" */
+const hari = (d: string) => d.replace(/[A-Z][a-z]{2}/g, (w) => HARI[w] ?? w);
 const SEC: Record<string, string> = { listening: "Listening", structure: "Structure & Written Expression", reading: "Reading" };
 
 /**
@@ -88,15 +91,16 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   // 3. Kehadiran
   {
     const s = base("Kehadiran dan penyelesaian tes", `${ID(present)} dari ${ID(rows.length)} peserta terjadwal hadir (${pct(present, rows.length)})`);
-    card(s, 0.6, 1.7, 2.9, 1.9, ID(rows.length), "Terjadwal");
-    card(s, 3.7, 1.7, 2.9, 1.9, ID(fin.length), "Hadir & selesai", "", OK);
-    card(s, 6.8, 1.7, 2.9, 1.9, ID(absent), "Tidak hadir", "Sesi sudah tutup tanpa mulai", absent ? BAD : NAVY);
-    card(s, 9.9, 1.7, 2.9, 1.9, ID(pending), "Belum selesai", "Sedang tes atau sesi belum tutup", pending ? WARN : NAVY);
+    const ch = perDay ? 1.9 : 1.45;
+    card(s, 0.6, 1.6, 2.9, ch, ID(rows.length), "Terjadwal");
+    card(s, 3.7, 1.6, 2.9, ch, ID(fin.length), "Hadir & selesai", "", OK);
+    card(s, 6.8, 1.6, 2.9, ch, ID(absent), "Tidak hadir", perDay ? "Sesi sudah tutup tanpa mulai" : "", absent ? BAD : NAVY);
+    card(s, 9.9, 1.6, 2.9, ch, ID(pending), "Belum selesai", perDay ? "Sedang tes atau sesi belum tutup" : "", pending ? WARN : NAVY);
     if (!perDay) {
       const days = [...new Set(rows.map((r) => r.scheduledDay || "Tanpa jadwal"))];
       const head = ["Hari", "Terjadwal", "Hadir", "Selesai", "Tidak hadir", "Rata-rata skor"].map((t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: NAVY } } }));
-      const body = days.map((d) => { const rs = rows.filter((r) => (r.scheduledDay || "Tanpa jadwal") === d), f = rs.filter((r) => r.status === "Finished" && r.score != null); return cells([d, ID(rs.length), ID(rs.filter((r) => r.attendance === "Present").length), ID(f.length), ID(rs.filter((r) => r.attendance === "Absent").length), f.length ? ID(Math.round(mean(f.map((r) => r.score!)))) : "-"]); });
-      s.addTable([head, ...body], { x: 0.6, y: 3.9, w: 12.1, fontFace: FONT, fontSize: 11, color: NAVY, border: { type: "solid", color: LINE, pt: 0.5 }, rowH: 0.3, autoPage: false });
+      const body = days.map((d) => { const rs = rows.filter((r) => (r.scheduledDay || "Tanpa jadwal") === d), f = rs.filter((r) => r.status === "Finished" && r.score != null); return cells([hari(d), ID(rs.length), ID(rs.filter((r) => r.attendance === "Present").length), ID(f.length), ID(rs.filter((r) => r.attendance === "Absent").length), f.length ? ID(Math.round(mean(f.map((r) => r.score!)))) : "-"]); });
+      s.addTable([head, ...body], { x: 0.6, y: 3.25, w: 12.1, fontFace: FONT, fontSize: Math.min(11, 3.5 / (body.length + 1) * 28), color: NAVY, border: { type: "solid", color: LINE, pt: 0.5 }, rowH: Math.min(0.32, 3.5 / (body.length + 1)), margin: 2, autoPage: false });
     } else note(s, absent ? `${ID(absent)} peserta tidak hadir pada sesi ini; daftar namanya ada di ekspor Excel (sheet Attendance).` : "Seluruh peserta yang hadir pada sesi ini tercatat di sistem; daftar lengkap ada di ekspor Excel (sheet Attendance).", 4.0);
   }
 
@@ -203,11 +207,11 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
 
   // 12+. Lampiran (hanya laporan per hari; keseluruhan memakai Excel)
   if (perDay) {
-    const list = [...fin].sort((a, b) => a.name.localeCompare(b.name)), PER = 16, pages = Math.ceil(list.length / PER);
+    const list = [...fin].sort((a, b) => a.name.localeCompare(b.name)), PER = 24, pages = Math.ceil(list.length / PER);
     for (let pg = 0; pg < pages; pg++) {
       const s = base(`Lampiran: daftar nilai peserta (${pg + 1}/${pages})`, "L = Listening · S = Structure & Written Expression · R = Reading · skor bagian skala 31–68");
       const head = ["No", "Nama peserta", "Total", "L", "S", "R", "Level"].map((t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: NAVY } } }));
-      s.addTable([head, ...list.slice(pg * PER, pg * PER + PER).map((r, i) => cells([String(pg * PER + i + 1), r.name, String(r.score), String(r.listening ?? "-"), String(r.structure ?? "-"), String(r.reading ?? "-"), r.level]))], { x: 0.6, y: 1.55, w: 12.1, colW: [0.7, 5.6, 1.2, 1.0, 1.0, 1.0, 1.6], fontFace: FONT, fontSize: 10, color: NAVY, border: { type: "solid", color: LINE, pt: 0.5 }, rowH: 0.3 });
+      s.addTable([head, ...list.slice(pg * PER, pg * PER + PER).map((r, i) => cells([String(pg * PER + i + 1), r.name, String(r.score), String(r.listening ?? "-"), String(r.structure ?? "-"), String(r.reading ?? "-"), r.level]))], { x: 0.6, y: 1.55, w: 12.1, colW: [0.7, 5.6, 1.2, 1.0, 1.0, 1.0, 1.6], fontFace: FONT, fontSize: 9, color: NAVY, border: { type: "solid", color: LINE, pt: 0.5 }, rowH: 0.205, margin: 2 });
     }
   } else {
     const s = base("Lampiran", "Daftar nilai lengkap");
