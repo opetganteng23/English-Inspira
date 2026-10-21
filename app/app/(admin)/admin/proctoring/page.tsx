@@ -27,7 +27,7 @@ type Trace = {
 const RV: Record<string, [string, string]> = { clean: ["Clean", "badge-ok"], suspicious: ["Suspicious", "badge-warn"], invalid: ["Invalid", "badge-bad"] };
 const LIVE: Record<string, [string, string]> = { active: ["Active", "bg-success"], unstable: ["Unstable", "bg-accent"], offline: ["Disconnected", "bg-red-600"] };
 const CHIP: Record<Issue["level"], string> = { bad: "badge-bad", warn: "badge-warn", info: "badge-muted" };
-const PROBLEMS: [string, string][] = [["any", "Any problem"], ["offline", "Disconnected now"], ["gap", "Connection lost"], ["lost", "Possible lost answers"], ["blank", "Many blanks"], ["fast", "Finished fast"], ["tab", "Tab switches"], ["fullscreen", "Left fullscreen"], ["paste", "Paste"], ["reload", "Reopened"], ["none", "No problems"]];
+const PROBLEMS: [string, string][] = [["any", "Any problem"], ["offline", "Disconnected now"], ["gap", "Connection lost"], ["lost", "Blanks between answers (lost or skipped)"], ["blank", "Many blanks"], ["fast", "Finished fast"], ["tab", "Tab switches"], ["fullscreen", "Left fullscreen"], ["paste", "Paste"], ["reload", "Reopened"], ["none", "No problems"]];
 const clock = (d: string) => new Date(d).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 const ago = (d: string | null, now: number) => {
   if (!d) return "-";
@@ -152,7 +152,7 @@ export default function Monitoring() {
               ["DISCONNECTED NOW", kpi.offline, () => setKpi("in_progress", "offline"), kpi.offline ? "text-red-700" : "text-navy"],
               ["FINISHED", kpi.done, () => setKpi("submitted"), "text-navy"],
               ["NEEDS REVIEW", kpi.needs, () => setKpi("needs"), kpi.needs ? "text-accent" : "text-navy"],
-              ["POSSIBLE LOST ANSWERS", kpi.lost, () => setKpi("all", "lost"), kpi.lost ? "text-red-700" : "text-navy"],
+              ["BLANKS BETWEEN ANSWERS", kpi.lost, () => setKpi("all", "lost"), kpi.lost ? "text-red-700" : "text-navy"],
             ] as const).map(([l, n, fn, c]) => (
               <button key={l} onClick={fn} className="card !p-4 text-left transition hover:border-brand">
                 <p className="text-xs font-semibold tracking-wider text-ink-soft">{l}</p>

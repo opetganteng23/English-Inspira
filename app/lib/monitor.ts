@@ -25,6 +25,8 @@ export type MonitorRow = {
 };
 
 const SEC: Record<string, string> = { listening: "Listening", structure: "Structure", reading: "Reading" };
+/** Sejak saat ini ruang tes mencatat soal yang sengaja dilewati; sebelumnya "kosong terselip" bisa berarti dilewati atau hilang. */
+export const SKIP_TRACKED_SINCE = new Date("2026-10-21T14:15:00Z");
 
 /**
  * Baris tabel Monitoring & Proctoring untuk satu tes: semua percobaan (sedang berjalan dan selesai),
@@ -72,7 +74,8 @@ export async function monitorRows(testId: string, now = new Date()) {
     const issues: Issue[] = [];
     if (live === "offline") issues.push({ code: "offline", label: "Disconnected now", level: "bad" });
     else if (live === "unstable") issues.push({ code: "unstable", label: "Unstable connection", level: "warn" });
-    if (lost) issues.push({ code: "lost", label: `Possible lost answers ×${lost}`, level: "bad" });
+    const sure = +a.startedAt >= +SKIP_TRACKED_SINCE;
+    if (lost) issues.push(sure ? { code: "lost", label: `Possible lost answers ×${lost}`, level: "bad" } : { code: "lost", label: `Skipped or lost ×${lost}`, level: "warn" });
     if (gaps.length) issues.push({ code: "gap", label: `Disconnected ${gaps.length}× (max ${gapMaxMin}m)`, level: gapMaxMin >= 3 ? "warn" : "info" });
     if (blanks >= 10) issues.push({ code: "blank", label: `${blanks} blank`, level: "warn" });
     if (minutes != null && limitMin && minutes < limitMin * 0.5) issues.push({ code: "fast", label: `Finished fast (${minutes}m)`, level: "warn" });
@@ -80,7 +83,7 @@ export async function monitorRows(testId: string, now = new Date()) {
     if (fullscreen) issues.push({ code: "fullscreen", label: `Left fullscreen ×${fullscreen}`, level: "warn" });
     if (paste) issues.push({ code: "paste", label: `Paste ×${paste}`, level: "bad" });
     if (loads > 2) issues.push({ code: "reload", label: `Reopened ×${loads - 1}`, level: "info" });
-    const risk = Math.min(100, lost * 25 + (live === "offline" ? 25 : live === "unstable" ? 10 : 0) + Math.min(30, tab * 2) + Math.min(10, fullscreen * 2) + paste * 15 + (gapMaxMin >= 3 ? 10 : gaps.length ? 4 : 0) + (blanks >= 10 ? 10 : 0) + (issues.some((i) => i.code === "fast") ? 20 : 0) + (loads > 2 ? 3 : 0));
+    const risk = Math.min(100, (sure ? lost * 25 : Math.min(20, lost * 5)) + (live === "offline" ? 25 : live === "unstable" ? 10 : 0) + Math.min(30, tab * 2) + Math.min(10, fullscreen * 2) + paste * 15 + (gapMaxMin >= 3 ? 10 : gaps.length ? 4 : 0) + (blanks >= 10 ? 10 : 0) + (issues.some((i) => i.code === "fast") ? 20 : 0) + (loads > 2 ? 3 : 0));
     rows.push({
       id: String(a._id), name: u.name ?? "", email: u.email, institution: u.institutionId ? insts.get(String(u.institutionId)) ?? "" : "", session: sm.get(String(a.userId)) ?? "",
       status: done ? "submitted" : "in_progress", startedAt: a.startedAt.toISOString(), finishedAt: a.finishedAt?.toISOString() ?? null, minutes,
@@ -99,7 +102,7 @@ const clock = (d: Date) => new Date(d).toLocaleTimeString("en-GB", { hour: "2-di
 /** Diagnosis otomatis satu percobaan dalam kalimat biasa: koneksi, jawaban hilang, kehabisan waktu, kecepatan, dan aktivitas di luar layar. */
 export async function diagnose(attemptId: string) {
   const act = await buildActivity(attemptId);
-  const a = await Attempt.findById(attemptId).select("conn integrity sectionIdx").lean();
+  const a = await Attempt.findById(attemptId).select("conn integrity sectionIdx startedAt").lean();
   const f: Finding[] = [];
   const gaps = a?.conn?.gaps ?? [];
   const lostWhere = a?.integrity?.where ?? [];
@@ -109,7 +112,12 @@ export async function diagnose(attemptId: string) {
     f.push({ level: min >= 3 ? "warn" : "info", title: `Connection lost for ${min} min`, detail: `${clock(g.from!)}–${clock(g.to!)} WIB during ${SEC[sec] ?? sec}. The test resumed afterwards${lostWhere.length ? "" : "; no answers were lost"}.` });
   }
   if ((a?.conn?.loads ?? 0) > 2) f.push({ level: "info", title: `Test page opened ${a!.conn!.loads} times`, detail: "The participant reloaded or reopened the test (browser closed, device restarted, or network change)." });
-  if (a?.integrity?.isolatedBlanks) f.push({ level: "bad", title: `${a.integrity.isolatedBlanks} possible lost answer(s)`, detail: `Blank questions between answered ones with no saved data in ${lostWhere.join(", ")}: an answer may not have reached the server, or Next was pressed without choosing.` });
+  if (a?.integrity?.isolatedBlanks) {
+    const sure = a.startedAt && +a.startedAt >= +SKIP_TRACKED_SINCE;
+    f.push(sure
+      ? { level: "bad", title: `${a.integrity.isolatedBlanks} possible lost answer(s)`, detail: `Blank questions between answered ones with no saved data in ${lostWhere.join(", ")}. Skipped questions are recorded separately, so these answers most likely did not reach the server.` }
+      : { level: "warn", title: `${a.integrity.isolatedBlanks} blank question(s) between answers`, detail: `In ${lostWhere.join(", ")}. This test started before skipped questions were recorded, so each one was either skipped on purpose (Next without choosing) or an answer that did not reach the server.` });
+  }
   act.sections.forEach((s, si) => {
     const q = s.questions, blank = q.filter((x) => !x.answered).length;
     if (!q.length || (act.attempt.status !== "submitted" && si >= (a?.sectionIdx ?? 0))) return;

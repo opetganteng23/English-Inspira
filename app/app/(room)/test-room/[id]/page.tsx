@@ -235,6 +235,9 @@ export default function Ruang({ params }: { params: { id: string } }) {
     if (!secure) return goTo(cur + 1);
     if (navBusy) return;
     setNavBusy(true);
+    // Soal dilewati tanpa memilih: tetap dikirim (pilihan kosong) agar tercatat sengaja dilewati, bukan jawaban yang hilang.
+    const here = st.questions[cur]?.id;
+    if (here && ansRef.current[here] == null) dirty.current.add(here);
     try { await flush(); } finally { setNavBusy(false); }
     goTo(cur + 1);
   };
