@@ -36,13 +36,15 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const admin = await requireRole(["admin"]);
-    const b = z.object({ id: z.string(), status: z.enum(["clean", "suspicious", "invalid"]), note: z.string().max(500).optional() }).parse(await req.json());
-    if (!isValidObjectId(b.id)) throw new HttpError(404, "Attempt not found");
+    const b = z.object({ id: z.string().optional(), ids: z.array(z.string()).max(500).optional(), status: z.enum(["clean", "suspicious", "invalid"]), note: z.string().max(500).optional() }).parse(await req.json());
+    // satu (id) atau banyak sekaligus (ids, dari centang di tabel Monitoring)
+    const ids = [...(b.ids ?? []), ...(b.id ? [b.id] : [])];
+    if (!ids.length || ids.some((x) => !isValidObjectId(x))) throw new HttpError(404, "Attempt not found");
     await connectDB();
-    const r = await Attempt.updateOne({ _id: b.id, status: "submitted" }, { proctorReview: { status: b.status, note: b.note, at: new Date(), by: admin._id } });
+    const r = await Attempt.updateMany({ _id: { $in: ids }, status: "submitted" }, { proctorReview: { status: b.status, note: b.note, at: new Date(), by: admin._id } });
     if (!r.matchedCount) throw new HttpError(404, "Attempt not found");
-    await audit(admin._id, "proctoring.review", b.id, { status: b.status });
-    return NextResponse.json({ ok: true });
+    for (const id of ids) await audit(admin._id, "proctoring.review", id, { status: b.status });
+    return NextResponse.json({ ok: true, updated: r.modifiedCount });
   } catch (e) {
     if (e instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return handleError(e);

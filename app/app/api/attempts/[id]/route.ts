@@ -6,15 +6,19 @@ import { getParam } from "@/lib/config";
 import { loadAttempt, sectionDeadline, isVersionError } from "@/lib/attempts";
 import { Question, QuestionGroup } from "@/models/Question";
 import { orderQuestions, optionPermutation } from "@/lib/shuffle";
+import { touchConn } from "@/lib/conn";
+import { Attempt } from "@/models/Test";
+import { isValidObjectId } from "mongoose";
 
 const ROLES = ["participant", "admin", "inst_admin"] as const;
 
 /** State tes: hanya soal section aktif, tanpa kunci jawaban. Sisa waktu dihitung server. */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const user = await requireRole([...ROLES]);
     const { attempt, test } = await loadAttempt(params.id, user);
     if (attempt.status === "submitted") return NextResponse.json({ status: "submitted" });
+    if (String(attempt.userId) === String(user._id)) await touchConn(attempt, { load: new URL(req.url).searchParams.has("open") }); // open=1: halaman tes baru dibuka/dimuat ulang
 
     const section = test.sections[attempt.sectionIdx];
     await connectDB();
@@ -68,6 +72,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   try {
     const user = await requireRole([...ROLES]);
     const body = patchSchema.parse(await req.json());
+    // Heartbeat (body kosong): cukup catat koneksi, tanpa memuat soal.
+    if (!body.answers?.length && !body.flags?.length && body.reached == null) {
+      if (!isValidObjectId(params.id)) throw new HttpError(404, "Attempt not found");
+      await connectDB();
+      const a = await Attempt.findOne({ _id: params.id, userId: user._id }).select("status sectionIdx conn.lastSeenAt").lean();
+      if (!a) throw new HttpError(404, "Attempt not found");
+      if (a.status !== "in_progress") return NextResponse.json({ ok: false, status: a.status });
+      await touchConn(a);
+      return NextResponse.json({ ok: true });
+    }
     // Dua simpanan bersamaan (koneksi tersendat lalu menumpuk) bisa bentrok versi dokumen: muat ulang dan terapkan lagi, jawaban tidak hilang.
     for (let tryNo = 0; ; tryNo++) {
     try {
@@ -113,6 +127,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const now = new Date();
     for (const f of body.flags ?? []) { const kind = typeof f === "string" ? f : f.kind; const qid = typeof f === "string" ? null : f.qid; attempt.proctorFlags.push({ kind, at: now, section: attempt.sectionIdx, ...(qid && allowed.has(qid) ? { qid } : {}) } as never); }
     await attempt.save();
+    if (String(attempt.userId) === String(user._id)) await touchConn(attempt);
     return NextResponse.json({ ok: true, savedAt: now });
     } catch (e) { if (isVersionError(e) && tryNo < 4) continue; throw e; }
     }

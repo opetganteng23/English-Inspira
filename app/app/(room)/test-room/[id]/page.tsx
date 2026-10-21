@@ -79,9 +79,12 @@ export default function Ruang({ params }: { params: { id: string } }) {
     return () => { clearInterval(tick); evs.forEach((e) => window.removeEventListener(e, touch)); };
   }, []);
 
+  const opened = useRef(false);
   const load = useCallback(async () => {
     try {
-      const d: State = await api(`/api/attempts/${params.id}`);
+      // ?open=1 hanya pada pemuatan pertama halaman: dipakai server untuk menghitung berapa kali tes dibuka (bukan tiap ganti bagian).
+      const d: State = await api(`/api/attempts/${params.id}${opened.current ? "" : "?open=1"}`);
+      opened.current = true;
       if (d.status === "submitted") return router.replace(`/results/${params.id}`);
       if (typeof d.idleTimeoutSec === "number") idleSec.current = d.idleTimeoutSec;
       reachedRef.current = d.secure ? d.reached ?? 0 : 0; reachedDirty.current = false;
@@ -167,6 +170,14 @@ export default function Ruang({ params }: { params: { id: string } }) {
   }, [st]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (st && left === 0) void next(true); }, [left]);
+
+  // Heartbeat tiap 30 detik: admin bisa melihat siapa yang masih tersambung, dan jeda koneksi tercatat untuk proctoring.
+  useEffect(() => {
+    if (!st) return;
+    const beat = () => { void fetch(`/api/attempts/${params.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}", keepalive: true }).catch(() => {}); };
+    const iv = setInterval(beat, 30_000);
+    return () => clearInterval(iv);
+  }, [st, params.id]);
 
   // Coba ulang simpan bila gagal (jaringan putus), dan peringatkan sebelum menutup halaman.
   useEffect(() => {

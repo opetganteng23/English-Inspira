@@ -22,7 +22,7 @@ const nav: NavGroup[] = [
   { label: "Monitoring", items: [
     { href: "/admin/coaching", label: "Coaching Monitor" },
     { href: "/admin/ai-counselor", label: "AI Counselor" },
-    { href: "/admin/proctoring", label: "Review Proctoring" },
+    { href: "/admin/proctoring", label: "Monitoring & Proctoring" },
     { href: "/admin/itp-schedule", label: "Official Test Schedule & Scores" },
   ] },
   { label: "System", items: [
