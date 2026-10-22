@@ -70,6 +70,8 @@ const attemptSchema = new Schema(
     aiAnalysis: Schema.Types.Mixed, // sementara; dipindah ke koleksi analyses pada Fase 5
     integrity: { isolatedBlanks: Number, where: [String], lockedStart: [{ _id: false, section: String, n: Number }], checkedAt: Date },
     // Koneksi ruang tes (heartbeat 30 detik + tiap simpanan): jeda > 90 detik dicatat sebagai terputus; loads = berapa kali halaman tes dibuka.
+    // Waktu tambahan per bagian (detik) karena koneksi terputus: jeda dikembalikan, maks CREDIT_CAP_SEC per bagian (lib/conn).
+    timeCredits: { type: [Number], default: undefined },
     conn: { lastSeenAt: Date, loads: Number, gaps: [{ _id: false, from: Date, to: Date, section: Number }] }, // soal kosong terselip (kemungkinan jawaban hilang), diperiksa otomatis tiap jam
     proctorReview: { status: { type: String, enum: ["clean", "suspicious", "invalid"] }, note: String, at: Date, by: Schema.Types.ObjectId },
   },

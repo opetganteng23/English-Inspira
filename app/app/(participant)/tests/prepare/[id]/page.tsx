@@ -1,7 +1,7 @@
 "use client";
 
 import { enterFullscreen } from "@/lib/fullscreen";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/lib/useApi";
@@ -19,6 +19,19 @@ export default function Persiapan({ params }: { params: { id: string } }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const ctx = useRef<AudioContext | null>(null);
+  // Cek koneksi sebelum mulai: 5 permintaan kecil ke server, ukur keberhasilan dan waktu respons.
+  const [conn, setConn] = useState<{ state: "checking" | "good" | "fair" | "poor"; ok: number; ms: number } | null>(null);
+  const checkConn = useCallback(async () => {
+    setConn({ state: "checking", ok: 0, ms: 0 });
+    let ok = 0, total = 0;
+    for (let i = 0; i < 5; i++) {
+      const t0 = performance.now();
+      try { const r = await fetch(`/api/health?c=${Date.now()}`, { cache: "no-store", signal: AbortSignal.timeout(5000) }); if (r.ok) { ok++; total += performance.now() - t0; } } catch { /* gagal */ }
+    }
+    const ms = ok ? Math.round(total / ok) : 0;
+    setConn({ state: ok < 5 || ms > 2000 ? "poor" : ms > 800 ? "fair" : "good", ok, ms });
+  }, []);
+  useEffect(() => { void checkConn(); }, [checkConn]);
 
   // Uji perangkat audio: nada singkat lewat WebAudio (tidak butuh file/izin kamera/mikrofon).
   function beep() {
@@ -56,6 +69,19 @@ export default function Persiapan({ params }: { params: { id: string } }) {
         </div>
       </section>
 
+      <section className={`card ${conn?.state === "poor" ? "border-red-300 bg-red-50" : ""}`}>
+        <h2 className="font-display text-lg font-extrabold text-navy">Connection check</h2>
+        {!conn || conn.state === "checking" ? <p className="text-sm text-ink-soft">Checking your connection to the test server…</p> : (
+          <p className={`text-sm ${conn.state === "poor" ? "font-semibold text-red-700" : conn.state === "fair" ? "text-navy" : "text-success"}`}>
+            {conn.state === "good" && `Good: ${conn.ok}/5 responses, average ${conn.ms} ms.`}
+            {conn.state === "fair" && `Fair: ${conn.ok}/5 responses, average ${conn.ms} ms. The test should work, but a faster network is better.`}
+            {conn.state === "poor" && `Unstable: only ${conn.ok}/5 responses${conn.ok ? `, average ${conn.ms} ms` : ""}. Please move to a stronger network (or your phone's hotspot) before you start.`}
+          </p>
+        )}
+        <p className="mt-1 text-xs text-ink-soft">If the connection drops during the test, the questions are hidden and the timer pauses. Lost time is given back when you reconnect (up to 10 minutes per section).</p>
+        <button type="button" className="btn-outline mt-3 self-start" disabled={conn?.state === "checking"} onClick={() => void checkConn()}>Check again</button>
+      </section>
+
       {t.secure && (
         <section className="card border-accent bg-accent-tint">
           <h2 className="font-display text-lg font-extrabold text-navy">Important: this test is one way</h2>
@@ -69,7 +95,7 @@ export default function Persiapan({ params }: { params: { id: string } }) {
       <section className="card">
         <h2 className="font-display text-lg font-extrabold text-navy">Rules during the test</h2>
         <ul className="mt-2 flex flex-col gap-1.5 text-sm text-ink-soft">
-          {["Stay in fullscreen; switching tabs or leaving fullscreen is recorded.", "Listening audio plays once, without pausing or replaying.", "You cannot go back to a previous section.", "The timer runs on the server: refreshing does not change the remaining time, and answers are saved automatically.", "Sessions with unusual activity notes are reviewed by the admin. No camera or microphone recording."].map((r) => <li key={r}>• {r}</li>)}
+          {["Stay in fullscreen; switching tabs or leaving fullscreen is recorded.", "Listening audio plays once, without pausing or replaying.", "You cannot go back to a previous section.", "The timer runs on the server: refreshing does not change the remaining time, and answers are saved automatically.", "Watch the connection badge next to the timer. If it shows Offline, the questions are hidden and the timer pauses until you reconnect.", "Sessions with unusual activity notes are reviewed by the admin. No camera or microphone recording."].map((r) => <li key={r}>• {r}</li>)}
         </ul>
         <label className="mt-4 flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={ready} onChange={(e) => setReady(e.target.checked)} /><span>I understand the rules and am ready to finish the test. The test attempt is counted when the test starts.</span></label>
         <ErrorNote text={err} />

@@ -6,7 +6,7 @@ import { getParam } from "@/lib/config";
 import { loadAttempt, sectionDeadline, isVersionError } from "@/lib/attempts";
 import { Question, QuestionGroup } from "@/models/Question";
 import { orderQuestions, optionPermutation } from "@/lib/shuffle";
-import { touchConn } from "@/lib/conn";
+import { touchConn, creditGap } from "@/lib/conn";
 import { Attempt } from "@/models/Test";
 import { isValidObjectId } from "mongoose";
 
@@ -77,11 +77,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!body.answers?.length && !body.flags?.length && body.reached == null) {
       if (!isValidObjectId(params.id)) throw new HttpError(404, "Attempt not found");
       await connectDB();
-      const a = await Attempt.findOne({ _id: params.id, userId: user._id }).select("status sectionIdx conn.lastSeenAt").lean();
+      const a = await Attempt.findOne({ _id: params.id, userId: user._id }).select("status sectionIdx timeCredits conn.lastSeenAt").lean();
       if (!a) throw new HttpError(404, "Attempt not found");
       if (a.status !== "in_progress") return NextResponse.json({ ok: false, status: a.status });
+      const credited = await creditGap(a);
       await touchConn(a);
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, credited });
     }
     // Dua simpanan bersamaan (koneksi tersendat lalu menumpuk) bisa bentrok versi dokumen: muat ulang dan terapkan lagi, jawaban tidak hilang.
     for (let tryNo = 0; ; tryNo++) {

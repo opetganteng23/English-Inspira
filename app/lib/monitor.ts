@@ -113,7 +113,7 @@ const clock = (d: Date) => new Date(d).toLocaleTimeString("en-GB", { hour: "2-di
 /** Diagnosis otomatis satu percobaan dalam kalimat biasa: koneksi, jawaban hilang, kehabisan waktu, kecepatan, dan aktivitas di luar layar. */
 export async function diagnose(attemptId: string) {
   const act = await buildActivity(attemptId);
-  const a = await Attempt.findById(attemptId).select("conn integrity sectionIdx startedAt").lean();
+  const a = await Attempt.findById(attemptId).select("conn integrity sectionIdx startedAt timeCredits").lean();
   const f: Finding[] = [];
   const gaps = a?.conn?.gaps ?? [];
   const lostWhere = a?.integrity?.where ?? [];
@@ -123,6 +123,7 @@ export async function diagnose(attemptId: string) {
     f.push({ level: min >= 3 ? "warn" : "info", title: `Connection lost for ${min} min`, detail: `${clock(g.from!)}–${clock(g.to!)} WIB during ${SEC[sec] ?? sec}. The test resumed afterwards${lostWhere.length ? "" : "; no answers were lost"}.` });
   }
   for (const { section, n } of (a?.integrity?.lockedStart ?? []).map((l) => ({ section: SEC[String(l.section ?? "")] ?? String(l.section ?? ""), n: l.n ?? 0 }))) f.push({ level: "bad", title: `${section} started at question ${n + 1}`, detail: `Questions 1–${n} of ${section} were never shown: a system fault carried the position over from the previous section (fixed on 22 Oct 2026). These questions count as blank; consider a retake.` });
+  (a?.timeCredits ?? []).forEach((sec, i) => { if (sec > 0) f.push({ level: "info", title: `${Math.round(sec / 60)} min given back in ${SEC[act.sections[i]?.name ?? ""] ?? act.sections[i]?.name ?? "a section"}`, detail: `Time lost while offline was added to the section timer automatically (up to 10 minutes per section).` }); });
   if ((a?.conn?.loads ?? 0) > 2) f.push({ level: "info", title: `Test page opened ${a!.conn!.loads} times`, detail: "The participant reloaded or reopened the test (browser closed, device restarted, or network change)." });
   if (a?.integrity?.isolatedBlanks) {
     const sure = a.startedAt && +a.startedAt >= +SKIP_TRACKED_SINCE;

@@ -1,3 +1,4 @@
+import { creditGap } from "./conn";
 import { isValidObjectId, type HydratedDocument } from "mongoose";
 import { connectDB } from "./db";
 import { HttpError } from "./rbac";
@@ -27,6 +28,8 @@ export async function loadAttempt(id: string, user: Pick<UserDoc, "_id" | "role"
     throw new HttpError(404, "Attempt not found");
   const test = await Test.findById(attempt.testId).lean();
   if (!test) throw new HttpError(500, "Test not found");
+  // Peserta sendiri kembali setelah koneksi putus: kembalikan waktu yang hilang sebelum timer diperiksa.
+  if (String(attempt.userId) === String(user._id)) await creditGap(attempt as never);
   try {
     await syncTimer(attempt, test);
   } catch (e) {
@@ -43,7 +46,8 @@ export async function loadAttempt(id: string, user: Pick<UserDoc, "_id" | "role"
 export const isVersionError = (e: unknown) => (e as { name?: string } | null)?.name === "VersionError";
 
 export function sectionDeadline(attempt: AttemptHydrated, test: { sections: { durationSec: number }[] }) {
-  return attempt.sectionStartedAt.getTime() + test.sections[attempt.sectionIdx].durationSec * 1000;
+  // + waktu tambahan karena koneksi terputus (lib/conn creditGap)
+  return attempt.sectionStartedAt.getTime() + (test.sections[attempt.sectionIdx].durationSec + (attempt.timeCredits?.[attempt.sectionIdx] ?? 0)) * 1000;
 }
 
 /** Section yang waktunya habis maju otomatis; bila semua habis, attempt di-submit. */

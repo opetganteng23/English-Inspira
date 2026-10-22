@@ -31,6 +31,11 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const [left, setLeft] = useState(0);
   const [saved, setSaved] = useState<"ok" | "saving" | "fail">("ok");
+  // Koneksi: online / slow (respons > 3 dtk) / offline. Saat offline soal ditutup dan timer di layar berhenti;
+  // server mengembalikan waktu yang hilang saat tersambung lagi (lib/conn creditGap, maks 10 menit per bagian).
+  const [net, setNetState] = useState<"online" | "slow" | "offline">("online");
+  const netRef = useRef<"online" | "slow" | "offline">("online");
+  const setNet = (n: "online" | "slow" | "offline") => { netRef.current = n; setNetState(n); };
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -148,9 +153,10 @@ export default function Ruang({ params }: { params: { id: string } }) {
         },
       });
       const p = readPending(); for (const qid of ids) if (p[qid] === sentAns[qid]) delete p[qid]; writePending(p);
-      setSaved("ok"); return true;
+      setSaved("ok"); if (netRef.current === "offline") setNet("online"); return true;
     } catch (e) {
       if ((e as { status?: number }).status === 409) { await load(); return false; } // section habis di server
+      if (!(e as { status?: number }).status) setNet("offline"); // tidak ada respons sama sekali: jaringan putus
       ids.forEach((i) => dirty.current.add(i)); flags.forEach((f) => pendingFlags.current.push(f)); if (sendReached) reachedDirty.current = true; setSaved("fail"); return false;
     }
   }, [params.id, load, stopView, st, cur]);
@@ -167,19 +173,33 @@ export default function Ruang({ params }: { params: { id: string } }) {
   // Hitung mundur lokal; sumber kebenaran tetap server (disinkronkan lewat load()).
   useEffect(() => {
     if (!st) return;
-    const iv = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
+    const iv = setInterval(() => { if (netRef.current !== "offline") setLeft((s) => Math.max(0, s - 1)); }, 1000);
     return () => clearInterval(iv);
   }, [st]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (st && left === 0) void next(true); }, [left]);
 
   // Heartbeat tiap 30 detik: admin bisa melihat siapa yang masih tersambung, dan jeda koneksi tercatat untuk proctoring.
+  const beat = useCallback(async () => {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(`/api/attempts/${params.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}", signal: AbortSignal.timeout(10_000) });
+      const wasOffline = netRef.current === "offline";
+      setNet(Date.now() - t0 > 3000 ? "slow" : "online");
+      if (wasOffline && r.ok) { await flushRef.current?.(); await load(); } // jawaban tertunda terkirim, lalu waktu disinkronkan (termasuk waktu yang dikembalikan)
+    } catch { setNet("offline"); }
+  }, [params.id, load]);
   useEffect(() => {
     if (!st) return;
-    const beat = () => { void fetch(`/api/attempts/${params.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}", keepalive: true }).catch(() => {}); };
-    const iv = setInterval(beat, 30_000);
+    const iv = setInterval(() => void beat(), net === "offline" ? 5_000 : 30_000);
     return () => clearInterval(iv);
-  }, [st, params.id]);
+  }, [st, beat, net]);
+  useEffect(() => {
+    const off = () => setNet("offline");
+    const on = () => void beat();
+    window.addEventListener("offline", off); window.addEventListener("online", on);
+    return () => { window.removeEventListener("offline", off); window.removeEventListener("online", on); };
+  }, [beat]);
 
   // Coba ulang simpan bila gagal (jaringan putus), dan peringatkan sebelum menutup halaman.
   useEffect(() => {
@@ -234,7 +254,13 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const closeNotice = () => { try { sessionStorage.setItem(noticeKey, "1"); } catch { /* */ } setNoticeSeen((x) => new Set(x).add(noticeKey)); };
   // Pindah soal. Mode aman: hanya maju; soal yang dilewati terkunci, jawaban yang tertunda disimpan sekarang.
   const goNext = async () => {
-    if (!secure) return goTo(cur + 1);
+    if (!secure) {
+      if (!dirty.current.size) return goTo(cur + 1);
+      if (navBusy) return;
+      setNavBusy(true);
+      try { await flush(); } finally { setNavBusy(false); }
+      return goTo(cur + 1);
+    }
     if (navBusy) return;
     setNavBusy(true);
     // Soal dilewati tanpa memilih: tetap dikirim (pilihan kosong) agar tercatat sengaja dilewati, bukan jawaban yang hilang.
@@ -271,6 +297,17 @@ export default function Ruang({ params }: { params: { id: string } }) {
   return (
     <SecureZone active={secure}>
       {st.screenWatch && <ScreenGate attemptId={params.id} />}
+      {net === "offline" && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy p-4" role="alertdialog" aria-modal="true" aria-label="Connection lost">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center">
+            <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-line border-t-brand" aria-hidden />
+            <h2 className="font-display text-xl font-extrabold text-navy">Connection lost</h2>
+            <p className="mt-2 text-sm text-ink-soft">Your timer is paused and your answers are kept on this device. We are reconnecting automatically; the test continues as soon as you are back online.</p>
+            <p className="mt-3 text-xs text-ink-soft">Lost time is given back when you reconnect (up to 10 minutes per section). Try switching to another network or your phone&apos;s hotspot.</p>
+            <button className="btn-outline mt-4" onClick={() => void beat()}>Try again now</button>
+          </div>
+        </div>
+      )}
     <div className="relative flex h-dvh flex-col overflow-clip">
       <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
         <div className="min-w-0">
@@ -278,6 +315,9 @@ export default function Ruang({ params }: { params: { id: string } }) {
           <p className="truncate text-xs text-mist">Section {st.section.index + 1}/{st.section.total} · {LABEL[st.section.name]}</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-700 px-2.5 py-1 text-xs font-semibold" role="status" aria-label={`Connection: ${net}`} title={net === "online" ? "Connected to the server" : net === "slow" ? "The connection is slow; answers may take longer to save" : "No connection; the timer is paused"}>
+            <span className={`h-2 w-2 rounded-full ${net === "online" ? "bg-emerald-400" : net === "slow" ? "bg-amber-400" : "bg-red-500"}`} aria-hidden />{net === "online" ? "Online" : net === "slow" ? "Slow connection" : "Offline"}
+          </span>
           <span className={`hidden sm:inline ${saved === "fail" ? "text-orange-300" : "text-mist"}`}>{saved === "saving" ? "Saving…" : saved === "fail" ? "Save failed, retrying" : "Saved automatically"}</span>
           <span className={`rounded-lg px-3 py-1.5 font-display text-lg font-extrabold ${left < 60 ? "bg-accent" : "bg-navy-700"}`} role="timer" aria-label="Section time remaining">{mmss(left)}</span>
           <button className="hidden rounded-lg border border-white/40 px-3 py-1.5 text-xs md:block" onClick={() => enterFullscreen()}>Fullscreen</button>
