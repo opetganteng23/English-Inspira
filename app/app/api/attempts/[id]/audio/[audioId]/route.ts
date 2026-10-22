@@ -24,12 +24,14 @@ async function guard(id: string, audioId: string) {
 }
 
 /** Mulai/lanjut putar. Mode tes: sekali putar. Refresh di tengah audio melanjutkan dari posisi terakhir. */
-export async function POST(_req: Request, { params }: { params: { id: string; audioId: string } }) {
+export async function POST(req: Request, { params }: { params: { id: string; audioId: string } }) {
   try {
     const attempt = await guard(params.id, params.audioId);
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
     // Mode latihan (practice): pemutar penuh, boleh diulang. Tes lain: sekali putar (MTS §11).
     if (rec?.done && attempt.kind !== "practice") throw new HttpError(403, "This audio has already been played and cannot be replayed");
+    // ?prefetch=1: hanya tautan untuk mengunduh audio lebih dulu (diputar dari memori perangkat); belum dihitung diputar.
+    if (new URL(req.url).searchParams.has("prefetch")) return NextResponse.json({ url: `/api/audio/${params.audioId}?token=${await signAudioToken(params.audioId, params.id)}`, startAtSec: rec?.lastPosSec ?? 0 });
     // Update atomik (bukan save dokumen penuh): tidak bentrok dengan autosave jawaban yang berjalan bersamaan.
     if (!rec) await Attempt.updateOne({ _id: attempt._id, "audioPlays.audioId": { $ne: params.audioId } }, { $push: { audioPlays: { audioId: params.audioId, playedAt: new Date(), lastPosSec: 0, done: false } } });
     const token = await signAudioToken(params.audioId, params.id);

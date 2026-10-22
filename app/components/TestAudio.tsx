@@ -28,10 +28,48 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
   // Audio tes yang sedang dimuat (bukan klip senyap pembuka izin). Event "ended" hanya dihitung untuk audio ini.
   const real = useRef<string | null>(null);
   const base = `/api/attempts/${attemptId}/audio/${audioId}`;
+  // Audio diunduh penuh lebih dulu (sejak soal tampil) lalu diputar dari memori perangkat:
+  // jaringan yang tersendat saat diputar tidak lagi membuat suara hilang di tengah.
+  const blob = useRef<string | null>(null);
+  const startAt = useRef(0);
+  const [prep, setPrep] = useState<"loading" | "ready" | "stream">("loading");
+  useEffect(() => {
+    if (finished) return;
+    let alive = true;
+    (async () => {
+      for (let tryNo = 0; tryNo < 3 && alive; tryNo++) {
+        try {
+          const d = await api(`${base}?prefetch=1`, { json: {}, silent: true });
+          const r = await fetch(d.url, { cache: "no-store" });
+          if (!r.ok) throw new Error(String(r.status));
+          const url = URL.createObjectURL(await r.blob());
+          if (!alive) { URL.revokeObjectURL(url); return; }
+          blob.current = url; startAt.current = d.startAtSec || 0; setPrep("ready");
+          return;
+        } catch { await new Promise((res) => setTimeout(res, 2000)); }
+      }
+      if (alive) setPrep("stream"); // gagal diunduh lebih dulu: tetap bisa diputar langsung (streaming)
+    })();
+    return () => { alive = false; if (blob.current) { URL.revokeObjectURL(blob.current); blob.current = null; } };
+  }, [base, finished]);
 
   async function start() {
     setMsg("");
     const a = el.current!;
+    if (blob.current) {
+      // Sudah diunduh: putar langsung di dalam klik (tidak diblokir browser), lalu catat mulai di server.
+      try {
+        real.current = blob.current; a.src = blob.current; a.currentTime = startAt.current;
+        await a.play(); setPhase("playing");
+        for (let i = 0; i < 5; i++) { try { const d = await api(base, { json: {}, silent: true }); if (d?.startAtSec && d.startAtSec > a.currentTime + 1) a.currentTime = d.startAtSec; break; } catch (e) { if ((e as { status?: number }).status === 403) { a.pause(); setPhase("done"); return; } await new Promise((r) => setTimeout(r, 2000)); } }
+        return;
+      } catch (e) {
+        real.current = null;
+        setPhase("error");
+        setMsg(e instanceof DOMException ? "The browser blocked playback. Click “Start audio” again." : (e as Error).message);
+        return;
+      }
+    }
     // Safari hanya mengizinkan putar langsung dari klik: buka izin dengan klip senyap sebelum menunggu server.
     try { a.src = SILENT; void a.play().catch(() => {}); } catch { /* */ }
     try {
@@ -65,11 +103,11 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
           const a = el.current;
           // Hanya audio tes yang benar-benar diputar sampai akhir. Event "ended" dari klip senyap pembuka izin bisa tiba
           // setelah sumber berganti ke audio tes; dulu ini menandai audio "sudah diputar" padahal belum terdengar.
-          if (!a || !real.current || !a.src.endsWith(real.current.slice(real.current.indexOf("/api/"))) || a.currentTime < 1 || phase !== "playing") return;
+          if (!a || !real.current || (real.current.startsWith("blob:") ? a.src !== real.current : !a.src.endsWith(real.current.slice(real.current.indexOf("/api/")))) || a.currentTime < 1 || phase !== "playing") return;
           setPhase("done"); api(base, { method: "PATCH", json: { posSec: el.current?.duration ?? lastPos.current, done: true } }).catch(() => {}); }}
         onSeeking={() => { const a = el.current; if (a && a.currentTime > lastPos.current + 1) a.currentTime = lastPos.current; }}
         onError={() => { if (el.current?.src.startsWith("data:")) return; if (phase === "playing") { setPhase("error"); setMsg("Audio failed to load. Click “Reload audio”; this does not count as replaying."); } }} />
-      {phase === "idle" && <button onClick={start} className="btn-solid mt-3">Start audio (once only)</button>}
+      {phase === "idle" && <div className="mt-3 flex flex-wrap items-center gap-3"><button onClick={start} className="btn-solid">Start audio (once only)</button><span className="text-xs text-ink-soft" role="status">{prep === "loading" ? "Preparing audio…" : prep === "ready" ? "Audio ready" : "Audio will stream"}</span></div>}
       {phase === "playing" && <p className="mt-3 text-sm text-success" role="status">Audio is playing. It cannot be paused or replayed.</p>}
       {phase === "done" && <p className="mt-3 text-sm text-ink-soft">Audio has been played.</p>}
       {phase === "error" && <button onClick={start} className="btn-outline mt-3">Reload audio</button>}
