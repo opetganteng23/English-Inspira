@@ -25,6 +25,8 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
   const [phase, setPhase] = useState<"idle" | "playing" | "done" | "error">(finished ? "done" : "idle");
   const [msg, setMsg] = useState("");
   const lastPos = useRef(0);
+  // Audio tes yang sedang dimuat (bukan klip senyap pembuka izin). Event "ended" hanya dihitung untuk audio ini.
+  const real = useRef<string | null>(null);
   const base = `/api/attempts/${attemptId}/audio/${audioId}`;
 
   async function start() {
@@ -34,10 +36,12 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
     try { a.src = SILENT; void a.play().catch(() => {}); } catch { /* */ }
     try {
       const d = await api(base, { json: {} });
-      a.pause(); a.src = d.url; a.currentTime = d.startAtSec || 0;
+      a.pause(); real.current = d.url; a.src = d.url; a.currentTime = d.startAtSec || 0;
       await a.play(); setPhase("playing");
     } catch (e) {
       const status = (e as { status?: number }).status;
+      // Diblokir browser / gagal muat: selalu boleh dicoba lagi (tidak dianggap sudah diputar).
+      if (e instanceof DOMException) real.current = null;
       setPhase(status === 403 ? "done" : "error");
       setMsg(e instanceof DOMException ? "The browser blocked playback. Click “Start audio” again." : (e as Error).message);
     }
@@ -57,7 +61,12 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
     <div className="card">
       <p className="text-sm font-semibold text-navy">{instruction ?? "Listen to the audio"}</p>
       <audio ref={el} preload="auto" controlsList="nodownload noplaybackrate"
-        onEnded={() => { if (el.current?.src.startsWith("data:")) return; /* klip senyap pembuka izin, bukan audio tes */ setPhase("done"); api(base, { method: "PATCH", json: { posSec: el.current?.duration ?? lastPos.current, done: true } }).catch(() => {}); }}
+        onEnded={() => {
+          const a = el.current;
+          // Hanya audio tes yang benar-benar diputar sampai akhir. Event "ended" dari klip senyap pembuka izin bisa tiba
+          // setelah sumber berganti ke audio tes; dulu ini menandai audio "sudah diputar" padahal belum terdengar.
+          if (!a || !real.current || !a.src.endsWith(real.current.slice(real.current.indexOf("/api/"))) || a.currentTime < 1 || phase !== "playing") return;
+          setPhase("done"); api(base, { method: "PATCH", json: { posSec: el.current?.duration ?? lastPos.current, done: true } }).catch(() => {}); }}
         onSeeking={() => { const a = el.current; if (a && a.currentTime > lastPos.current + 1) a.currentTime = lastPos.current; }}
         onError={() => { if (el.current?.src.startsWith("data:")) return; if (phase === "playing") { setPhase("error"); setMsg("Audio failed to load. Click “Reload audio”; this does not count as replaying."); } }} />
       {phase === "idle" && <button onClick={start} className="btn-solid mt-3">Start audio (once only)</button>}

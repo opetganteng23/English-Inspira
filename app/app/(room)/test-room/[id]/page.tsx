@@ -36,6 +36,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const [net, setNetState] = useState<"online" | "slow" | "offline">("online");
   const netRef = useRef<"online" | "slow" | "offline">("online");
   const setNet = (n: "online" | "slow" | "offline") => { netRef.current = n; setNetState(n); };
+  const [rtt, setRtt] = useState<number | null>(null); // waktu respons server terakhir (ms), ditampilkan di samping timer
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -142,6 +143,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
     const flags = pendingFlags.current.splice(0);
     const sentAns: Record<string, number | null> = {};
     setSaved("saving");
+    const t0 = Date.now();
     try {
       await api(`/api/attempts/${params.id}`, {
         method: "PATCH",
@@ -153,7 +155,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
         },
       });
       const p = readPending(); for (const qid of ids) if (p[qid] === sentAns[qid]) delete p[qid]; writePending(p);
-      setSaved("ok"); if (netRef.current === "offline") setNet("online"); return true;
+      setSaved("ok"); setRtt(Date.now() - t0); setNet(Date.now() - t0 > 3000 ? "slow" : "online"); return true;
     } catch (e) {
       if ((e as { status?: number }).status === 409) { await load(); return false; } // section habis di server
       if (!(e as { status?: number }).status) setNet("offline"); // tidak ada respons sama sekali: jaringan putus
@@ -185,13 +187,15 @@ export default function Ruang({ params }: { params: { id: string } }) {
     try {
       const r = await fetch(`/api/attempts/${params.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}", signal: AbortSignal.timeout(10_000) });
       const wasOffline = netRef.current === "offline";
-      setNet(Date.now() - t0 > 3000 ? "slow" : "online");
+      const ms = Date.now() - t0;
+      setRtt(ms); setNet(ms > 3000 ? "slow" : "online");
       if (wasOffline && r.ok) { await flushRef.current?.(); await load(); } // jawaban tertunda terkirim, lalu waktu disinkronkan (termasuk waktu yang dikembalikan)
     } catch { setNet("offline"); }
   }, [params.id, load]);
   useEffect(() => {
     if (!st) return;
-    const iv = setInterval(() => void beat(), net === "offline" ? 5_000 : 30_000);
+    void beat(); // ukur sekali saat ruang tes dibuka
+    const iv = setInterval(() => void beat(), net === "offline" ? 5_000 : 15_000);
     return () => clearInterval(iv);
   }, [st, beat, net]);
   useEffect(() => {
@@ -316,7 +320,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
         </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-700 px-2.5 py-1 text-xs font-semibold" role="status" aria-label={`Connection: ${net}`} title={net === "online" ? "Connected to the server" : net === "slow" ? "The connection is slow; answers may take longer to save" : "No connection; the timer is paused"}>
-            <span className={`h-2 w-2 rounded-full ${net === "online" ? "bg-emerald-400" : net === "slow" ? "bg-amber-400" : "bg-red-500"}`} aria-hidden />{net === "online" ? "Online" : net === "slow" ? "Slow connection" : "Offline"}
+            <span className="flex h-3 items-end gap-[2px]" aria-hidden>{[1, 2, 3, 4].map((b) => { const bars = net === "offline" ? 0 : rtt == null ? 3 : rtt < 200 ? 4 : rtt < 600 ? 3 : rtt < 1500 ? 2 : 1; return <span key={b} className={`w-[3px] rounded-sm ${b <= bars ? (bars >= 3 ? "bg-emerald-400" : bars === 2 ? "bg-amber-400" : "bg-red-400") : "bg-white/25"}`} style={{ height: `${b * 25}%` }} />; })}</span>
+            {net === "offline" ? "Offline" : net === "slow" ? "Slow" : "Online"}{net !== "offline" && rtt != null && <span className="font-normal tabular-nums text-mist">{rtt} ms</span>}
           </span>
           <span className={`hidden sm:inline ${saved === "fail" ? "text-orange-300" : "text-mist"}`}>{saved === "saving" ? "Saving…" : saved === "fail" ? "Save failed, retrying" : "Saved automatically"}</span>
           <span className={`rounded-lg px-3 py-1.5 font-display text-lg font-extrabold ${left < 60 ? "bg-accent" : "bg-navy-700"}`} role="timer" aria-label="Section time remaining">{mmss(left)}</span>

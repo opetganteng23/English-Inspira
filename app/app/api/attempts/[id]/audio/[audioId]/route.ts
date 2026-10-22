@@ -6,6 +6,7 @@ import { loadAttempt } from "@/lib/attempts";
 import { signAudioToken } from "@/lib/audio-store";
 import { Question, QuestionGroup } from "@/models/Question";
 import { Attempt } from "@/models/Test";
+import { Audio } from "@/models/Audio";
 
 const ROLES = ["participant", "admin", "inst_admin"] as const;
 
@@ -50,11 +51,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string; au
     const b = progress.parse(await req.json());
     const rec = attempt.audioPlays.find((p) => String(p.audioId) === params.audioId);
     if (!rec) throw new HttpError(409, "Audio has not been started");
+    // Pengaman: "selesai" hanya diterima bila waktu sejak mulai diputar ≥ 80% durasi audio (audio tidak bisa terkunci sebelum terdengar).
+    let done = !!b.done;
+    if (done) {
+      const dur = (await Audio.findById(params.audioId).select("durationSec").lean())?.durationSec ?? 0;
+      if (dur && (Date.now() - +rec.playedAt!) / 1000 < dur * 0.8) done = false;
+    }
     if (!rec.done && attempt.kind !== "practice") {
       // Atomik: posisi hanya maju ($max), tanda selesai tidak bisa hilang karena bentrok dengan autosave jawaban.
       await Attempt.updateOne(
         { _id: attempt._id, audioPlays: { $elemMatch: { audioId: rec.audioId, done: { $ne: true } } } },
-        { $max: { "audioPlays.$.lastPosSec": b.posSec }, ...(b.done ? { $set: { "audioPlays.$.done": true } } : {}) },
+        { $max: { "audioPlays.$.lastPosSec": done ? b.posSec : Math.min(b.posSec, Math.max(0, (Date.now() - +rec.playedAt!) / 1000)) }, ...(done ? { $set: { "audioPlays.$.done": true } } : {}) },
       );
     }
     return NextResponse.json({ ok: true });
