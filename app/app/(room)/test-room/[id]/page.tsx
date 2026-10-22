@@ -80,7 +80,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
     const tick = setInterval(() => {
       const v = viewSince.current;
       if (!v || document.visibilityState !== "visible") return;
-      const audioOn = Array.from(document.querySelectorAll("audio")).some((a) => !a.paused && !a.ended);
+      const audioOn = document.body.dataset.audioPlaying === "1" || Array.from(document.querySelectorAll("audio")).some((a) => !a.paused && !a.ended);
       if (audioOn || Date.now() - lastInput.current <= idleSec.current * 1000) spent.current[v.qid] = (spent.current[v.qid] ?? 0) + 1;
     }, 1000);
     return () => { clearInterval(tick); evs.forEach((e) => window.removeEventListener(e, touch)); };
