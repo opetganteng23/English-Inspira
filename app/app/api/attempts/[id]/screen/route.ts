@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
-import { putScreen, type ScreenState } from "@/lib/screen-store";
+import { putScreen, isFocused, type ScreenState } from "@/lib/screen-store";
 import { Attempt, Test } from "@/models/Test";
 
 export const dynamic = "force-dynamic";
@@ -26,11 +26,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     let img: Buffer | null = null;
     if (state === "shared") {
       const buf = Buffer.from(await req.arrayBuffer());
-      if (buf.length > 300_000) throw new HttpError(413, "Image too large");
+      if (buf.length > 1_500_000) throw new HttpError(413, "Image too large");
       if (buf.length) { if (buf[0] !== 0xff || buf[1] !== 0xd8) throw new HttpError(415, "JPEG only"); img = buf; }
     }
     putScreen(params.id, { img, state, testId: String(a.testId), userId: String(user._id), institutionId: user.institutionId ? String(user.institutionId) : "" });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, hd: isFocused(params.id) }); // hd: admin sedang memperbesar layar ini
   } catch (e) {
     return handleError(e);
   }

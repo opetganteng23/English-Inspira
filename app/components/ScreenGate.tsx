@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const EVERY_MS = 12_000, WIDTH = 640, QUALITY = 0.5;
+// Ringan untuk grid; HD (tajam, tiap 1 detik) hanya saat admin sedang memperbesar layar peserta ini.
+const LIGHT = { every: 12_000, width: 960, quality: 0.6 }, HD = { every: 1_000, width: 1600, quality: 0.75 };
 type St = "idle" | "asking" | "shared" | "stopped" | "wrong" | "denied" | "unsupported";
 
 /**
@@ -15,22 +16,34 @@ export function ScreenGate({ attemptId }: { attemptId: string }) {
   const [st, setSt] = useState<St>("idle");
   const stream = useRef<MediaStream | null>(null);
   const video = useRef<HTMLVideoElement | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval>>();
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const hd = useRef(false);
   const post = useCallback((state: string, body?: Blob) => {
     void fetch(`/api/attempts/${attemptId}/screen?state=${state}`, { method: "POST", body: body ?? null, headers: body ? { "Content-Type": "image/jpeg" } : undefined, keepalive: !body }).catch(() => {});
   }, [attemptId]);
 
-  const snap = useCallback(() => {
+  // Ambil satu gambar, kirim, lalu jadwalkan berikutnya sesuai mode yang diminta server (HD bila sedang ditonton).
+  const tick = useCallback(async () => {
     const v = video.current;
-    if (!v || !v.videoWidth) return;
-    const c = document.createElement("canvas");
-    c.width = WIDTH; c.height = Math.round((v.videoHeight / v.videoWidth) * WIDTH);
-    c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
-    c.toBlob((b) => { if (b) post("shared", b); }, "image/jpeg", QUALITY);
-  }, [post]);
+    if (!stream.current) return;
+    if (v && v.videoWidth) {
+      const m = hd.current ? HD : LIGHT, w = Math.min(m.width, v.videoWidth);
+      const c = document.createElement("canvas");
+      c.width = w; c.height = Math.round((v.videoHeight / v.videoWidth) * w);
+      c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
+      const b = await new Promise<Blob | null>((res) => c.toBlob(res, "image/jpeg", m.quality));
+      if (b) {
+        try {
+          const r = await fetch(`/api/attempts/${attemptId}/screen?state=shared`, { method: "POST", body: b, headers: { "Content-Type": "image/jpeg" } });
+          hd.current = !!(await r.json().catch(() => ({})))?.hd;
+        } catch { /* jaringan: coba lagi di putaran berikutnya */ }
+      }
+    }
+    if (stream.current) timer.current = setTimeout(() => void tick(), (hd.current ? HD : LIGHT).every);
+  }, [attemptId]);
 
   const stop = useCallback(() => {
-    clearInterval(timer.current);
+    clearTimeout(timer.current);
     stream.current?.getTracks().forEach((t) => t.stop());
     stream.current = null;
   }, []);
@@ -43,7 +56,7 @@ export function ScreenGate({ attemptId }: { attemptId: string }) {
   async function share() {
     setSt("asking");
     try {
-      const s = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor", frameRate: 1 } as MediaTrackConstraints, audio: false });
+      const s = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor", frameRate: 5 } as MediaTrackConstraints, audio: false });
       const track = s.getVideoTracks()[0];
       const surface = (track.getSettings() as { displaySurface?: string }).displaySurface;
       if (surface && surface !== "monitor") { s.getTracks().forEach((t) => t.stop()); setSt("wrong"); return; }
@@ -54,9 +67,8 @@ export function ScreenGate({ attemptId }: { attemptId: string }) {
       track.addEventListener("ended", () => { stop(); setSt("stopped"); post("stopped"); });
       setSt("shared");
       post("shared");
-      setTimeout(snap, 1500);
-      clearInterval(timer.current);
-      timer.current = setInterval(snap, EVERY_MS);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => void tick(), 1500);
     } catch {
       setSt("denied"); post("denied");
     }

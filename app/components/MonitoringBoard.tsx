@@ -241,7 +241,7 @@ const withT = (u: string, t: number) => `${u}${u.includes("?") ? "&" : "?"}t=${t
 function ScreenGrid({ rows, src, onOpen }: { rows: Row[]; src: (id: string) => string | null; onOpen: (r: Row) => void }) {
   const [t, setT] = useState(() => Date.now());
   const [big, setBig] = useState<Row | null>(null);
-  useEffect(() => { const iv = setInterval(() => setT(Date.now()), big ? 5_000 : 10_000); return () => clearInterval(iv); }, [big]);
+  useEffect(() => { const iv = setInterval(() => setT(Date.now()), 10_000); return () => clearInterval(iv); }, []);
   const sorted = [...rows].sort((a, b) => (a.screen === "shared" ? 1 : 0) - (b.screen === "shared" ? 1 : 0) || a.name.localeCompare(b.name));
   if (!rows.length) return <div className="card py-10 text-center text-ink-soft">No one is taking this test right now.</div>;
   return (
@@ -268,11 +268,40 @@ function ScreenGrid({ rows, src, onOpen }: { rows: Row[]; src: (id: string) => s
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setBig(null)} role="dialog" aria-modal="true" aria-label={`Screen of ${big.name}`}>
           <div className="w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-center justify-between text-white"><b>{big.name}</b><button className="text-2xl leading-none" onClick={() => setBig(null)} aria-label="Close">×</button></div>
-            {src(big.id) ? <img src={withT(src(big.id)!, t)} alt={`Screen of ${big.name}`} className="w-full rounded-lg bg-black" /> : null}
-            <p className="mt-2 text-xs text-white/70">Refreshes about every 5 seconds while open. Live only, not recorded.</p>
+            {src(big.id) ? <LiveFrame url={src(big.id)!} name={big.name} /> : null}
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+/**
+ * Layar diperbesar: meminta mode HD live (peserta mengirim gambar tajam tiap 1 detik selama ditonton) dan
+ * menampilkan gambar baru setelah selesai dimuat (tanpa kedip). Tidak ada yang direkam.
+ */
+function LiveFrame({ url, name }: { url: string; name: string }) {
+  const [shown, setShown] = useState<string | null>(null);
+  const [age, setAge] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true, last = "";
+    const pull = () => {
+      const u = `${withT(url, Date.now())}&focus=1`;
+      const im = new Image();
+      im.onload = () => { if (!alive) return; setShown(u); last = u; setAge(Date.now()); };
+      im.src = u;
+    };
+    pull();
+    const iv = setInterval(pull, 1000);
+    return () => { alive = false; clearInterval(iv); void last; };
+  }, [url]);
+  const [, force] = useState(0);
+  useEffect(() => { const iv = setInterval(() => force((x) => x + 1), 1000); return () => clearInterval(iv); }, []);
+  const lag = age ? Math.round((Date.now() - age) / 1000) : null;
+  return (
+    <>
+      {shown ? <img src={shown} alt={`Screen of ${name}`} className="w-full rounded-lg bg-black" /> : <div className="flex aspect-video w-full items-center justify-center rounded-lg bg-black text-sm text-white/70">Connecting to live view…</div>}
+      <p className="mt-2 flex items-center gap-2 text-xs text-white/80"><span className="inline-flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 font-bold text-white"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />LIVE HD</span>Updates every second while open{lag != null && lag > 3 ? ` · last frame ${lag}s ago (participant connection)` : ""}. Live only, not recorded.</p>
     </>
   );
 }

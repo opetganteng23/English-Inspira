@@ -18,7 +18,14 @@ export function putScreen(attemptId: string, e: Omit<Entry, "at">) {
   store.set(attemptId, { ...e, img: e.img ?? (e.state === "shared" ? prev?.img ?? null : null), at: Date.now() });
   if (store.size % 50 === 0) sweep();
 }
-export function dropScreen(attemptId: string) { store.delete(attemptId); }
+export function dropScreen(attemptId: string) { store.delete(attemptId); focus.delete(attemptId); }
+
+// Mode HD live: layar yang sedang diperbesar admin dikirim tajam tiap 1 detik; berakhir sendiri 5 detik setelah tidak ditonton.
+const FOCUS_MS = 5_000;
+const gf = globalThis as unknown as { __screenFocus?: Map<string, number> };
+const focus: Map<string, number> = (gf.__screenFocus ??= new Map());
+export function setFocus(attemptId: string) { focus.set(attemptId, Date.now()); }
+export function isFocused(attemptId: string) { const t = focus.get(attemptId); if (t && Date.now() - t > FOCUS_MS) focus.delete(attemptId); return !!t && Date.now() - t <= FOCUS_MS; }
 
 export function getScreen(attemptId: string) {
   const e = store.get(attemptId);
