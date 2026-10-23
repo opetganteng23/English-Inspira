@@ -76,7 +76,7 @@ const title = (s: string) => s.replace(/\S+/g, (w) => (w.length > 2 && w === w.t
  * Executive summary (.pptx) satu tes: per sesi/hari (sessionId) atau keseluruhan.
  * Struktur, tata letak, ikon, dan logo mengikuti laporan Placement Test Hari 1 AirNav. Akun QA tidak dihitung.
  */
-export async function buildExecSummary(testId: string, opts: { sessionId?: string; target?: number; now?: Date; scope?: ReportScope; groups?: string } = {}) {
+export async function buildExecSummary(testId: string, opts: { sessionId?: string; target?: number; now?: Date; scope?: ReportScope; groups?: string; only?: "schedule" } = {}) {
   const now = opts.now ?? new Date(), target = opts.target ?? 550;
   const got = await collectTestRows(testId, now, opts.sessionId, opts.scope ?? {});
   if (!got) return null;
@@ -154,13 +154,60 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     s.background = { data: img("bg-cover.png") }; // lingkaran sudah terpotong di gambar: aman di viewer yang tidak memotong objek di luar slide
     s.addImage({ data: L.inspira, x: X(67), y: X(70), w: X(118 * LOGO.inspira), h: X(118) });
     T(s, `LAPORAN UNTUK ${(inst || "institusi").toUpperCase()}`, { x: X(67), y: X(244), w: X(1000), h: X(24), fontSize: 12, bold: true, color: C.orange, charSpacing: 3 });
-    T(s, `Hasil ${test.name}`, { x: X(67), y: X(292), w: X(1000), h: X(60), fontSize: 34, bold: true, color: C.navy });
+    T(s, opts.only === "schedule" ? `Rekap Perubahan Jadwal · ${test.name}` : `Hasil ${test.name}`, { x: X(67), y: X(292), w: X(1100), h: X(60), fontSize: 34, bold: true, color: C.navy });
     T(s, perDay ? scopeLabel : allSess.length ? `Keseluruhan · ${TGL(allSess[0].opensAt, false)} – ${TGL(allSess[allSess.length - 1].opensAt, false)}` : "Keseluruhan", { x: X(67), y: X(355), w: X(1000), h: X(60), fontSize: 34, bold: true, color: C.orange });
-    T(s, `Program English Inspira AI · ${ID(fin.length)} peserta menyelesaikan tes${fin.length ? ` · rata-rata skor ${ID(Math.round(mean(scores)))}` : ""}`, { x: X(67), y: X(457), w: X(1000), h: X(26), fontSize: 14, color: C.ink });
+    T(s, opts.only === "schedule" ? "Program English Inspira AI · daftar peserta yang jadwal tesnya diubah" : `Program English Inspira AI · ${ID(fin.length)} peserta menyelesaikan tes${fin.length ? ` · rata-rata skor ${ID(Math.round(mean(scores)))}` : ""}`, { x: X(67), y: X(457), w: X(1000), h: X(26), fontSize: 14, color: C.ink });
     T(s, `Data diekspor dari English Inspira AI pada ${now.toLocaleString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`, { x: X(67), y: X(510), w: X(1000), h: X(20), fontSize: 10, italic: true, color: C.soft });
     s.addShape(p.ShapeType.line, { x: X(67), y: X(588), w: X(440), h: 0, line: { color: C.line, width: 1 } });
     T(s, "Dikembangkan oleh", { x: X(67), y: X(630), w: X(110), h: X(20), fontSize: 9, color: C.soft, valign: "middle" });
     partners(s, 180, 606, 70);
+  }
+
+  if (opts.only === "schedule") {
+    const sc = await scheduleChanges(testId, { sessionId: opts.sessionId, scope: opts.scope });
+    const list = sc?.changes ?? [];
+    const statusId = (c: (typeof list)[number]) => (c.status === "Finished" ? `Selesai${c.score != null ? ` · ${c.score}` : ""}` : c.attendance === "Absent" ? "Tidak hadir" : c.status === "In progress" ? "Sedang tes" : "Belum tes");
+    // Ringkasan
+    {
+      const range = sc && (opts.scope?.from || opts.scope?.to) ? ` · diubah ${opts.scope?.from ?? "awal"} s/d ${opts.scope?.to ?? "sekarang"}` : "";
+      const s = base("Ringkasan perubahan jadwal", `${ID(sc?.people ?? 0)} peserta dengan ${ID(list.length)} perubahan${range}`);
+      const done = new Set(list.filter((c) => c.status === "Finished").map((c) => c.userId)).size;
+      const absent = new Set(list.filter((c) => c.attendance === "Absent").map((c) => c.userId)).size;
+      const ext = list.filter((c) => c.type === "Extended window").length;
+      ([[ID(sc?.people ?? 0), "Peserta", `${ID(list.length - ext)} pindah sesi · ${ID(ext)} perpanjangan`, C.navy], [ID(done), "Sudah selesai tes", "Setelah jadwalnya diubah", C.green], [ID((sc?.people ?? 0) - done - absent), "Belum tes", "Jadwal baru belum tiba / sedang tes", C.orange], [ID(absent), "Tidak hadir", "Di jadwal barunya", absent ? C.red : C.navy]] as const).forEach(([n, t, d, col], i) => {
+        const x = 58 + i * 295;
+        box(s, x, 150, 279, 112, C.card);
+        T(s, n, { x: X(x + 22), y: X(160), w: X(110), h: X(50), fontSize: 30, bold: true, color: col, valign: "middle" });
+        T(s, t, { x: X(x + 125), y: X(165), w: X(145), h: X(24), fontSize: 13, bold: true, color: C.navy, valign: "middle" });
+        T(s, d, { x: X(x + 125), y: X(192), w: X(145), h: X(60), fontSize: 9.5, color: C.soft });
+      });
+      const tally = (key: (x: (typeof list)[number]) => string) => { const m = new Map<string, number>(); for (const x of list) m.set(key(x), (m.get(key(x)) ?? 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10); };
+      const tbl = (x: number, title2: string, rowsT: [string, number][]) => {
+        T(s, title2, { x: X(x), y: X(285), w: X(560), h: X(24), fontSize: 14, bold: true, color: C.navy });
+        if (!rowsT.length) return;
+        const max = Math.max(...rowsT.map((r) => r[1]));
+        rowsT.forEach(([k, n], i) => {
+          const y = 322 + i * 30;
+          T(s, k, { x: X(x), y: X(y), w: X(250), h: X(24), fontSize: 11, color: C.ink, valign: "middle" });
+          box(s, x + 260, y + 5, Math.max(8, (240 * n) / max), 14, C.blue, 0.3);
+          T(s, ID(n), { x: X(x + 260 + Math.max(8, (240 * n) / max) + 8), y: X(y), w: X(50), h: X(24), fontSize: 11, bold: true, color: C.navy, valign: "middle" });
+        });
+      };
+      tbl(58, "Per cabang", tally((c) => c.branch || "Tanpa data personel"));
+      tbl(648, "Per jadwal tujuan", tally((c) => (c.type === "Moved" ? c.to : "Perpanjangan waktu")));
+      if (!list.length) T(s, "Tidak ada perubahan jadwal pada cakupan laporan ini.", { x: X(58), y: X(330), w: X(1162), h: X(30), fontSize: 14, color: C.soft });
+    }
+    // Daftar lengkap
+    const PER = 14, pages = Math.ceil(list.length / PER);
+    for (let pg = 0; pg < pages; pg++) {
+      const s = base(`Daftar perubahan jadwal (${pg + 1}/${pages})`, "Data peserta dan perpindahan jadwalnya, urut dari perubahan paling awal");
+      const body = list.slice(pg * PER, pg * PER + PER).map((c, i) => [String(pg * PER + i + 1), title(c.name || "-"), c.email, c.phone || "-", c.age != null ? String(c.age) : "-", c.branch ? c.branch.replace(/^Cabang (Pembantu )?/i, "") : "-", c.type === "Moved" ? c.from : "Perpanjangan", c.to, c.at ? new Date(c.at).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) : "-", statusId(c)].map((t, j) => ({
+        text: t, options: { align: (j === 0 || j === 4 || j === 8 || j === 9 ? "center" : "left") as PptxGenJS.HAlign, fontSize: 8.5, color: j === 9 ? (t.startsWith("Selesai") ? C.green : t === "Tidak hadir" ? C.red : C.ink) : C.ink, fill: { color: i % 2 ? C.card : C.white } },
+      })));
+      s.addTable([tableHead(["No", "Nama", "Email", "Telepon", "Umur", "Cabang", "Dari", "Ke", "Diubah", "Status"], 9, ["center", "left", "left", "left", "center", "left", "left", "left", "center", "center"]), ...body], { x: X(58), y: X(150), w: X(1162), colW: [X(34), X(165), X(205), X(105), X(42), X(115), X(140), X(150), X(92), X(114)], rowH: X(30), fontFace: FONT, fontSize: 8.5, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.5 }, margin: [0.02, 0.05, 0.02, 0.05] });
+    }
+    closing();
+    return { buffer: Buffer.from((await p.stream({ compression: true })) as Uint8Array), name: `${test.name} - schedule changes` };
   }
 
   if (!fin.length) {
@@ -791,7 +838,10 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
   }
 
   // ================= Penutup =================
-  {
+  closing();
+  return { buffer: Buffer.from((await p.stream({ compression: true })) as Uint8Array), name: perDay ? `${test.name} - ${scopeLabel}` : test.name };
+
+  function closing() {
     const s = p.addSlide();
     s.background = { data: img("bg-closing.png") };
     T(s, "TERIMA KASIH", { x: X(67), y: X(68), w: X(600), h: X(22), fontSize: 12, bold: true, color: C.orange, charSpacing: 3 });
@@ -810,6 +860,4 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     T(s, "Learn Smarter. Improve Faster. Certify with Confidence.", { x: X(470), y: X(530), w: X(750), h: X(30), fontSize: 14, bold: true, italic: true, color: C.blue, align: "right", valign: "middle" });
     partners(s, 878, 592, 72);
   }
-
-  return { buffer: Buffer.from((await p.stream({ compression: true })) as Uint8Array), name: perDay ? `${test.name} - ${scopeLabel}` : test.name };
 }

@@ -15,7 +15,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!isValidObjectId(params.id) || !(await analyticsTests(String(inst._id))).some((t) => t.id === params.id)) throw new HttpError(404, "Test not found");
     const q = new URL(req.url).searchParams, session = q.get("session"), t = Number(q.get("target"));
     if (session && !isValidObjectId(session)) throw new HttpError(404, "Session not found");
-    const out = await buildExecSummary(params.id, { sessionId: session ?? undefined, target: t >= 310 && t <= 677 ? Math.round(t) : undefined, scope: { institutionId: String(inst._id), releasedOnly: !full, ...scopeFromQuery(q) } });
+    const out = await buildExecSummary(params.id, { sessionId: session ?? undefined, only: q.get("report") === "schedule" ? "schedule" : undefined, target: t >= 310 && t <= 677 ? Math.round(t) : undefined, scope: { institutionId: String(inst._id), releasedOnly: !full, ...scopeFromQuery(q) } });
     if (!out) throw new HttpError(404, "Test not found");
     await audit(user._id, "inst.summary_export", params.id, { institution: String(inst._id) });
     const file = `executive-summary-${out.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 90) || "test"}-${new Date().toISOString().slice(0, 10)}.pptx`;

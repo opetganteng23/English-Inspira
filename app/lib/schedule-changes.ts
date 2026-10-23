@@ -4,7 +4,7 @@ import { TestSeat, TestSession } from "@/models/Schedule";
 import { User } from "@/models/User";
 
 export type ScheduleChange = {
-  userId: string; name: string; email: string; branch: string; ageGroup: string;
+  userId: string; name: string; email: string; phone: string; age: number | null; branch: string; city: string; province: string; ageGroup: string;
   type: "Moved" | "Extended window";
   from: string; to: string; fromDay: string | null; toDay: string | null;
   at: Date | null; by: string; reason: string; source: "system" | "email" | "extension";
@@ -37,7 +37,7 @@ export async function scheduleChanges(testId: string, opts: { sessionId?: string
   for (const seat of seats) {
     const r = rows.get(String(seat.userId));
     if (!r) continue; // di luar cakupan (institusi/cabang/umur) atau akun QA
-    const base = { userId: r.userId, name: r.name, email: r.email, branch: r.branch, ageGroup: r.ageGroup, status: r.status, attendance: r.attendance, score: r.score };
+    const base = { userId: r.userId, name: r.name, email: r.email, phone: r.phone, age: r.age, branch: r.branch, city: r.city, province: r.province, ageGroup: r.ageGroup, status: r.status, attendance: r.attendance, score: r.score };
     for (const m of seat.moves ?? []) {
       if (opts.sessionId && String(m.from) !== opts.sessionId && String(m.to) !== opts.sessionId) continue;
       out.push({ ...base, type: "Moved", from: label(m.from), to: label(m.to), fromDay: day(ses.get(String(m.from))?.opensAt), toDay: day(ses.get(String(m.to))?.opensAt), at: m.at ?? null, by: m.by ? admins.get(String(m.by)) ?? "" : "", reason: m.reason ?? "", source: (m.source as ScheduleChange["source"]) ?? "system" });

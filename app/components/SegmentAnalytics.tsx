@@ -125,6 +125,7 @@ export function SegmentAnalytics({ api, report }: { api: (qs: string) => string 
 /** Pilih format, cakupan (semua / satu kelompok umur / satu cabang), dan rentang tanggal tes sebelum mengunduh laporan. */
 function DownloadDialog({ testId, testName, branches, provinces, ageGroups, from: f0, to: t0, target, report, onClose }: { testId: string; testName: string; branches: string[]; provinces: string[]; ageGroups: { key: string; label: string }[]; from: string; to: string; target: number; report: (testId: string, kind: ReportKind, qs: string) => string | null; onClose: () => void }) {
   const [kind, setKind] = useState<ReportKind>("pptx");
+  const [what, setWhat] = useState<"results" | "schedule">("results");
   const [scope, setScope] = useState<"all" | "age" | "branch" | "province">("all");
   const [province, setProvince] = useState(provinces[0] ?? "");
   const [age, setAge] = useState(ageGroups[0]?.key ?? "");
@@ -132,23 +133,30 @@ function DownloadDialog({ testId, testName, branches, provinces, ageGroups, from
   const [from, setFrom] = useState(f0);
   const [to, setTo] = useState(t0);
   const qs = new URLSearchParams({ target: String(target) });
+  if (what === "schedule") qs.set("report", "schedule");
   if (from) qs.set("from", from);
   if (to) qs.set("to", to);
   if (scope === "age" && age) qs.set("age", age);
   if (scope === "branch" && branch) qs.set("branch", branch);
   if (scope === "province" && province) qs.set("province", province);
   const href = report(testId, kind, qs.toString());
-  const what = scope === "age" ? `age ${ageGroups.find((g) => g.key === age)?.label ?? ""}` : scope === "branch" ? branch : scope === "province" ? province : "all participants";
-  const when = from || to ? `${from || "start"} to ${to || "today"}` : "all test dates";
+  const who = scope === "age" ? `age ${ageGroups.find((g) => g.key === age)?.label ?? ""}` : scope === "branch" ? branch : scope === "province" ? province : "all participants";
+  const when = from || to ? `${from || "start"} to ${to || "today"}` : what === "schedule" ? "all dates" : "all test dates";
   const radio = "flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-tint";
   return (
     <Modal title="Download report" onClose={onClose}>
       <div className="flex flex-col gap-4 text-sm">
         <p className="text-ink-soft">{testName}</p>
+        <fieldset className="flex flex-col gap-2"><legend className="mb-1 font-semibold text-navy">Report</legend>
+          <div className="grid grid-cols-2 gap-2">
+            <label className={radio}><input type="radio" name="what" checked={what === "results"} onChange={() => setWhat("results")} />Test results &amp; attendance</label>
+            <label className={radio}><input type="radio" name="what" checked={what === "schedule"} onChange={() => setWhat("schedule")} />Schedule changes</label>
+          </div>
+        </fieldset>
         <fieldset className="flex flex-col gap-2"><legend className="mb-1 font-semibold text-navy">Format</legend>
           <div className="grid grid-cols-2 gap-2">
             <label className={radio}><input type="radio" name="kind" checked={kind === "pptx"} onChange={() => setKind("pptx")} />Executive summary (PPT)</label>
-            <label className={radio}><input type="radio" name="kind" checked={kind === "xlsx"} onChange={() => setKind("xlsx")} />Results &amp; attendance (Excel)</label>
+            <label className={radio}><input type="radio" name="kind" checked={kind === "xlsx"} onChange={() => setKind("xlsx")} />Excel</label>
           </div>
         </fieldset>
         <fieldset className="flex flex-col gap-2"><legend className="mb-1 font-semibold text-navy">Participants</legend>
@@ -160,11 +168,11 @@ function DownloadDialog({ testId, testName, branches, provinces, ageGroups, from
           {branches.length > 0 && <label className={radio}><input type="radio" name="scope" checked={scope === "branch"} onChange={() => setScope("branch")} />One branch
             <select aria-label="Branch" className="field ml-auto !w-auto max-w-[220px]" value={branch} onChange={(e) => { setBranch(e.target.value); setScope("branch"); }}>{branches.map((b) => <option key={b} value={b}>{b}</option>)}</select></label>}
         </fieldset>
-        <fieldset><legend className="mb-1 font-semibold text-navy">Test date</legend>
+        <fieldset><legend className="mb-1 font-semibold text-navy">{what === "schedule" ? "Date the schedule was changed" : "Test date"}</legend>
           <div className="flex flex-wrap items-center gap-2"><input type="date" aria-label="From date" className="field !w-auto" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /><span className="text-ink-soft">to</span><input type="date" aria-label="To date" className="field !w-auto" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />{(from || to) && <button className="text-sm font-semibold text-brand" onClick={() => { setFrom(""); setTo(""); }}>All dates</button>}</div>
           <p className="mt-1 text-xs text-ink-soft">Leave empty for all dates. Pick the same date twice for a single day.</p>
         </fieldset>
-        <p className="rounded-lg bg-canvas p-3 text-navy">You will download: <b>{kind === "pptx" ? "Executive summary" : "Excel"}</b> for <b>{what}</b>, <b>{when}</b>.</p>
+        <p className="rounded-lg bg-canvas p-3 text-navy">You will download: <b>{what === "schedule" ? "Schedule changes" : "Test results"} ({kind === "pptx" ? "executive summary" : "Excel"})</b> for <b>{who}</b>, <b>{when}</b>.</p>
         <div className="flex justify-end gap-2"><button className="btn-outline" onClick={onClose}>Cancel</button>{href && <a className="btn-solid" href={href} onClick={() => setTimeout(onClose, 300)}>Download</a>}</div>
       </div>
     </Modal>

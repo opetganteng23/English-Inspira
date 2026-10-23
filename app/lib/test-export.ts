@@ -67,7 +67,7 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
   if (sessionId && !sessions.length) return null;
   // Ekspor satu sesi: hanya peserta sesi itu (percobaan orang lain tidak ikut).
   const userIds = sessionId ? [...new Set(seats.map((s) => String(s.userId)))] : [...new Set([...seats.map((s) => String(s.userId)), ...latest.keys()])];
-  const users = await User.find({ _id: { $in: userIds } }).select("name email institutionId qaTester role status lastLoginAt branch province birthDate").lean();
+  const users = await User.find({ _id: { $in: userIds } }).select("name email phone institutionId qaTester role status lastLoginAt branch city province birthDate").lean();
   const insts = new Map((await Institution.find({ _id: { $in: users.map((u) => u.institutionId).filter((x): x is NonNullable<typeof x> => !!x) } }).select("name").lean()).map((i) => [String(i._id), i.name]));
   const seatBy = new Map(seats.map((s) => [String(s.userId), s]));
 
@@ -100,7 +100,7 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
       review: a?.proctorReview?.status ?? "",
       startedAt: a?.startedAt ?? null,
       userId: id,
-      instId: u.institutionId ? String(u.institutionId) : "", branch: u.branch ?? "", province: u.province ?? "", birthDate: u.birthDate ?? null, ageGroup: ageGroupOf(ageOf(u.birthDate))?.label ?? "",
+      instId: u.institutionId ? String(u.institutionId) : "", branch: u.branch ?? "", province: u.province ?? "", birthDate: u.birthDate ?? null, ageGroup: ageGroupOf(ageOf(u.birthDate))?.label ?? "", age: ageOf(u.birthDate), phone: u.phone ?? "", city: u.city ?? "",
       topics: done ? (a!.topicScores ?? []).map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0 })) : [],
       _sort: win ? +win.opensAt : Number.MAX_SAFE_INTEGER,
     };
@@ -195,19 +195,54 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
 
   // ---- Rekap perubahan jadwal (pindah sesi & perpanjangan waktu)
   const sc = await scheduleChanges(testId, { sessionId, scope });
+  addScheduleSheet(wb, sc?.changes ?? [], head);
+  sum.addRow({ k: "Schedule changes (people / changes)", v: `${sc?.people ?? 0} / ${sc?.changes.length ?? 0}` });
+
+  return { name: sessionId ? `${test.name} - ${sessions[0].label}` : test.name, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: rows.length };
+}
+
+const SRC: Record<string, string> = { system: "System log", email: "Rebuilt from emails", extension: "Extension log" };
+type ExcelHead = (ws: ExcelJS.Worksheet) => void;
+/** Sheet "Schedule changes": satu baris per perubahan jadwal, dengan data peserta (nama, email, telepon, umur, cabang, lokasi). */
+function addScheduleSheet(wb: ExcelJS.Workbook, changes: NonNullable<Awaited<ReturnType<typeof scheduleChanges>>>["changes"], head: ExcelHead) {
   const ch = wb.addWorksheet("Schedule changes");
   ch.columns = [
-    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 30 }, { header: "Email", key: "email", width: 34 }, { header: "Branch", key: "branch", width: 22 }, { header: "Age group", key: "ageGroup", width: 10 },
+    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 30 }, { header: "Email", key: "email", width: 34 }, { header: "Phone", key: "phone", width: 16 }, { header: "Age", key: "age", width: 7 },
+    { header: "Branch", key: "branch", width: 22 }, { header: "City", key: "city", width: 18 }, { header: "Province", key: "province", width: 20 },
     { header: "Change", key: "type", width: 16 }, { header: "From", key: "from", width: 26 }, { header: "To", key: "to", width: 30 }, { header: "Changed (WIB)", key: "atText", width: 20 },
     { header: "Changed by", key: "by", width: 22 }, { header: "Reason", key: "reason", width: 30 }, { header: "Recorded from", key: "sourceText", width: 22 },
     { header: "Status now", key: "status", width: 22 }, { header: "Attendance", key: "attendance", width: 12 }, { header: "Score", key: "score", width: 9 },
   ];
-  const SRC: Record<string, string> = { system: "System log", email: "Rebuilt from emails", extension: "Extension log" };
-  (sc?.changes ?? []).forEach((c, i) => ch.addRow({ ...c, no: i + 1, atText: c.at ? WIB(c.at) : "", sourceText: SRC[c.source] ?? c.source }));
-  if (!sc?.changes.length) ch.addRow({ name: "No schedule changes in this report." });
+  changes.forEach((c, i) => ch.addRow({ ...c, no: i + 1, atText: c.at ? WIB(c.at) : "", sourceText: SRC[c.source] ?? c.source }));
+  if (!changes.length) ch.addRow({ name: "No schedule changes in this report." });
   head(ch);
   ch.autoFilter = { from: "A1", to: { row: 1, column: ch.columns.length } };
-  sum.addRow({ k: "Schedule changes (people / changes)", v: `${sc?.people ?? 0} / ${sc?.changes.length ?? 0}` });
+  return ch;
+}
 
-  return { name: sessionId ? `${test.name} - ${sessions[0].label}` : test.name, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: rows.length };
+/** Excel khusus perubahan jadwal: ringkasan (per cabang, per tanggal tujuan) + daftar lengkap. Cakupan & rentang tanggal (tanggal perubahan) mengikuti laporan. */
+export async function buildScheduleChangesXlsx(testId: string, sessionId?: string, scope: ReportScope = {}) {
+  const sc = await scheduleChanges(testId, { sessionId, scope });
+  if (!sc) return null;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "English Inspira AI";
+  const head: ExcelHead = (ws) => { const r = ws.getRow(1); r.font = { bold: true, color: { argb: "FFFFFFFF" } }; r.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0A2257" } }; r.alignment = { vertical: "middle", wrapText: true }; r.height = 30; ws.views = [{ state: "frozen", ySplit: 1 }]; };
+  const c = sc.changes;
+  const sum = wb.addWorksheet("Summary");
+  sum.columns = [{ header: "Item", key: "k", width: 40 }, { header: "Value", key: "v", width: 40 }];
+  const range = scope.from || scope.to ? `${scope.from ?? "start"} to ${scope.to ?? "today"} (date of change)` : "All dates";
+  [["Test", sc.test.name], ["Report", "Schedule changes"], ["Changes made", range], ...(scope.branch ? [["Branch", scope.branch]] : []), ...(scope.province ? [["Province", scope.province]] : []), ...(scope.age ? [["Age group", scope.age]] : []),
+    ["Exported", WIB(new Date()) + " WIB"], ["People", sc.people], ["Changes", c.length], ["Moved to another session", c.filter((x) => x.type === "Moved").length], ["Extended window", c.filter((x) => x.type === "Extended window").length],
+    ["Finished the test after the change", new Set(c.filter((x) => x.status === "Finished").map((x) => x.userId)).size], ["Absent at the new schedule", new Set(c.filter((x) => x.attendance === "Absent").map((x) => x.userId)).size],
+  ].forEach(([k, v]) => sum.addRow({ k, v }));
+  head(sum);
+  const tally = (key: (x: (typeof c)[number]) => string) => { const m = new Map<string, number>(); for (const x of c) m.set(key(x), (m.get(key(x)) ?? 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); };
+  const br = wb.addWorksheet("By branch");
+  br.columns = [{ header: "Branch", key: "b", width: 30 }, { header: "Changes", key: "n", width: 12 }];
+  tally((x) => x.branch || "No personnel data").forEach(([b, n]) => br.addRow({ b, n })); head(br);
+  const dy = wb.addWorksheet("By new date");
+  dy.columns = [{ header: "Moved to", key: "d", width: 30 }, { header: "Changes", key: "n", width: 12 }];
+  tally((x) => (x.type === "Moved" ? x.to : "Extended window")).forEach(([d, n]) => dy.addRow({ d, n })); head(dy);
+  addScheduleSheet(wb, c, head);
+  return { name: `${sc.test.name} - schedule changes`, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: c.length };
 }

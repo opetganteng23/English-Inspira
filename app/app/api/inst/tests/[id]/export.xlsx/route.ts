@@ -2,7 +2,7 @@ import { isValidObjectId } from "mongoose";
 import { handleError, HttpError } from "@/lib/rbac";
 import { instContext } from "@/lib/inst";
 import { audit } from "@/lib/audit";
-import { buildTestExport, scopeFromQuery } from "@/lib/test-export";
+import { buildTestExport, buildScheduleChangesXlsx, scopeFromQuery } from "@/lib/test-export";
 import { analyticsTests } from "@/lib/analytics-tests";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!isValidObjectId(params.id) || !(await analyticsTests(String(inst._id))).some((t) => t.id === params.id)) throw new HttpError(404, "Test not found");
     const q = new URL(req.url).searchParams, session = q.get("session");
     if (session && !isValidObjectId(session)) throw new HttpError(404, "Session not found");
-    const out = await buildTestExport(params.id, new Date(), session ?? undefined, { institutionId: String(inst._id), releasedOnly: !full, ...scopeFromQuery(q) });
+    const sc = { institutionId: String(inst._id), releasedOnly: !full, ...scopeFromQuery(q) };
+    const out = q.get("report") === "schedule" ? await buildScheduleChangesXlsx(params.id, session ?? undefined, sc) : await buildTestExport(params.id, new Date(), session ?? undefined, sc);
     if (!out) throw new HttpError(404, "Test not found");
     await audit(user._id, "inst.results_export", params.id, { institution: String(inst._id), rows: out.rows });
     const file = `results-${out.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 90) || "test"}-${new Date().toISOString().slice(0, 10)}.xlsx`;
