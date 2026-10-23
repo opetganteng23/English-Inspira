@@ -254,12 +254,12 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
             <div className="mt-3 flex flex-col gap-3 text-sm">
               <label>Opens<input type="datetime-local" className="field w-full" value={ext.opensAt} onChange={(e) => setExt({ ...ext, opensAt: e.target.value })} /></label>
               <label>Closes<input type="datetime-local" className="field w-full" value={ext.closesAt} onChange={(e) => setExt({ ...ext, closesAt: e.target.value })} /></label>
-              <label>Reason (kept in the audit log, shown in the email)<input className="field w-full" value={ext.reason} onChange={(e) => setExt({ ...ext, reason: e.target.value })} /></label>
+              <label>Reason (optional; kept in the audit log, shown in the email)<input className="field w-full" value={ext.reason} onChange={(e) => setExt({ ...ext, reason: e.target.value })} /></label>
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button className="btn-outline" onClick={() => setExt(null)}>Cancel</button>
-              <button className="btn-solid" disabled={busy || ext.reason.trim().length < 3 || !ext.opensAt || !ext.closesAt} onClick={() => run(async () => {
-                await api(`${base}/extend`, { json: { userId: ext.userId, opensAt: new Date(ext.opensAt).toISOString(), closesAt: new Date(ext.closesAt).toISOString(), reason: ext.reason } }); setExt(null);
+              <button className="btn-solid" disabled={busy || !ext.opensAt || !ext.closesAt} onClick={() => run(async () => {
+                await api(`${base}/extend`, { json: { userId: ext.userId, opensAt: new Date(ext.opensAt).toISOString(), closesAt: new Date(ext.closesAt).toISOString(), reason: ext.reason.trim() || undefined } }); setExt(null);
               })}>Save and notify</button>
             </div>
           </div>
