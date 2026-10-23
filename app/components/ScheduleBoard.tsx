@@ -28,6 +28,7 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
   const [busy, setBusy] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
+  const [reason, setReason] = useState(""); // alasan pindah jadwal (opsional), tercatat di rekap perubahan jadwal
   const [inst, setInst] = useState("");
   const [moveTo, setMoveTo] = useState("");
   const [form, setForm] = useState<{ id?: string; label: string; opensAt: string; closesAt: string; capacity: number } | null>(null);
@@ -54,7 +55,7 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
     if (!userIds.length) return;
     const before = userIds.map((u) => ({ userId: u, from: where.get(u) ?? null }));
     return run(async () => {
-      const r = await api<{ moved: number; blocked: number }>(`${base}/move`, { json: { userIds, sessionId }, silent: true });
+      const r = await api<{ moved: number; blocked: number }>(`${base}/move`, { json: { userIds, sessionId, ...(reason.trim() ? { reason: reason.trim() } : {}) }, silent: true });
       setUndo(before); setPicked(new Set());
       if (r.blocked) setNote(`${r.blocked} could not be moved: they already started or finished this test.`);
     });
@@ -63,7 +64,7 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
     if (!undo) return;
     const groups = new Map<string | null, string[]>();
     for (const u of undo) (groups.get(u.from) ?? groups.set(u.from, []).get(u.from)!).push(u.userId);
-    await run(async () => { for (const [sid, ids] of groups) await api(`${base}/move`, { json: { userIds: ids, sessionId: sid }, silent: true }); setUndo(null); });
+    await run(async () => { for (const [sid, ids] of groups) await api(`${base}/move`, { json: { userIds: ids, sessionId: sid, undo: true }, silent: true }); setUndo(null); });
   }
   function dropOn(sessionId: string | null, e: React.DragEvent) {
     e.preventDefault();
@@ -141,6 +142,7 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
             setNote(`${r.placed} people placed${r.left ? `, ${r.left} did not fit (sessions are full)` : ""}. Drag people between cards to adjust.`);
           })}>Spread automatically</button>
         <button className="btn-outline" onClick={() => setForm({ label: `Session ${data.sessions.length + 1}`, opensAt: "", closesAt: "", capacity: 100 })}>+ Add session</button>
+        {!readOnly && <input className="field w-auto min-w-[240px]" placeholder="Reason for moving (optional)" aria-label="Reason for moving" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} title="Saved with every move you make next; shown in the schedule-change recap (Excel and executive summary)" />}
         {undo && <button className="btn-outline" onClick={undoMove} disabled={busy}>Undo last move</button>}
         <button className="btn-solid ml-auto" disabled={busy || (!data.pending.invite && !data.pending.reschedule)}
           onClick={async () => { if (await askConfirm(`Send ${data.pending.invite} invitation${data.pending.invite === 1 ? "" : "s"}${data.pending.reschedule ? ` and ${data.pending.reschedule} new-schedule email${data.pending.reschedule === 1 ? "" : "s"}` : ""}? Emails go out gradually through the mail queue.`, { confirmLabel: "Send" })) run(async () => { const r = await api<{ invited: number; rescheduled: number; skipped: number }>(`${base}/send`, { json: {}, silent: true }); setNote(`Queued ${r.invited} invitation(s) and ${r.rescheduled} schedule change email(s).${r.skipped ? ` ${r.skipped} people were skipped because this test is still in Test mode: only QA tester accounts get emails.` : ""}`); }); }}>

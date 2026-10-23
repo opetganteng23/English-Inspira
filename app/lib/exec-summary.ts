@@ -6,6 +6,7 @@ import { TestSeat, TestSession } from "@/models/Schedule";
 import { User } from "@/models/User";
 import { isLearningTopic } from "./topics";
 import { segment } from "./segments";
+import { scheduleChanges } from "./schedule-changes";
 import { AGE_GROUPS } from "./age";
 
 type Row = NonNullable<Awaited<ReturnType<typeof collectTestRows>>>["rows"][number];
@@ -290,6 +291,40 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
         { text: "Catatan: ", options: { bold: true, color: C.orange } },
         { text: pendingRows.length ? `${ID(pendingRows.length)} peserta masih menunggu jadwal atau sedang tes. Unduh ulang laporan ini setelah sesi terakhir untuk angka final.` : "Seluruh sesi telah selesai; angka pada laporan ini sudah final." },
       ], "info");
+    }
+  }
+
+  // ================= 3b. Rekap perubahan jadwal =================
+  {
+    const sc = await scheduleChanges(testId, { sessionId: opts.sessionId, scope: opts.scope });
+    const list = sc?.changes ?? [];
+    if (list.length) {
+      const s = base("Rekap perubahan jadwal", `${ID(sc!.people)} peserta dengan ${ID(list.length)} perubahan jadwal${perDay ? " yang melibatkan sesi ini" : ""}`);
+      const done = new Set(list.filter((c) => c.status === "Finished").map((c) => c.userId)).size;
+      const absent = new Set(list.filter((c) => c.attendance === "Absent").map((c) => c.userId)).size;
+      const ext = list.filter((c) => c.type === "Extended window").length;
+      const cards: [string, string, string, string][] = [
+        [ID(sc!.people), "Peserta", `${ID(list.length - ext)} pindah sesi · ${ID(ext)} perpanjangan waktu`, C.navy],
+        [ID(done), "Sudah selesai tes", "Setelah jadwalnya diubah", C.green],
+        [ID(sc!.people - done - absent), "Belum tes", "Jadwal baru belum tiba atau sedang tes", C.orange],
+        [ID(absent), "Tidak hadir", "Tidak hadir di jadwal barunya", absent ? C.red : C.navy],
+      ];
+      cards.forEach(([n, t, d, col], i) => {
+        const x = 58 + i * 295;
+        box(s, x, 150, 279, 112, C.card);
+        T(s, n, { x: X(x + 22), y: X(160), w: X(110), h: X(50), fontSize: 30, bold: true, color: col, valign: "middle" });
+        T(s, t, { x: X(x + 125), y: X(165), w: X(145), h: X(24), fontSize: 13, bold: true, color: C.navy, valign: "middle" });
+        T(s, d, { x: X(x + 125), y: X(192), w: X(145), h: X(60), fontSize: 9.5, color: C.soft });
+      });
+      const shown = list.slice(-12).reverse();
+      const statusId = (c: (typeof list)[number]) => (c.status === "Finished" ? `Selesai${c.score != null ? ` · ${c.score}` : ""}` : c.attendance === "Absent" ? "Tidak hadir" : c.status === "In progress" ? "Sedang tes" : "Belum tes");
+      const body = shown.map((c, i) => [title(c.name || c.email), c.type === "Moved" ? c.from : "Perpanjangan", c.to, c.at ? new Date(c.at).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) : "-", c.reason || (c.source === "email" ? "(dari email jadwal baru)" : "-"), statusId(c)].map((t, j) => ({
+        text: t, options: { align: (j === 3 || j === 5 ? "center" : "left") as PptxGenJS.HAlign, fontSize: j === 4 ? 9 : 10, color: j === 5 ? (t.startsWith("Selesai") ? C.green : t === "Tidak hadir" ? C.red : C.ink) : C.ink, fill: { color: i % 2 ? C.card : C.white } },
+      })));
+      const rh = Math.min(28, 330 / (body.length + 1));
+      s.addTable([tableHead(["Peserta", "Dari", "Ke", "Diubah", "Alasan", "Status"], 10, ["left", "left", "left", "center", "left", "center"]), ...body], { x: X(58), y: X(280), w: X(1162), colW: [X(250), X(190), X(240), X(120), X(222), X(140)], rowH: X(rh), fontFace: FONT, fontSize: 10, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.5 }, margin: [0.02, 0.08, 0.02, 0.08] });
+      const fromEmail = list.some((c) => c.source === "email");
+      T(s, `${list.length > shown.length ? `Menampilkan ${shown.length} perubahan terbaru dari ${ID(list.length)}; daftar lengkap ada di Excel (sheet Schedule changes). ` : "Daftar lengkap juga ada di Excel (sheet Schedule changes). "}${fromEmail ? "Perubahan sebelum 22 Okt 2026 direkonstruksi dari email undangan/jadwal baru." : ""}`, { x: X(58), y: X(280 + rh * (body.length + 1) + 8), w: X(1162), h: X(30), fontSize: 9.5, italic: true, color: C.soft });
     }
   }
 

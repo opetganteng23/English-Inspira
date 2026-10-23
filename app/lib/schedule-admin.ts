@@ -41,7 +41,7 @@ async function seatCount(sessionId: Types.ObjectId | string) { return TestSeat.c
  * - peserta yang sedang mengerjakan atau sudah menyelesaikan tes tidak dipindah;
  * - bila peserta sudah diundang dan jendelanya berubah, tanda "perlu email jadwal baru" otomatis muncul (dibandingkan saat kirim).
  */
-export async function moveSeats(testId: string, userIds: string[], sessionId: string | null) {
+export async function moveSeats(testId: string, userIds: string[], sessionId: string | null, opts: { by?: string; reason?: string; undo?: boolean } = {}) {
   await connectDB();
   const ids = Array.from(new Set(userIds));
   const blocked = new Set((await Attempt.find({ testId, userId: { $in: ids }, status: { $in: ["submitted", "in_progress"] } }).distinct("userId")).map(String));
@@ -59,7 +59,10 @@ export async function moveSeats(testId: string, userIds: string[], sessionId: st
   const prev = new Map((await TestSeat.find({ testId, userId: { $in: incoming } }).select("userId sessionId").lean()).map((x) => [String(x.userId), x.sessionId]));
   for (const id of incoming) {
     const from = prev.get(id);
-    await TestSeat.updateOne({ testId, userId: id }, { $set: { sessionId: session._id, ...(from ? { movedFrom: { sessionId: from, at: new Date() } } : {}) }, $unset: { override: "" } }, { upsert: true });
+    const now = new Date();
+    // Riwayat: dicatat bila peserta memang pindah dari sesi lain; Undo menghapus catatan terakhir.
+    const hist = !from ? {} : opts.undo ? { $pop: { moves: 1 as const } } : { $push: { moves: { from, to: session._id, at: now, ...(opts.by ? { by: opts.by } : {}), ...(opts.reason ? { reason: opts.reason } : {}), source: "system" } } };
+    await TestSeat.updateOne({ testId, userId: id }, { $set: { sessionId: session._id, ...(from ? { movedFrom: { sessionId: from, at: now } } : {}) }, $unset: { override: "" }, ...hist } as never, { upsert: true });
   }
   return { moved: incoming.length, blocked: ids.length - movable.length };
 }

@@ -12,9 +12,9 @@ export const DIMS: { key: Dim; label: string }[] = [
 /** Kunci & label kelompok satu baris untuk dimensi tertentu ("" = tidak masuk kelompok mana pun). */
 export function groupOf(r: Row, dim: Dim): { key: string; label: string; order: number } {
   if (dim === "overall") return { key: "all", label: "All participants", order: 0 };
-  if (dim === "age") { const g = ageGroupOf(ageOf(r.birthDate)); return g ? { key: g.key, label: g.label, order: AGE_GROUPS.findIndex((x) => x.key === g.key) } : { key: "", label: "Unknown", order: 99 }; }
-  if (dim === "branch") return r.branch ? { key: r.branch, label: r.branch, order: 0 } : { key: "", label: "Unknown", order: 99 };
-  if (dim === "province") return r.province ? { key: r.province, label: r.province, order: 0 } : { key: "", label: "Unknown", order: 99 };
+  if (dim === "age") { const g = ageGroupOf(ageOf(r.birthDate)); return g ? { key: g.key, label: g.label, order: AGE_GROUPS.findIndex((x) => x.key === g.key) } : { key: "", label: "No personnel data", order: 99 }; }
+  if (dim === "branch") return r.branch ? { key: r.branch, label: r.branch, order: 0 } : { key: "", label: "No personnel data", order: 99 };
+  if (dim === "province") return r.province ? { key: r.province, label: r.province, order: 0 } : { key: "", label: "No personnel data", order: 99 };
   return r.scheduledDay ? { key: r.scheduledDay, label: r.scheduledDay, order: r._sort } : { key: "", label: "Not scheduled", order: Number.MAX_SAFE_INTEGER };
 }
 

@@ -8,6 +8,7 @@ import { TestSession, TestSeat } from "@/models/Schedule";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
 import { ageOf, ageGroupOf } from "./age";
+import { scheduleChanges } from "./schedule-changes";
 
 /** Kehadiran dari status: hadir bila sudah mulai, tidak hadir bila sesi lewat tanpa mulai. */
 export function attendanceOf(s: ExportStatus) {
@@ -98,6 +99,7 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
       tabHidden: a ? flags("tab_hidden") : null, fullscreenExit: a ? flags("fullscreen_exit") : null, paste: a ? flags("paste") : null,
       review: a?.proctorReview?.status ?? "",
       startedAt: a?.startedAt ?? null,
+      userId: id,
       instId: u.institutionId ? String(u.institutionId) : "", branch: u.branch ?? "", province: u.province ?? "", birthDate: u.birthDate ?? null, ageGroup: ageGroupOf(ageOf(u.birthDate))?.label ?? "",
       topics: done ? (a!.topicScores ?? []).map((t) => ({ skill: t.skill ?? "", topic: t.topic ?? "", correct: t.correct ?? 0, total: t.total ?? 0 })) : [],
       _sort: win ? +win.opensAt : Number.MAX_SAFE_INTEGER,
@@ -190,6 +192,22 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   lv.getColumn("p").numFmt = "0%";
   head(lv);
   lv.addConditionalFormatting({ ref: `D2:D${levels.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 0 }, { type: "num", value: 1 }], color: { argb: "FF0B4FA6" } } as never] });
+
+  // ---- Rekap perubahan jadwal (pindah sesi & perpanjangan waktu)
+  const sc = await scheduleChanges(testId, { sessionId, scope });
+  const ch = wb.addWorksheet("Schedule changes");
+  ch.columns = [
+    { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 30 }, { header: "Email", key: "email", width: 34 }, { header: "Branch", key: "branch", width: 22 }, { header: "Age group", key: "ageGroup", width: 10 },
+    { header: "Change", key: "type", width: 16 }, { header: "From", key: "from", width: 26 }, { header: "To", key: "to", width: 30 }, { header: "Changed (WIB)", key: "atText", width: 20 },
+    { header: "Changed by", key: "by", width: 22 }, { header: "Reason", key: "reason", width: 30 }, { header: "Recorded from", key: "sourceText", width: 22 },
+    { header: "Status now", key: "status", width: 22 }, { header: "Attendance", key: "attendance", width: 12 }, { header: "Score", key: "score", width: 9 },
+  ];
+  const SRC: Record<string, string> = { system: "System log", email: "Rebuilt from emails", extension: "Extension log" };
+  (sc?.changes ?? []).forEach((c, i) => ch.addRow({ ...c, no: i + 1, atText: c.at ? WIB(c.at) : "", sourceText: SRC[c.source] ?? c.source }));
+  if (!sc?.changes.length) ch.addRow({ name: "No schedule changes in this report." });
+  head(ch);
+  ch.autoFilter = { from: "A1", to: { row: 1, column: ch.columns.length } };
+  sum.addRow({ k: "Schedule changes (people / changes)", v: `${sc?.people ?? 0} / ${sc?.changes.length ?? 0}` });
 
   return { name: sessionId ? `${test.name} - ${sessions[0].label}` : test.name, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: rows.length };
 }
