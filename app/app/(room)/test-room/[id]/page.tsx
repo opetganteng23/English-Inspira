@@ -60,6 +60,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
   const readPending = (): Record<string, number> => { try { return JSON.parse(localStorage.getItem(PENDING) ?? "{}"); } catch { return {}; } };
   const writePending = (p: Record<string, number>) => { try { if (Object.keys(p).length) localStorage.setItem(PENDING, JSON.stringify(p)); else localStorage.removeItem(PENDING); } catch { /* penyimpanan tidak tersedia */ } };
   const [navBusy, setNavBusy] = useState(false);
+  const [navWarn, setNavWarn] = useState(false);
   const flagRef = useRef(flagged); flagRef.current = flagged;
   // Waktu per soal: akumulasi detik saat soal tampil (dipakai analisis AI).
   const spent = useRef<Record<string, number>>({});
@@ -147,6 +148,8 @@ export default function Ruang({ params }: { params: { id: string } }) {
     try {
       await api(`/api/attempts/${params.id}`, {
         method: "PATCH",
+        // Simpanan yang menggantung (jaringan tersendat) dulu membuat "Saving…" tidak pernah selesai dan peserta me-reload. Batasi 15 dtk lalu coba ulang.
+        signal: AbortSignal.timeout(15_000),
         json: {
           answers: ids.map((qid) => ({ qid, choice: (sentAns[qid] = ansRef.current[qid] ?? null), flagged: !!flagRef.current[qid], timeSpentSec: Math.min(3600, Math.round(spent.current[qid] ?? 0)) })),
           flags,
@@ -270,7 +273,11 @@ export default function Ruang({ params }: { params: { id: string } }) {
     // Soal dilewati tanpa memilih: tetap dikirim (pilihan kosong) agar tercatat sengaja dilewati, bukan jawaban yang hilang.
     const here = st.questions[cur]?.id;
     if (here && ansRef.current[here] == null) dirty.current.add(here);
-    try { await flush(); } finally { setNavBusy(false); }
+    let ok = false;
+    try { ok = await flush(); } finally { setNavBusy(false); }
+    // Mode aman: jangan maju sebelum jawaban soal ini tersimpan, karena soal yang dilewati terkunci. Simpanan dicoba ulang otomatis.
+    if (!ok) { setNavWarn(true); return; }
+    setNavWarn(false);
     goTo(cur + 1);
   };
   const goTo = (i: number) => {
@@ -376,7 +383,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
           {!secure && <button className="btn-outline !px-4" disabled={cur === 0} onClick={() => goTo(cur - 1)} aria-label="Previous question">Previous</button>}
           <button className="btn-outline flex-1" onClick={() => setNavOpen(!navOpen)} aria-expanded={navOpen}>{cur + 1}/{st.questions.length} · {answered} answered</button>
           {cur < st.questions.length - 1
-            ? <button className="btn-solid !px-5" disabled={navBusy} onClick={() => void goNext()} aria-label="Next question">{navBusy ? "Saving…" : "Next"}</button>
+            ? <>{navWarn && saved !== "ok" && <span role="alert" className="text-xs font-semibold text-red-700">Your answer is not saved yet (connection). Do not reload; it retries automatically. Click Next again.</span>}<button className="btn-solid !px-5" disabled={navBusy} onClick={() => void goNext()} aria-label="Next question">{navBusy ? "Saving…" : "Next"}</button></>
             : <button className="btn-accent !px-4" onClick={() => openConfirm()}>{finishLabel}</button>}
         </div>
       </div>

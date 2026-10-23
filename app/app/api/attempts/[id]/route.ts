@@ -115,7 +115,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       // Mode aman: soal yang sudah dilewati tidak bisa DIUBAH. Jawaban pertama yang tiba terlambat (simpanan tersalip simpanan
       // berikutnya saat koneksi lambat) tetap diterima, asal soal itu masih kosong dan baru saja dilewati.
       const passed = lockedBefore > 0 && (shownIdx.get(a.qid) ?? 0) < lockedBefore;
-      if (passed && (cur?.choice != null || a.choice == null || (shownIdx.get(a.qid) ?? 0) < lockedBefore - 5)) continue;
+      // Soal tanpa catatan sama sekali = jawabannya belum pernah sampai ke server (mis. simpanan gagal lalu reload); dilewati dengan sengaja selalu tercatat kosong.
+      if (passed && (cur?.choice != null || a.choice == null || (cur && (shownIdx.get(a.qid) ?? 0) < lockedBefore - 5))) continue;
       let choice = a.choice ?? undefined;
       if (choice != null && test.shuffleOptions) {
         const n = optLen.get(a.qid) ?? 0;
