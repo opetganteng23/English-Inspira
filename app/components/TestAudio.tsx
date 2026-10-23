@@ -49,7 +49,7 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
   const analyser = useRef<AnalyserNode | null>(null);
   const [level, setLevel] = useState(0);
   const [prep, setPrep] = useState<"loading" | "ready" | "stream">("loading");
-  const pos = () => (clock.current && sharedCtx ? clock.current.offset + (sharedCtx.currentTime - clock.current.ctxStart) : el.current?.currentTime ?? 0);
+    const pos = () => (clock.current && sharedCtx ? clock.current.offset + (sharedCtx.currentTime - clock.current.ctxStart) : el.current?.currentTime ?? 0);
 
   useEffect(() => {
     if (finished) return;
@@ -75,10 +75,28 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
     return () => {
       alive = false;
       try { src.current?.stop(); } catch { /* */ }
+      // Elemen <audio> yang dilepas dari halaman tetap berbunyi: hentikan agar tidak menumpuk dengan audio soal berikutnya.
+      const a = el.current; if (a) { try { a.pause(); a.removeAttribute("src"); a.load(); } catch { /* */ } }
       markPlaying(false);
       if (blob.current) { URL.revokeObjectURL(blob.current); blob.current = null; }
     };
   }, [base, finished]);
+
+  // Satu tab saja yang memutar audio tes: bila tab lain mulai memutar, tab ini berhenti (tidak dihitung selesai).
+  const tab = useRef(Math.random().toString(36).slice(2));
+  const chan = useRef<BroadcastChannel | null>(null);
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const c = new BroadcastChannel(`inspira-audio-${attemptId}`); chan.current = c;
+    c.onmessage = (e) => {
+      if (e.data?.tab === tab.current) return;
+      try { src.current?.stop(); } catch { /* */ }
+      src.current = null; el.current?.pause(); markPlaying(false);
+      setPhase((p) => (p === "playing" ? "error" : p));
+      setMsg("Audio is playing in another tab or window. Close the other tab and use only one.");
+    };
+    return () => { c.close(); chan.current = null; };
+  }, [attemptId]);
 
   // Bar level suara selama diputar (Web Audio).
   useEffect(() => {
@@ -110,7 +128,15 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
     return true;
   };
 
+  const starting = useRef(false);
   async function start() {
+    // Klik ganda / klik saat masih memulai: jangan memutar dua kali.
+    if (starting.current) return;
+    starting.current = true;
+    try { chan.current?.postMessage({ tab: tab.current }); } catch { /* */ }
+    try { await startOnce(); } finally { starting.current = false; }
+  }
+  async function startOnce() {
     setMsg("");
     const ctx = sharedCtx;
     if (buffer.current && ctx) {
