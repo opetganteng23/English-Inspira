@@ -246,3 +246,12 @@ export async function buildScheduleChangesXlsx(testId: string, sessionId?: strin
   addScheduleSheet(wb, c, head);
   return { name: `${sc.test.name} - schedule changes`, buffer: Buffer.from(await wb.xlsx.writeBuffer()), rows: c.length };
 }
+
+/** Akhiran nama file: tanggal/rentang laporan yang dipilih; tanpa filter tanggal, tanggal unduh ("as-of"). */
+export function fileDate(q: URLSearchParams) {
+  const { from, to } = scopeFromQuery(q);
+  if (from && to) return from === to ? from : `${from}_to_${to}`;
+  if (from) return `${from}_onwards`;
+  if (to) return `until_${to}`;
+  return `as-of-${new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" })}`;
+}
