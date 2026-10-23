@@ -132,6 +132,7 @@ function DownloadDialog({ testId, testName, branches, provinces, ageGroups, from
   const [branch, setBranch] = useState(branches[0] ?? "");
   const [from, setFrom] = useState(f0);
   const [to, setTo] = useState(t0);
+  const [mode, setMode] = useState<"all" | "day" | "range">(!f0 && !t0 ? "all" : f0 && f0 === t0 ? "day" : "range");
   const qs = new URLSearchParams({ target: String(target) });
   if (what === "schedule") qs.set("report", "schedule");
   if (from) qs.set("from", from);
@@ -141,7 +142,7 @@ function DownloadDialog({ testId, testName, branches, provinces, ageGroups, from
   if (scope === "province" && province) qs.set("province", province);
   const href = report(testId, kind, qs.toString());
   const who = scope === "age" ? `age ${ageGroups.find((g) => g.key === age)?.label ?? ""}` : scope === "branch" ? branch : scope === "province" ? province : "all participants";
-  const when = from || to ? `${from || "start"} to ${to || "today"}` : what === "schedule" ? "all dates" : "all test dates";
+  const when = from && from === to ? from : from || to ? `${from || "start"} to ${to || "today"}` : what === "schedule" ? "all dates" : "all test dates";
   const radio = "flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-tint";
   return (
     <Modal title="Download report" onClose={onClose}>
@@ -169,7 +170,13 @@ function DownloadDialog({ testId, testName, branches, provinces, ageGroups, from
             <select aria-label="Branch" className="field ml-auto !w-auto max-w-[220px]" value={branch} onChange={(e) => { setBranch(e.target.value); setScope("branch"); }}>{branches.map((b) => <option key={b} value={b}>{b}</option>)}</select></label>}
         </fieldset>
         <fieldset><legend className="mb-1 font-semibold text-navy">{what === "schedule" ? "Date the schedule was changed" : "Test date"}</legend>
-          <div className="flex flex-wrap items-center gap-2"><input type="date" aria-label="From date" className="field !w-auto" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /><span className="text-ink-soft">to</span><input type="date" aria-label="To date" className="field !w-auto" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />{(from || to) && <button className="text-sm font-semibold text-brand" onClick={() => { setFrom(""); setTo(""); }}>All dates</button>}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select aria-label="Date option" className="field !w-auto" value={mode} onChange={(e) => { const m = e.target.value as typeof mode; setMode(m); if (m === "all") { setFrom(""); setTo(""); } else if (m === "day") setTo(from); }}>
+              <option value="all">All dates</option><option value="day">Single date</option><option value="range">Date range</option>
+            </select>
+            {mode === "day" && <input type="date" aria-label="Date" className="field !w-auto" value={from} onChange={(e) => { setFrom(e.target.value); setTo(e.target.value); }} />}
+            {mode === "range" && <><input type="date" aria-label="From date" className="field !w-auto" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /><span className="text-ink-soft">to</span><input type="date" aria-label="To date" className="field !w-auto" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></>}
+          </div>
           <p className="mt-1 text-xs text-ink-soft">Leave empty for all dates. Pick the same date twice for a single day.</p>
         </fieldset>
         <p className="rounded-lg bg-canvas p-3 text-navy">You will download: <b>{what === "schedule" ? "Schedule changes" : "Test results"} ({kind === "pptx" ? "executive summary" : "Excel"})</b> for <b>{who}</b>, <b>{when}</b>.</p>
