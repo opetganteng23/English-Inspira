@@ -363,6 +363,7 @@ function TracePanel({ row, apis, onClose, onChanged }: { row: Row; apis: BoardAp
               {apis.timeline && <Link href={apis.timeline(row.id)} className="text-sm font-semibold text-brand">Open full activity timeline (per question) →</Link>}
             </>
           )}
+          {apis.canReview && row.status === "in_progress" && <StuckActions id={row.id} name={row.name} onDone={() => { onChanged(); onClose(); }} />}
           {apis.canReview && row.status === "submitted" && (
             <section className="flex flex-col gap-2 border-t border-line pt-4">
               <h3 className="font-display text-base font-extrabold text-navy">Review {rv && <span className={`ml-2 align-middle ${RV[rv]?.[1] ?? "badge-muted"}`}>{RV[rv]?.[0] ?? rv}</span>}</h3>
@@ -373,5 +374,36 @@ function TracePanel({ row, apis, onClose, onChanged }: { row: Row; apis: BoardAp
         </div>
       </aside>
     </div>
+  );
+}
+
+/** Mitigasi tes yang nyangkut (status masih berjalan tapi peserta tidak bisa masuk lagi): tutup dan nilai, atau reset (void) untuk tes ulang. */
+export function StuckActions({ id, name, onDone }: { id: string; name: string; onDone: () => void }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  async function run(action: "terminate" | "reset") {
+    const text = action === "terminate"
+      ? `Terminate the test for ${name} now? It is closed and scored from the answers saved so far. This cannot be undone.`
+      : `Reset the test for ${name}? The attempt is voided (archived, can be restored from the participant profile) and the participant must take the test again.`;
+    if (!window.confirm(text)) return;
+    setBusy(true); setMsg("");
+    try {
+      const r = await api(`/api/admin/attempts/${id}`, { json: { action, reason } });
+      window.alert(action === "terminate" ? `Test terminated. ${r.answered} answers scored${r.score != null ? `, score ${r.score}` : ""}.` : "Test reset. Move the participant to a session on the Schedule board, then send the invite.");
+      onDone();
+    } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
+  }
+  return (
+    <section className="flex flex-col gap-2 border-t border-line pt-4">
+      <h3 className="font-display text-base font-extrabold text-navy">Stuck test</h3>
+      <p className="text-xs text-ink-soft">Use when the participant cannot get back into a running test. <b>Terminate</b> closes it and scores the saved answers. <b>Reset</b> voids it so the participant can retake.</p>
+      <input aria-label="Reason" className="field" placeholder="Reason (required), e.g. Browser crashed, could not re-enter" value={reason} onChange={(e) => setReason(e.target.value)} />
+      <div className="flex gap-2">
+        <button className="btn-outline" disabled={busy || reason.trim().length < 5} onClick={() => void run("terminate")}>Terminate &amp; score</button>
+        <button className="btn-danger" disabled={busy || reason.trim().length < 5} onClick={() => void run("reset")}>Reset (void)</button>
+      </div>
+      {msg && <p role="alert" className="text-sm text-red-700">{msg}</p>}
+    </section>
   );
 }

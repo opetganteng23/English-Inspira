@@ -1,5 +1,6 @@
 "use client";
 
+import { StuckActions } from "@/components/MonitoringBoard";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Pager } from "@/components/Pager";
@@ -15,7 +16,7 @@ type Detail = {
   profile: { id: string; name?: string; givenName?: string; surname?: string; email: string; phone?: string; status: string; institution: string | null; consentAt: string | null; lastLoginAt: string | null; createdAt: string; level: string | null; scoreEst: number | null; placementDone: boolean; placementRetakeAllowed: boolean; qaTester?: boolean };
   enrollment: { status: string; startsAt: string; expiresAt: string | null } | null;
   quotas: { level: string; used: number; total: number; active: boolean }[];
-  attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; flags: number; held?: boolean; voidable?: boolean }[];
+  attempts: { id: string; kind: string; scoreEst: number; finishedAt: string; running?: boolean; startedAt?: string; flags: number; held?: boolean; voidable?: boolean }[];
   notes: { text: string; at: string }[];
   voided?: { id: string; test: string; score: number | null; status: string; finishedAt: string | null; voidedAt: string; reason: string }[];
 };
@@ -160,7 +161,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="mt-2 grid gap-2 rounded-xl bg-canvas p-3 sm:grid-cols-[100px_1fr_auto]"><input aria-label="Days" className="field" type="number" min={1} max={730} value={ext.days} onChange={(e) => setExt({ ...ext, days: Number(e.target.value) })} /><input aria-label="Extension reason" className="field" placeholder="Reason for extending access (required)" value={ext.reason} onChange={(e) => setExt({ ...ext, reason: e.target.value })} /><button className="btn-outline" disabled={ext.reason.trim().length < 3} onClick={() => run({ action: "extend_enrollment", ...ext }, "Access extended.").then(() => setExt({ days: 30, reason: "" }))}>Extend</button></div></section>
 
           <section><h3 className="font-semibold text-navy">Test history</h3>
-            {d.attempts.length ? <ul className="mt-1">{d.attempts.map((a) => <li key={a.id} className="flex justify-between gap-3 border-b border-line py-1.5"><span>{a.kind} · {tgl(a.finishedAt)}{a.flags ? ` · ${a.flags} activity notes` : ""}{a.held ? " · held (not visible to participant)" : ""}</span><span className="flex items-center gap-3"><b>{a.scoreEst}</b>{a.voidable && <button className="text-xs font-semibold text-red-700" onClick={() => setVoidFor({ id: a.id, label: `${a.kind} · ${tgl(a.finishedAt)} · score ${a.scoreEst ?? "-"}` })}>Void</button>}</span></li>)}</ul> : <p className="text-ink-soft">None yet.</p>}
+            {d.attempts.length ? <ul className="mt-1">{d.attempts.map((a) => a.running ? <li key={a.id} className="border-b border-line py-1.5"><span>{a.kind} · <b className="text-accent">running</b> since {tgl(a.startedAt ?? "", true)}</span><StuckActions id={a.id} name={d.profile.name ?? d.profile.email} onDone={() => location.reload()} /></li> : <li key={a.id} className="flex justify-between gap-3 border-b border-line py-1.5"><span>{a.kind} · {tgl(a.finishedAt)}{a.flags ? ` · ${a.flags} activity notes` : ""}{a.held ? " · held (not visible to participant)" : ""}</span><span className="flex items-center gap-3"><b>{a.scoreEst}</b>{a.voidable && <button className="text-xs font-semibold text-red-700" onClick={() => setVoidFor({ id: a.id, label: `${a.kind} · ${tgl(a.finishedAt)} · score ${a.scoreEst ?? "-"}` })}>Void</button>}</span></li>)}</ul> : <p className="text-ink-soft">None yet.</p>}
             {!!d.voided?.length && (
               <div className="mt-3 rounded-lg border border-line p-3">
                 <p className="font-semibold text-navy">Voided attempts</p>

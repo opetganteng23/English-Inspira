@@ -34,7 +34,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const admin = await requireRole(ACADEMIC_ROLES);
     const u = await find(params.id);
     const [attempts, notes, inst, enr, quotas, levels] = await Promise.all([
-      Attempt.find({ userId: u._id, status: "submitted" }).sort({ finishedAt: -1 }).limit(30).select("kind scoreEst sectionScores finishedAt proctorFlags heldByOrg releasedAt releaseAt status").lean(),
+      Attempt.find({ userId: u._id, status: { $in: ["submitted", "in_progress"] } }).sort({ startedAt: -1 }).limit(30).select("kind scoreEst sectionScores startedAt finishedAt proctorFlags heldByOrg releasedAt releaseAt status").lean(),
       AuditLog.find({ target: params.id, action: "participant.note" }).sort({ at: -1 }).limit(30).lean(),
       u.institutionId ? Institution.findById(u.institutionId).select("name contractEnd").lean() : null,
       Enrollment.findOne({ userId: u._id }).sort({ createdAt: -1 }).lean(),
@@ -49,7 +49,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       enrollment: enr ? { status: enr.status, startsAt: enr.startsAt, expiresAt: enr.expiresAt ?? null } : null,
       quotas: quotas.map((q) => ({ level: lv.get(String(q.levelId)) ?? "-", used: q.used, total: q.total, active: q.active })),
       voided: await (async () => { const vs = await VoidedAttempt.find({ userId: u._id, restoredAt: { $exists: false } }).sort({ at: -1 }).lean(); const names = new Map((await Test.find({ _id: { $in: vs.map((x) => x.testId) } }).select("name").lean()).map((t) => [String(t._id), t.name])); return vs.map((x) => { const a = x.attempt as { scoreEst?: number; finishedAt?: Date; status?: string }; return { id: String(x._id), test: names.get(String(x.testId)) ?? "-", score: a.scoreEst ?? null, status: a.status ?? "", finishedAt: a.finishedAt ?? null, voidedAt: x.at, reason: x.reason }; }); })(),
-      attempts: attempts.map((a) => ({ id: String(a._id), kind: a.kind, scoreEst: a.scoreEst, sections: a.sectionScores, finishedAt: a.finishedAt, flags: a.proctorFlags.length, held: !!a.heldByOrg && !a.releasedAt, voidable: isVoidable(a) })),
+      attempts: attempts.map((a) => ({ id: String(a._id), kind: a.kind, running: a.status === "in_progress", startedAt: a.startedAt, scoreEst: a.scoreEst, sections: a.sectionScores, finishedAt: a.finishedAt, flags: a.proctorFlags.length, held: !!a.heldByOrg && !a.releasedAt, voidable: isVoidable(a) })),
       notes: notes.map((n) => ({ text: (n.meta as { text?: string })?.text ?? "", at: n.at })),
     });
   } catch (e) {
