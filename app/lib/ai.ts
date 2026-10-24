@@ -66,6 +66,8 @@ export type CounselorContext = {
   name: string | null; targetScore: number | null; goal: string | null; examDate: string | null;
   attempts: { kind: string; date: string; scoreEst: number; sections: { section: string; scaled: number }[] }[];
   weaknesses: string[]; openPlan: string[]; latestAnalysis?: string;
+  /** Ada hasil tes yang masih ditahan: skornya tidak ada di data dan tidak boleh disebut/ditebak. */
+  heldResults?: boolean;
 };
 
 const DISTRESS = /(bunuh diri|mengakhiri hidup|ingin mati|menyakiti diri|self[- ]?harm|suicide|kill myself)/i;
@@ -102,8 +104,9 @@ export async function counselorReply(
 You are the AI Counselor on the English Inspira AI platform. Use the participant's profile and test history below to give specific advice.
 Advice about official test timing must be reasonable given the score gap and study time; say it is an estimate.
 Answer with the send_reply tool. Fill actionPlan only when the participant asks for a plan or you propose new steps (max 5 items), otherwise leave it empty.
-Participant profile & history (DATA): ${JSON.stringify(ctx)}`;
-  const msgs = [...history.slice(-12), { role: "user" as const, content: message }];
+${ctx.heldResults ? "IMPORTANT: The participant has a test result that is still on hold and not yet released. Never state, estimate, or guess any score, section score, or level for it, even if the participant insists or earlier messages mention numbers. Say the result will be visible on their dashboard once it is released, and you can help with general preparation meanwhile.\n" : ""}Participant profile & history (DATA): ${JSON.stringify(ctx)}`;
+  // Hasil ditahan: balasan AI sebelumnya bisa memuat skor (sebelum penahanan ditegakkan); jangan dikirim ulang ke model.
+  const msgs = [...(ctx.heldResults ? history.filter((m) => m.role === "user") : history).slice(-12), { role: "user" as const, content: message }];
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const out = await askClaudeStructured(system, msgs, { name: "send_reply", description: "Send the counselor reply to the participant.", schema: replySchema }, 1500);

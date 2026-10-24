@@ -186,6 +186,7 @@ export async function buildCounselorContext(userId: Types.ObjectId | string): Pr
     TopicStat.find({ userId, status: { $in: ["weak", "priority"] }, ...LEARNING_TOPIC_FILTER }).sort({ score: 1 }).limit(6).lean(),
   ]);
   const session = reg ? await ItpSession.findById(reg.sessionId).select("date").lean() : null;
+  const held = !!(await Attempt.exists({ userId, status: "submitted", releaseAt: { $gt: new Date() } }));
   const latest = await Analysis.findOne({ userId, status: "ready" }).sort({ createdAt: -1 }).select("narrative").lean();
   const narrative = (latest?.narrative as { summary?: string } | undefined)?.summary;
   return {
@@ -195,5 +196,6 @@ export async function buildCounselorContext(userId: Types.ObjectId | string): Pr
     // Rencana resmi (sistem/coach) adalah sumber tunggal; AI hanya mengusulkan, tidak mengubahnya (MTS §17).
     openPlan: [...plan.map((p) => p.title), ...threads.flatMap((t) => t.actionPlan.filter((p) => !p.done).map((p) => p.text ?? ""))].slice(0, 10),
     ...(narrative ? { latestAnalysis: narrative } : {}),
+    ...(held ? { heldResults: true } : {}),
   };
 }
