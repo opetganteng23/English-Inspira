@@ -215,10 +215,19 @@ export default function Ruang({ params }: { params: { id: string } }) {
     return () => clearInterval(iv);
   }, [saved, flush]);
   useEffect(() => {
-    const warn = (e: BeforeUnloadEvent) => { if (dirty.current.size) { e.preventDefault(); e.returnValue = ""; } };
+    const warn = (e: BeforeUnloadEvent) => { if (dirty.current.size || advancing.current) { e.preventDefault(); e.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
+
+  // Simpan/pindah bagian yang lewat 1 dtk: tampilkan pemberitahuan jelas agar peserta tidak mengira macet lalu me-reload.
+  const working = navBusy || busy || saved === "saving" || saved === "fail";
+  const [showWorking, setShowWorking] = useState(false);
+  useEffect(() => {
+    if (!working) { setShowWorking(false); return; }
+    const t = setTimeout(() => setShowWorking(true), 1000);
+    return () => clearTimeout(t);
+  }, [working]);
 
   // Proctoring ringan: hanya mencatat, tanpa kamera/mikrofon.
   useEffect(() => {
@@ -320,6 +329,15 @@ export default function Ruang({ params }: { params: { id: string } }) {
         </div>
       )}
     <div className="relative flex h-dvh flex-col overflow-clip">
+      {showWorking && (
+        <div role="status" aria-live="polite" className="fixed inset-x-0 bottom-20 z-40 mx-auto flex w-[calc(100%-2rem)] max-w-md items-center gap-3 rounded-xl bg-navy px-4 py-3 text-sm text-white shadow-lg">
+          <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden />
+          <span>
+            <b className="block">{busy ? (st.section.index + 1 >= st.section.total ? "Submitting your test…" : "Moving to the next section…") : saved === "fail" ? "Connection is slow, still saving…" : "Saving your answer…"}</b>
+            <span className="text-xs text-mist">Please wait. Do not refresh or close this page; it retries automatically.</span>
+          </span>
+        </div>
+      )}
       <header className="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-navy px-4 py-2.5 text-white sm:px-6">
         <div className="min-w-0">
           <p className="truncate font-display text-sm font-extrabold sm:text-base">{st.testName}</p>
