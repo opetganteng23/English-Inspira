@@ -5,6 +5,7 @@ import { aiEnabled, askClaudeStructured, GUARDRAILS, AI_MODEL, AI_MODEL_LIGHT, t
 import { getLevels, getParam } from "./config";
 import { aliasFor, analysisResultSchema, checkResult, inputHash, templateResult, toLegacy, type AnalysisResult, type EngineInput } from "./analysis-engine";
 import { Attempt } from "@/models/Test";
+import { releasedFilter } from "./attempt-release";
 import { courseProgressFor } from "./course-progress";
 import { PdfImport } from "@/models/Pdf";
 import { topicStatus } from "./topic-stats";
@@ -177,7 +178,8 @@ export async function buildCounselorContext(userId: Types.ObjectId | string): Pr
   await connectDB();
   const [user, attempts, threads, reg, plan, topics] = await Promise.all([
     User.findById(userId).select("name targetScore goal").lean(),
-    Attempt.find({ userId, status: "submitted" }).sort({ finishedAt: -1 }).limit(5).lean(),
+    // Hasil yang masih ditahan (institusi/jadwal rilis) tidak boleh sampai ke AI Counselor.
+    Attempt.find({ userId, status: "submitted", ...releasedFilter() }).sort({ finishedAt: -1 }).limit(5).lean(),
     CounselorThread.find({ userId }).select("actionPlan").lean(),
     ItpRegistration.findOne({ userId, status: { $in: ["submitted", "confirmed"] } }).sort({ createdAt: -1 }).lean(),
     PlanItem.find({ userId, status: { $in: ["active", "late"] } }).sort({ priority: 1, dueAt: 1 }).limit(8).lean(),
