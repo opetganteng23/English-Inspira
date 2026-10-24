@@ -72,6 +72,9 @@ const attemptSchema = new Schema(
     // Koneksi ruang tes (heartbeat 30 detik + tiap simpanan): jeda > 90 detik dicatat sebagai terputus; loads = berapa kali halaman tes dibuka.
     // Waktu tambahan per bagian (detik) karena koneksi terputus: jeda dikembalikan, maks CREDIT_CAP_SEC per bagian (lib/conn).
     timeCredits: { type: [Number], default: undefined },
+    // Share layar menutup soal (belum/terhenti dibagikan): sejak kapan, dan detik yang sudah dikembalikan per section (ikut timeCredits).
+    screenGate: { since: Date, section: Number },
+    screenCredits: { type: [Number], default: undefined },
     conn: { lastSeenAt: Date, loads: Number, gaps: [{ _id: false, from: Date, to: Date, section: Number }] }, // soal kosong terselip (kemungkinan jawaban hilang), diperiksa otomatis tiap jam
     proctorReview: { status: { type: String, enum: ["clean", "suspicious", "invalid"] }, note: String, at: Date, by: Schema.Types.ObjectId },
   },

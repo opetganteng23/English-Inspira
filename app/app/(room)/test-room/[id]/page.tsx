@@ -307,7 +307,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
 
   return (
     <SecureZone active={secure}>
-      {st.screenWatch && <ScreenGate attemptId={params.id} />}
+      {st.screenWatch && <ScreenGate attemptId={params.id} onCredit={(sec) => setLeft((l) => l + sec)} />}
       {net === "offline" && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-navy p-4" role="alertdialog" aria-modal="true" aria-label="Connection lost">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center">

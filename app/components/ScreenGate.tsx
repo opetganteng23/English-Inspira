@@ -6,20 +6,47 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const LIGHT = { every: 12_000, width: 960, quality: 0.6 }, HD = { every: 1_000, width: 1600, quality: 0.75 };
 type St = "idle" | "asking" | "shared" | "stopped" | "wrong" | "denied" | "unsupported";
 
+/** Galat share layar dalam bentuk yang bisa dibaca peserta/admin (dibatalkan vs diblokir sistem/kebijakan IT). */
+const errText = (e: unknown) => (e instanceof DOMException ? `${e.name}${e.message ? `: ${e.message}` : ""}` : String(e));
+
+// Stream yang sudah dibagikan di halaman persiapan (sebelum timer mulai), diteruskan ke ruang tes tanpa memilih layar lagi.
+let handoff: MediaStream | null = null;
+
+/** Minta share SELURUH layar. "wrong" bila yang dipilih jendela/tab. */
+export async function requestScreen(): Promise<{ ok: true; stream: MediaStream } | { ok: false; wrong?: boolean; why?: string }> {
+  try {
+    const s = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor", frameRate: 5 } as MediaTrackConstraints, audio: false });
+    const surface = (s.getVideoTracks()[0]?.getSettings() as { displaySurface?: string }).displaySurface;
+    if (surface && surface !== "monitor") { s.getTracks().forEach((t) => t.stop()); return { ok: false, wrong: true }; }
+    return { ok: true, stream: s };
+  } catch (e) { return { ok: false, why: errText(e) }; }
+}
+export const screenSupported = () => typeof navigator !== "undefined" && !!navigator.mediaDevices?.getDisplayMedia;
+/** Halaman persiapan: simpan stream untuk dipakai ruang tes (null = lepaskan). */
+export function handOffScreen(s: MediaStream | null) {
+  if (handoff && handoff !== s) handoff.getTracks().forEach((t) => t.stop());
+  handoff = s;
+}
+const live = (s: MediaStream | null) => !!s && s.getVideoTracks().some((t) => t.readyState === "live");
+
 /**
  * Live screen view di ruang tes. Laptop/PC: peserta membagikan SELURUH layar sebelum soal tampil; tiap ±12 detik
  * gambar kecil dikirim ke server (hanya disimpan di memori, menimpa yang lama, tidak direkam).
  * Bila share dihentikan, soal tertutup sampai layar dibagikan lagi (waktu tetap berjalan).
  * HP/tablet (browser tidak mendukung share layar): tes tetap jalan, tercatat "No screen share".
  */
-export function ScreenGate({ attemptId }: { attemptId: string }) {
-  const [st, setSt] = useState<St>("idle");
+export function ScreenGate({ attemptId, onCredit }: { attemptId: string; onCredit?: (sec: number) => void }) {
+  // Stream dari halaman persiapan: soal tidak sempat tertutup.
+  const [st, setSt] = useState<St>(() => (live(handoff) ? "shared" : "idle"));
   const stream = useRef<MediaStream | null>(null);
   const video = useRef<HTMLVideoElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
   const hd = useRef(false);
+  const creditRef = useRef(onCredit); creditRef.current = onCredit;
+  // "shared" tanpa gambar menutup jeda layar penutup soal; server mengembalikan waktunya (dibatasi) dan memberi tahu jumlahnya.
   const post = useCallback((state: string, body?: Blob) => {
-    void fetch(`/api/attempts/${attemptId}/screen?state=${state}`, { method: "POST", body: body ?? null, headers: body ? { "Content-Type": "image/jpeg" } : undefined, keepalive: !body }).catch(() => {});
+    void fetch(`/api/attempts/${attemptId}/screen?state=${state}`, { method: "POST", body: body ?? null, headers: body ? { "Content-Type": "image/jpeg" } : undefined, keepalive: !body })
+      .then((r) => r.json()).then((d) => { if (d?.credited > 0) creditRef.current?.(d.credited); }).catch(() => {});
   }, [attemptId]);
 
   // Ambil satu gambar, kirim, lalu jadwalkan berikutnya sesuai mode yang diminta server (HD bila sedang ditonton).
@@ -48,33 +75,36 @@ export function ScreenGate({ attemptId }: { attemptId: string }) {
     stream.current = null;
   }, []);
 
-  useEffect(() => {
-    if (!navigator.mediaDevices?.getDisplayMedia) { setSt("unsupported"); post("unsupported"); }
-    return () => stop();
-  }, [post, stop]);
-
   const [why, setWhy] = useState("");
-  async function share() {
-    setSt("asking"); setWhy("");
-    try {
-      const s = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor", frameRate: 5 } as MediaTrackConstraints, audio: false });
+  const adopt = useCallback(async (s: MediaStream) => {
       const track = s.getVideoTracks()[0];
-      const surface = (track.getSettings() as { displaySurface?: string }).displaySurface;
-      if (surface && surface !== "monitor") { s.getTracks().forEach((t) => t.stop()); setSt("wrong"); return; }
       stream.current = s;
       const v = document.createElement("video");
       v.muted = true; v.playsInline = true; v.srcObject = s; await v.play().catch(() => {});
       video.current = v;
       track.addEventListener("ended", () => { stop(); setSt("stopped"); post("stopped"); });
+      if (s.getVideoTracks()[0]?.readyState !== "live") { stop(); setSt("stopped"); post("stopped"); return; }
       setSt("shared");
       post("shared");
       clearTimeout(timer.current);
       timer.current = setTimeout(() => void tick(), 1500);
-    } catch (e) {
-      // Nama galat ditampilkan agar penyebab bisa dibedakan dari tangkapan layar peserta (dibatalkan vs diblokir sistem/kebijakan perangkat).
-      setWhy(e instanceof DOMException ? `${e.name}${e.message ? `: ${e.message}` : ""}` : String(e));
-      setSt("denied"); post("denied");
-    }
+  }, [post, stop, tick]);
+
+  useEffect(() => {
+    if (!screenSupported()) { setSt("unsupported"); post("unsupported"); return () => stop(); }
+    // Sudah dibagikan di halaman persiapan: langsung dipakai, soal tidak tertutup.
+    if (live(handoff)) { const s = handoff!; handoff = null; void adopt(s); }
+    else { handoff = null; post("gate"); } // layar penutup soal mulai tampil: server mencatat sejak kapan
+    return () => stop();
+  }, [post, stop, adopt]);
+
+  async function share() {
+    setSt("asking"); setWhy("");
+    const r = await requestScreen();
+    if (r.ok) return adopt(r.stream);
+    if (r.wrong) { setSt("wrong"); return; }
+    // Nama galat ditampilkan agar penyebab bisa dibedakan dari tangkapan layar peserta (dibatalkan vs diblokir sistem/kebijakan perangkat).
+    setWhy(r.why ?? ""); setSt("denied"); post("denied");
   }
 
   if (st === "shared" || st === "unsupported") return null;
