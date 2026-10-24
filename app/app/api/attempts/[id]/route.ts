@@ -93,6 +93,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const allowed = new Set(test.sections[attempt.sectionIdx].questionIds.map(String));
     // Mode aman: nomor yang sudah dilewati tidak bisa dijawab/diubah lagi (ditegakkan di server, bukan hanya di layar).
     let lockedBefore = -1;
+    let reach: number | null = null;
     const shownIdx = new Map<string, number>();
     if (test.secureMode) {
       const section = test.sections[attempt.sectionIdx];
@@ -105,7 +106,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       // Posisi hanya berlaku untuk bagian asalnya. Simpanan dari bagian sebelumnya yang tiba setelah pindah bagian
       // (mis. "soal 40" Structure) dulu tercatat di Reading sehingga soal 1-39 terkunci. Klien lama tanpa `section`: hanya maju bertahap.
       const sameSection = body.section != null ? body.section === attempt.sectionIdx : body.reached != null && body.reached <= lockedBefore + 1;
-      if (body.reached != null && sameSection) attempt.secureReached = Math.max(lockedBefore, Math.min(body.reached, ordered.length - 1));
+      if (body.reached != null && sameSection) reach = Math.min(body.reached, ordered.length - 1);
     }
     const optLen = new Map<string, number>();
     if (test.shuffleOptions) for (const q of await Question.find({ _id: { $in: [...allowed] } }).select("options").lean()) optLen.set(String(q._id), q.options.length);
@@ -133,6 +134,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const now = new Date();
     for (const f of body.flags ?? []) { const kind = typeof f === "string" ? f : f.kind; const qid = typeof f === "string" ? null : f.qid; attempt.proctorFlags.push({ kind, at: now, section: attempt.sectionIdx, ...(qid && allowed.has(qid) ? { qid } : {}) } as never); }
     await attempt.save();
+    // Posisi ditulis atomik dan hanya bila bagiannya masih sama. Dulu ikut attempt.save(): simpanan lambat (koneksi tersendat)
+    // yang selesai SETELAH pindah bagian menimpa secureReached=0 dengan posisi bagian lama (mis. 39), sehingga Reading
+    // langsung mulai di soal 40 dan soal 1-39 terkunci.
+    if (reach != null) await Attempt.updateOne({ _id: attempt._id, status: "in_progress", sectionIdx: attempt.sectionIdx }, { $max: { secureReached: reach } });
     if (String(attempt.userId) === String(user._id)) await touchConn(attempt);
     return NextResponse.json({ ok: true, savedAt: now });
     } catch (e) { if (isVersionError(e) && tryNo < 4) continue; throw e; }
