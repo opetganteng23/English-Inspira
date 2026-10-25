@@ -160,7 +160,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
       const p = readPending(); for (const qid of ids) if (p[qid] === sentAns[qid]) delete p[qid]; writePending(p);
       setSaved("ok"); setRtt(Date.now() - t0); setNet(Date.now() - t0 > 3000 ? "slow" : "online"); return true;
     } catch (e) {
-      if ((e as { status?: number }).status === 409) { await load(); return false; } // section habis di server
+      if ((e as { status?: number }).status === 409) { setSaved("ok"); await load(); return false; } // tanpa setSaved, "Saving…" tertahan selamanya // section habis di server
       if (!(e as { status?: number }).status) setNet("offline"); // tidak ada respons sama sekali: jaringan putus
       ids.forEach((i) => dirty.current.add(i)); flags.forEach((f) => pendingFlags.current.push(f)); if (sendReached) reachedDirty.current = true; setSaved("fail"); return false;
     }
@@ -245,11 +245,15 @@ export default function Ruang({ params }: { params: { id: string } }) {
     const fromIdx = st?.section.index;
     await flush();
     try {
-      const d = await api(`/api/attempts/${params.id}/advance`, { json: { fromIdx } });
+      const d = await api(`/api/attempts/${params.id}/advance`, { json: { fromIdx }, signal: AbortSignal.timeout(30_000) });
       setBusy(false); advancing.current = false;
       if (d.status === "submitted") return router.replace(`/results/${params.id}`);
       await load();
-    } catch (e) { setBusy(false); advancing.current = false; if (!auto) setErr((e as Error).message); else await load(); }
+    } catch (e) {
+      setBusy(false); advancing.current = false;
+      // Koneksi putus/terlalu lama: server mungkin sudah memproses. Muat ulang keadaan (hasil / bagian berikut / tetap di sini), jangan layar galat.
+      if (!auto && (e as { status?: number }).status) setErr((e as Error).message); else await load();
+    }
   }
 
   if (err) return <Center><div className="max-w-sm text-center"><p className="text-red-700">{err}</p><button className="btn-outline mt-4" onClick={() => { setErr(""); load(); }}>Reload</button></div></Center>;
