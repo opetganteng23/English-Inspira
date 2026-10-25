@@ -127,6 +127,11 @@ export default function Persiapan({ params }: { params: { id: string } }) {
           </div>
         )}
         <ErrorNote text={err} />
+        {!busy && (!audioOk || !ready || !screenOk) && (
+          <p className="mt-4 text-sm font-semibold text-red-700" role="status">
+            To start, complete: {[!audioOk && "tick \"I can hear the tone\" in the audio check above", !ready && "tick the rules checkbox", !screenOk && "share your entire screen"].filter(Boolean).join(" · ")}
+          </p>
+        )}
         <button className="btn-primary mt-4" disabled={!audioOk || !ready || !screenOk || busy} onClick={begin}>{busy ? "Starting…" : `Start ${t.name}`}</button>
         <Link href="/tests" className="mt-3 block text-center text-sm font-semibold text-brand">Cancel</Link>
       </section>
