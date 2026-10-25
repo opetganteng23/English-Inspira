@@ -65,7 +65,7 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
           startAt.current = d.startAtSec || 0;
           const ctx = audioCtx();
           if (ctx) { try { buffer.current = await ctx.decodeAudioData(bytes.slice(0)); } catch { buffer.current = null; } }
-          if (!buffer.current) blob.current = URL.createObjectURL(new Blob([bytes]));
+          blob.current = URL.createObjectURL(new Blob([bytes])); // juga cadangan bila Web Audio tidak berbunyi di tengah tes
           if (alive) setPrep("ready");
           return;
         } catch { await new Promise((res) => setTimeout(res, 2000)); }
@@ -129,6 +129,18 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
   };
 
   const starting = useRef(false);
+  const webAudioOff = useRef(false);
+  // "Tidak ada suara" saat diputar: pindah ke pemutar <audio> dari posisi sekarang (bukan mengulang dari awal).
+  async function switchPlayer() {
+    const at = pos();
+    try { src.current?.stop(); } catch { /* */ }
+    src.current = null; clock.current = null; analyser.current = null;
+    webAudioOff.current = true; startAt.current = Math.max(startAt.current, at);
+    const a = el.current;
+    if (!a || !blob.current) { setPhase("error"); setMsg("Click “Reload audio”; it continues from where it stopped."); return; }
+    try { real.current = blob.current; a.src = blob.current; a.currentTime = at; await a.play(); markPlaying(true); setPhase("playing"); }
+    catch { setPhase("error"); setMsg("Click “Reload audio”; it continues from where it stopped."); }
+  }
   async function start() {
     // Klik ganda / klik saat masih memulai: jangan memutar dua kali.
     if (starting.current) return;
@@ -139,10 +151,11 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
   async function startOnce() {
     setMsg("");
     const ctx = sharedCtx;
-    if (buffer.current && ctx) {
+    // Konteks yang macet (resume tidak pernah selesai / tetap suspended, mis. perangkat suara berganti): pakai pemutar <audio>.
+    const running = ctx && !webAudioOff.current ? await Promise.race([ctx.resume().then(() => ctx.state === "running").catch(() => false), new Promise<boolean>((r) => setTimeout(() => r(false), 2500))]) : false;
+    if (buffer.current && ctx && running) {
       // Web Audio: putar di dalam klik (resume konteks), lalu catat mulai di server.
       try {
-        await ctx.resume();
         const play = (offset: number) => {
           try { src.current?.stop(); } catch { /* */ }
           const s = ctx.createBufferSource(); s.buffer = buffer.current!;
@@ -225,6 +238,7 @@ function AudioBox({ attemptId, audioId, finished, instruction }: { attemptId: st
               <span className="text-xs text-ink-soft">If the bars move but you hear nothing, check your volume or headset.</span>
             </div>
           )}
+          {clock.current && <button onClick={() => void switchPlayer()} className="btn-outline mt-2 !min-h-[36px] text-xs">No sound? Switch audio player</button>}
         </div>
       )}
       {phase === "done" && <p className="mt-3 text-sm text-ink-soft">Audio has been played.</p>}
