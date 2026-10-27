@@ -16,7 +16,7 @@ import { Attempt } from "@/models/Test";
   const got = await collectTestRows(testId, new Date(), undefined, { from, to });
   if (!got) throw new Error("Tes tidak ditemukan");
   const rows = got.rows.filter((r) => !r.qa && r.score != null && r.attemptId);
-  const has = new Set((await Attempt.find({ _id: { $in: rows.map((r) => r.attemptId) }, reportNarrative: { $exists: true } }).select("_id").lean()).map((a) => String(a._id)));
+  const has = new Set((await Attempt.find({ _id: { $in: rows.map((r) => r.attemptId) }, "reportNarrative.engine": "claude" }).select("_id").lean()).map((a) => String(a._id)));
   const todo = rows.filter((r) => !has.has(r.attemptId)).slice(0, limit);
   console.log(`peserta ${rows.length}, sudah ada ${has.size}, dikerjakan ${todo.length}`);
   let done = 0, ai = 0;
