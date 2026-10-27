@@ -81,6 +81,9 @@ const attemptSchema = new Schema(
   { timestamps: true }
 );
 attemptSchema.index({ userId: 1, kind: 1 });
+// Laporan/Analytics per tes dan daftar tes berskor: tanpa indeks ini setiap pembukaan memindai seluruh koleksi percobaan.
+attemptSchema.index({ testId: 1, startedAt: 1 });
+attemptSchema.index({ status: 1, kind: 1, testId: 1 });
 
 export type TestDoc = InferSchemaType<typeof testSchema> & { _id: mongoose.Types.ObjectId };
 export type AttemptDoc = InferSchemaType<typeof attemptSchema> & { _id: mongoose.Types.ObjectId };
