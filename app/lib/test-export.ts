@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import ExcelJS from "exceljs";
 import { connectDB } from "./db";
 import { getLevels, levelForScore } from "./config";
@@ -47,6 +48,12 @@ export function scopeFromQuery(q: URLSearchParams): Pick<ReportScope, "from" | "
   return { from: day("from"), to: day("to"), branch: q.get("branch") || undefined, province: q.get("province") || undefined, age: q.get("age") || undefined };
 }
 
+type AttemptRow = {
+  _id: Types.ObjectId; userId: Types.ObjectId; status: string; scoreEst?: number | null; sectionScores?: { section: string; scaled?: number | null }[];
+  startedAt?: Date; finishedAt?: Date; releaseAt?: Date; scoreBasis?: string; proctorReview?: { status?: string }; answered: number;
+  topicScores?: { skill?: string; topic?: string; correct?: number; total?: number }[];
+};
+
 export async function collectTestRows(testId: string, now = new Date(), sessionId?: string, scope: ReportScope = {}) {
   await connectDB();
   const test = await Test.findById(testId).lean();
@@ -54,7 +61,17 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
   const [sessions, seats, attempts, levels] = await Promise.all([
     TestSession.find({ testId, ...(sessionId ? { _id: sessionId } : {}) }).sort({ opensAt: 1 }).lean(),
     TestSeat.find({ testId, ...(sessionId ? { sessionId } : {}) }).lean(),
-    Attempt.find({ testId }).sort({ startedAt: 1 }).lean(),
+    // Hanya kolom yang dipakai laporan. Dulu seluruh dokumen (jawaban, catatan proctoring, koneksi, audio) dimuat untuk ribuan
+    // percobaan sehingga memori melewati batas PM2 dan aplikasi dimatikan paksa (502 di Analytics, peserta tes ikut terputus).
+    Attempt.aggregate<AttemptRow>([
+      { $match: { testId: new Types.ObjectId(String(testId)) } },
+      { $sort: { startedAt: 1 } },
+      { $project: {
+        userId: 1, status: 1, scoreEst: 1, sectionScores: 1, startedAt: 1, finishedAt: 1, releaseAt: 1, scoreBasis: 1, "proctorReview.status": 1, topicScores: 1,
+        answered: { $size: { $filter: { input: { $ifNull: ["$answers", []] }, as: "x", cond: { $ne: [{ $ifNull: ["$$x.choice", null] }, null] } } } },
+        ...Object.fromEntries(["tab_hidden", "fullscreen_exit", "paste"].map((k) => [`flag_${k}`, { $size: { $filter: { input: { $ifNull: ["$proctorFlags", []] }, as: "f", cond: { $eq: ["$$f.kind", k] } } } }])),
+      } },
+    ]).allowDiskUse(true),
     getLevels(),
   ]);
   const sessById = new Map(sessions.map((s) => [String(s._id), s]));
@@ -77,7 +94,7 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
     const a = latest.get(id) ?? null;
     const done = a?.status === "submitted" && typeof a.scoreEst === "number";
     const sec = (n: string) => a?.sectionScores?.find((s) => s.section === n)?.scaled ?? null;
-    const flags = (k: string) => (a?.proctorFlags ?? []).filter((f) => f.kind === k).length;
+    const flags = (k: string) => (a ? (a as unknown as Record<string, number>)[`flag_${k}`] ?? 0 : 0);
     const lvl = done ? levelForScore(levels, a!.scoreEst!)?.name ?? "" : "";
     return {
       name: u.name ?? "", email: u.email, institution: u.institutionId ? insts.get(String(u.institutionId)) ?? "" : "",
@@ -91,7 +108,7 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
       lastLogin: u.lastLoginAt ? WIB(u.lastLoginAt) : "Never",
       score: done ? a!.scoreEst! : null, cefr: done ? cefrForItp(a!.scoreEst!) : "", level: lvl,
       listening: done ? sec("listening") : null, structure: done ? sec("structure") : null, reading: done ? sec("reading") : null,
-      answered: a ? (a.answers ?? []).filter((x) => x.choice != null).length : null,
+      answered: a ? a.answered : null,
       started: WIB(a?.startedAt), finished: WIB(a?.finishedAt),
       minutes: a?.startedAt && a?.finishedAt ? Math.round((+a.finishedAt - +a.startedAt) / 60000) : null,
       released: a?.releaseAt ? (now >= a.releaseAt ? "Released" : `At ${WIB(a.releaseAt)}`) : a ? "Immediately" : "",
