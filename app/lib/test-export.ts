@@ -5,13 +5,12 @@ import { getLevels, levelForScore } from "./config";
 import { cefrForItp } from "./score-equivalence";
 import { effectiveWindow, windowState } from "./schedule";
 import { Test, Attempt } from "@/models/Test";
-import { Analysis } from "@/models/Learning";
 import { TestSession, TestSeat } from "@/models/Schedule";
 import { User } from "@/models/User";
 import { Institution } from "@/models/Institution";
 import { ageOf, ageGroupOf } from "./age";
 import { scheduleChanges } from "./schedule-changes";
-import { analysisResultSchema, type AnalysisResult } from "./analysis-engine";
+import { reportNarrativeSchema, templateNarrative, type ReportNarrative, type NarrativeInput } from "./report-narrative";
 
 /** Kehadiran dari status: hadir bila sudah mulai, tidak hadir bila sesi lewat tanpa mulai. */
 export function attendanceOf(s: ExportStatus) {
@@ -131,6 +130,12 @@ export async function collectTestRows(testId: string, now = new Date(), sessionI
   return { test, sessions, rows, levels };
 }
 
+/** Masukan narasi dari satu baris laporan (angka saja). */
+export function narrativeInput(r: { score: number | null; level: string; cefr: string; listening: number | null; structure: number | null; reading: number | null; topics: NarrativeInput["topics"] }, target = 550): NarrativeInput {
+  const sections = ([["Listening", r.listening], ["Structure", r.structure], ["Reading", r.reading]] as [string, number | null][]).filter((x): x is [string, number] => typeof x[1] === "number").map(([section, scaled]) => ({ section, scaled }));
+  return { score: r.score ?? 0, level: r.level, cefr: r.cefr, target, sections, topics: r.topics };
+}
+
 export async function buildTestExport(testId: string, now = new Date(), sessionId?: string, scope: ReportScope = {}) {
   const got = await collectTestRows(testId, now, sessionId, scope);
   if (!got) return null;
@@ -175,40 +180,28 @@ export async function buildTestExport(testId: string, now = new Date(), sessionI
   res.eachRow((row, i) => { if (i > 1) { const c = row.getCell("status"); const col = STC[String(c.value)]; if (col) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: col } }; } });
   if (rows.length) res.addConditionalFormatting({ ref: `L2:L${rows.length + 1}`, rules: [{ type: "dataBar", priority: 1, cfvo: [{ type: "num", value: 310 }, { type: "num", value: 677 }], color: { argb: "FF0B4FA6" } } as never] });
 
-  // ---- Analisis per peserta (teks): ringkasan, kelebihan, kelemahan, saran. Dari analisis AI yang tersimpan saat tes selesai;
-  // bila belum ada, disusun dari skor per topik. Hanya peserta yang skornya terlihat (hasil ditahan tidak ikut).
+  // ---- Analisis per peserta (narasi bahasa Indonesia untuk institusi): dari narasi tersimpan (scripts/gen-report-narratives.ts,
+  // ditulis AI); bila belum ada, disusun dari skor per topik. Hanya peserta yang skornya terlihat (hasil ditahan tidak ikut).
   const withScore = rows.filter((r) => r.score != null && r.attemptId);
-  const nar = new Map<string, AnalysisResult>();
+  const saved = new Map<string, ReportNarrative>();
   for (let i = 0; i < withScore.length; i += 300) {
     const ids = withScore.slice(i, i + 300).map((r) => new Types.ObjectId(r.attemptId));
-    for (const x of await Analysis.find({ attemptId: { $in: ids }, status: "ready" }).select("attemptId narrative").lean()) {
-      const ok = analysisResultSchema.safeParse(x.narrative);
-      if (ok.success) nar.set(String(x.attemptId), ok.data);
+    for (const x of await Attempt.find({ _id: { $in: ids }, reportNarrative: { $exists: true } }).select("reportNarrative").lean()) {
+      const ok = reportNarrativeSchema.safeParse(x.reportNarrative);
+      if (ok.success) saved.set(String(x._id), { ...ok.data, engine: (x.reportNarrative as ReportNarrative).engine });
     }
   }
-  const pct = (t: { correct: number; total: number }) => Math.round((100 * t.correct) / t.total);
   const ind = wb.addWorksheet("Individual analysis");
   ind.columns = [
     { header: "No", key: "no", width: 6 }, { header: "Name", key: "name", width: 28 }, { header: "Email", key: "email", width: 30 }, { header: "Branch", key: "branch", width: 22 },
     { header: "Total score", key: "score", width: 10 }, { header: "Level", key: "level", width: 13 }, { header: "CEFR", key: "cefr", width: 7 },
     { header: "Listening", key: "listening", width: 9 }, { header: "Structure", key: "structure", width: 9 }, { header: "Reading", key: "reading", width: 9 },
-    { header: "Summary", key: "summary", width: 60 }, { header: "Strengths", key: "strengths", width: 50 }, { header: "Weaknesses", key: "weaknesses", width: 55 }, { header: "Suggestions", key: "suggestions", width: 60 }, { header: "Source", key: "source", width: 12 },
+    { header: "Ringkasan", key: "ringkasan", width: 60 }, { header: "Kelebihan", key: "kelebihan", width: 55 }, { header: "Kelemahan", key: "kelemahan", width: 60 },
+    { header: "Rencana belajar", key: "rencana", width: 60 }, { header: "Target & perkiraan", key: "target", width: 45 }, { header: "Sumber", key: "src", width: 14 },
   ];
   withScore.forEach((r, i) => {
-    const n = nar.get(r.attemptId);
-    const secs = ([["Listening", r.listening], ["Structure", r.structure], ["Reading", r.reading]] as [string, number | null][]).filter((x): x is [string, number] => typeof x[1] === "number");
-    const best = [...secs].sort((a, b) => b[1] - a[1])[0], worst = [...secs].sort((a, b) => a[1] - b[1])[0];
-    const tp = r.topics.filter((t) => t.total >= 2);
-    const text = n
-      ? { summary: n.summary, strengths: n.strengths.map((x) => `• ${x.topic}: ${x.evidence}`).join("\n"), weaknesses: n.weaknesses.map((x) => `• ${x.topic} (${x.severity}): ${x.evidence}${x.likelyCause ? ` Likely cause: ${x.likelyCause}` : ""}`).join("\n"), suggestions: n.suggestions.map((x) => `• ${x}`).join("\n"), source: "AI analysis" }
-      : {
-        summary: `Score ${r.score} (${r.level || "-"}, CEFR ${r.cefr || "-"}).${best && worst && best[0] !== worst[0] ? ` Strongest section: ${best[0]} (${best[1]}); weakest: ${worst[0]} (${worst[1]}).` : ""}`,
-        strengths: tp.filter((t) => pct(t) >= 75).sort((a, b) => pct(b) - pct(a)).slice(0, 5).map((t) => `• ${t.topic} (${t.skill}): ${t.correct}/${t.total} correct`).join("\n") || "-",
-        weaknesses: tp.filter((t) => pct(t) < 50).sort((a, b) => pct(a) - pct(b)).slice(0, 6).map((t) => `• ${t.topic} (${t.skill}): ${t.correct}/${t.total} correct`).join("\n") || "-",
-        suggestions: worst ? `• Focus practice on ${worst[0]}${tp.some((t) => pct(t) < 50) ? `, starting with ${tp.filter((t) => pct(t) < 50).sort((a, b) => pct(a) - pct(b))[0].topic}` : ""}.` : "-",
-        source: "Topic scores",
-      };
-    ind.addRow({ ...r, no: i + 1, ...text });
+    const n = saved.get(r.attemptId) ?? templateNarrative(narrativeInput(r));
+    ind.addRow({ ...r, no: i + 1, ringkasan: n.ringkasan, kelebihan: n.kelebihan, kelemahan: n.kelemahan, rencana: n.rencanaBelajar.map((x, k) => `${k + 1}. ${x}`).join("\n"), target: n.target, src: n.engine === "claude" ? "Analisis AI" : "Skor per topik" });
   });
   head(ind);
   ind.autoFilter = { from: "A1", to: { row: 1, column: ind.columns.length } };

@@ -8,6 +8,7 @@ import { isLearningTopic } from "./topics";
 import { segment } from "./segments";
 import { scheduleChanges } from "./schedule-changes";
 import { AGE_GROUPS } from "./age";
+import { topicName, SKILL } from "./topic-names";
 
 type Row = NonNullable<Awaited<ReturnType<typeof collectTestRows>>>["rows"][number];
 type Slide = PptxGenJS.Slide;
@@ -33,18 +34,6 @@ const hari = (d: string) => d.replace(/[A-Z][a-z]{2}/g, (w) => HARI[w] ?? w);
 const SEC: Record<Sec, string> = { listening: "Listening", structure: "Structure & Written Expression", reading: "Reading" };
 const SHORT: Record<Sec, string> = { listening: "Listening", structure: "Structure", reading: "Reading" };
 const KEYS: Sec[] = ["listening", "structure", "reading"];
-// Nama tampilan topik soal (tag di bank soal). Topik yang belum dipetakan ditampilkan dari slug-nya.
-const TOPIC: Record<string, string> = {
-  "infinitive-gerund": "Gerund & infinitive", inversion: "Inversion", "reduced-clause": "Reduced clause", cleft: "Cleft sentence", "verb-form": "Verb form & tenses",
-  "adj-clause": "Adjective clause", parallelism: "Parallel structure", "plural-noun": "Singular & plural noun", "noun-adverb-clause": "Noun & adverb clause",
-  "sv-agreement": "Subject–verb agreement", redundancy: "Redundancy", "paired-conj": "Paired conjunction", pronoun: "Pronoun", "subject-verb": "Subject & verb",
-  "word-form": "Word form", comparison: "Comparison", article: "Article", conjunction: "Conjunction", preposition: "Preposition", tense: "Tenses", tenses: "Tenses",
-  "main-idea": "Main idea", detail: "Detail", "phrasal-verb": "Phrasal verb", reason: "Reason", agreement: "Agreement & disagreement", implication: "Implication",
-  purpose: "Purpose", idiom: "Idiom", inference: "Inference", suggestion: "Suggestion", conditional: "Conditional", restatement: "Restatement", negative: "Negative expression",
-  "negative-fact": "Negative fact (NOT/EXCEPT)", reference: "Reference", vocabulary: "Vocabulary", attitude: "Author’s attitude",
-};
-const SKILL: Record<string, string> = { grammar: "Structure", structure: "Structure", listening: "Listening", reading: "Reading" };
-const topicName = (t: string) => TOPIC[t] ?? t.replace(/-/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 type TopicAgg = { key: string; name: string; section: string; pct: number; perPerson: number; weak: number; people: number };
 /** Rekap per topik dari skor topik tiap peserta: % benar, rata-rata soal per orang, dan jumlah peserta yang benar < 50%. */
 function topicAgg(rs: Row[]): TopicAgg[] {

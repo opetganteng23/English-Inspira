@@ -76,6 +76,7 @@ const attemptSchema = new Schema(
     screenGate: { since: Date, section: Number },
     screenCredits: { type: [Number], default: undefined },
     conn: { lastSeenAt: Date, loads: Number, gaps: [{ _id: false, from: Date, to: Date, section: Number }] }, // soal kosong terselip (kemungkinan jawaban hilang), diperiksa otomatis tiap jam
+    reportNarrative: Schema.Types.Mixed, // narasi laporan per peserta untuk institusi (bahasa Indonesia), lib/report-narrative
     proctorReview: { status: { type: String, enum: ["clean", "suspicious", "invalid"] }, note: String, at: Date, by: Schema.Types.ObjectId },
   },
   { timestamps: true }
