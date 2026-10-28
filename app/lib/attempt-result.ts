@@ -33,10 +33,11 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
     const ids = test.sections.flatMap((s) => s.questionIds);
     // Pembahasan memakai snapshot saat tes diselesaikan (konsisten dengan skor walau soal diubah/dihapus kemudian);
     // tes lama tanpa snapshot memakai soal yang ada sekarang.
-    const snap = await AttemptSnapshot.findOne({ attemptId: attempt._id }).lean();
+    // Hanya kolom yang dipakai untuk agregat (bukan teks soal, opsi, atau penjelasan): data yang ditarik dari database jauh jauh lebih kecil.
+    const snap = await AttemptSnapshot.findOne({ attemptId: attempt._id }).select("items.qid items.section items.type items.groupId items.answerKey items.tags").lean();
     const qs = snap
       ? (snap.items as unknown as SnapItem[]).map((i) => ({ _id: i.qid, section: i.section, type: i.type, groupId: i.groupId, stem: i.stem, options: i.options, answerKey: i.answerKey, explanation: i.explanation, tags: i.tags }))
-      : await Question.find({ _id: { $in: ids } }).select("section type groupId stem options answerKey explanation tags").lean();
+      : await Question.find({ _id: { $in: ids } }).select("section type groupId answerKey tags").lean();
     const byId = new Map(qs.map((q) => [String(q._id), q]));
     const mine = new Map(attempt.answers.map((a) => [String(a.qid), a]));
 
@@ -103,4 +104,20 @@ export async function attemptResult(attempt: AttemptHydrated, test: Awaited<Retu
         allottedSec: test.sections.reduce((a, x) => a + (x.durationSec ?? 0), 0), hasPrevious: !!prev,
       }),
     };
+}
+
+// Cache singkat hasil yang sudah siap (analisis selesai): halaman hasil dan PDF sering dibuka bergantian oleh peserta yang sama, dan
+// tiap penyusunan membaca puluhan dokumen dari database jauh yang laju transfernya terbatas. Hasil yang masih menunggu analisis tidak disimpan.
+const RESULT_TTL_MS = 5 * 60_000, RESULT_MAX = 400;
+const resultCache = new Map<string, { at: number; value: Awaited<ReturnType<typeof attemptResult>> }>();
+export async function cachedAttemptResult(attempt: AttemptHydrated, test: Awaited<ReturnType<typeof loadAttempt>>["test"]) {
+  const key = `${String(attempt._id)}:${attempt.aiAnalysis?.status ?? "none"}`;
+  const hit = resultCache.get(key);
+  if (hit && Date.now() - hit.at < RESULT_TTL_MS) return hit.value;
+  const value = await attemptResult(attempt, test);
+  if (value.analysis?.status === "ready") {
+    if (resultCache.size >= RESULT_MAX) resultCache.delete(resultCache.keys().next().value as string);
+    resultCache.set(key, { at: Date.now(), value });
+  }
+  return value;
 }

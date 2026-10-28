@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/db";
 import { isReleased, exemptFromDelay } from "@/lib/attempt-release";
 import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { loadAttempt, ensureReleased } from "@/lib/attempts";
-import { attemptResult } from "@/lib/attempt-result";
+import { attemptResult, cachedAttemptResult } from "@/lib/attempt-result";
 import { resultPdf, scopeForKind } from "@/lib/result-pdf";
 import { User } from "@/models/User";
 import { Attempt, Test } from "@/models/Test";
@@ -36,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     if (user.role === "participant") await ensureReleased(attempt);
     await connectDB();
     const owner = await User.findById(attempt.userId).select("name email targetScore").lean();
-    let r = await attemptResult(attempt, test);
+    let r = await cachedAttemptResult(attempt, test);
     // Analisis AI berjalan di latar dan butuh ±1 menit. Tunggu sebentar agar PDF tidak berisi "masih disiapkan".
     if (r.analysis.status === "pending") {
       for (let i = 0; i < 20 && r.analysis.status === "pending"; i++) {

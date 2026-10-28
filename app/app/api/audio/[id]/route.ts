@@ -1,8 +1,10 @@
+import fs from "node:fs";
 import { Readable } from "node:stream";
 import { isValidObjectId } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { audioBucket, verifyAudioToken } from "@/lib/audio-store";
+import { cachedAudioFile } from "@/lib/audio-cache";
 import { requireRole, handleError, HttpError, CONTENT_ROLES } from "@/lib/rbac";
 import { Audio } from "@/models/Audio";
 import { QuestionGroup } from "@/models/Question";
@@ -38,8 +40,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     status = 206;
   }
 
-  const bucket = await audioBucket();
-  const stream = bucket.openDownloadStream(audio.gridFsId, { start, end: end + 1 });
+  // Sajikan dari disk server bila ada (diunduh sekali dari database); bila tidak bisa, alirkan langsung dari database.
+  const cached = await cachedAudioFile(String(audio.gridFsId), size);
+  const stream = cached ? fs.createReadStream(cached, { start, end }) : (await audioBucket()).openDownloadStream(audio.gridFsId, { start, end: end + 1 });
   const headers: Record<string, string> = {
     "Content-Type": audio.mime || "audio/mpeg",
     "Accept-Ranges": "bytes",
