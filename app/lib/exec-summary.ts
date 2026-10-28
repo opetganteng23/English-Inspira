@@ -580,6 +580,26 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
       const top = brs[0], low = brs[brs.length - 1], big = [...brs].sort((a, b) => b.finished - a.finished)[0];
       darkNote(s, 58, 150 + rh * (PER + 1) + 16, 1162, Math.min(120, Math.max(80, 640 - (150 + rh * (PER + 1) + 16))), [{ text: "Temuan: ", options: { bold: true, color: C.orange } }, { text: `${top.label} tertinggi (rata-rata ${ID(Math.round(top.avg ?? 0))}), ${low.label} terendah (${ID(Math.round(low.avg ?? 0))}). Cabang dengan peserta terbanyak: ${big.label} (${ID(big.finished)} peserta, rata-rata ${ID(Math.round(big.avg ?? 0))}). Peta sebaran per cabang tersedia di menu Analytics.` }], "info");
     }
+    // Per provinsi dan per tanggal tes: dimensi yang sama dengan menu Analytics.
+    for (const [dim, title, col] of [["province", "Perbandingan per provinsi", "Provinsi"], ["date", "Hasil per tanggal tes", "Tanggal tes"]] as const) {
+      if (dim === "province" && sc.province) continue;
+      const gs = segment(rows, dim, lvNames, target).filter((g) => g.key && g.finished);
+      if (dim === "province") gs.sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0));
+      if (gs.length < 2) continue;
+      const s = base(title, dim === "province" ? `${ID(gs.length)} provinsi, diurutkan dari rata-rata skor tertinggi` : `${ID(gs.length)} hari pelaksanaan, urut tanggal`);
+      const PER = gs.length <= 12 ? gs.length : Math.ceil(Math.min(gs.length, 36) / 2), cols = [gs.slice(0, PER), gs.slice(PER, 36)];
+      const rh = Math.min(26, 360 / (PER + 1));
+      cols.forEach((list, half) => {
+        if (!list.length) return;
+        const body = list.map((g, i) => [String(half * PER + i + 1), dim === "date" ? hari(g.label) : g.label, ID(g.finished), ID(Math.round(g.avg ?? 0)), g.pctTarget != null ? `${ID(g.pctTarget, 0)}%` : "-", `${ID(g.sections.listening ?? 0, 0)} / ${ID(g.sections.structure ?? 0, 0)} / ${ID(g.sections.reading ?? 0, 0)}`, fmtTopic(g.weakTopic)].map((t, j) => ({
+          text: t, options: { align: (j === 1 || j === 6 ? "left" : "center") as PptxGenJS.HAlign, bold: j === 3, color: j === 3 ? ((g.avg ?? 0) >= target ? C.green : (g.avg ?? 0) >= target - 50 ? C.orange : C.red) : C.ink, fontSize: j === 6 ? 8 : 9.5, fill: { color: i % 2 ? C.card : C.white } },
+        })));
+        s.addTable([tableHead(["#", col, "Selesai", "Rata-rata", `≥ ${target}`, "L / S / R", "Topik terlemah"], 9, ["center", "left", "center", "center", "center", "center", "left"]), ...body], { x: X(58 + half * 590), y: X(150), w: X(572), colW: [X(28), X(130), X(52), X(62), X(50), X(90), X(160)], rowH: X(rh), fontFace: FONT, fontSize: 9.5, color: C.ink, valign: "middle", border: { type: "solid", color: C.line, pt: 0.5 }, margin: [0, 0.05, 0, 0.05] });
+      });
+      const hi = [...gs].sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0))[0], lo = [...gs].sort((a, b) => (a.avg ?? 0) - (b.avg ?? 0))[0], big = [...gs].sort((a, b) => b.finished - a.finished)[0];
+      const lbl = (g: typeof hi) => (dim === "date" ? hari(g.label) : g.label);
+      darkNote(s, 58, 150 + rh * (PER + 1) + 16, 1162, Math.min(120, Math.max(80, 640 - (150 + rh * (PER + 1) + 16))), [{ text: "Temuan: ", options: { bold: true, color: C.orange } }, { text: `${lbl(hi)} tertinggi (rata-rata ${ID(Math.round(hi.avg ?? 0))}), ${lbl(lo)} terendah (${ID(Math.round(lo.avg ?? 0))}). ${dim === "date" ? "Hari dengan peserta terbanyak" : "Provinsi dengan peserta terbanyak"}: ${lbl(big)} (${ID(big.finished)} peserta).` }], "info");
+    }
   }
 
   // ================= 9. Pola pengerjaan =================
