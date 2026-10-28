@@ -814,7 +814,7 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
     const cards: [string, string, string, string][] = [
       ["calendar", C.blue, later.length ? `${test.name} berlanjut` : "Seluruh sesi selesai", later.length ? `Sesi berikutnya berlangsung ${TGL(later[0].opensAt, false)}${later.length > 1 ? ` – ${TGL(later[later.length - 1].opensAt, false)}` : ""}. Laporan kumulatif dapat diunduh kapan saja dari English Inspira AI.` : "Laporan ini dapat diunduh ulang kapan saja dari English Inspira AI bila ada pembaruan data."],
       ["file", C.blue, held ? "Skor bersifat sementara" : "Skor sudah dirilis", held ? `Skor ${held === fin.length ? "" : `${ID(held)} peserta `}masih berstatus provisional dan belum dirilis ke peserta. Rilis hasil mengikuti jadwal program.` : "Hasil sudah dapat dilihat peserta di dashboard masing-masing beserta analisis AI."],
-      ["info", C.orange, "Skor estimasi, bukan skor resmi", "Skor adalah estimasi dari English Inspira AI pada skala 310–677, bukan skor resmi TOEFL ITP®."],
+      ["info", C.orange, "Skor estimasi, bukan skor resmi", "Skor adalah estimasi dari English Inspira AI pada skala EPTA 310–677, bukan skor sertifikat resmi."],
       ["chart", C.blue, "Pemantauan melalui dashboard", "Institusi dapat memantau hasil dan perkembangan peserta melalui dashboard dan laporan pembelajaran."],
     ];
     cards.forEach(([ic, col, t, d], i) => {
@@ -824,7 +824,7 @@ export async function buildExecSummary(testId: string, opts: { sessionId?: strin
       T(s, t, { x: X(x + 120), y: X(y + 28), w: X(430), h: X(30), fontSize: 17, bold: true, color: C.navy, valign: "middle" });
       T(s, d, { x: X(x + 120), y: X(y + 74), w: X(430), h: X(100), fontSize: 12, color: C.ink });
     });
-    T(s, "TOEFL dan TOEFL ITP adalah merek dagang milik ETS. English Inspira tidak berafiliasi dengan ETS.", { x: X(58), y: X(603), w: X(1162), h: X(18), fontSize: 9, italic: true, color: C.soft, align: "center" });
+    T(s, "EPTA (English Proficiency Test & Analytics) adalah tes kemampuan bahasa Inggris dari English Inspira AI.", { x: X(58), y: X(603), w: X(1162), h: X(18), fontSize: 9, italic: true, color: C.soft, align: "center" });
   }
 
   // ================= 14+. Lampiran =================

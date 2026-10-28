@@ -36,7 +36,7 @@ export default function Kursus() {
   const run = async (fn: () => Promise<unknown>) => { setErr(""); try { await fn(); reload(); } catch (e) { setErr((e as Error).message); } };
 
   const scaffold = async (levelId: string, name: string) => {
-    if (!(await askConfirm(`Create the standard course structure for ${name}? This adds one course per TOEFL ITP part (Listening A, B, C, Structure, Written Expression, Reading) with fixed modules. New courses are Preview only. Parts that already exist are skipped.`, { confirmLabel: "Create" }))) return;
+    if (!(await askConfirm(`Create the standard course structure for ${name}? This adds one course per EPTA part (Listening A, B, C, Structure, Written Expression, Reading) with fixed modules. New courses are Preview only. Parts that already exist are skipped.`, { confirmLabel: "Create" }))) return;
     await run(async () => { const r = await api<{ created: number; skipped: number }>("/api/admin/courses/scaffold", { json: { levelId }, silent: true }); toast(`${r.created} course(s) created, ${r.skipped} already existed.`); });
   };
   const sectionTests = data?.quizzes.filter((q) => q.kind === "section") ?? [];
@@ -147,7 +147,7 @@ function CourseEditor({ init, levels, others, sectionTests, onClose, onSaved }: 
     <Modal title={init.id ? "Edit course" : "New course"} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <label className={label}>Level<select className="field font-normal" value={v.levelId} onChange={(e) => setV({ ...v, levelId: e.target.value })}>{levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></label>
-        <label className={label}>TOEFL ITP part<select className="field font-normal" value={v.part} onChange={(e) => setV({ ...v, part: e.target.value })}><option value="">Not tied to a part</option>{Object.entries(PART_LABEL).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
+        <label className={label}>EPTA part<select className="field font-normal" value={v.part} onChange={(e) => setV({ ...v, part: e.target.value })}><option value="">Not tied to a part</option>{Object.entries(PART_LABEL).map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select></label>
         <label className={label}>Title<input className="field font-normal" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} /></label>
         <label className={label}>Description<textarea className="field h-20 py-2 font-normal" value={v.description} onChange={(e) => setV({ ...v, description: e.target.value })} /></label>
         <label className={label}>Order<input className="field font-normal" type="number" min={0} value={v.order} onChange={(e) => setV({ ...v, order: Number(e.target.value) })} /></label>
