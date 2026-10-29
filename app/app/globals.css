@@ -154,3 +154,9 @@ html[data-bg-auth] .brand-auth .bp-muted, html[data-bg-page] .brand-page .bp-mut
 html[data-bg-auth] .brand-auth .bp-card, html[data-bg-page] .brand-page .bp-card { background: rgba(255, 255, 255, 0.75); color: #0A2257; }
 html[data-bg-page] .brand-page a:hover { color: #0B4FA6; }
 html[data-bg-auth] .brand-auth .logo-card, html[data-bg-page] .brand-page .logo-card { background: transparent; padding: 0; }
+
+/* Garis loading global (components/BusyBar). */
+@keyframes busy-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.busy-bar { animation: busy-slide 1.1s ease-in-out infinite; }
+html.is-busy, html.is-busy * { cursor: progress !important; }
+@media (prefers-reduced-motion: reduce) { .busy-bar { animation: none; width: 100%; opacity: .6; } }

@@ -4,6 +4,8 @@ import "./globals.css";
 import { ResponsiveTables } from "@/components/ResponsiveTables";
 import { FeedbackHost } from "@/components/Feedback";
 import { BrandBg } from "@/components/BrandBg";
+import { BusyBar } from "@/components/BusyBar";
+import { Suspense } from "react";
 
 // Poppins di-host sendiri (file di app/fonts, lisensi OFL): satu-satunya font aplikasi, termasuk judul.
 const poppins = localFont({
@@ -26,7 +28,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable}`}>{children}<ResponsiveTables /><FeedbackHost /><BrandBg /></body>
+      <body className={`${poppins.variable}`}>{children}<ResponsiveTables /><FeedbackHost /><BrandBg /><Suspense fallback={null}><BusyBar /></Suspense></body>
     </html>
   );
 }
