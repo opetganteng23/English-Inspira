@@ -6,6 +6,7 @@ import { Attempt } from "@/models/Test";
 import { User } from "@/models/User";
 import { ItpSession, ItpRegistration } from "@/models/Itp";
 import { sessionsVisibleTo } from "@/lib/itp-cycle";
+import { exemptFromDelay } from "@/lib/attempt-release";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,8 @@ export async function GET() {
     const [sessions, regs, last, u, cfg] = await Promise.all([
       ItpSession.find({ status: "open", date: { $gt: new Date() }, ...(await sessionsVisibleTo(user)) }).sort({ date: 1 }).lean(),
       ItpRegistration.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
-      Attempt.findOne({ userId: user._id, status: "submitted" }).sort({ finishedAt: -1 }).select("scoreEst kind finishedAt").lean(),
+      // Hasil yang masih ditahan (penundaan atau ditahan institusi) tidak boleh terbaca lewat saran jadwal.
+      Attempt.findOne({ userId: user._id, status: "submitted", ...(exemptFromDelay(user) ? {} : { $or: [{ releaseAt: null }, { releaseAt: { $lte: new Date() } }] }) }).sort({ finishedAt: -1 }).select("scoreEst kind finishedAt").lean(),
       User.findById(user._id).select("targetScore name").lean(),
       getSetting("general", { itpOrganizer: "", rescheduleDays: 7, refundPolicy: "" }),
     ]);
