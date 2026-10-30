@@ -10,7 +10,7 @@ import { GlobalSearch } from "./GlobalSearch";
 import type { FeatureKey } from "@/lib/features";
 
 // feature: hanya tampil bila saklar fitur menyala; afterPlacement: peserta tahap 1 (belum ada hasil placement dirilis) tidak melihatnya.
-export type NavGroup = { label?: string; collapsed?: boolean; items: { href: string; label: string; feature?: FeatureKey; afterPlacement?: boolean }[] };
+export type NavGroup = { label?: string; collapsed?: boolean; items: { href: string; label: string; also?: string[]; feature?: FeatureKey; afterPlacement?: boolean }[] };
 const ROLE: Record<string, string> = { participant: "Participant", admin: "Admin", inst_admin: "Institutions", coach: "Coach" };
 
 export function ShellNav({
@@ -26,7 +26,9 @@ export function ShellNav({
   }, [open]);
 
   const all = nav.flatMap((g) => g.items);
-  const best = all.filter((i) => path === i.href || path.startsWith(i.href + "/")).sort((a, b) => b.href.length - a.href.length)[0];
+  // also: halaman lain yang menjadi tab menu ini (mis. Audio dan Media di Question Bank) ikut menyalakan menu.
+  const under = (h: string) => path === h || path.startsWith(h + "/");
+  const best = all.filter((i) => under(i.href) || i.also?.some(under)).sort((a, b) => b.href.length - a.href.length)[0];
   // Tombol Back: selalu di halaman turunan (mis. /admin/materials/:id); di halaman menu lain (selain menu pertama)
   // bila sebelumnya sudah membuka halaman lain di aplikasi ini, mis. Institutions → Participants.
   const [hops, setHops] = useState(0);
@@ -34,7 +36,7 @@ export function ShellNav({
     try { const n = Number(sessionStorage.getItem("ei-hops") ?? "0") + 1; sessionStorage.setItem("ei-hops", String(n)); setHops(n); } catch { setHops(1); }
   }, [path]);
   const home = all[0]?.href;
-  const isSubpage = (!!best && path !== best.href) || (path !== home && hops > 1);
+  const isSubpage = (!!best && path !== best.href && !best.also?.includes(path)) || (path !== home && hops > 1);
   const backTo = best && path !== best.href ? best.href : home ?? "/";
 
   // Kelompok menu berlabel bisa dilipat. Status disimpan di browser; kelompok yang memuat halaman aktif selalu terbuka.

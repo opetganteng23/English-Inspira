@@ -20,7 +20,7 @@ export async function AppShell({
   const features = await featuresFor(user);
   const stage1 = user.role === "participant" && !user.currentLevelId;
   const shown = nav
-    .map((g) => ({ ...g, items: g.items.filter((i) => (!i.feature || features[i.feature]) && !(i.afterPlacement && stage1)).map(({ href, label }) => ({ href, label })) }))
+    .map((g) => ({ ...g, items: g.items.filter((i) => (!i.feature || features[i.feature]) && !(i.afterPlacement && stage1)).map(({ href, label, also }) => ({ href, label, also })) }))
     .filter((g) => g.items.length);
   return (
     <ShellNav search={search && (user.role === "admin" || user.role === "academic_admin")} nav={shown} title={title} user={{ name: user.name ?? user.email, email: user.email, role: user.role, avatarId: user.avatarAssetId ? String(user.avatarAssetId) : null }}>

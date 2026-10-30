@@ -1,25 +1,23 @@
 import { AppShell, type NavGroup } from "@/components/AppShell";
 import { getCurrentUser } from "@/lib/auth";
 import { STAFF_ROLES } from "@/lib/rbac";
+import { ROLE_PAGES } from "@/lib/admin-sections";
 
 // Menu harian di atas; alat yang jarang dipakai di "More tools" (tertutup secara default). Tidak ada halaman yang dihapus.
 const nav: NavGroup[] = [
   { items: [{ href: "/admin", label: "Overview" }] },
   { label: "People", items: [
     { href: "/admin/institutions", label: "Institutions" },
-    { href: "/admin/participants", label: "Participants" },
-    { href: "/admin/users", label: "Coaches & Admins" },
+    { href: "/admin/participants", label: "People", also: ["/admin/users"] },
   ] },
   { label: "Tests & Content", items: [
     { href: "/admin/tests", label: "Tests" },
-    { href: "/admin/question-bank", label: "Question Bank" },
-    { href: "/admin/audio", label: "Audio Library" },
-    { href: "/admin/media", label: "Media Library" },
+    { href: "/admin/question-bank", label: "Question Bank", also: ["/admin/audio", "/admin/media"] },
     { href: "/admin/courses", label: "Courses & Units", feature: "learning" },
     { href: "/admin/materials", label: "Materials", feature: "learning" },
   ] },
   { label: "Monitoring", items: [
-    { href: "/admin/proctoring", label: "Monitoring & Proctoring" },
+    { href: "/admin/proctoring", label: "Monitoring" },
     { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/ai-counselor", label: "AI Counselor", feature: "aiCounselor" },
   ] },
@@ -37,10 +35,7 @@ const nav: NavGroup[] = [
 ];
 
 // Menu per peran: academic_admin tanpa pengguna, parameter, pengaturan, audit; content_editor hanya soal dan audio.
-const ALLOWED: Record<string, string[]> = {
-  academic_admin: ["/admin", "/admin/participants", "/admin/external-results", "/admin/classes", "/admin/question-bank", "/admin/audio", "/admin/media", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
-  content_editor: ["/admin/question-bank", "/admin/audio", "/admin/media"],
-};
+const ALLOWED = ROLE_PAGES;
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
