@@ -9,7 +9,7 @@ import { NotificationBell } from "./NotificationBell";
 import { GlobalSearch } from "./GlobalSearch";
 
 // feature: hanya tampil bila saklar fitur menyala; afterPlacement: peserta tahap 1 (belum ada hasil placement dirilis) tidak melihatnya.
-export type NavGroup = { label?: string; items: { href: string; label: string; feature?: "aiCounselor"; afterPlacement?: boolean }[] };
+export type NavGroup = { label?: string; collapsed?: boolean; items: { href: string; label: string; feature?: "aiCounselor"; afterPlacement?: boolean }[] };
 const ROLE: Record<string, string> = { participant: "Participant", admin: "Admin", inst_admin: "Institutions", coach: "Coach" };
 
 export function ShellNav({
@@ -47,7 +47,7 @@ export function ShellNav({
       {nav.map((g, gi) => {
         const hasActive = g.items.some((n) => n.href === best?.href);
         const foldable = !!g.label && showLabels;
-        const isOpen = !foldable || hasActive || !closed[g.label!];
+        const isOpen = !foldable || hasActive || !(closed[g.label!] ?? g.collapsed ?? false); // collapsed: tertutup sampai dibuka
         const id = `nav-group-${gi}`;
         return (
         <div key={gi} className="flex flex-col gap-1">

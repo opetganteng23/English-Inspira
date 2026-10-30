@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
-import { useInstQuery } from "@/lib/inst-client";
+import { useInstQuery, useParticipantHref } from "@/lib/inst-client";
 import { tgl } from "@/lib/client";
 import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
@@ -15,6 +15,7 @@ const SEC: Record<string, string> = { listening: "Listening", structure: "Struct
 
 export default function InstPeserta() {
   const { url, ready, q: q2 } = useInstQuery();
+  const participantHref = useParticipantHref();
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [branch, setBranch] = useState(""), [age, setAge] = useState(""), [sort, setSort] = useState("name");
@@ -35,7 +36,7 @@ export default function InstPeserta() {
         <div className="table-wrap"><table>
           <thead><tr><th><Sort label="Participant" asc="name" /></th><th><Sort label="Branch" asc="branch" /></th><th><Sort label="Age" asc="age" desc="age_desc" /></th><th>Target</th><th>Tests</th><th>First score</th><th><Sort label="Last score" asc="score" desc="score_asc" /></th><th>Last</th><th /></tr></thead>
           <tbody>
-            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td><td className="text-xs">{p.branch ?? "-"}</td><td>{p.age ?? "-"}</td><td>{p.target ?? "-"}</td><td>{p.tests}</td><td>{p.firstScore ?? "-"}</td><td className="font-semibold">{p.lastScore ?? "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td><td className="text-right"><Link href={`/institution/participants/${p.id}`} className="font-semibold text-brand">Dashboard</Link></td></tr>)}
+            {data?.participants.map((p) => <tr key={p.id}><td className="font-semibold text-navy">{p.name ?? "(no name yet)"}<br /><span className="text-xs font-normal text-ink-soft">{p.email}{p.status === "invited" ? " · awaiting activation" : ""}</span></td><td className="text-xs">{p.branch ?? "-"}</td><td>{p.age ?? "-"}</td><td>{p.target ?? "-"}</td><td>{p.tests}</td><td>{p.firstScore ?? "-"}</td><td className="font-semibold">{p.lastScore ?? "-"}</td><td>{p.lastAt ? tgl(p.lastAt) : "-"}</td><td className="text-right"><Link href={participantHref(p.id)} className="font-semibold text-brand">Dashboard</Link></td></tr>)}
             {data?.participants.length === 0 && <tr><td colSpan={9} className="p-6 text-center text-ink-soft">No participants found.</td></tr>}
           </tbody>
         </table></div>

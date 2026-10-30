@@ -8,6 +8,7 @@ import { Attempt } from "@/models/Test";
 import { MailJob } from "@/models/Access";
 import { ItpRegistration, ItpSession } from "@/models/Itp";
 import { CounselorThread } from "@/models/Counselor";
+import { getFeatures } from "@/lib/features";
 import { Analysis } from "@/models/Learning";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +57,7 @@ export async function GET(req: Request) {
       actions: [
         { label: "Invitations not accepted yet (status invited)", n: st("invited"), href: "/admin/participants?status=invited" },
         { label: "Emails failed to send", n: mailFailed, href: "/admin/settings" },
-        { label: "Counselor conversations need review", n: needReview, href: "/admin/ai-counselor" },
+        ...((await getFeatures()).aiCounselor ? [{ label: "Counselor conversations need review", n: needReview, href: "/admin/ai-counselor" }] : []),
         { label: "Official test documents awaiting verification", n: docsPending, href: "/admin/itp-schedule" },
         { label: "Official test scores not entered (past sessions)", n: unscored, href: "/admin/itp-schedule" },
         { label: "Institution contracts ending within 30 days", n: expiring.length, href: "/admin/institutions" },
