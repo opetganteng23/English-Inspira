@@ -28,6 +28,7 @@ const nav: NavGroup[] = [
     { href: "/admin/coaching", label: "Coaching Monitor", feature: "coaching" },
     { href: "/admin/itp-schedule", label: "Official Test", feature: "officialTest" },
     { href: "/admin/cycles", label: "Program Cycles", feature: "programCycles" },
+    { href: "/admin/data-quality", label: "Data quality" },
     { href: "/admin/audit", label: "Audit Log" },
   ] },
 ];

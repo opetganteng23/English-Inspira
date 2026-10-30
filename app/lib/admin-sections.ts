@@ -5,6 +5,6 @@ export const ADMIN_SECTIONS = {
   people: [{ href: "/admin/participants", label: "Participants" }, { href: "/admin/users", label: "Coaches & admins" }],
 };
 export const ROLE_PAGES: Record<string, string[]> = {
-  academic_admin: ["/admin", "/admin/participants", "/admin/external-results", "/admin/classes", "/admin/question-bank", "/admin/audio", "/admin/media", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring"],
+  academic_admin: ["/admin", "/admin/participants", "/admin/external-results", "/admin/classes", "/admin/question-bank", "/admin/audio", "/admin/media", "/admin/tests", "/admin/courses", "/admin/materials", "/admin/scoring", "/admin/data-quality"],
   content_editor: ["/admin/question-bank", "/admin/audio", "/admin/media"],
 };
