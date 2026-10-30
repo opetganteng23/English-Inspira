@@ -12,6 +12,7 @@ const institutionSchema = new Schema(
     batch: String,
     status: { type: String, enum: ["active", "inactive"], default: "active" },
     holdPlacementResults: { type: Boolean, default: false }, // perjanjian perusahaan: hasil placement ditahan sampai admin pusat melepasnya
+    holdFromInstAdmin: { type: Boolean, default: true }, // false: penahanan hanya untuk peserta (dan coach); pimpinan institusi tetap melihat hasil
     contractWarned: [Number], // ambang peringatan kontrak (30/14/7 hari) yang sudah dikirim
     configOverrides: Schema.Types.Mixed, // disiapkan, TIDAK dipakai di v2 (MTS §5)
   },

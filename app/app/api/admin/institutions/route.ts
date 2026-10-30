@@ -22,7 +22,7 @@ export async function GET() {
     return NextResponse.json({
       institutions: list.map((i) => ({
         id: String(i._id), name: i.name, code: i.code, seats: i.seats, seatsUsed: i.seatsUsed, contactEmail: i.contactEmail ?? "", batch: i.batch ?? "",
-        contractStart: i.contractStart ?? null, contractEnd: i.contractEnd ?? null, status: i.status, coaches: by(i._id, "coach"), admins: by(i._id, "inst_admin"), holdPlacementResults: !!i.holdPlacementResults, heldResults: held.get(String(i._id)) ?? 0,
+        contractStart: i.contractStart ?? null, contractEnd: i.contractEnd ?? null, status: i.status, coaches: by(i._id, "coach"), admins: by(i._id, "inst_admin"), holdPlacementResults: !!i.holdPlacementResults, holdFromInstAdmin: i.holdFromInstAdmin !== false, heldResults: held.get(String(i._id)) ?? 0,
       })),
     });
   } catch (e) {

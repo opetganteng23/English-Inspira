@@ -26,8 +26,9 @@ export async function staffViewer(participantId: string) {
   await connectDB();
   const target = await User.findOne({ _id: participantId, role: "participant" }).lean();
   if (!target) throw new HttpError(404, "Participant not found");
-  const full = viewer.role !== "inst_admin";
-  if (!full && String(target.institutionId ?? "") !== String(viewer.institutionId ?? "")) throw new HttpError(404, "Participant not found");
+  if (viewer.role === "inst_admin" && String(target.institutionId ?? "") !== String(viewer.institutionId ?? "")) throw new HttpError(404, "Participant not found");
+  // Admin institusi ikut tertahan kecuali institusinya mengatur penahanan hanya untuk peserta.
+  const full = viewer.role !== "inst_admin" || (await Institution.findById(viewer.institutionId).select("holdFromInstAdmin").lean())?.holdFromInstAdmin === false;
   return { viewer, target, full };
 }
 

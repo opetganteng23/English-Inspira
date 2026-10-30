@@ -23,8 +23,9 @@ export async function instContext(req: Request) {
   if (!inst) throw new HttpError(404, "Institution not found");
   const scoped = (filter: Record<string, unknown> = {}) =>
     user.role === "inst_admin" ? scopeByInstitution(user, { role: "participant", ...filter } as never) : { role: "participant", institutionId: inst._id, ...filter };
-  // Admin pusat melihat semua hasil (Hold tidak berlaku); admin institusi hanya hasil yang sudah dirilis.
-  return { user, inst, full: user.role === "admin", scoped: scoped as (f?: Record<string, unknown>) => Record<string, unknown> };
+  // Admin pusat melihat semua hasil (Hold tidak berlaku); admin institusi hanya hasil yang sudah dirilis,
+  // kecuali institusi mengatur penahanan hanya untuk peserta (holdFromInstAdmin = false).
+  return { user, inst, full: user.role === "admin" || inst.holdFromInstAdmin === false, scoped: scoped as (f?: Record<string, unknown>) => Record<string, unknown> };
 }
 
 /** Ringkasan hasil per peserta institusi: skor awal, skor terakhir, jumlah tes, aktivitas terakhir. */
