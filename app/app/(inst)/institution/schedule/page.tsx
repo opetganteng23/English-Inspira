@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
-import { useInstQuery } from "@/lib/inst-client";
+import { useInstQuery, useInstScope } from "@/lib/inst-client";
 import { tgl } from "@/lib/client";
 import { Loading, ErrorNote, Empty } from "@/components/Charts";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
@@ -14,6 +14,7 @@ const ST: Record<string, string> = { submitted: "Awaiting verification", confirm
 /** Jadwal tes rombongan: papan jadwal yang sama dengan admin (hanya lihat), lalu pendaftaran tes EPTA resmi. */
 export default function InstJadwal() {
   const { url, ready } = useInstQuery();
+  const scoped = useInstScope(); // dibuka admin dari halaman institusi: papan bisa diubah (pindah sesi), hanya orang institusi ini
   const { data, loading, error } = useApi<{ groups: G[]; sessions: S[] }>(url("/api/inst/schedule"));
   const [pick, setPick] = useState<string | null>(null);
   if (!ready || loading) return <Loading />;
@@ -26,7 +27,9 @@ export default function InstJadwal() {
       {groups.length > 1 && (
         <div className="flex flex-wrap gap-2" role="tablist">{groups.map((g) => <button key={g.id} role="tab" aria-selected={g.id === current?.id} className={g.id === current?.id ? "btn-solid !min-h-[40px]" : "btn-outline !min-h-[40px]"} onClick={() => setPick(g.id)}>{g.name}</button>)}</div>
       )}
-      {current && <ScheduleBoard key={current.id} testId={current.id} readOnly apiUrl={url(`/api/inst/tests/${current.id}/schedule`) ?? undefined} back={{ href: "/institution", label: "← Overview" }} />}
+      {current && (scoped
+        ? <ScheduleBoard key={current.id} testId={current.id} institutionId={scoped} back={{ href: `/admin/institutions/${scoped}?tab=schedule`, label: current.name }} />
+        : <ScheduleBoard key={current.id} testId={current.id} readOnly apiUrl={url(`/api/inst/tests/${current.id}/schedule`) ?? undefined} back={{ href: "/institution", label: "← Overview" }} />)}
 
       {official.length > 0 && <h2 className="mt-4 font-display text-xl font-extrabold text-navy">Official EPTA test</h2>}
       {official.map((s) => (

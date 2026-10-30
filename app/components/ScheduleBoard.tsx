@@ -21,7 +21,7 @@ const POOL_LIMIT = 300;
  * Papan jadwal tes (kartu per sesi). Admin: kelola penuh. Portal institusi (`readOnly`): tampilan sama persis,
  * hanya peserta institusinya, tanpa aksi apa pun.
  */
-export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded }: { testId: string; readOnly?: boolean; apiUrl?: string; back?: { href: string; label: string }; embedded?: boolean }) {
+export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded, institutionId }: { testId: string; readOnly?: boolean; apiUrl?: string; back?: { href: string; label: string }; embedded?: boolean; institutionId?: string }) {
   const params = { id: testId };
   const { data, error, loading, reload } = useApi<Board>(apiUrl ?? `/api/admin/tests/${testId}/schedule`);
   const [err, setErr] = useState("");
@@ -29,7 +29,7 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
   const [reason, setReason] = useState(""); // alasan pindah jadwal (opsional), tercatat di rekap perubahan jadwal
-  const [inst, setInst] = useState("");
+  const [inst, setInst] = useState(institutionId ?? ""); // institutionId: papan dibuka dari halaman satu institusi
   const [moveTo, setMoveTo] = useState("");
   const [form, setForm] = useState<{ id?: string; label: string; opensAt: string; closesAt: string; capacity: number } | null>(null);
   const [ext, setExt] = useState<{ userId: string; name: string; opensAt: string; closesAt: string; reason: string } | null>(null);
@@ -92,7 +92,8 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded
 
   // Cari orang di semua kartu sesi sekaligus.
   const rxFind = find.trim().toLowerCase();
-  const hit = (x: { name: string | null; email: string }) => !rxFind || `${x.name ?? ""} ${x.email}`.toLowerCase().includes(rxFind);
+  const onlyInst = institutionId && data ? data.institutions.find((i) => i.id === institutionId)?.name ?? "__none__" : null;
+  const hit = (x: { name: string | null; email: string; institution?: string | null }) => (!onlyInst || x.institution === onlyInst) && (!rxFind || `${x.name ?? ""} ${x.email}`.toLowerCase().includes(rxFind));
   const found = rxFind && data ? data.sessions.flatMap((s) => s.seats.filter(hit).map((x) => ({ ...x, session: s }))) : [];
 
   if (loading && !data) return <Loading />;
@@ -149,6 +150,8 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded
           Send invites ({data.pending.invite + data.pending.reschedule})
         </button>
       </section>}
+
+      {!readOnly && <ChangesPanel testId={params.id} institutionId={institutionId} key={data.sessions.reduce((n, x) => n + x.seats.length, 0) + note} />}
 
       {!readOnly && picked.size > 0 && (
         <section className="card flex flex-wrap items-center gap-3" aria-label="Selection">
@@ -266,5 +269,27 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded
         </div>
       )}
     </div>
+  );
+}
+
+type Change = { userId: string; name: string; email: string; type: string; from: string; to: string; at: string | null; by: string; reason: string; source: string; status: string };
+
+/** Rekap perubahan jadwal di papan (sebelumnya hanya di Excel dan Executive Summary). Dimuat saat dibuka. */
+function ChangesPanel({ testId, institutionId }: { testId: string; institutionId?: string }) {
+  const [open, setOpen] = useState(false);
+  const { data, loading, error } = useApi<{ people: number; total: number; changes: Change[] }>(open ? `/api/admin/tests/${testId}/schedule/changes${institutionId ? `?institution=${institutionId}` : ""}` : null);
+  const when = (d: string | null) => (d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }) : "-");
+  return (
+    <section className="card !py-3">
+      <button type="button" className="flex w-full items-center justify-between text-left text-sm font-semibold text-navy" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span>Schedule changes{data ? ` · ${data.total} change${data.total === 1 ? "" : "s"}, ${data.people} people` : ""}</span><span className="text-brand">{open ? "Hide" : "Show"}</span>
+      </button>
+      {open && (loading && !data ? <p className="mt-2 text-sm text-ink-soft">Loading…</p> : error ? <p className="mt-2 text-sm text-red-700">{error}</p> : data && (data.changes.length === 0 ? <p className="mt-2 text-sm text-ink-soft">No one has been moved or given extra time yet.</p> : (
+        <div className="table-wrap mt-3 max-h-96 overflow-y-auto"><table>
+          <thead><tr><th>When (WIB)</th><th>Participant</th><th>Change</th><th>By</th><th>Reason</th><th>Test status</th></tr></thead>
+          <tbody>{data.changes.map((c, i) => <tr key={i}><td className="whitespace-nowrap">{when(c.at)}</td><td><b className="text-navy">{c.name || c.email}</b></td><td>{c.type === "Moved" ? <>{c.from} → <b>{c.to}</b></> : <>Extra time: {c.to}</>}</td><td>{c.by || (c.source === "email" ? "Participant (email link)" : "System")}</td><td>{c.reason || "-"}</td><td>{c.status}</td></tr>)}</tbody>
+        </table>{data.total > data.changes.length && <p className="p-2 text-xs text-ink-soft">Showing the latest {data.changes.length}. Download the Excel for all.</p>}</div>
+      )))}
+    </section>
   );
 }

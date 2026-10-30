@@ -8,6 +8,9 @@ export function InstScope({ id, children }: { id: string; children: React.ReactN
   return createElement(InstScopeContext.Provider, { value: id }, children);
 }
 
+/** Id institusi yang dipaksa halaman admin, atau null di portal institusi. */
+export function useInstScope() { return useContext(InstScopeContext); }
+
 /** Tautan ke detail peserta: di dalam halaman admin menuju profil admin (dengan aksi), di portal menuju detail portal. */
 export function useParticipantHref() {
   const forced = useContext(InstScopeContext);
