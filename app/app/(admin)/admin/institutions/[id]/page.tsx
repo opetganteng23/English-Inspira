@@ -7,7 +7,7 @@ import { api, tgl } from "@/lib/client";
 import { InstScope } from "@/lib/inst-client";
 import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
-import { askConfirm } from "@/components/Feedback";
+import { askDanger } from "@/components/Feedback";
 import { ImportPanel } from "@/components/ImportPanel";
 import { Editor, PersonnelImport, type I } from "@/components/InstitutionAdmin";
 import { EditAccountDialog, ResetPasswordDialog } from "@/components/AccountDialogs";
@@ -161,7 +161,7 @@ function SettingsTab({ inst, onSaved }: { inst: I; onSaved: () => void }) {
   const [edit, setEdit] = useState(false);
   const row = (k: string, v: React.ReactNode) => <div className="flex justify-between gap-4 border-b border-line py-2 text-sm"><span className="text-ink-soft">{k}</span><span className="text-right font-semibold text-navy">{v}</span></div>;
   async function release() {
-    if (!(await askConfirm(`Release all held placement results for ${inst.name}? ${inst.heldResults ?? 0} participant(s) will see their score, level, and report, and result emails are sent. This cannot be undone.`, { confirmLabel: "Release results", danger: true }))) return;
+    if ((await askDanger(`Release all held placement results for ${inst.name}?`, { title: "Release results", confirmLabel: "Release results", typeWord: "RELEASE", reason: "optional", impact: [`${inst.heldResults ?? 0} participant(s) see their score, level, and report.`, `Result emails go out to ${inst.heldResults ?? 0} participant(s).`, "Placement results are no longer held for this institution. This cannot be taken back."] })) === null) return;
     await api(`/api/admin/institutions/${inst.id}`, { method: "PATCH", json: { ...inst, holdPlacementResults: false } });
     onSaved();
   }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { askConfirm } from "@/components/Feedback";
+import { askConfirm, askDanger } from "@/components/Feedback";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
 import { TestDayBoard } from "@/components/TestDayBoard";
@@ -50,7 +50,7 @@ export default function TestPage({ params }: { params: { id: string } }) {
     catch (e) { setErr((e as Error).message); }
   }
   async function remove() {
-    if (!(await askConfirm("This deletes the test and its schedule. It cannot be undone.", { title: "Delete this test?", confirmLabel: "Delete", danger: true }))) return;
+    if ((await askDanger(`Delete "${draft!.name}"?`, { title: "Delete test", confirmLabel: "Delete", typeWord: "DELETE", impact: ["The test, its sessions, and seat assignments are deleted.", "This cannot be undone. Archive it instead if you may need it later."] })) === null) return;
     try { await api(`/api/admin/tests/${params.id}`, { method: "DELETE" }); router.push(learning ? "/admin/tests?group=learning" : "/admin/tests"); }
     catch (e) { setErr((e as Error).message); }
   }

@@ -50,6 +50,7 @@ export function Editor({ init, onClose, onSaved }: { init: Partial<I>; onClose: 
   const [v, setV] = useState({ name: init.name ?? "", code: init.code ?? "", seats: init.seats ?? 50, contactEmail: init.contactEmail ?? "", batch: init.batch ?? "", contractStart: day(init.contractStart ?? null), contractEnd: day(init.contractEnd ?? null), status: init.status ?? "active", holdPlacementResults: !!init.holdPlacementResults, holdFromInstAdmin: init.holdFromInstAdmin ?? true, modules: init.modules ?? { learning: false, coaching: false } });
   const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
   async function save() {
+    if (init.holdPlacementResults && !v.holdPlacementResults && (init.heldResults ?? 0) > 0) { setErr("Results are still held. Use “Release all held results” in the institution's Settings tab, so the impact is shown first."); return; }
     if (init.holdPlacementResults && !v.holdPlacementResults && !(await askConfirm(`Release placement results now? ${init.heldResults ?? 0} held result(s) become visible to participants, institution admins, and coaches, and result emails are sent.`, { confirmLabel: "Release results" }))) return;
     setBusy(true); setErr("");
     try { await api(init.id ? `/api/admin/institutions/${init.id}` : "/api/admin/institutions", { method: init.id ? "PATCH" : "POST", json: { ...v, seats: Number(v.seats), contractStart: v.contractStart || null, contractEnd: v.contractEnd || null } }); onSaved(); }

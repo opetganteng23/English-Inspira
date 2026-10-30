@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/client";
+import { askDanger, toast } from "@/components/Feedback";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { Pager } from "@/components/Pager";
 
@@ -383,14 +384,14 @@ export function StuckActions({ id, name, onDone }: { id: string; name: string; o
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   async function run(action: "terminate" | "reset") {
-    const text = action === "terminate"
-      ? `Terminate the test for ${name} now? It is closed and scored from the answers saved so far. This cannot be undone.`
-      : `Reset the test for ${name}? The attempt is voided (archived, can be restored from the participant profile) and the participant must take the test again.`;
-    if (!window.confirm(text)) return;
+    const ok = action === "terminate"
+      ? await askDanger(`Terminate the test for ${name} now?`, { title: "Terminate test", confirmLabel: "Terminate", typeWord: "TERMINATE", impact: ["The test closes immediately and is scored from the answers saved so far.", "The participant cannot continue.", "This cannot be undone."] })
+      : await askDanger(`Reset the test for ${name}?`, { title: "Reset test", confirmLabel: "Reset", impact: ["The attempt is voided and archived (it can be restored from the participant profile).", "The participant must take the test again in a new session."] });
+    if (ok === null) return;
     setBusy(true); setMsg("");
     try {
       const r = await api(`/api/admin/attempts/${id}`, { json: { action, reason } });
-      window.alert(action === "terminate" ? `Test terminated. ${r.answered} answers scored${r.score != null ? `, score ${r.score}` : ""}.` : "Test reset. Move the participant to a session on the Schedule board, then send the invite.");
+      toast(action === "terminate" ? `Test terminated. ${r.answered} answers scored${r.score != null ? `, score ${r.score}` : ""}.` : "Test reset. Move the participant to a session, then send the invite.");
       onDone();
     } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   }

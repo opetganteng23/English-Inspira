@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useApi } from "@/lib/useApi";
 import { api } from "@/lib/client";
 import { Loading, ErrorNote } from "@/components/Charts";
-import { askConfirm } from "@/components/Feedback";
+import { askConfirm, askDanger } from "@/components/Feedback";
 
 type Seat = { userId: string; name: string | null; email: string; institution: string | null; invited: boolean; extended: boolean; opensAt: string; closesAt: string; status: "done" | "running" | null };
 type Sess = { id: string; label: string; opensAt: string; closesAt: string; capacity: number; pending?: number; seats: Seat[] };
@@ -200,7 +200,7 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded
               <div className="flex items-start justify-between gap-2">
                 <div><h2 className="font-display text-lg font-extrabold text-navy">{s.label}</h2><p className="text-xs text-ink-soft">{wib(s.opensAt)} to {wib(s.closesAt)}</p></div>
                 {!readOnly && <div className="flex gap-2 text-xs font-semibold">{(s.pending ?? 0) > 0 && <button className="text-brand" disabled={busy} onClick={async () => { if (await askConfirm(`Send ${s.pending} email${s.pending === 1 ? "" : "s"} for ${s.label} only?`, { title: "Send invites for this session", confirmLabel: "Send", danger: false })) run(async () => { const r = await api<{ invited: number; rescheduled: number; skipped: number }>(`${base}/send`, { json: { sessionId: s.id }, silent: true }); setNote(`${s.label}: ${r.invited} invitations and ${r.rescheduled} new-schedule emails queued${r.skipped ? `, ${r.skipped} skipped (Test mode)` : ""}. Emails go out within the daily limit.`); }); }}>Send invites ({s.pending})</button>}<a className="text-brand" href={`/api/admin/tests/${params.id}/export.xlsx?session=${s.id}`} title={`Export ${s.label} (Excel)`}>Export</a><a className="text-brand" href={`/api/admin/tests/${params.id}/summary.pptx?session=${s.id}`} title={`Executive summary for ${s.label} (PowerPoint)`}>Summary</a><button className="text-brand" onClick={() => setForm({ id: s.id, label: s.label, opensAt: toInput(s.opensAt), closesAt: toInput(s.closesAt), capacity: s.capacity })}>Edit</button>
-                  <button className="text-red-700" onClick={async () => { if (await askConfirm(`Delete "${s.label}"? Its people go back to the unassigned list.`, { danger: true })) run(() => api(`${base}/sessions/${s.id}`, { method: "DELETE" })); }}>Delete</button></div>}
+                  <button className="text-red-700" onClick={async () => { if ((await askDanger(`Delete the session "${s.label}"?`, { title: "Delete session", confirmLabel: "Delete session", impact: [`${s.seats.length} people go back to the unassigned list.`, "Invites already sent for this session are no longer valid."] })) !== null) run(() => api(`${base}/sessions/${s.id}`, { method: "DELETE" })); }}>Delete</button></div>}
               </div>
               <div><p className="flex justify-between text-xs"><span className="font-semibold text-navy">{s.seats.length} / {s.capacity}</span><span className="text-ink-soft">{s.capacity - s.seats.length} free</span></p>
                 <div className="h-2 rounded-full bg-canvas"><div className={`h-2 rounded-full ${pct >= 100 ? "bg-accent" : "bg-brand"}`} style={{ width: `${pct}%` }} /></div></div>

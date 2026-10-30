@@ -3,7 +3,7 @@
 import { StuckActions } from "@/components/MonitoringBoard";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
-import { askConfirm } from "@/components/Feedback";
+import { askConfirm, askDanger } from "@/components/Feedback";
 import { api, tgl } from "@/lib/client";
 import { Modal } from "@/components/Modal";
 import { Loading, ErrorNote } from "@/components/Charts";
@@ -64,7 +64,7 @@ export function ParticipantAdminPanel({ id, onDeleted }: { id: string; onDeleted
                 <ul className="mt-2 flex flex-col divide-y divide-line">{d.voided.map((v) => (
                   <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                     <span><b className="text-navy">{v.test}</b> · score {v.score ?? "-"}{v.finishedAt ? ` · ${tgl(v.finishedAt)}` : ""}<span className="block text-xs text-ink-soft">Voided {tgl(v.voidedAt, true)}: {v.reason}</span></span>
-                    <button className="btn-outline !min-h-[36px] text-sm" onClick={async () => { const reason = window.prompt("Reason for restoring (kept in the audit log):", "Participant does not need to retake"); if (!reason || reason.trim().length < 5) return; if (await askConfirm(`Restore this attempt (score ${v.score ?? "-"})?`, { confirmLabel: "Restore" })) run({ action: "restore_attempt", voidId: v.id, reason }, "Attempt restored."); }}>Restore</button>
+                    <button className="btn-outline !min-h-[36px] text-sm" onClick={async () => { const reason = await askDanger(`Restore the voided attempt for ${v.test} (score ${v.score ?? "-"})?`, { title: "Restore attempt", confirmLabel: "Restore", reason: "required", impact: ["The original answers, score, and release status come back.", "It appears in results and reports again."] }); if (reason) run({ action: "restore_attempt", voidId: v.id, reason }, "Attempt restored."); }}>Restore</button>
                   </li>
                 ))}</ul>
               </div>
@@ -75,10 +75,10 @@ export function ParticipantAdminPanel({ id, onDeleted }: { id: string; onDeleted
                 <p className="text-xs text-red-800">Use this only when the attempt was broken by a technical problem. It is removed from results and reports (kept in an archive with your reason), any class formed from it is released, and the participant can be scheduled and take the test again. Then move them to a session on the Schedule board and send the invite.</p>
                 <input className="field" placeholder="Reason, e.g. Reading closed automatically by a system error" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} />
                 <div className="flex gap-2"><button className="btn-outline !min-h-[40px]" onClick={() => { setVoidFor(null); setVoidReason(""); }}>Cancel</button>
-                  <button className="btn-solid !min-h-[40px] !bg-red-700" disabled={voidReason.trim().length < 5} onClick={async () => { if (await askConfirm("Void this attempt? The participant will need to take the test again.", { danger: true, confirmLabel: "Void attempt" })) { await run({ action: "void_attempt", attemptId: voidFor.id, reason: voidReason }, "Attempt voided. Move the participant to a session on the Schedule board, then send the invite."); setVoidFor(null); setVoidReason(""); } }}>Void attempt</button></div>
+                  <button className="btn-solid !min-h-[40px] !bg-red-700" disabled={voidReason.trim().length < 5} onClick={async () => { if ((await askDanger(`Void the attempt "${voidFor.label}"?`, { title: "Void attempt", confirmLabel: "Void attempt", typeWord: "VOID", impact: ["Removed from results and reports (archived with your reason).", "Any class formed from it is released.", "The participant must be scheduled and take the test again."] })) !== null) { await run({ action: "void_attempt", attemptId: voidFor.id, reason: voidReason }, "Attempt voided. Move the participant to a session on the Schedule board, then send the invite."); setVoidFor(null); setVoidReason(""); } }}>Void attempt</button></div>
               </div>
             )}
-            {d.attempts.some((a) => a.held) && <button className="btn-outline mt-2 !min-h-[40px]" onClick={async () => { if (await askConfirm("Release this participant's held placement result now? They, their institution admin, and coaches will see it, and the result email is sent.", { confirmLabel: "Release result" })) run({ action: "release_results" }, "Result released."); }}>Release this result</button>}</section>
+            {d.attempts.some((a) => a.held) && <button className="btn-outline mt-2 !min-h-[40px]" onClick={async () => { if ((await askDanger("Release this participant's held placement result now?", { title: "Release result", confirmLabel: "Release result", impact: ["The participant, their institution admin, and coaches see the score, level, and report.", "The result email is sent. This cannot be taken back."] })) !== null) run({ action: "release_results" }, "Result released."); }}>Release this result</button>}</section>
 
           <section><h3 className="font-semibold text-navy">Actions</h3>
             <div className="mt-2 flex flex-wrap gap-2">

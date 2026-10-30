@@ -21,15 +21,13 @@ const nav: NavGroup[] = [
     { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/ai-counselor", label: "AI Counselor", feature: "aiCounselor" },
   ] },
-  { items: [{ href: "/admin/settings", label: "Settings" }] },
+  { items: [{ href: "/admin/settings", label: "Settings", also: ["/admin/parameters", "/admin/scoring"] }] },
   { label: "More tools", collapsed: true, items: [
     { href: "/admin/classes", label: "Classes" },
     { href: "/admin/external-results", label: "Class Results", feature: "externalResults" },
     { href: "/admin/coaching", label: "Coaching Monitor", feature: "coaching" },
     { href: "/admin/itp-schedule", label: "Official Test", feature: "officialTest" },
     { href: "/admin/cycles", label: "Program Cycles", feature: "programCycles" },
-    { href: "/admin/scoring", label: "Scoring Profiles" },
-    { href: "/admin/parameters", label: "System Parameters" },
     { href: "/admin/audit", label: "Audit Log" },
   ] },
 ];
@@ -40,6 +38,8 @@ const ALLOWED = ROLE_PAGES;
 export default async function Layout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   const allow = user ? ALLOWED[user.role] : undefined;
-  const menu = allow ? nav.map((g) => ({ ...g, items: g.items.filter((i) => allow.includes(i.href)) })).filter((g) => g.items.length) : nav;
+  // academic_admin tidak membuka Settings umum, tetapi tetap membuka Scoring profiles: menu Settings diarahkan ke sana.
+  const forRole = (i: NavGroup["items"][number]) => (!allow || allow.includes(i.href) ? i : i.also?.find((h) => allow.includes(h)) ? { ...i, href: i.also.find((h) => allow.includes(h))! } : null);
+  const menu = allow ? nav.map((g) => ({ ...g, items: g.items.map(forRole).filter((i): i is NavGroup["items"][number] => !!i) })).filter((g) => g.items.length) : nav;
   return <AppShell roles={STAFF_ROLES} nav={menu} search title={user?.role === "content_editor" ? "Question Editor" : user?.role === "academic_admin" ? "Academic" : "Admin"}>{children}</AppShell>;
 }
