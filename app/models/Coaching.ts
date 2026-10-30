@@ -40,7 +40,7 @@ const bookingSchema = new Schema(
 // Satu peserta tidak bisa punya dua booking aktif pada slot yang sama.
 bookingSchema.index({ slotId: 1, userId: 1 }, { unique: true, partialFilterExpression: { active: true } });
 
-// Catatan sesi: `private` hanya untuk coach/admin; `shared` boleh dilihat peserta. inst_admin tidak pernah melihat keduanya (MTS §4).
+// Catatan sesi: `private` hanya untuk coach/admin; `shared` boleh dilihat peserta. admin pusat dan pimpinan institusi peserta melihat keduanya (lib/staff-view).
 const noteSchema = new Schema(
   {
     bookingId: { type: Schema.Types.ObjectId, ref: "Booking", required: true, unique: true },

@@ -13,6 +13,7 @@ import { Attempt, Test } from "@/models/Test";
 import { Institution } from "@/models/Institution";
 import { CoachingQuota } from "@/models/Config";
 import { PlanItem, TopicStat } from "@/models/Learning";
+import { SessionNote } from "@/models/Coaching";
 
 /**
  * Siapa boleh melihat data lengkap seorang peserta:
@@ -34,7 +35,7 @@ export async function staffViewer(participantId: string) {
 export async function staffDashboard(participantId: string) {
   const { viewer, target: u, full } = await staffViewer(participantId);
   const visible = full ? {} : releasedFilter();
-  const [levels, attempts, quota, inst, counselor, plan, weak, strong, levelUp, inProgress] = await Promise.all([
+  const [levels, attempts, quota, inst, counselor, plan, weak, strong, levelUp, inProgress, notes] = await Promise.all([
     getLevels(),
     Attempt.find({ userId: u._id, status: "submitted", ...visible }).sort({ finishedAt: 1 }).select("kind scoreEst sectionScores finishedAt startedAt testId releaseAt releasedAt heldByOrg proctorFlags").lean(),
     CoachingQuota.findOne({ userId: u._id, active: true }).lean(),
@@ -45,7 +46,10 @@ export async function staffDashboard(participantId: string) {
     TopicStat.find({ userId: u._id, status: "strong", ...LEARNING_TOPIC_FILTER }).sort({ score: -1 }).limit(8).lean(),
     levelUpStatus(u._id),
     Attempt.findOne({ userId: u._id, status: "in_progress" }).select("startedAt testId").lean(),
+    // Catatan coach (untuk peserta dan internal): admin pusat dan pimpinan institusi peserta.
+    SessionNote.find({ userId: u._id }).sort({ updatedAt: -1 }).limit(20).select("coachId shared private recommendLevelUp updatedAt").lean(),
   ]);
+  const coaches = new Map((await User.find({ _id: { $in: notes.map((n) => n.coachId) } }).select("name email").lean()).map((c) => [String(c._id), c.name ?? c.email]));
   // Admin institusi tidak melihat hasil yang masih ditahan/menunggu jam rilis; jumlahnya tetap diberitahukan.
   const hiddenHeld = full ? 0 : await Attempt.countDocuments({ userId: u._id, status: "submitted", releaseAt: { $gt: new Date() } });
   const tests = new Map((await Test.find({ _id: { $in: [...attempts.map((a) => a.testId), ...(inProgress ? [inProgress.testId] : [])] } }).select("name").lean()).map((t) => [String(t._id), t.name]));
@@ -68,6 +72,7 @@ export async function staffDashboard(participantId: string) {
     quota: quota ? { used: quota.used, total: quota.total, left: Math.max(0, quota.total - quota.used) } : null,
     counselor: { used: counselor.used, quota: counselor.quota, remaining: counselor.remaining },
     levelUp, hiddenHeld,
+    coachNotes: notes.filter((n) => n.shared || n.private).map((n) => ({ id: String(n._id), coach: coaches.get(String(n.coachId)) ?? "-", shared: n.shared ?? null, private: n.private ?? null, recommendLevelUp: !!n.recommendLevelUp, at: n.updatedAt })),
     inProgress: inProgress ? { test: tests.get(String(inProgress.testId)) ?? "-", startedAt: inProgress.startedAt } : null,
     plan: plan.map((p) => ({ id: String(p._id), title: p.title, priority: p.priority, source: p.source, dueAt: p.dueAt ?? null, late: p.status === "late" })),
     weakTopics: weak.map((w) => ({ skill: w.skill, topic: w.topic, score: Math.round(w.score), status: w.status })),

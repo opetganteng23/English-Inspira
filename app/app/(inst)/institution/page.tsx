@@ -23,7 +23,7 @@ export default function InstHome() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="text-xs font-semibold tracking-wider text-brand">{s.institution.batch ?? "INSTITUTION PORTAL"}</p><h1 className="page-title">{s.institution.name}</h1><p className="text-sm text-ink-soft">Group summary (aggregate). Individual analyses and coach notes are not shown in this portal.</p></div>
+        <div><p className="text-xs font-semibold tracking-wider text-brand">{s.institution.batch ?? "INSTITUTION PORTAL"}</p><h1 className="page-title">{s.institution.name}</h1><p className="text-sm text-ink-soft">Group summary (aggregate). Open a participant for their personal data, full reports with AI analysis, and coach notes.</p></div>
         <div className="flex flex-col gap-2 sm:flex-row"><a className="btn-outline" href={url("/api/inst/report.xlsx") ?? "#"}>Download report (Excel)</a><Link className="btn-solid" href={withQ("/institution/participants")}>Add participants</Link></div>
       </div>
 

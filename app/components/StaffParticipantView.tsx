@@ -15,6 +15,7 @@ type D = {
   counselor: { used: number; quota: number; remaining: number };
   levelUp: { nextLevel: string | null; up: boolean; reasons: string[] } | null;
   hiddenHeld: number;
+  coachNotes: { id: string; coach: string; shared: string | null; private: string | null; recommendLevelUp: boolean; at: string }[];
   inProgress: { test: string; startedAt: string } | null;
   plan: { id: string; title: string; priority: string; source: string; dueAt: string | null; late: boolean }[];
   weakTopics: { skill: string; topic: string; score: number; status: string }[];
@@ -120,6 +121,18 @@ export function StaffParticipantView({ id, backHref, backLabel, reportBase }: { 
             })}</tbody>
           </table></div>
         ) : <p className="mt-3 text-sm text-ink-soft">No finished tests yet.</p>}
+      </section>
+
+      <section className="card">
+        <h2 className="font-display text-lg font-extrabold text-navy">Coach notes</h2>
+        <p className="text-sm text-ink-soft">Notes from coaching sessions, newest first.</p>
+        {h.coachNotes.length ? <ul className="mt-2 flex flex-col divide-y divide-line">{h.coachNotes.map((n) => (
+          <li key={n.id} className="py-3 text-sm">
+            <p className="text-xs text-ink-soft">{n.coach} · {tgl(n.at, true)}{n.recommendLevelUp ? " · recommends level up" : ""}</p>
+            {n.shared && <p className="mt-1 whitespace-pre-line"><b className="text-navy">For the participant:</b> {n.shared}</p>}
+            {n.private && <p className="mt-1 whitespace-pre-line"><b className="text-navy">Internal note:</b> {n.private}</p>}
+          </li>
+        ))}</ul> : <p className="mt-2 text-sm text-ink-soft">No coach notes yet.</p>}
       </section>
 
       <section className="card">
