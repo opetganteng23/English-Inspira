@@ -6,10 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import { askConfirm } from "@/components/Feedback";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
+import { TestDayBoard } from "@/components/TestDayBoard";
 import { Builder, KIND, LEARNING_KINDS, api, loadDraft, type Draft } from "@/components/TestBuilder";
 
 // Halaman satu tes: semua urusan tes dalam tab, menggantikan deretan tombol di daftar Tests dan editor di bawah halaman.
-const TABS = [["overview", "Overview"], ["setup", "Questions & settings"], ["schedule", "Schedule"], ["results", "Results"]] as const;
+const TABS = [["overview", "Overview"], ["setup", "Questions & settings"], ["schedule", "Schedule"], ["live", "Live (test day)"], ["results", "Results"]] as const;
 type Tab = (typeof TABS)[number][0];
 type Meta = { archived?: boolean; updatedAt?: string; createdAt?: string; scheduled?: boolean };
 const SECTION: Record<string, string> = { listening: "Listening", structure: "Structure & WE", reading: "Reading" };
@@ -41,7 +42,7 @@ export default function TestPage({ params }: { params: { id: string } }) {
   const status = meta.archived ? "Archived" : draft.active ? (draft.testMode ? "Live · test mode (admins and QA only)" : "Live") : "Draft";
   const questions = draft.sections.reduce((a, s) => a + s.questionIds.length, 0);
   const minutes = Math.round(draft.sections.reduce((a, s) => a + s.durationSec, 0) / 60);
-  const tabs = TABS.filter(([k]) => !(learning && (k === "schedule" || k === "results")));
+  const tabs = TABS.filter(([k]) => !(learning && (k === "schedule" || k === "live" || k === "results")));
 
   async function archive(on: boolean) {
     if (on && !(await askConfirm(draft!.active ? "The test is turned off for participants and moved to Archived. Its results and schedule stay. You can restore it any time." : "The test moves to Archived. You can restore it any time.", { title: "Archive this test?", confirmLabel: "Archive" }))) return;
@@ -107,6 +108,7 @@ export default function TestPage({ params }: { params: { id: string } }) {
       )}
       {tab === "setup" && <Builder key={rev} inline draft={draft} kinds={learning ? LEARNING_KINDS : Object.keys(KIND).filter((k) => !LEARNING_KINDS.includes(k))} onSaved={() => load()} />}
       {tab === "schedule" && <ScheduleBoard testId={params.id} embedded />}
+      {tab === "live" && <TestDayBoard testId={params.id} />}
       {tab === "results" && (
         <section className="card flex flex-col gap-3">
           <h2 className="font-display text-lg font-extrabold text-navy">Results</h2>
