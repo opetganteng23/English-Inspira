@@ -18,6 +18,24 @@ const FEATURES: [string, string, string][] = [
   ["programCycles", "Program cycles", "Program periods that open and close learning and placement."],
 ];
 
+type Backup = { available: boolean; count: number; last: { name: string; size: number; at: string } | null; ageHours: number | null; ok: boolean };
+
+/** Status backup harian DB (Sesi 7.3). Dibuat oleh script di server; di sini hanya dibaca. */
+function BackupStatus() {
+  const { data } = useApi<Backup>("/api/admin/backup-status");
+  if (!data) return null;
+  const age = data.ageHours == null ? null : data.ageHours < 48 ? `${Math.round(data.ageHours)} hours ago` : `${Math.round(data.ageHours / 24)} days ago`;
+  return (
+    <section className={`card flex flex-col gap-1 border-l-4 ${data.ok ? "border-l-success" : "border-l-red-600"}`}>
+      <h2 className="font-display text-lg font-extrabold text-navy">Database backup</h2>
+      {!data.available ? <p className="text-sm text-red-700">The backup folder cannot be read on this server.</p>
+        : !data.last ? <p className="text-sm text-red-700">No backup found. Ask the server admin to check the daily backup job.</p>
+        : <p className="text-sm">{data.ok ? "OK." : <b className="text-red-700">The last backup is older than a day. The daily backup job may not be running.</b>} Last backup {age} ({new Date(data.last.at).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB), {(data.last.size / 1_048_576).toFixed(0)} MB. {data.count} copies kept on the server.</p>}
+      <p className="text-xs text-ink-soft">Backups are kept on the same server only. A copy outside the server is not set up yet.</p>
+    </section>
+  );
+}
+
 function FeatureSwitches() {
   const { data, reload } = useApi<Record<string, boolean>>("/api/admin/settings/features");
   const [busy, setBusy] = useState(false);
@@ -62,6 +80,7 @@ export default function Pengaturan() {
   return (
     <div className="page-cols">
       <div><h1 className="page-title">Settings</h1><p className="text-sm text-ink-soft">Help contacts and official test information. Level and quota numbers are in System Parameters.</p></div>
+      <BackupStatus />
       <FeatureSwitches />
       {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? "bg-success-tint text-success" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
       <form onSubmit={save} className="card flex flex-col gap-4">
