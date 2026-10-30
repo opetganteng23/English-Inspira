@@ -225,7 +225,7 @@ function UnitEditor({ init, data, onClose, onSaved }: { init: Partial<Unit> & { 
             ))}
             {data.materials.length === 0 && <li className="p-3 text-sm text-ink-soft">No materials yet.</li>}
           </ul>
-          <p className="mt-1 text-xs text-ink-soft">Unpublished materials are not shown to participants until published. Quizzes are created in Tests → Course quizzes.</p>
+          <p className="mt-1 text-xs text-ink-soft">Unpublished materials are not shown to participants until published. No quiz yet? <a href="/admin/tests?group=learning&new=quiz" target="_blank" rel="noopener" className="font-semibold text-brand">Create a quiz</a> (opens a new tab), then come back and pick it here.</p>
         </fieldset>
         <label className="flex min-h-[44px] items-center gap-2 text-sm"><input type="checkbox" className="h-5 w-5" checked={v.active} onChange={(e) => setV({ ...v, active: e.target.checked })} />Active</label>
         <ErrorNote text={err} />

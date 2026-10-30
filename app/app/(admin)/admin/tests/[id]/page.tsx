@@ -63,6 +63,7 @@ export default function TestPage({ params }: { params: { id: string } }) {
           <p className="text-sm text-ink-soft"><StatusDot status={status} /> {status} · {questions} questions · {minutes} min · taken {draft.attempts.toLocaleString("en")}×</p>
         </div>
         <div className="flex gap-2">
+          <Link className="btn-solid" href={`/admin/tests/${params.id}/preview`}>Preview as participant</Link>
           {meta.archived ? <button className="btn-outline" onClick={() => archive(false)}>Restore</button> : <button className="btn-outline" onClick={() => archive(true)}>Archive</button>}
           {draft.attempts === 0 && <button className="btn-outline !text-red-700" onClick={remove}>Delete</button>}
         </div>
