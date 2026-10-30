@@ -46,7 +46,7 @@ export function templateNarrative(x: NarrativeInput): ReportNarrative {
 }
 
 /** Narasi dari Claude; jatuh ke template bila AI mati atau keluaran tidak valid. */
-export async function generateReportNarrative(x: NarrativeInput): Promise<ReportNarrative> {
+export async function generateReportNarrative(x: NarrativeInput, onUsage?: (tokensIn: number, tokensOut: number) => void): Promise<ReportNarrative> {
   if (!aiEnabled()) return templateNarrative(x);
   const data = {
     totalScore: x.score, level: x.level, cefr: x.cefr, targetScore: x.target, sections: x.sections,
@@ -65,6 +65,7 @@ Jawab dengan tool write_report.`;
     try {
       const out = await askClaudeStructured(system, [{ role: "user", content: JSON.stringify(data) }], { name: "write_report", description: "Tulis narasi laporan peserta.", schema: reportNarrativeSchema }, 2500);
       // Keluaran yang sedikit melewati batas panjang dipotong, bukan dibuang (dulu semuanya jatuh ke template).
+      onUsage?.(out.tokensIn, out.tokensOut);
       const raw = (out.input ?? {}) as Record<string, unknown>;
       const cut = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : v);
       const ok = reportNarrativeSchema.safeParse({

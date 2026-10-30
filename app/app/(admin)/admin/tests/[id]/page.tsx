@@ -7,6 +7,7 @@ import { askConfirm, askDanger } from "@/components/Feedback";
 import { Loading, ErrorNote } from "@/components/Charts";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
 import { TestDayBoard } from "@/components/TestDayBoard";
+import { ReportJobs } from "@/components/ReportJobs";
 import { Builder, KIND, LEARNING_KINDS, api, loadDraft, type Draft } from "@/components/TestBuilder";
 
 // Halaman satu tes: semua urusan tes dalam tab, menggantikan deretan tombol di daftar Tests dan editor di bawah halaman.
@@ -110,6 +111,7 @@ export default function TestPage({ params }: { params: { id: string } }) {
       {tab === "schedule" && <ScheduleBoard testId={params.id} embedded />}
       {tab === "live" && <TestDayBoard testId={params.id} />}
       {tab === "results" && (
+        <div className="flex flex-col gap-5">
         <section className="card flex flex-col gap-3">
           <h2 className="font-display text-lg font-extrabold text-navy">Results</h2>
           <p className="text-sm text-ink-soft">{draft.attempts.toLocaleString("en")} attempts. Downloads cover every session of this test.</p>
@@ -120,6 +122,8 @@ export default function TestPage({ params }: { params: { id: string } }) {
             <Link className="btn-outline" href="/admin/proctoring">Monitoring & proctoring</Link>
           </div>
         </section>
+        <ReportJobs testId={params.id} />
+        </div>
       )}
     </div>
   );
