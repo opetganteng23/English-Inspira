@@ -31,7 +31,7 @@ export default function MateriAdmin() {
                   : m.kind === "html" ? <button className="mr-3 font-semibold text-brand" onClick={() => act(m.id, "submit_review")}>Submit for review</button>
                   : <button className="mr-3 font-semibold text-brand" onClick={() => act(m.id, "publish")}>Publish</button>}<button className="font-semibold text-red-700" onClick={() => remove(m.id)}>Delete</button></td></tr>
             ))}
-            {data?.materials.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-soft">No materials yet.</td></tr>}
+            {data?.materials.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-soft">No materials yet. Click “+ New material” to write one.</td></tr>}
           </tbody>
         </table></div>
       )}

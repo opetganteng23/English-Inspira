@@ -45,7 +45,7 @@ export default function Coaching() {
                   </li>
                 ))}
               </ul>
-            ) : <p className="mt-2 text-sm text-ink-soft">No scheduled sessions yet.</p>}
+            ) : <p className="mt-2 text-sm text-ink-soft">No scheduled sessions yet. Book an open slot below.</p>}
           </section>
 
           <section className="card">

@@ -22,7 +22,7 @@ export default function Sesi() {
     <div className="flex flex-col gap-5">
       <div><h1 className="page-title">Sessions & attendance</h1><p className="text-sm text-ink-soft">Record attendance after the session starts. Present and absent use quota; excused does not. Corrections are safe, the quota adjusts itself.</p></div>
       <ErrorNote text={error || err} />
-      {data?.sessions.length === 0 && <Empty>No sessions booked by participants yet.</Empty>}
+      {data?.sessions.length === 0 && <Empty>No sessions booked by participants yet. Bookings appear here after participants choose one of your slots.</Empty>}
       {data?.sessions.map((s) => (
         <section key={s.id} className="card">
           <h2 className="font-display text-lg font-extrabold text-navy">{tgl(s.startsAt, true)}{s.title ? ` · ${s.title}` : ""}</h2>

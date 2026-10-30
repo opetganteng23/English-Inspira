@@ -22,7 +22,7 @@ export default function InstJadwal() {
   return (
     <div className="flex flex-col gap-5">
       <ErrorNote text={error} />
-      {groups.length === 0 && official.length === 0 && <><h1 className="page-title">Group test schedule</h1><Empty>No scheduled tests for your participants yet.</Empty></>}
+      {groups.length === 0 && official.length === 0 && <><h1 className="page-title">Group test schedule</h1><Empty>No scheduled tests for your participants yet. The program admin schedules tests; they appear here automatically.</Empty></>}
       {groups.length > 1 && (
         <div className="flex flex-wrap gap-2" role="tablist">{groups.map((g) => <button key={g.id} role="tab" aria-selected={g.id === current?.id} className={g.id === current?.id ? "btn-solid !min-h-[40px]" : "btn-outline !min-h-[40px]"} onClick={() => setPick(g.id)}>{g.name}</button>)}</div>
       )}

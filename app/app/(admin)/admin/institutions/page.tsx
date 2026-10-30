@@ -28,7 +28,7 @@ export default function Institusi() {
           <tbody>
             {data?.institutions.map((i) => <tr key={i.id}><td className="font-semibold text-navy">{i.name}<br /><span className="text-xs font-normal text-ink-soft">{i.code}{i.batch ? ` · ${i.batch}` : ""}</span></td><td>{i.seatsUsed}/{i.seats}</td><td>{i.contractStart ? tgl(i.contractStart) : "-"} to {i.contractEnd ? tgl(i.contractEnd) : "no limit"}</td><td>{i.coaches} / {i.admins}</td><td><span className={i.status === "active" ? "badge-ok" : "badge-muted"}>{i.status === "active" ? "Active" : "Inactive"}</span>{i.holdPlacementResults && <span className="badge-warn ml-1" title="Placement results are held">Results held ({i.heldResults ?? 0})</span>}</td>
               <td className="whitespace-nowrap text-right"><Link className="mr-3 font-semibold text-brand" href={`/institution?institution=${i.id}`}>Portal</Link><button className="mr-3 font-semibold text-brand" onClick={() => setManage(i)}>Add participants</button><button className="mr-3 font-semibold text-brand" onClick={() => setPersonnel(i)}>Personnel data</button><button className="font-semibold text-brand" onClick={() => setEdit(i)}>Edit</button></td></tr>)}
-            {data?.institutions.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-soft">No institutions yet.</td></tr>}
+            {data?.institutions.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-soft">No institutions yet. Click “+ New institution” to add the first partner.</td></tr>}
           </tbody>
         </table></div>
       )}

@@ -88,7 +88,7 @@ export default function Itp() {
 
           {step === 1 && (
             <div className="mt-4 flex flex-col gap-3">
-              {data.sessions.length === 0 && <p className="text-sm text-ink-soft">No open schedules yet. Check again later.</p>}
+              {data.sessions.length === 0 && <p className="text-sm text-ink-soft">No open schedules yet. Official test schedules appear here when your program opens them.</p>}
               {data.sessions.map((s) => (
                 <button key={s.id} disabled={s.left === 0} onClick={() => { setSel(s); setF((x) => ({ ...x, fullName: x.fullName || me.data?.name || "" })); setStep(2); }}
                   className="flex flex-wrap items-center justify-between gap-2 rounded-xl border-[1.5px] border-line-strong p-4 text-left hover:border-brand disabled:opacity-50">

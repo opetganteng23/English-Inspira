@@ -40,7 +40,7 @@ export default function Belajar() {
       <ErrorNote text={error} />
       {data?.preview && <p role="note" className="rounded-xl border border-accent bg-accent-tint p-3 text-sm text-navy"><b>Preview mode.</b> You see courses of every level, including courses marked Preview only, with no prerequisites or unlock days. Participants only see their own level, and never see Preview only courses. Your progress here does not appear in participant reports (admin) or counts as a test account (QA).</p>}
       {data?.needsPlacement && <Empty>Take the placement test first to unlock courses for your level. <Link href="/tests" className="font-semibold text-brand">Go to My Tests</Link></Empty>}
-      {data && !data.needsPlacement && courses.length === 0 && <Empty>No courses for your level yet.</Empty>}
+      {data && !data.needsPlacement && courses.length === 0 && <Empty>No courses for your level yet. Courses appear after your placement result is released and your level is set.</Empty>}
 
       {courses.length > 0 && (
         <>

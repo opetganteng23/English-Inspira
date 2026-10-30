@@ -43,7 +43,7 @@ export default function Jadwal() {
               </td>
             </tr>
           ))}
-          {data?.slots.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-soft">No slots yet.</td></tr>}
+          {data?.slots.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-soft">No slots yet. Click “+ New slot” so participants can book coaching.</td></tr>}
         </tbody>
       </table></div>
       {edit && data && <Editor init={edit} levels={data.levels} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); }} />}

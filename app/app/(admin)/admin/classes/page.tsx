@@ -42,7 +42,7 @@ export default function Classes() {
               <h2 className="font-display text-xl font-extrabold text-navy">{l.name} <span className="text-sm font-semibold text-ink-soft">{l.scoreMin} to {l.scoreMax}</span></h2>
               <p className="text-sm text-ink-soft">{filled}/{seats} seats filled{l.waiting > 0 && <> · <button className="font-semibold text-accent-dark underline" onClick={() => setWaitLevel(l.id)}>{l.waiting} waiting for a class</button></>}</p>
             </div>
-            {cs.length === 0 && <p className="card text-sm text-ink-soft">No classes for this level yet.</p>}
+            {cs.length === 0 && <p className="card text-sm text-ink-soft">No classes for this level yet. Classes are created automatically from placement results.</p>}
             <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {cs.map((c) => {
                 const pct = Math.min(100, Math.round((c.students / c.capacity) * 100));

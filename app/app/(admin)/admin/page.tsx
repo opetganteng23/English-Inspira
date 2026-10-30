@@ -44,7 +44,7 @@ export default function AdminHome() {
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Participant level distribution</h2><div className="mt-4"><HBars rows={d.levels.map((l) => ({ label: l.name, value: l.n, sub: l.held ? `participants · ${l.held} not released yet` : "participants" }))} /></div><p className="mt-2 text-xs text-ink-soft">Includes placement results that are held or waiting for release. QA test accounts are excluded.</p></section>
             <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Completed tests ({d.days} days)</h2>
-              <div className="mt-4">{d.tests.length ? <HBars color="#D9A02F" rows={d.tests.map((t) => ({ label: KIND[t.kind] ?? t.kind, value: t.n, sub: "tests" }))} /> : <p className="text-sm text-ink-soft">No completed tests yet.</p>}</div></section>
+              <div className="mt-4">{d.tests.length ? <HBars color="#D9A02F" rows={d.tests.map((t) => ({ label: KIND[t.kind] ?? t.kind, value: t.n, sub: "tests" }))} /> : <p className="text-sm text-ink-soft">No completed tests yet. Results appear here as participants finish their tests.</p>}</div></section>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -53,7 +53,7 @@ export default function AdminHome() {
               <p className="mt-2 text-xs text-ink-soft">Email queue: {d.mail.queued} waiting, {d.mail.failed} failed.</p>
               <p className="text-xs text-ink-soft">Analyses in {d.days} days: {d.ai.claude} by Claude, {d.ai.template} template narratives, {d.ai.failed} failed · tokens {d.ai.tokensIn.toLocaleString("en-GB")} in / {d.ai.tokensOut.toLocaleString("en-GB")} out.</p></section>
             <section className="card"><div className="flex items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Upcoming official test sessions</h2><Link href="/admin/itp-schedule" className="text-sm font-semibold text-brand">Manage schedule</Link></div>
-              {d.upcoming.length ? <ul className="mt-3 flex flex-col gap-3">{d.upcoming.map((s) => <li key={s.id}><div className="flex justify-between gap-3 text-sm"><span className="font-medium text-navy">{s.title} · {tgl(s.date)}</span><span>{s.registered}/{s.quota}</span></div><div className="mt-1 h-2 rounded-full bg-canvas"><div className="h-2 rounded-full bg-brand" style={{ width: `${Math.min(100, (s.registered / Math.max(1, s.quota)) * 100)}%` }} /></div></li>)}</ul> : <p className="mt-3 text-sm text-ink-soft">No upcoming sessions.</p>}
+              {d.upcoming.length ? <ul className="mt-3 flex flex-col gap-3">{d.upcoming.map((s) => <li key={s.id}><div className="flex justify-between gap-3 text-sm"><span className="font-medium text-navy">{s.title} · {tgl(s.date)}</span><span>{s.registered}/{s.quota}</span></div><div className="mt-1 h-2 rounded-full bg-canvas"><div className="h-2 rounded-full bg-brand" style={{ width: `${Math.min(100, (s.registered / Math.max(1, s.quota)) * 100)}%` }} /></div></li>)}</ul> : <p className="mt-3 text-sm text-ink-soft">No upcoming sessions. Schedule one from Tests → open a test → Schedule.</p>}
               {d.expiring.length > 0 && <div className="mt-4 border-t border-line pt-3"><p className="text-sm font-semibold text-navy">Contracts ending soon</p><ul className="mt-1 text-sm text-ink-soft">{d.expiring.map((i) => <li key={i.name}>{i.name} · {tgl(i.contractEnd)}</li>)}</ul></div>}</section>
           </div>
         </>

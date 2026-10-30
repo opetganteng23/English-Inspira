@@ -34,7 +34,7 @@ export default function Cycles() {
       </div>
       <ErrorNote text={error || err} />
       {msg && <p role="status" className="rounded-lg bg-success-tint p-3 text-sm text-success">{msg}</p>}
-      {data?.cycles.length === 0 && <p className="card text-sm text-ink-soft">No program cycles yet.</p>}
+      {data?.cycles.length === 0 && <p className="card text-sm text-ink-soft">No program cycles yet. Click “+ New cycle” to set a program period for an institution.</p>}
       <ul className="grid gap-3 lg:grid-cols-2">
         {data?.cycles.map((c) => (
           <li key={c.id} className="card flex flex-col gap-2">

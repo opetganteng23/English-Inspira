@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { zodMessage } from "@/lib/zod-message";
 import { z } from "zod";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, type Types } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { requireRole, handleError, HttpError, ACADEMIC_ROLES } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
@@ -18,8 +18,29 @@ import { Enrollment } from "@/models/Access";
 import { CoachingQuota } from "@/models/Config";
 import { releaseOrgHeld } from "@/lib/attempt-release";
 import { voidAttempt, isVoidable, restoreAttempt, VoidedAttempt } from "@/lib/attempt-void";
+import { TestSeat, TestSession } from "@/models/Schedule";
 
 export const dynamic = "force-dynamic";
+
+/** Jadwal tes peserta: kursi per tes, sesi sekarang, dan sesi lain yang masih punya tempat (untuk pindah sesi dari profil). */
+async function scheduleOf(userId: Types.ObjectId) {
+  const seats = await TestSeat.find({ userId }).select("testId sessionId").lean();
+  if (!seats.length) return [];
+  const testIds = Array.from(new Set(seats.map((s) => String(s.testId))));
+  const [tests, sessions, used, done] = await Promise.all([
+    Test.find({ _id: { $in: testIds } }).select("name").lean(),
+    TestSession.find({ testId: { $in: testIds } }).sort({ opensAt: 1 }).lean(),
+    TestSeat.aggregate([{ $match: { testId: { $in: seats.map((s) => s.testId) } } }, { $group: { _id: "$sessionId", n: { $sum: 1 } } }]),
+    Attempt.find({ userId, testId: { $in: testIds }, status: { $in: ["submitted", "in_progress"] } }).distinct("testId"),
+  ]);
+  const name = new Map(tests.map((t) => [String(t._id), t.name]));
+  const taken = new Map(used.map((u) => [String(u._id), u.n as number]));
+  const started = new Set(done.map(String));
+  return seats.map((s) => ({
+    testId: String(s.testId), test: name.get(String(s.testId)) ?? "-", sessionId: String(s.sessionId), started: started.has(String(s.testId)),
+    sessions: sessions.filter((x) => String(x.testId) === String(s.testId)).map((x) => ({ id: String(x._id), label: x.label, opensAt: x.opensAt, closesAt: x.closesAt, left: Math.max(0, x.capacity - (taken.get(String(x._id)) ?? 0)) })),
+  }));
+}
 
 async function find(id: string) {
   if (!isValidObjectId(id)) throw new HttpError(404, "Participant not found");
@@ -51,6 +72,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       voided: await (async () => { const vs = await VoidedAttempt.find({ userId: u._id, restoredAt: { $exists: false } }).sort({ at: -1 }).lean(); const names = new Map((await Test.find({ _id: { $in: vs.map((x) => x.testId) } }).select("name").lean()).map((t) => [String(t._id), t.name])); return vs.map((x) => { const a = x.attempt as { scoreEst?: number; finishedAt?: Date; status?: string }; return { id: String(x._id), test: names.get(String(x.testId)) ?? "-", score: a.scoreEst ?? null, status: a.status ?? "", finishedAt: a.finishedAt ?? null, voidedAt: x.at, reason: x.reason }; }); })(),
       attempts: attempts.map((a) => ({ id: String(a._id), kind: a.kind, running: a.status === "in_progress", startedAt: a.startedAt, scoreEst: a.scoreEst, sections: a.sectionScores, finishedAt: a.finishedAt, flags: a.proctorFlags.length, held: !!a.heldByOrg && !a.releasedAt, voidable: isVoidable(a) })),
       notes: notes.map((n) => ({ text: (n.meta as { text?: string })?.text ?? "", at: n.at })),
+      schedule: await scheduleOf(u._id),
     });
   } catch (e) {
     return handleError(e);

@@ -19,7 +19,7 @@ export default function Materi() {
       <div><h1 className="page-title">Materials</h1><p className="mt-1 text-ink-soft">Materials and interactive exercises to strengthen your weak areas.</p></div>
       <ErrorNote text={error} />
       {tags.length > 0 && <div className="flex flex-wrap gap-2">{["", ...tags].map((t) => <button key={t || "all"} onClick={() => setTag(t)} className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${tag === t ? "border-navy bg-navy text-white" : "border-line-strong bg-white text-navy"}`}>{t || "All"}</button>)}</div>}
-      {list.length === 0 ? <Empty>No published materials yet.</Empty> : (
+      {list.length === 0 ? <Empty>No published materials yet. New materials appear here when your program publishes them.</Empty> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((m) => (
             <Link key={m.id} href={`/materials/${m.slug}`} className={`card flex flex-col gap-2 hover:border-brand ${m.locked ? "bg-canvas" : ""}`}>

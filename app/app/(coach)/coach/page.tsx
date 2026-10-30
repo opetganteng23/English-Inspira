@@ -16,7 +16,7 @@ export default function CoachHome() {
       <div><h1 className="page-title">My participants</h1><p className="text-sm text-ink-soft">Participants in your institution with their level, score, and remaining coaching quota. Click a name for the pre-session report.</p></div>
       <input className="field max-w-xs" placeholder="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} />
       <ErrorNote text={error} />
-      {loading && !data ? <Loading /> : data?.participants.length === 0 ? <Empty>No participants yet.</Empty> : (
+      {loading && !data ? <Loading /> : data?.participants.length === 0 ? <Empty>No participants yet. Participants appear when an admin places them in your class.</Empty> : (
         <div className="table-wrap"><table>
           <thead><tr><th>Participant</th><th>Level</th><th>Score</th><th>Quota</th><th>Last test</th></tr></thead>
           <tbody>{data?.participants.map((p) => (

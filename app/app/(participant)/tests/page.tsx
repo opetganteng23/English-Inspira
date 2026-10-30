@@ -43,7 +43,7 @@ export default function TesSaya() {
           </div>
         ))}
       </div>
-      {tests.data?.tests.length === 0 && <Empty>No tests available yet.</Empty>}
+      {tests.data?.tests.length === 0 && <Empty>No tests available yet. When your institution schedules a test, it appears here and you receive an email invitation.</Empty>}
 
       <section>
         <h2 className="font-display text-xl font-extrabold text-navy">Attempt history</h2>
@@ -62,7 +62,7 @@ export default function TesSaya() {
               </tbody>
             </table>
           </div>
-        ) : <p className="mt-2 text-sm text-ink-soft">No history yet.</p>}
+        ) : <p className="mt-2 text-sm text-ink-soft">No history yet. Tests you finish appear here.</p>}
       </section>
     </div>
   );

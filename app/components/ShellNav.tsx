@@ -6,14 +6,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
+import { GlobalSearch } from "./GlobalSearch";
 
 // feature: hanya tampil bila saklar fitur menyala; afterPlacement: peserta tahap 1 (belum ada hasil placement dirilis) tidak melihatnya.
 export type NavGroup = { label?: string; items: { href: string; label: string; feature?: "aiCounselor"; afterPlacement?: boolean }[] };
 const ROLE: Record<string, string> = { participant: "Participant", admin: "Admin", inst_admin: "Institutions", coach: "Coach" };
 
 export function ShellNav({
-  nav, title, user, children,
-}: { nav: NavGroup[]; title?: string; user: { name: string; email: string; role: string; avatarId?: string | null }; children: React.ReactNode }) {
+  nav, title, search, user, children,
+}: { nav: NavGroup[]; title?: string; search?: boolean; user: { name: string; email: string; role: string; avatarId?: string | null }; children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -25,8 +26,15 @@ export function ShellNav({
 
   const all = nav.flatMap((g) => g.items);
   const best = all.filter((i) => path === i.href || path.startsWith(i.href + "/")).sort((a, b) => b.href.length - a.href.length)[0];
-  // Halaman turunan (mis. /admin/materials/:id) menampilkan tombol back; halaman menu utama tidak perlu.
-  const isSubpage = !!best && path !== best.href;
+  // Tombol Back: selalu di halaman turunan (mis. /admin/materials/:id); di halaman menu lain (selain menu pertama)
+  // bila sebelumnya sudah membuka halaman lain di aplikasi ini, mis. Institutions → Participants.
+  const [hops, setHops] = useState(0);
+  useEffect(() => {
+    try { const n = Number(sessionStorage.getItem("ei-hops") ?? "0") + 1; sessionStorage.setItem("ei-hops", String(n)); setHops(n); } catch { setHops(1); }
+  }, [path]);
+  const home = all[0]?.href;
+  const isSubpage = (!!best && path !== best.href) || (path !== home && hops > 1);
+  const backTo = best && path !== best.href ? best.href : home ?? "/";
 
   // Kelompok menu berlabel bisa dilipat. Status disimpan di browser; kelompok yang memuat halaman aktif selalu terbuka.
   const [closed, setClosed] = useState<Record<string, boolean>>({});
@@ -118,21 +126,23 @@ export function ShellNav({
       )}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-        {(title || isSubpage) && (
+        {(title || isSubpage || search) && (
           <div className="sticky top-0 z-20 hidden items-center gap-3 border-b border-line bg-white px-6 py-2.5 text-sm text-ink-soft md:flex">
             {isSubpage && (
-              <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push(best!.href))}
+              <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push(backTo))}
                 className="-ml-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1 font-semibold text-ink hover:bg-canvas">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 18l-6-6 6-6" /></svg>
                 Back
               </button>
             )}
             {title}
+            {search && <div className="ml-auto w-full max-w-md"><GlobalSearch /></div>}
           </div>
         )}
+        {search && <div className="border-b border-line bg-white px-3 py-2 md:hidden"><GlobalSearch /></div>}
         {isSubpage && (
           <div className="flex items-center gap-1 border-b border-line bg-white px-3 py-2 text-sm font-semibold text-ink md:hidden">
-            <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push(best!.href))}
+            <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push(backTo))}
               className="flex min-h-[44px] items-center gap-1 rounded-lg px-1.5 hover:bg-canvas">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 18l-6-6 6-6" /></svg>
               Back

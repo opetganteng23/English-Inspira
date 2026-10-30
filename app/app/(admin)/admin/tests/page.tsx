@@ -59,7 +59,7 @@ export default function TesAdmin() {
                 <td className="whitespace-nowrap p-3 text-right"><Link href={`/admin/tests/${t.id}/schedule`} className="mr-3 font-semibold text-brand">Schedule</Link><a href={`/api/admin/tests/${t.id}/export.xlsx`} className="mr-3 font-semibold text-brand">Export results</a><a href={`/api/admin/tests/${t.id}/summary.pptx`} className="mr-3 font-semibold text-brand" title="Executive summary of all sessions (PowerPoint)">Summary (PPT)</a><button className="mr-3 font-semibold text-brand" onClick={() => open(t.id)}>Edit</button><button className="font-semibold text-red-700" onClick={() => remove(t.id)}>Delete</button></td>
               </tr>
             ))}
-            {tests.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No tests yet.</td></tr>}
+            {tests.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-ink-soft">No tests yet. Click “+ New test”, then add questions and a schedule.</td></tr>}
           </tbody>
         </table>
       </div>

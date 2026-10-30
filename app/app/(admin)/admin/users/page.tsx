@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { api, tgl } from "@/lib/client";
 import { Modal } from "@/components/Modal";
@@ -20,6 +20,7 @@ export default function Pengguna() {
   const [msg, setMsg] = useState("");
   const [dlg, setDlg] = useState<{ type: "edit" | "reset" | "delete"; u: U } | null>(null);
   const [q, setQ] = useState("");
+  useEffect(() => { const v = new URLSearchParams(window.location.search).get("q"); if (v) setQ(v); }, []); // ?q= dari pencarian global
   const [role, setRole] = useState("");
   async function resend(id: string) { setErr(""); setMsg(""); try { await api(`/api/admin/users/${id}`, { json: { action: "resend_invitation" } }); setMsg("Invitation resent."); } catch (e) { setErr((e as Error).message); } }
   async function patch(id: string, body: object) { setErr(""); try { await api(`/api/admin/users/${id}`, { method: "PATCH", json: body }); reload(); } catch (e) { setErr((e as Error).message); } }

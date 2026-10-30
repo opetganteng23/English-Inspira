@@ -45,5 +45,5 @@ export default async function Layout({ children }: { children: React.ReactNode }
   const user = await getCurrentUser();
   const allow = user ? ALLOWED[user.role] : undefined;
   const menu = allow ? nav.map((g) => ({ ...g, items: g.items.filter((i) => allow.includes(i.href)) })).filter((g) => g.items.length) : nav;
-  return <AppShell roles={STAFF_ROLES} nav={menu} title={user?.role === "content_editor" ? "Question Editor" : user?.role === "academic_admin" ? "Academic" : "Admin"}>{children}</AppShell>;
+  return <AppShell roles={STAFF_ROLES} nav={menu} search title={user?.role === "content_editor" ? "Question Editor" : user?.role === "academic_admin" ? "Academic" : "Admin"}>{children}</AppShell>;
 }
