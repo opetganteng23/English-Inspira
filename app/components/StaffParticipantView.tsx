@@ -12,7 +12,7 @@ type D = {
   level: { name: string; scoreMin: number; scoreMax: number } | null; nextLevel: { name: string; scoreMin: number } | null; levelProvisional: boolean;
   scoreEst: number | null; gapToNext: number | null;
   quota: { used: number; total: number; left: number } | null;
-  counselor: { used: number; quota: number; remaining: number };
+  counselor: { used: number; quota: number; remaining: number } | null;
   levelUp: { nextLevel: string | null; up: boolean; reasons: string[] } | null;
   hiddenHeld: number;
   coachNotes: { id: string; coach: string; shared: string | null; private: string | null; recommendLevelUp: boolean; at: string }[];
@@ -69,7 +69,7 @@ export function StaffParticipantView({ id, backHref, backLabel, reportBase }: { 
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">LEVEL</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.level?.name ?? "-"}</p><p className="text-xs text-ink-soft">{h.level ? `Range ${h.level.scoreMin}-${h.level.scoreMax}` : "No placement yet"}{h.levelProvisional ? " · not released yet" : ""}</p></div>
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">ESTIMATED SCORE</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.scoreEst ?? "-"}</p><p className="text-xs text-ink-soft">{h.nextLevel && h.gapToNext != null ? `${h.gapToNext} points to ${h.nextLevel.name}` : "Scale 310-677"}</p></div>
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">COACHING QUOTA</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.quota ? h.quota.left : "-"}<span className="text-base text-ink-soft">{h.quota ? ` / ${h.quota.total}` : ""}</span></p><p className="text-xs text-ink-soft">sessions left</p></div>
-        <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">AI COUNSELOR</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.counselor.used}<span className="text-base text-ink-soft"> / {h.counselor.quota}</span></p><p className="text-xs text-ink-soft">questions used this month</p></div>
+        {h.counselor && (<div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">AI COUNSELOR</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.counselor.used}<span className="text-base text-ink-soft"> / {h.counselor.quota}</span></p><p className="text-xs text-ink-soft">questions used this month</p></div>)}
       </div>
 
       <section className="card">

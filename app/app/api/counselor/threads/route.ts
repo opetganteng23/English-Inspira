@@ -6,12 +6,14 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { counselorAccess } from "@/lib/counselor-access";
 import { CounselorThread } from "@/models/Counselor";
 import { Attempt } from "@/models/Test";
+import { requireFeature } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 const ROLES = ["participant", "admin"] as const;
 
 export async function GET() {
   try {
+    await requireFeature("aiCounselor");
     const user = await requireRole([...ROLES]);
     await connectDB();
     const threads = await CounselorThread.find({ userId: user._id }).sort({ updatedAt: -1 }).limit(50).lean();
@@ -32,6 +34,7 @@ const schema = z.object({ attemptId: z.string().optional() });
 /** Buat percakapan baru; bila terkait hasil tes, tes itu menjadi dasar percakapan. Satu thread per attempt (dipakai ulang). */
 export async function POST(req: Request) {
   try {
+    await requireFeature("aiCounselor");
     const user = await requireRole([...ROLES]);
     const { attemptId } = schema.parse(await req.json().catch(() => ({})));
     await connectDB();

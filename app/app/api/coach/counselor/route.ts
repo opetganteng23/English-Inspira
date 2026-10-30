@@ -3,12 +3,14 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { CounselorThread } from "@/models/Counselor";
 import { User } from "@/models/User";
+import { requireFeature } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
 /** Percakapan AI Counselor milik peserta di institusi coach, untuk ditinjau (MTS §17). filter: review (default) | flagged | all. */
 export async function GET(req: Request) {
   try {
+    await requireFeature("aiCounselor");
     const coach = await requireRole(["coach"]);
     await connectDB();
     const mine = await User.find({ institutionId: coach.institutionId, role: "participant" }).select("name email").lean();

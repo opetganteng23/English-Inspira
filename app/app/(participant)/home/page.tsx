@@ -12,7 +12,7 @@ type Home = {
   level: { name: string; scoreMin: number; scoreMax: number } | null; nextLevel: { name: string; scoreMin: number } | null;
   scoreEst: number | null; gapToNext: number | null;
   quota: { used: number; total: number; left: number } | null;
-  counselor: { used: number; quota: number; remaining: number };
+  counselor: { used: number; quota: number; remaining: number } | null;
   step: { title: string; body: string; cta: string; href: string } | null;
   levelUp: { nextLevel: string | null; up: boolean; reasons: string[] } | null;
   plan: { id: string; title: string; priority: "high" | "medium"; source: string; dueAt: string | null; late: boolean; unitId: string | null }[];
@@ -54,7 +54,7 @@ export default function Beranda() {
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">LEVEL</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.level?.name ?? "-"}</p><p className="text-xs text-ink-soft">{h.level ? `Range ${h.level.scoreMin}-${h.level.scoreMax}` : "Set by the placement test"}</p></div>
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">ESTIMATED SCORE</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.scoreEst ?? "-"}</p><p className="text-xs text-ink-soft">{h.nextLevel && h.gapToNext != null ? (h.gapToNext > 0 ? `${h.gapToNext} points to ${h.nextLevel.name}` : `Already at the ${h.nextLevel.name} threshold`) : "Scale 310-677"}</p></div>
         <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">COACHING QUOTA</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.quota ? `${h.quota.left}` : "-"}<span className="text-base text-ink-soft">{h.quota ? ` / ${h.quota.total}` : ""}</span></p><p className="text-xs text-ink-soft">{h.quota ? "sessions left" : "Available after placement"}</p></div>
-        <div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">AI COUNSELOR</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.counselor.remaining}<span className="text-base text-ink-soft"> / {h.counselor.quota}</span></p><p className="text-xs text-ink-soft">questions this month</p></div>
+        {h.counselor && (<div className="card"><p className="text-xs font-semibold tracking-wider text-ink-soft">AI COUNSELOR</p><p className="mt-1 font-display text-2xl font-extrabold text-navy">{h.counselor.remaining}<span className="text-base text-ink-soft"> / {h.counselor.quota}</span></p><p className="text-xs text-ink-soft">questions this month</p></div>)}
       </div>
 
       <section id="progress" className="card scroll-mt-4">
@@ -96,7 +96,7 @@ export default function Beranda() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Learning materials</h2><p className="mt-1 text-sm text-ink-soft">Interactive exercises and materials to strengthen your weak areas.</p><Link href="/materials" className="btn-outline mt-4">Open materials</Link></section>
-        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">AI Counselor</h2><p className="mt-1 text-sm text-ink-soft">Ask about study strategies based on your test results.</p><Link href="/counselor" className="btn-outline mt-4">Ask the AI Counselor</Link></section>
+        {h.counselor && (<section className="card"><h2 className="font-display text-lg font-extrabold text-navy">AI Counselor</h2><p className="mt-1 text-sm text-ink-soft">Ask about study strategies based on your test results.</p><Link href="/counselor" className="btn-outline mt-4">Ask the AI Counselor</Link></section>)}
       </div>
     </div>
   );

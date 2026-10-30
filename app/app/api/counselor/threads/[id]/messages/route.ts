@@ -9,12 +9,14 @@ import { buildCounselorContext } from "@/lib/analysis";
 import { counselorReply, detectDistress, DISTRESS_NOTICE } from "@/lib/ai";
 import { CounselorThread } from "@/models/Counselor";
 import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
+import { requireFeature } from "@/lib/features";
 
 const perMinute = new RateLimiterMemory({ points: 6, duration: 60 });
 const schema = z.object({ content: z.string().trim().min(1, "Type your question").max(1500, "Maximum 1500 characters") });
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
+    await requireFeature("aiCounselor");
     const user = await requireRole(["participant", "admin"]);
     const { content } = schema.parse(await req.json());
     try { await perMinute.consume(String(user._id)); } catch (e) { if (e instanceof RateLimiterRes) throw new HttpError(429, "Too fast, please wait a moment."); throw e; }

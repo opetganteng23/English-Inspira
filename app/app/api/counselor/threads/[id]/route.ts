@@ -6,6 +6,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { counselorAccess } from "@/lib/counselor-access";
 import { CounselorThread } from "@/models/Counselor";
 import { Attempt } from "@/models/Test";
+import { requireFeature } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ async function mine(id: string, userId: Types.ObjectId) {
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
+    await requireFeature("aiCounselor");
     const user = await requireRole(["participant", "admin"]);
     const t = await mine(params.id, user._id);
     const a0 = t.attemptId ? await Attempt.findById(t.attemptId).select("kind scoreEst sectionScores finishedAt releaseAt").lean() : null;
@@ -37,6 +39,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
+    await requireFeature("aiCounselor");
     const user = await requireRole(["participant", "admin"]);
     const t = await mine(params.id, user._id);
     const b = z.object({ helpful: z.boolean() }).parse(await req.json());

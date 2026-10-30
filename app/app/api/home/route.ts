@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import { requireRole, handleError } from "@/lib/rbac";
 import { getLevels } from "@/lib/config";
 import { counselorAccess } from "@/lib/counselor-access";
+import { getFeatures } from "@/lib/features";
 import { User } from "@/models/User";
 import { Attempt, Test } from "@/models/Test";
 import { CoachingQuota } from "@/models/Config";
@@ -65,7 +66,7 @@ export async function GET() {
       level: level ? { name: level.name, scoreMin: level.scoreMin, scoreMax: level.scoreMax } : null, nextLevel: next ? { name: next.name, scoreMin: next.scoreMin } : null,
       scoreEst: u?.currentScoreEst ?? null, gapToNext: next && u?.currentScoreEst != null ? Math.max(0, next.scoreMin - u.currentScoreEst) : null,
       quota: quota ? { used: quota.used, total: quota.total, left: Math.max(0, quota.total - quota.used) } : null,
-      counselor: { used: counselor.used, quota: counselor.quota, remaining: counselor.remaining },
+      counselor: (await getFeatures()).aiCounselor ? { used: counselor.used, quota: counselor.quota, remaining: counselor.remaining } : null,
       step,
       levelUp,
       plan: plan.map((p) => ({ id: String(p._id), title: p.title, priority: p.priority, source: p.source, dueAt: p.dueAt ?? null, late: p.status === "late", unitId: p.unitId ? String(p.unitId) : null })),

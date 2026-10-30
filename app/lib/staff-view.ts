@@ -6,6 +6,7 @@ import { releasedFilter, isReleased } from "./attempt-release";
 import { LEARNING_TOPIC_FILTER } from "./topics";
 import { levelUpStatus } from "./level-up";
 import { counselorAccess } from "./counselor-access";
+import { getFeatures } from "./features";
 import { audit } from "./audit";
 import { ageOf } from "./age";
 import { User } from "@/models/User";
@@ -71,7 +72,7 @@ export async function staffDashboard(participantId: string) {
     levelProvisional: !u.currentLevelId && !!level,
     scoreEst, gapToNext: next && scoreEst != null ? Math.max(0, next.scoreMin - scoreEst) : null,
     quota: quota ? { used: quota.used, total: quota.total, left: Math.max(0, quota.total - quota.used) } : null,
-    counselor: { used: counselor.used, quota: counselor.quota, remaining: counselor.remaining },
+    counselor: (await getFeatures()).aiCounselor ? { used: counselor.used, quota: counselor.quota, remaining: counselor.remaining } : null,
     levelUp, hiddenHeld,
     coachNotes: notes.filter((n) => n.shared || n.private).map((n) => ({ id: String(n._id), coach: coaches.get(String(n.coachId)) ?? "-", shared: n.shared ?? null, private: n.private ?? null, recommendLevelUp: !!n.recommendLevelUp, at: n.updatedAt })),
     inProgress: inProgress ? { test: tests.get(String(inProgress.testId)) ?? "-", startedAt: inProgress.startedAt } : null,

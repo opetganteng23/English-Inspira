@@ -21,7 +21,7 @@ const nav: NavGroup[] = [
   ] },
   { label: "Monitoring", items: [
     { href: "/admin/coaching", label: "Coaching Monitor" },
-    { href: "/admin/ai-counselor", label: "AI Counselor" },
+    { href: "/admin/ai-counselor", label: "AI Counselor", feature: "aiCounselor" },
     { href: "/admin/proctoring", label: "Monitoring & Proctoring" },
     { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/itp-schedule", label: "Official Test Schedule & Scores" },

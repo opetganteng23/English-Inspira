@@ -74,7 +74,7 @@ export default function Profil() {
           <label className="mt-3 flex flex-col gap-1.5 text-sm font-semibold">Type DELETE to confirm<input className="field font-normal" value={del} onChange={(e) => setDel(e.target.value)} /></label>
           <button className="btn-danger mt-3" disabled={del !== "DELETE"} onClick={remove}>Request deletion</button></details>
       </section>
-      <button className="self-start text-sm font-semibold text-brand" onClick={() => router.push("/help")}>Need help?</button>
+      <button className="self-start text-sm font-semibold text-brand" onClick={() => router.push("/help")}>FAQ</button>
     </div>
   );
 }

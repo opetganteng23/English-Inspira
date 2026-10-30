@@ -6,6 +6,7 @@ import { requireRole, handleError, HttpError } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
 import { Setting, getSetting } from "@/models/Settings";
 import { landingSchema, LANDING_DEFAULTS } from "@/lib/landing-settings";
+import { FEATURE_DEFAULTS } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ const SETTINGS = {
     defaults: { siteName: "English Inspira AI", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 },
   },
   landing: { schema: landingSchema, defaults: LANDING_DEFAULTS },
+  features: { schema: z.object({ aiCounselor: z.boolean() }), defaults: FEATURE_DEFAULTS },
 } as const;
 type Key = keyof typeof SETTINGS;
 

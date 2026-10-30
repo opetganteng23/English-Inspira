@@ -6,6 +6,7 @@ import { requireRole, handleError, HttpError, scopeByInstitution } from "@/lib/r
 import { audit } from "@/lib/audit";
 import { CounselorThread } from "@/models/Counselor";
 import { User } from "@/models/User";
+import { requireFeature } from "@/lib/features";
 
 /** Thread hanya boleh dibuka bila pemiliknya peserta di institusi coach; selain itu 404. */
 async function find(coach: Parameters<typeof scopeByInstitution>[0], id: string) {
@@ -19,6 +20,7 @@ async function find(coach: Parameters<typeof scopeByInstitution>[0], id: string)
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
+    await requireFeature("aiCounselor");
     const coach = await requireRole(["coach"]);
     const { t, owner } = await find(coach, params.id);
     await audit(coach._id, "counselor.view", params.id); // membaca percakapan peserta dicatat
@@ -34,6 +36,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 const patch = z.object({ reviewed: z.boolean().optional(), flagged: z.boolean().optional(), reviewNote: z.string().max(1000).optional() });
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
+    await requireFeature("aiCounselor");
     const coach = await requireRole(["coach"]);
     const { t } = await find(coach, params.id);
     t.set(patch.parse(await req.json()));

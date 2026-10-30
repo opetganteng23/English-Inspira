@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
+import { useApi } from "@/lib/useApi";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type Access = { allowed: boolean; remaining: number; quota: number; reason: string | null };
@@ -10,7 +11,13 @@ type Access = { allowed: boolean; remaining: number; quota: number; reason: stri
 const STARTERS = ["Where should I start?", "How long until I reach my target?", "Am I ready to register for the official EPTA test?"];
 
 /** Konselor AI di dalam halaman hasil: satu percakapan per hasil tes, memakai API konselor yang sama dengan halaman /counselor. */
+/** Panel hanya tampil bila admin menyalakan AI Counselor (Settings → Features). */
 export function CounselorPanel({ attemptId }: { attemptId: string }) {
+  const f = useApi<{ aiCounselor: boolean }>("/api/features");
+  return f.data?.aiCounselor ? <CounselorChat attemptId={attemptId} /> : null;
+}
+
+function CounselorChat({ attemptId }: { attemptId: string }) {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [access, setAccess] = useState<Access | null>(null);
@@ -51,6 +58,7 @@ export function CounselorPanel({ attemptId }: { attemptId: string }) {
         <h2 className="font-display text-base font-extrabold text-navy">Ask the AI Counselor about your result</h2>
         {access && <span className="text-xs font-semibold text-success">{access.remaining} questions left this month</span>}
       </div>
+      <p className="bg-brand-tint px-4 py-2 text-xs text-navy">The AI Counselor only answers questions about learning English and the English Inspira program. Other topics will not be answered.</p>
       <div ref={box} className="flex max-h-[320px] min-h-[160px] flex-1 flex-col gap-2.5 overflow-y-auto p-4" aria-live="polite">
         {msgs.length === 0 && !err && <p className="rounded-xl bg-canvas p-3 text-sm text-ink">Hi! I have read this result and all your answers. What would you like to know?</p>}
         {msgs.map((m, i) => (

@@ -106,6 +106,7 @@ function Chat() {
         <div><h1 className="page-title">AI Counselor</h1><p className="text-sm text-ink-soft">Reads all your test results{t?.basis ? ` · last ${t.basis.kind === "placement" ? "placement" : "test"}` : ""}</p></div>
         <button className="btn-outline" onClick={newThread}>+ New conversation</button>
       </div>
+      <p className="rounded-lg bg-brand-tint px-3 py-2 text-xs text-navy">The AI Counselor only answers questions about learning English and the English Inspira program. Other topics will not be answered.</p>
 
       <div className="flex gap-1 rounded-lg bg-white p-1 text-sm lg:hidden" role="tablist">
         {([["chat", "Conversation"], ["side", "Plan & info"]] as const).map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex-1 rounded-md px-3 py-2 font-semibold ${tab === k ? "bg-navy text-white" : "text-ink-soft"}`}>{l}</button>)}
