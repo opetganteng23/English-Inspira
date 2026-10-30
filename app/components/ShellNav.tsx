@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
 import { GlobalSearch } from "./GlobalSearch";
+import { HelpButton } from "./HelpButton";
 import type { FeatureKey } from "@/lib/features";
 
 // feature: hanya tampil bila saklar fitur menyala; afterPlacement: peserta tahap 1 (belum ada hasil placement dirilis) tidak melihatnya.
@@ -152,7 +153,8 @@ export function ShellNav({
             </button>
           </div>
         )}
-        <main className="w-full min-w-0 flex-1 p-4 sm:p-5 lg:p-6 xl:px-8 2xl:px-10">{children}</main>
+        <main className="w-full min-w-0 flex-1 p-4 pb-20 sm:p-5 sm:pb-20 lg:p-6 lg:pb-20 xl:px-8 2xl:px-10">{children}</main>
+        {["participant", "coach", "inst_admin"].includes(user.role) && <HelpButton role={user.role} />}
       </div>
     </div>
   );

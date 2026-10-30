@@ -19,6 +19,7 @@ const nav: NavGroup[] = [
   { label: "Monitoring", items: [
     { href: "/admin/proctoring", label: "Monitoring" },
     { href: "/admin/analytics", label: "Analytics" },
+    { href: "/admin/support", label: "Support" },
     { href: "/admin/ai-counselor", label: "AI Counselor", feature: "aiCounselor" },
   ] },
   { items: [{ href: "/admin/settings", label: "Settings", also: ["/admin/parameters", "/admin/scoring"] }] },

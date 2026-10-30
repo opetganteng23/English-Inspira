@@ -139,7 +139,7 @@ function SignInForm({ admin = false }: { admin?: boolean }) {
             <>
               <div className="flex flex-col gap-1.5">
                 <Field label="Password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                <Link href="/forgot-password" className="self-end text-sm font-semibold text-brand">Forgot password?</Link>
+                <span className="flex justify-between gap-2 text-sm font-semibold"><Link href="/support" className="text-ink-soft hover:text-brand">Need help?</Link><Link href="/forgot-password" className="text-brand">Forgot password?</Link></span>
               </div>
               <Captcha onChange={setCaptcha} reload={reload} />
             </>

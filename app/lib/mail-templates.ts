@@ -40,6 +40,9 @@ export const TEMPLATES = {
   session_reminder: (d: D) => ({ subject: "Reminder: coaching session tomorrow", html: wrap("Session reminder", `<p>Your coaching session: ${esc(fmt(d.startsAt))}.</p><p>${d.mode === "online" ? `Link: ${esc(d.meetingUrl)}` : `Room: ${esc(d.room)}`}</p>`) }),
   plan_deadline: (d: D) => ({ subject: "Your study plan deadline is approaching", html: wrap("Study plan reminder", `<p>The following items are due soon:</p><ul>${((d.items as string[]) ?? []).map((i) => `<li>${esc(i)}</li>`).join("")}</ul>${btn(String(d.link), "Open plan")}`) }),
   quota_low: (d: D) => ({ subject: "Coaching quota almost used up", html: wrap("Coaching quota", `<p>Your remaining coaching quota: <b>${esc(d.left)}</b> sessions.</p>`) }),
+  support_received: (d: D) => ({ subject: `We received your request #${esc(d.number)}`, html: wrap("Request received", `<p>Thank you. Your request <b>#${esc(d.number)}</b> (${esc(d.category)}) has reached our team. We reply here and by email.</p>${btn(String(d.link), "View your request")}`) }),
+  support_reply: (d: D) => ({ subject: `Reply to your request #${esc(d.number)}`, html: wrap("New reply", `<p style="white-space:pre-line;border-left:3px solid #0B4FA6;padding-left:12px">${esc(d.body)}</p>${btn(String(d.link), "Reply or view the conversation")}`) }),
+  support_staff: (d: D) => ({ subject: `${d.urgent ? "[URGENT] " : ""}New support ticket #${esc(d.number)}: ${esc(d.category)}`, html: wrap(`Ticket #${esc(d.number)}`, `<p><b>${esc(d.name)}</b> (${esc(d.email)})</p><p style="white-space:pre-line">${esc(d.body)}</p>${btn(String(d.link), "Open in Support")}`) }),
 } satisfies Record<string, (d: D) => { subject: string; html: string }>;
 
 export type TemplateName = keyof typeof TEMPLATES;
