@@ -17,7 +17,7 @@ export async function GET() {
     const n = new Map(counts.map((c) => [String(c._id), c.n]));
     return NextResponse.json({
       tests: tests.map((t) => ({
-        id: String(t._id), name: t.name, kind: t.kind, active: t.active, testMode: !!t.testMode,
+        id: String(t._id), name: t.name, kind: t.kind, active: t.active, archived: !!t.archived, updatedAt: t.updatedAt, testMode: !!t.testMode,
         questions: t.sections.reduce((a, s) => a + s.questionIds.length, 0),
         durationSec: t.sections.reduce((a, s) => a + s.durationSec, 0),
         attempts: n.get(String(t._id)) ?? 0,

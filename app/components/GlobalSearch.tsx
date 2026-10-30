@@ -79,7 +79,7 @@ export function GlobalSearch() {
           {!!r.tests.length && <Group title="Tests">{r.tests.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-1 rounded-lg px-2 py-1.5 hover:bg-canvas">
               <span><b className="text-navy">{t.name}</b><span className="ml-1 text-xs text-ink-soft">{t.kind}</span></span>
-              <span className="flex gap-1"><Link className={act} href={`/admin/tests/${t.id}/schedule`}>Schedule</Link><Link className={act} href="/admin/tests">Tests</Link></span>
+              <span className="flex gap-1"><Link className={act} href={`/admin/tests/${t.id}`}>Open</Link><Link className={act} href={`/admin/tests/${t.id}?tab=schedule`}>Schedule</Link></span>
             </li>
           ))}</Group>}
         </div>

@@ -19,6 +19,7 @@ const testSchema = new Schema(
       },
     ],
     active: { type: Boolean, default: true },
+    archived: { type: Boolean, default: false }, // disingkirkan dari daftar Tests (draft lama / tes selesai); tidak dihapus
     resultDelayMin: { type: Number, default: 0, min: 0, max: 1440 }, // hasil baru keluar sekian menit setelah peserta MULAI tes (0 = langsung); admin dan QA tester dikecualikan
     scheduled: { type: Boolean, default: false },
     reminderMode: { type: String, enum: ["all", "closing", "none"], default: "all" }, // pengingat tes terjadwal: semua (H-1, dibuka, menjelang tutup), hanya menjelang tutup bagi yang belum mulai, atau tidak ada // tes terjadwal: hanya peserta yang punya kursi di sesi, dan hanya di dalam jam sesi, yang melihat dan memulai

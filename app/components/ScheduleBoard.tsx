@@ -21,7 +21,7 @@ const POOL_LIMIT = 300;
  * Papan jadwal tes (kartu per sesi). Admin: kelola penuh. Portal institusi (`readOnly`): tampilan sama persis,
  * hanya peserta institusinya, tanpa aksi apa pun.
  */
-export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { testId: string; readOnly?: boolean; apiUrl?: string; back?: { href: string; label: string } }) {
+export function ScheduleBoard({ testId, readOnly = false, apiUrl, back, embedded }: { testId: string; readOnly?: boolean; apiUrl?: string; back?: { href: string; label: string }; embedded?: boolean }) {
   const params = { id: testId };
   const { data, error, loading, reload } = useApi<Board>(apiUrl ?? `/api/admin/tests/${testId}/schedule`);
   const [err, setErr] = useState("");
@@ -103,10 +103,10 @@ export function ScheduleBoard({ testId, readOnly = false, apiUrl, back }: { test
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link href={back?.href ?? "/admin/tests"} className="text-sm font-semibold text-brand">{back?.label ?? "← Tests"}</Link>
-          <h1 className="font-display text-3xl font-extrabold text-navy">Schedule: {data.test.name}</h1>
+          {!embedded && <Link href={back?.href ?? "/admin/tests"} className="text-sm font-semibold text-brand">{back?.label ?? "← Tests"}</Link>}
+          {!embedded && <h1 className="font-display text-3xl font-extrabold text-navy">Schedule: {data.test.name}</h1>}
           <p className="text-sm text-ink-soft">{readOnly ? "Your participants per session. Times are in WIB. To move someone to another session, contact the program admin." : "Create sessions, spread participants automatically, then drag people between cards. Times are in WIB."}</p>
-          {!readOnly && <a href={`/api/admin/tests/${params.id}/export.xlsx`} className="mt-2 inline-block text-sm font-semibold text-brand">Export results, all sessions (Excel)</a>}
+          {!readOnly && !embedded && <a href={`/api/admin/tests/${params.id}/export.xlsx`} className="mt-2 inline-block text-sm font-semibold text-brand">Export results, all sessions (Excel)</a>}
         </div>
         {readOnly && <p className="rounded-xl border border-line bg-white px-3 py-2 text-sm text-navy"><b>{data.sessions.reduce((n, s) => n + s.seats.length, 0)}</b> participants · <b>{data.sessions.reduce((n, s) => n + s.seats.filter((x) => x.status === "done").length, 0)}</b> done · <b>{data.sessions.reduce((n, s) => n + s.seats.filter((x) => x.invited).length, 0)}</b> invited ✉</p>}
         {!readOnly && <><label className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-navy">

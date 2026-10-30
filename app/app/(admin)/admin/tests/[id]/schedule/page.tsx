@@ -1,5 +1,6 @@
-import { ScheduleBoard } from "@/components/ScheduleBoard";
+import { redirect } from "next/navigation";
 
-export default function JadwalTes({ params }: { params: { id: string } }) {
-  return <ScheduleBoard testId={params.id} />;
+// Jadwal kini tab di halaman tes; alamat lama tetap berfungsi.
+export default function OldSchedule({ params }: { params: { id: string } }) {
+  redirect(`/admin/tests/${params.id}?tab=schedule`);
 }
