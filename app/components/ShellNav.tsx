@@ -7,9 +7,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
 import { GlobalSearch } from "./GlobalSearch";
+import type { FeatureKey } from "@/lib/features";
 
 // feature: hanya tampil bila saklar fitur menyala; afterPlacement: peserta tahap 1 (belum ada hasil placement dirilis) tidak melihatnya.
-export type NavGroup = { label?: string; collapsed?: boolean; items: { href: string; label: string; feature?: "aiCounselor"; afterPlacement?: boolean }[] };
+export type NavGroup = { label?: string; collapsed?: boolean; items: { href: string; label: string; feature?: FeatureKey; afterPlacement?: boolean }[] };
 const ROLE: Record<string, string> = { participant: "Participant", admin: "Admin", inst_admin: "Institutions", coach: "Coach" };
 
 export function ShellNav({

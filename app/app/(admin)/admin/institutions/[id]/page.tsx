@@ -170,7 +170,7 @@ function SettingsTab({ inst, onSaved }: { inst: I; onSaved: () => void }) {
       <section className="card">
         <div className="flex items-baseline justify-between gap-2"><h2 className="font-display text-lg font-extrabold text-navy">Institution</h2><button className="btn-outline !min-h-[36px]" onClick={() => setEdit(true)}>Edit</button></div>
         <div className="mt-2">
-          {row("Name", inst.name)}{row("Registration code", inst.code)}{row("Seats", `${inst.seatsUsed}/${inst.seats}`)}{row("Batch", inst.batch || "-")}
+          {row("Name", inst.name)}{row("Registration code", inst.code)}{row("Seats", `${inst.seatsUsed}/${inst.seats}`)}{row("Batch", inst.batch || "-")}{row("Modules", ["Tests & results", inst.modules?.learning && "Learning", inst.modules?.coaching && "Coaching"].filter(Boolean).join(", "))}
           {row("Contact email", inst.contactEmail || "-")}{row("Contract", `${inst.contractStart ? tgl(inst.contractStart) : "-"} to ${inst.contractEnd ? tgl(inst.contractEnd) : "-"}`)}{row("Status", inst.status === "active" ? "Active" : "Inactive")}
         </div>
       </section>

@@ -8,11 +8,21 @@ import { LandingSettingsForm } from "@/components/LandingSettingsForm";
 import { AppearanceSettings } from "@/components/AppearanceSettings";
 
 /** Saklar fitur: fitur yang dimatikan hilang dari menu, halaman, dan API untuk semua peran. */
+const FEATURES: [string, string, string][] = [
+  ["learning", "Learning", "Courses, units, quizzes, and materials. Also turn it on per institution (Institution → Settings → Modules)."],
+  ["coaching", "Coaching", "Coach slots, bookings, and attendance. Also turn it on per institution."],
+  ["aiCounselor", "AI Counselor", "Participants ask study questions to the AI; coaches and admins review the conversations."],
+  ["officialTest", "Official EPTA Test", "Registration for official test sessions with document checks."],
+  ["certificates", "Certificates", "Certificates from official scores."],
+  ["externalResults", "Class / external results", "Upload class or external test results and match them to participants."],
+  ["programCycles", "Program cycles", "Program periods that open and close learning and placement."],
+];
+
 function FeatureSwitches() {
-  const { data, reload } = useApi<{ aiCounselor: boolean }>("/api/admin/settings/features");
+  const { data, reload } = useApi<Record<string, boolean>>("/api/admin/settings/features");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  async function toggle(k: "aiCounselor", on: boolean) {
+  async function toggle(k: string, on: boolean) {
     setBusy(true); setErr("");
     try { await api("/api/admin/settings/features", { method: "PUT", json: { ...data, [k]: on } }); reload(); }
     catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
@@ -20,9 +30,13 @@ function FeatureSwitches() {
   return (
     <section className="card flex flex-col gap-3">
       <h2 className="font-display text-lg font-extrabold text-navy">Features</h2>
-      <p className="text-sm text-ink-soft">A feature that is turned off disappears from menus, pages, and the API for every role. Its data is kept.</p>
+      <p className="text-sm text-ink-soft">Tests, results, reports, and monitoring are always on. A feature that is turned off disappears from menus and pages for every role. Its data is kept, and you can turn it back on any time.</p>
       {err && <p className="text-sm text-red-700">{err}</p>}
-      <label className="flex items-start gap-2 rounded-lg border border-line p-3 text-sm"><input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" disabled={!data || busy} checked={!!data?.aiCounselor} onChange={(e) => toggle("aiCounselor", e.target.checked)} /><span><b className="text-navy">AI Counselor</b><br /><span className="text-ink-soft">Participants ask study questions to the AI; coaches and admins review the conversations.</span></span></label>
+      <div className="grid gap-2 md:grid-cols-2">
+        {FEATURES.map(([k, t, d]) => (
+          <label key={k} className="flex items-start gap-2 rounded-lg border border-line p-3 text-sm"><input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" disabled={!data || busy} checked={!!data?.[k]} onChange={(e) => toggle(k, e.target.checked)} /><span><b className="text-navy">{t}</b><br /><span className="text-ink-soft">{d}</span></span></label>
+        ))}
+      </div>
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { useApi } from "@/lib/useApi";
+import { useFeatures } from "@/lib/useFeatures";
 import { Loading, ErrorNote, HBars, Donut, OutcomeBars, RadarChart, SpeedScatter, ThirdsBars, LineChart } from "@/components/Charts";
 import { CounselorPanel } from "@/components/CounselorPanel";
 import { buildBreakdown, partLabel, typeLabel } from "@/lib/breakdown";
@@ -30,6 +31,7 @@ const fmtDelta = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `${n}` : "±0");
 export function ResultReport({ attemptId, staffBase }: { attemptId: string; staffBase?: string }) {
   const params = { id: attemptId };
   const staff = !!staffBase;
+  const learning = !!useFeatures().learning; // rekomendasi unit hanya bila modul Learning menyala bagi pengguna ini
   const [r, setR] = useState<R | null>(null);
   const [err, setErr] = useState("");
   const [releaseAt, setReleaseAt] = useState<Date | null>(null);
@@ -166,7 +168,7 @@ export function ResultReport({ attemptId, staffBase }: { attemptId: string; staf
         const sm = r.summary;
         const tone = sm.reliability.level === "high" ? "border-success bg-success-tint" : sm.reliability.level === "medium" ? "border-accent bg-accent-tint" : "border-red-300 bg-red-50";
         const badge = sm.reliability.level === "high" ? "bg-success text-white" : sm.reliability.level === "medium" ? "bg-accent text-navy" : "bg-red-700 text-white";
-        const unitFor = (skill: string, topic: string) => r.recommendations?.find((x) => x.skill === skill && x.topic === topic);
+        const unitFor = (skill: string, topic: string) => !learning ? undefined : r.recommendations?.find((x) => x.skill === skill && x.topic === topic);
         return (
           <section className="flex flex-col gap-4" aria-label="Diagnostic summary">
             <div className={`rounded-xl border p-4 ${tone}`}>
@@ -390,7 +392,7 @@ export function ResultReport({ attemptId, staffBase }: { attemptId: string; staf
         </section>
       )}
 
-      {r.recommendations?.length > 0 && (
+      {learning && r.recommendations?.length > 0 && (
         <section className="card">
           <h2 className="font-display text-lg font-extrabold text-navy">Courses to take next</h2>
           <p className="text-sm text-ink-soft">Where you lost points, and the unit that trains that skill.</p>

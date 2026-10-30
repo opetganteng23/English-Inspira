@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import type { Role } from "@/models/User";
 import { ShellNav, type NavGroup } from "./ShellNav";
-import { getFeatures } from "@/lib/features";
+import { featuresFor } from "@/lib/features";
 
 export type { NavGroup };
 export type NavItem = { href: string; label: string };
@@ -17,7 +17,7 @@ export async function AppShell({
   if (!roles.includes(user.role)) redirect("/sign-in");
 
   // Menu disaring di server: fitur yang dimatikan admin dan menu yang belum relevan bagi peserta tahap 1.
-  const features = await getFeatures();
+  const features = await featuresFor(user);
   const stage1 = user.role === "participant" && !user.currentLevelId;
   const shown = nav
     .map((g) => ({ ...g, items: g.items.filter((i) => (!i.feature || features[i.feature]) && !(i.afterPlacement && stage1)).map(({ href, label }) => ({ href, label })) }))

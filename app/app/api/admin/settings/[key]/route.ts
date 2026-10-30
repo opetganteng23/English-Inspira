@@ -17,7 +17,7 @@ const SETTINGS = {
     defaults: { siteName: "English Inspira AI", supportEmail: "", supportWhatsapp: "", itpOrganizer: "", refundPolicy: "", rescheduleDays: 7, idRetentionDays: 365 },
   },
   landing: { schema: landingSchema, defaults: LANDING_DEFAULTS },
-  features: { schema: z.object({ aiCounselor: z.boolean() }), defaults: FEATURE_DEFAULTS },
+  features: { schema: z.object({ aiCounselor: z.boolean(), learning: z.boolean(), coaching: z.boolean(), officialTest: z.boolean(), certificates: z.boolean(), externalResults: z.boolean(), programCycles: z.boolean() }), defaults: FEATURE_DEFAULTS },
 } as const;
 type Key = keyof typeof SETTINGS;
 

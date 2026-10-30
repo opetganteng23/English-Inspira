@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useApi } from "@/lib/useApi";
+import { useFeatures } from "@/lib/useFeatures";
 import { api, tgl } from "@/lib/client";
 import { LineChart, Loading, ErrorNote } from "@/components/Charts";
 import { JourneyStrip } from "@/components/JourneyStrip";
@@ -24,6 +25,7 @@ const SEC: Record<string, string> = { listening: "Listening", structure: "Struct
 
 export default function Beranda() {
   const { data: h, error, loading, reload } = useApi<Home>("/api/home");
+  const f = useFeatures();
   const [err, setErr] = useState("");
   async function done(id: string) {
     setErr("");
@@ -86,7 +88,7 @@ export default function Beranda() {
             {h.plan.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                 <span className="min-w-0 flex-1 text-sm"><b className="text-navy">{p.title}</b><br /><span className="text-xs text-ink-soft">{p.priority === "high" ? "High priority" : "Medium priority"}{p.dueAt ? ` · target ${tgl(p.dueAt)}` : ""}{p.source === "coach" ? " · from coach" : ""}{p.late && <b className="text-red-700"> · overdue</b>}</span></span>
-                <span className="flex gap-2">{p.unitId && <Link href={`/learn/${p.unitId}`} className="btn-solid !min-h-[40px]">Open unit</Link>}<button className="btn-outline !min-h-[40px]" onClick={() => done(p.id)}>Mark as done</button></span>
+                <span className="flex gap-2">{p.unitId && f.learning && <Link href={`/learn/${p.unitId}`} className="btn-solid !min-h-[40px]">Open unit</Link>}<button className="btn-outline !min-h-[40px]" onClick={() => done(p.id)}>Mark as done</button></span>
               </li>
             ))}
           </ul>
@@ -95,7 +97,7 @@ export default function Beranda() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Learning materials</h2><p className="mt-1 text-sm text-ink-soft">Interactive exercises and materials to strengthen your weak areas.</p><Link href="/materials" className="btn-outline mt-4">Open materials</Link></section>
+        {f.learning && <section className="card"><h2 className="font-display text-lg font-extrabold text-navy">Learning materials</h2><p className="mt-1 text-sm text-ink-soft">Interactive exercises and materials to strengthen your weak areas.</p><Link href="/materials" className="btn-outline mt-4">Open materials</Link></section>}
         {h.counselor && (<section className="card"><h2 className="font-display text-lg font-extrabold text-navy">AI Counselor</h2><p className="mt-1 text-sm text-ink-soft">Ask about study strategies based on your test results.</p><Link href="/counselor" className="btn-outline mt-4">Ask the AI Counselor</Link></section>)}
       </div>
     </div>

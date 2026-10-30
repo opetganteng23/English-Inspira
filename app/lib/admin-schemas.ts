@@ -78,6 +78,7 @@ export const institutionInput = z.object({
   status: z.enum(["active", "inactive"]).default("active"),
   holdPlacementResults: z.boolean().optional(),
   holdFromInstAdmin: z.boolean().optional(),
+  modules: z.object({ learning: z.boolean(), coaching: z.boolean() }).optional(),
 }).refine((i) => !i.contractStart || !i.contractEnd || i.contractEnd > i.contractStart, { message: "The contract end must be after the contract start", path: ["contractEnd"] });
 
 export const userCreateInput = z.object({
