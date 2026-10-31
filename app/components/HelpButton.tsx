@@ -22,7 +22,7 @@ export function HelpButton({ role }: { role: string }) {
           <div className="flex max-h-[90dvh] w-full flex-col gap-4 overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between"><h2 className="font-display text-lg font-extrabold text-navy">How can we help?</h2><button onClick={() => setOpen(false)} aria-label="Close" className="text-2xl leading-none text-ink-soft">×</button></div>
             <div className="flex flex-wrap gap-2 text-sm">
-              {role === "participant" && <Link href="/help" className="btn-outline !min-h-[36px]">Read the FAQ</Link>}
+              <Link href={role === "participant" ? "/help" : "/support#faq"} className="btn-outline !min-h-[36px]">Read the FAQ</Link>
               <Link href="/support" className="btn-outline !min-h-[36px]">My requests</Link>
             </div>
             <SupportForm signedIn compact />

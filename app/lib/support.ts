@@ -31,14 +31,16 @@ async function nextNumber() {
   return (last?.number ?? 1000) + 1;
 }
 
-export async function createTicket(x: { userId?: Types.ObjectId; role?: string; institutionId?: Types.ObjectId | null; name: string; email: string; category: (typeof TICKET_CATEGORIES)[number]; body: string; page?: string; userAgent?: string }) {
+export async function createTicket(x: { userId?: Types.ObjectId; role?: string; institutionId?: Types.ObjectId | null; name: string; email: string; category: (typeof TICKET_CATEGORIES)[number]; body: string; page?: string; userAgent?: string; assist?: string }) {
   await connectDB();
   const c = CATEGORY[x.category] ?? CATEGORY.other;
+  const { assist, ...data } = x;
   const accessToken = randomBytes(24).toString("hex");
+  const messages = [{ from: "user" as const, by: x.userId, byName: x.name, body: x.body }, ...(assist ? [{ from: "system" as const, byName: "AI help", body: assist }] : [])];
   let t: TicketDoc | null = null;
   for (let i = 0; i < 3 && !t; i++) {
     try {
-      t = (await Ticket.create({ ...x, institutionId: x.institutionId ?? undefined, number: await nextNumber(), team: c.team, urgent: !!c.urgent, accessToken, messages: [{ from: "user", by: x.userId, byName: x.name, body: x.body }], lastUserAt: new Date() })).toObject();
+      t = (await Ticket.create({ ...data, institutionId: x.institutionId ?? undefined, number: await nextNumber(), team: c.team, urgent: !!c.urgent, accessToken, messages, lastUserAt: new Date() })).toObject();
     } catch (e) { if ((e as { code?: number }).code !== 11000) throw e; } // nomor bentrok dengan tiket bersamaan: coba lagi
   }
   if (!t) throw new Error("Could not create the ticket, please try again");

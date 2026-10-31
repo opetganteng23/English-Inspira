@@ -16,6 +16,7 @@ const FEATURES: [string, string, string][] = [
   ["certificates", "Certificates", "Certificates from official scores."],
   ["externalResults", "Class / external results", "Upload class or external test results and match them to participants."],
   ["programCycles", "Program cycles", "Program periods that open and close learning and placement."],
+  ["aiSupport", "AI help before a ticket", "Before a help request is sent, matching FAQ answers are shown and, if needed, the AI suggests fixes from the FAQ only (no access to scores). The conversation is attached to the ticket."],
 ];
 
 type Backup = { available: boolean; count: number; last: { name: string; size: number; at: string } | null; ageHours: number | null; ok: boolean };

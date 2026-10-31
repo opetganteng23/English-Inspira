@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { handleError, HttpError } from "@/lib/rbac";
 import { limit, clientIp } from "@/lib/ratelimit";
 import { createTicket, STATUS_LABEL, CATEGORY } from "@/lib/support";
+import { transcript } from "@/lib/support-ai";
 import { Ticket, TICKET_CATEGORIES } from "@/models/Ticket";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ const schema = z.object({
   body: z.string().trim().min(10, "Describe the problem in a few words (at least 10 characters)").max(4000),
   page: z.string().max(300).optional(),
   website: z.string().max(0).optional(), // perangkap bot: kolom tersembunyi, harus kosong
+  assist: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(2000) })).max(12).optional(), // percakapan AI sebelum tiket (8.8)
 });
 
 /** Kirim tiket. Nama, email, dan kendala wajib (8.2). Bisa tanpa login (dari halaman sign-in); dibatasi per IP dan per email. */
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
     const t = await createTicket({
       userId: user?._id, role: user?.role, institutionId: user?.institutionId ?? null,
       name: user?.name || p.data.name, email: user?.email ?? p.data.email.toLowerCase(),
-      category: p.data.category, body: p.data.body, page: p.data.page, userAgent: req.headers.get("user-agent")?.slice(0, 300),
+      category: p.data.category, body: p.data.body, page: p.data.page, assist: p.data.assist?.length ? transcript(p.data.assist) : undefined, userAgent: req.headers.get("user-agent")?.slice(0, 300),
     });
     return NextResponse.json({ id: t.id, number: t.number, token: user ? null : t.accessToken }, { status: 201 });
   } catch (e) {

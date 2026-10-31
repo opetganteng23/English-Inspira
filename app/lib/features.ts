@@ -7,7 +7,7 @@ import { Institution } from "@/models/Institution";
 
 // Saklar fitur yang diatur admin di Settings. Fitur mati = menu, halaman, dan API-nya hilang untuk semua peran; datanya tetap.
 // Semua mati sejak awal (keputusan 30 Okt 2026): yang dipakai sehari-hari hanya tes, hasil, dan laporan.
-export const FEATURE_DEFAULTS = { aiCounselor: false, learning: false, coaching: false, officialTest: false, certificates: false, externalResults: false, programCycles: false };
+export const FEATURE_DEFAULTS = { aiCounselor: false, learning: false, coaching: false, officialTest: false, certificates: false, externalResults: false, programCycles: false, aiSupport: false };
 export type Features = typeof FEATURE_DEFAULTS;
 export type FeatureKey = keyof Features;
 

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
 import { SecureZone } from "@/components/SecureZone";
 import { GroupAudio } from "@/components/TestAudio";
+import { TestRoomHelp } from "@/components/TestRoomHelp";
 
 type Q = { id: string; groupId: string | null; stem: string; options: string[]; assetIds?: string[] };
 type G = { id: string; instruction?: string; passageTitle?: string; passageHtml?: string; audio: { id: string; finished: boolean } | null };
@@ -354,6 +355,7 @@ export default function Ruang({ params }: { params: { id: string } }) {
           </span>
           <span className={`hidden sm:inline ${saved === "fail" ? "text-orange-300" : "text-mist"}`}>{saved === "saving" ? "Saving…" : saved === "fail" ? "Save failed, retrying" : "Saved automatically"}</span>
           <span className={`rounded-lg px-3 py-1.5 font-display text-lg font-extrabold ${left < 60 ? "bg-accent" : "bg-navy-700"}`} role="timer" aria-label="Section time remaining">{mmss(left)}</span>
+          <TestRoomHelp />
           <button className="hidden rounded-lg border border-white/40 px-3 py-1.5 text-xs md:block" onClick={() => enterFullscreen()}>Fullscreen</button>
         </div>
         {saved === "fail" && <p className="basis-full text-xs text-orange-300 sm:hidden">Save failed, retrying…</p>}

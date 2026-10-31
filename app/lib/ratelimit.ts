@@ -18,6 +18,7 @@ const limiters = {
   supportIp: new RateLimiterMemory({ points: 60 * F, duration: 3600 }),
   supportEmail: new RateLimiterMemory({ points: 8, duration: 3600 }),
   supportReply: new RateLimiterMemory({ points: 30, duration: 600 }),
+  supportAssist: new RateLimiterMemory({ points: 40 * F, duration: 3600 }),
 };
 
 export async function limit(name: keyof typeof limiters, key: string) {
